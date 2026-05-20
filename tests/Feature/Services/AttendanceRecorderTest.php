@@ -29,7 +29,7 @@ beforeEach(function () {
 
 test('records check-in as hadir when on time', function () {
     $recorder = app(AttendanceRecorder::class);
-    $timestamp = Carbon::today()->setTime(7, 10);
+    $timestamp = Carbon::today('Asia/Jakarta')->setTime(7, 10);
 
     $result = $recorder->record($this->student, AttendanceType::CheckIn, timestamp: $timestamp);
 
@@ -39,7 +39,7 @@ test('records check-in as hadir when on time', function () {
 
 test('records check-in as terlambat when past threshold', function () {
     $recorder = app(AttendanceRecorder::class);
-    $timestamp = Carbon::today()->setTime(7, 30);
+    $timestamp = Carbon::today('Asia/Jakarta')->setTime(7, 30);
 
     $result = $recorder->record($this->student, AttendanceType::CheckIn, timestamp: $timestamp);
 
@@ -49,7 +49,7 @@ test('records check-in as terlambat when past threshold', function () {
 
 test('prevents double check-in on same day', function () {
     $recorder = app(AttendanceRecorder::class);
-    $timestamp = Carbon::today()->setTime(7, 5);
+    $timestamp = Carbon::today('Asia/Jakarta')->setTime(7, 5);
 
     $first = $recorder->record($this->student, AttendanceType::CheckIn, timestamp: $timestamp);
     expect($first['success'])->toBeTrue();
@@ -62,8 +62,8 @@ test('prevents double check-in on same day', function () {
 test('records check-out after check-in', function () {
     $recorder = app(AttendanceRecorder::class);
 
-    $recorder->record($this->student, AttendanceType::CheckIn, timestamp: Carbon::today()->setTime(7, 5));
-    $result = $recorder->record($this->student, AttendanceType::CheckOut, timestamp: Carbon::today()->setTime(14, 30));
+    $recorder->record($this->student, AttendanceType::CheckIn, timestamp: Carbon::today('Asia/Jakarta')->setTime(7, 5));
+    $result = $recorder->record($this->student, AttendanceType::CheckOut, timestamp: Carbon::today('Asia/Jakarta')->setTime(14, 30));
 
     expect($result['success'])->toBeTrue();
     expect($result['attendance']->type)->toBe(AttendanceType::CheckOut);
