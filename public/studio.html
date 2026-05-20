@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kartu Studio - OSIS &amp; Perpustakaan</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&family=Bree+Serif&display=swap" rel="stylesheet">
+<style>
+:root{--card-w-mm:85.6;--card-h-mm:54;--mm:9.5px;--card-w:calc(var(--card-w-mm)*var(--mm));--card-h:calc(var(--card-h-mm)*var(--mm))}
+*{box-sizing:border-box}html,body{font-family:'Manrope',sans-serif;background:#f5f4ed;color:#13131a}
+.card-frame{width:var(--card-w);height:var(--card-h);border-radius:calc(var(--mm)*.8);position:relative;overflow:hidden;box-shadow:0 2px 4px rgba(15,15,30,.05),0 18px 50px -10px rgba(15,15,30,.18),0 0 0 1px rgba(0,0,0,.04);isolation:isolate}
+.bg-perpus{background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.4) 0%,transparent 50%),linear-gradient(135deg,#d6b88a 0%,#e8d2a8 40%,#d4b380 100%)}
+.bg-osis{background:radial-gradient(ellipse at 70% 30%,rgba(255,255,255,.5) 0%,transparent 60%),linear-gradient(135deg,#e0f3ff 0%,#c7e9fb 50%,#b8e1f7 100%)}
+.header-band{position:relative;z-index:5;height:calc(var(--mm)*13);display:flex;align-items:center;padding:0 calc(var(--mm)*2);gap:calc(var(--mm)*1.2)}
+.header-band.perpus{background:linear-gradient(180deg,#c9986a 0%,#b07b4a 100%);color:#1a1208}
+.header-band.osis{background:linear-gradient(180deg,#5dc4f5 0%,#3aa8df 100%);color:#06243a}
+.watermark{position:absolute;inset:calc(var(--mm)*13) 0 0 0;z-index:2;overflow:hidden;pointer-events:none;opacity:.35}
+.watermark-row{display:flex;white-space:nowrap;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:calc(var(--mm)*1.4);letter-spacing:-0.02em;line-height:1.6}
+.watermark.perpus .watermark-row{color:rgba(255,255,255,.5)}.watermark.osis .watermark-row{color:rgba(255,255,255,.85)}
+.watermark-row span{padding-right:calc(var(--mm)*1.2)}.watermark-row:nth-child(even){transform:translateX(calc(var(--mm)*-3))}
+.osis-emblem{position:absolute;left:50%;top:calc(var(--mm)*32);transform:translate(-50%,-50%);width:calc(var(--mm)*22);height:calc(var(--mm)*22);z-index:2;opacity:.18;pointer-events:none}
+.logo-slot{width:calc(var(--mm)*8.5);height:calc(var(--mm)*8.5);flex-shrink:0;border-radius:50%;position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.logo-slot:not(.filled){border:1.5px dashed rgba(0,0,0,.35);background:rgba(255,255,255,.25)}
+.logo-slot:not(.filled):hover{background:rgba(255,255,255,.55);border-color:rgba(0,0,0,.7)}
+.logo-slot img{width:100%;height:100%;object-fit:contain;border-radius:50%}
+.logo-slot .upload-hint{font-size:calc(var(--mm)*.8);color:rgba(0,0,0,.55);font-weight:600;text-align:center;line-height:1.1;padding:4px}
+.header-text{flex:1;text-align:center;font-family:'Inter Tight',sans-serif;line-height:1.05;min-width:0}
+.header-text .line-tiny{font-size:calc(var(--mm)*1);font-weight:700}
+.header-text .line-small{font-size:calc(var(--mm)*1.1);font-weight:700;letter-spacing:0.02em}
+.header-text .line-big{font-size:calc(var(--mm)*1.7);font-weight:800;letter-spacing:0.01em;margin-top:2px}
+.header-text .line-addr{font-size:calc(var(--mm)*.85);font-weight:500;font-family:'Manrope',sans-serif;margin-top:3px;line-height:1.2}
+.header-text [contenteditable]:focus{outline:1.5px solid rgba(67,56,202,.6);outline-offset:2px;border-radius:2px}
+.body-area{position:relative;z-index:5;padding:calc(var(--mm)*1.5) calc(var(--mm)*2.5) 0}
+.field-row{display:flex;font-family:'Inter Tight',sans-serif;font-size:calc(var(--mm)*1.1);font-weight:700;line-height:1.45;letter-spacing:0.005em;color:#0c0c14}
+.field-row .field-label{width:calc(var(--mm)*21);flex-shrink:0}
+.field-row .field-sep{width:calc(var(--mm)*2);text-align:center;flex-shrink:0}
+.field-row .field-value{flex:1;font-weight:600;font-family:'Manrope',sans-serif;font-size:calc(var(--mm)*1.1);letter-spacing:-0.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.osis-validity{position:absolute;left:50%;top:calc(var(--mm)*28);transform:translateX(-50%);font-family:'Inter Tight',sans-serif;font-weight:800;font-size:calc(var(--mm)*1.4);letter-spacing:0.02em;z-index:6;color:#0c0c14}
+.bottom-row{position:absolute;left:calc(var(--mm)*2.5);right:calc(var(--mm)*2);top:calc(var(--mm)*31);bottom:calc(var(--mm)*2);z-index:6;display:grid;grid-template-columns:auto auto 1fr;gap:calc(var(--mm)*1.5);align-items:center}
+.photo-slot{width:calc(var(--mm)*16);height:calc(var(--mm)*21);border-radius:calc(var(--mm)*.4);position:relative;overflow:hidden;cursor:pointer}
+.photo-slot:not(.filled){background:rgba(255,255,255,.35);border:1.5px dashed rgba(0,0,0,.35)}
+.photo-slot:not(.filled):hover{background:rgba(255,255,255,.55);border-color:rgba(0,0,0,.7)}
+.photo-slot.filled{background:#0a0a0f;cursor:grab}.photo-slot.dragging{cursor:grabbing}
+.photo-slot img{position:absolute;top:50%;left:50%;transform-origin:center center;user-select:none;pointer-events:none;max-width:none}
+.photo-slot .hint{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--mm)*.5);color:rgba(0,0,0,.55);font-size:calc(var(--mm)*.9);font-weight:700;text-align:center;padding:calc(var(--mm)*.5);pointer-events:none;line-height:1.15}
+.photo-slot.filled .hint{display:none}
+.qr-slot{width:calc(var(--mm)*15);height:calc(var(--mm)*15);background:#fff;border-radius:calc(var(--mm)*.4);padding:calc(var(--mm)*.35);position:relative;align-self:center;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.qr-slot svg,.qr-slot img{width:100%;height:100%;display:block}
+.qr-slot.empty{background:rgba(255,255,255,.35);border:1.5px dashed rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--mm)*.4);font-size:calc(var(--mm)*.9);color:rgba(0,0,0,.55);font-weight:700;text-align:center;padding:calc(var(--mm)*.5);line-height:1.15}
+.signature-area{position:relative;height:100%;display:flex}
+.signature-slot{width:100%;height:100%;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--mm)*.4);border-radius:calc(var(--mm)*.3)}
+.signature-slot:not(.filled){border:1.5px dashed rgba(0,0,0,.3);background:rgba(255,255,255,.18)}
+.signature-slot:not(.filled):hover{background:rgba(255,255,255,.4);border-color:rgba(0,0,0,.6)}
+.signature-slot.filled{padding:calc(var(--mm)*.3)}.signature-slot img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.signature-slot .hint-label{font-family:'Inter Tight',sans-serif;font-size:calc(var(--mm)*1.15);font-weight:800;letter-spacing:0.01em;color:rgba(0,0,0,.5)}
+.signature-slot .hint-sub{display:flex;align-items:center;gap:4px;font-size:calc(var(--mm)*.85);color:rgba(0,0,0,.45);font-weight:600}
+.panel{background:#fff;border:1px solid rgba(15,15,30,.08);border-radius:14px;overflow:hidden}
+.panel-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid rgba(15,15,30,.06);background:linear-gradient(180deg,#fafaf7 0%,#fff 100%)}
+.panel-head .num{width:18px;height:18px;border-radius:5px;background:#13131a;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
+.panel-head .title{font-weight:700;font-size:12.5px;letter-spacing:-0.01em;color:#13131a}
+.panel-body{padding:12px 14px}
+.toggle-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;border:1.5px solid rgba(15,15,30,.1);cursor:pointer;transition:all .15s;background:#fff}
+.toggle-card:hover{border-color:rgba(67,56,202,.4)}.toggle-card.active{border-color:#4338ca;background:#eef2ff;box-shadow:0 0 0 2px rgba(67,56,202,.15)}
+.toggle-card .swatch{width:28px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.1)}.toggle-card .lbl{font-size:11px;font-weight:700}
+.input-field{width:100%;padding:8px 10px;border:1px solid #e5e3d6;background:#fafaf7;border-radius:8px;font-size:12.5px;font-weight:500;font-family:'Manrope',sans-serif;color:#13131a;transition:all .15s}
+.input-field:focus{outline:none;border-color:#4338ca;background:#fff;box-shadow:0 0 0 3px rgba(67,56,202,.12)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;letter-spacing:-0.005em;transition:all .12s;cursor:pointer;border:none;font-family:'Manrope',sans-serif}
+.btn-primary{background:#13131a;color:#fff}.btn-primary:hover{background:#2a2a37}
+.btn-accent{background:#4338ca;color:#fff}.btn-accent:hover{background:#3730a3}
+.btn-ghost{background:transparent;color:#13131a;border:1px solid rgba(15,15,30,.12)}.btn-ghost:hover{background:#fafaf7;border-color:rgba(15,15,30,.2)}
+.zoom-slider{-webkit-appearance:none;width:100%;height:4px;background:#e5e3d6;border-radius:2px;outline:none}
+.zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#4338ca;cursor:pointer;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.15)}
+.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
+.status-pill.ready{background:#d1fae5;color:#047857}.status-pill.partial{background:#fef3c7;color:#92400e}.status-pill.empty{background:#fee2e2;color:#b91c1c}.status-pill.loading{background:#ede9fe;color:#5b21b6}
+.status-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.dot-grid{background-image:radial-gradient(circle,rgba(0,0,0,.06) 1px,transparent 1px);background-size:18px 18px}
+.student-list{max-height:220px;overflow-y:auto;border:1px solid #e5e3d6;border-radius:8px;background:#fafaf7}
+.student-list .item{padding:8px 10px;border-bottom:1px solid #efedde;cursor:pointer;transition:background .1s;font-size:12px}
+.student-list .item:last-child{border-bottom:none}.student-list .item:hover{background:#eef2ff}.student-list .item.active{background:#4338ca;color:#fff}
+.student-list .item .name{font-weight:700}.student-list .item .meta{font-size:10.5px;opacity:.7;margin-top:1px}
+.tag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;background:#f5f4ed;color:#3a3a4a}
+.brand-mark{width:28px;height:28px;background:#13131a;border-radius:8px;display:flex;align-items:center;justify-content:center;position:relative}
+.brand-mark::before{content:'';position:absolute;inset:6px;border:1.5px solid #fafaf7;border-radius:3px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#13131a;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:1000;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:toastIn .25s cubic-bezier(.16,1,.3,1)}
+@keyframes toastIn{from{transform:translate(-50%,20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.export-stage{position:fixed;left:-99999px;top:0;--mm:15.748px}
+</style>
+</head>
+<body>
+
+<header class="bg-white border-b px-5 py-3 flex items-center justify-between sticky top-0 z-50" style="border-color:rgba(15,15,30,.08)">
+  <div class="flex items-center gap-3">
+    <div class="brand-mark"></div>
+    <div>
+      <h1 style="font-family:'Inter Tight',sans-serif" class="font-extrabold text-[15px] leading-none tracking-tight">Kartu Studio</h1>
+      <p class="text-[10.5px] mt-0.5 font-medium" style="color:#3a3a4a">Generator Kartu OSIS &amp; Perpustakaan - ATM Card Size (85.6 x 54 mm)</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <div id="statusBadge" class="status-pill empty">Belum ada data siswa</div>
+    <button id="resetBtn" class="btn btn-ghost">Reset</button>
+    <button id="exportBtn" class="btn btn-accent">Simpan 2 Kartu</button>
+  </div>
+</header>
+
+<main class="flex" style="height:calc(100vh - 57px)">
+  <aside class="w-[340px] border-r overflow-y-auto p-4 space-y-3 flex-shrink-0" style="background:#fafaf7;border-color:rgba(15,15,30,.08)">
+
+    <section class="panel">
+      <div class="panel-head"><div class="num">1</div><div class="title">Jenis Kartu</div></div>
+      <div class="panel-body grid grid-cols-2 gap-2">
+        <div class="toggle-card active" data-type="osis"><div class="swatch" style="background:linear-gradient(135deg,#5dc4f5,#3aa8df)"></div><div class="lbl">Kartu OSIS</div></div>
+        <div class="toggle-card" data-type="perpus"><div class="swatch" style="background:linear-gradient(135deg,#c9986a,#b07b4a)"></div><div class="lbl">Kartu Perpus</div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div class="num">2</div><div class="title">Data Siswa (API)</div></div>
+      <div class="panel-body space-y-2.5">
+        <div><label class="text-[10.5px] font-bold uppercase tracking-wide mb-1 block" style="color:#3a3a4a">Sekolah</label><select id="schoolSelect" class="input-field"><option value="">-- Memuat sekolah --</option></select></div>
+        <div><label class="text-[10.5px] font-bold uppercase tracking-wide mb-1 block" style="color:#3a3a4a">Cari Siswa</label><input id="studentSearch" type="text" class="input-field" placeholder="Nama atau NIS..." autocomplete="off"></div>
+        <div id="studentList" class="student-list" style="display:none"></div>
+        <div id="selectedStudent" class="hidden"><div class="text-[10.5px] font-bold uppercase tracking-wide mb-1" style="color:#3a3a4a">Terpilih</div><div class="p-2.5 rounded-lg" style="background:#eef2ff;border:1px solid rgba(67,56,202,.2)"><div id="selectedName" class="text-[13px] font-bold leading-tight"></div><div id="selectedMeta" class="text-[11px] font-medium mt-0.5" style="color:#3a3a4a"></div></div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div class="num">3</div><div class="title">Foto Siswa</div></div>
+      <div class="panel-body space-y-2.5">
+        <div class="flex gap-2"><button id="photoUploadBtn" class="btn btn-ghost flex-1">Upload Foto</button><button id="photoResetBtn" class="btn btn-ghost">Reset</button></div>
+        <div><label class="text-[10.5px] font-bold uppercase tracking-wide mb-1 flex items-center justify-between" style="color:#3a3a4a"><span>Zoom</span><span id="zoomVal" class="text-[10px] font-mono normal-case tracking-normal">100%</span></label><input id="zoomSlider" type="range" min="50" max="250" value="100" step="1" class="zoom-slider"></div>
+        <div class="text-[10.5px] font-medium leading-snug" style="color:#3a3a4a">Drag foto di kartu untuk reposisi, scroll wheel untuk zoom.</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div class="num">4</div><div class="title">Aset Visual</div></div>
+      <div class="panel-body space-y-2"><button class="btn btn-ghost w-full justify-start" data-upload="logoLeft">Logo Kiri (Daerah)</button><button class="btn btn-ghost w-full justify-start" data-upload="logoRight">Logo Kanan (Tut Wuri)</button><button class="btn btn-ghost w-full justify-start" data-upload="osisEmblem">Logo OSIS (Background)</button><button class="btn btn-ghost w-full justify-start" data-upload="signature">Tanda Tangan (Kepsek)</button></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div class="num">5</div><div class="title">Folder Output</div></div>
+      <div class="panel-body space-y-2.5">
+        <div id="outputDirInfo"><div class="text-[10.5px] font-bold uppercase tracking-wide mb-1" style="color:#3a3a4a">Belum dipilih</div><div class="text-[11.5px] leading-snug" style="color:#3a3a4a">Pilih folder sekali, semua export auto-tersimpan dikelompokkan per kelas.</div></div>
+        <button id="pickDirBtn" class="btn btn-ghost w-full"><span id="pickDirBtnLabel">Pilih Folder Output</span></button>
+        <div id="fsApiWarn" class="hidden text-[11px] p-2 leading-snug rounded-md" style="color:#92400e;background:#fef3c7;border:1px solid #fde68a">Browser ini tidak mendukung direct-to-folder. Pakai Chrome/Edge. Fallback: download sebagai ZIP.</div>
+      </div>
+    </section>
+  </aside>
+
+  <section class="flex-1 relative overflow-auto dot-grid">
+    <div class="relative min-h-full flex flex-col items-center justify-center p-8 gap-6">
+      <div id="cardWrap" class="relative">
+        <div id="card" class="card-frame bg-osis">
+          <div id="headerBand" class="header-band osis">
+            <div class="logo-slot" data-slot="logoLeft"><div class="upload-hint">LOGO<br>DAERAH</div></div>
+            <div id="headerText" class="header-text">
+              <div class="line-tiny" contenteditable="true" spellcheck="false">PEMERINTAH KABUPATEN BANYUMAS</div>
+              <div class="line-small" contenteditable="true" spellcheck="false">DINAS PENDIDIKAN</div>
+              <div class="line-big" contenteditable="true" spellcheck="false">SMP NEGERI 1 JATILAWANG</div>
+              <div class="line-addr" contenteditable="true" spellcheck="false">Jl. Pramuka No.3, Jatilawang, Kec. Jatilawang, Telp. (0281) 6848893</div>
+            </div>
+            <div class="logo-slot" data-slot="logoRight"><div class="upload-hint">TUT WURI<br>HANDAYANI</div></div>
+          </div>
+          <div id="watermark" class="watermark osis"></div>
+          <div id="osisEmblem" class="osis-emblem"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="none" stroke="#1565a0" stroke-width="1"/><path d="M50 8 L42 30 L18 30 L37 44 L30 68 L50 54 L70 68 L63 44 L82 30 L58 30 Z" fill="none" stroke="#1565a0" stroke-width="1"/><text x="50" y="92" font-family="Inter Tight" font-weight="800" font-size="10" text-anchor="middle" fill="#1565a0">OSIS</text></svg></div>
+          <div class="body-area">
+            <div class="field-row"><span class="field-label">NAMA</span><span class="field-sep">:</span><span class="field-value" id="fNama">--</span></div>
+            <div class="field-row"><span class="field-label">ALAMAT</span><span class="field-sep">:</span><span class="field-value" id="fAlamat">--</span></div>
+            <div class="field-row"><span class="field-label">TEMPAT TGL.LAHIR</span><span class="field-sep">:</span><span class="field-value" id="fTtl">--</span></div>
+            <div class="field-row"><span class="field-label">AGAMA</span><span class="field-sep">:</span><span class="field-value" id="fAgama">--</span></div>
+            <div class="field-row"><span class="field-label">NO.INDUK</span><span class="field-sep">:</span><span class="field-value" id="fNis">--</span></div>
+          </div>
+          <div id="osisValidity" class="osis-validity">BERLAKU S/D TAMAT BELAJAR</div>
+          <div class="bottom-row">
+            <div id="photoSlot" class="photo-slot"><div class="hint"><div>UPLOAD<br>FOTO SISWA</div></div></div>
+            <div id="qrSlot" class="qr-slot empty"><div>QR<br>OTOMATIS</div></div>
+            <div class="signature-area"><div id="signatureSlot" class="signature-slot"><div class="hint-label">KEPALA SEKOLAH</div><div class="hint-sub"><span>Upload TTD + Nama</span></div></div></div>
+          </div>
+        </div>
+        <div class="absolute -bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-3 text-[10.5px] font-mono font-semibold" style="color:#3a3a4a"><span class="tag">85.6 x 54 mm</span><span class="tag">CR80 / ATM</span><span class="tag">400 DPI</span></div>
+      </div>
+      <div class="text-center text-[11px] font-medium max-w-md leading-relaxed mt-6" style="color:#3a3a4a">Pilih sekolah &amp; siswa dari panel kiri untuk auto-fill data &amp; QR code.</div>
+    </div>
+  </section>
+</main>
+
+<input type="file" id="hiddenFileInput" accept="image/*" style="display:none">
+<div id="exportStage" class="export-stage"></div>
+
+<script>
+const API_BASE=window.location.origin+'/api';
+const state={cardType:'osis',schools:[],students:[],selectedSchoolId:null,selectedStudent:null,photo:{url:null,scale:1,offsetX:0,offsetY:0,naturalW:0,naturalH:0,baseScale:1},logoLeft:null,logoRight:null,osisEmblem:null,signature:null,fields:{nama:'--',alamat:'--',ttl:'--',agama:'--',nis:'--'},qrSvg:null,loading:false,outputDirHandle:null};
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+function toast(m,t='info'){const d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
+function updateStatus(){const b=$('#statusBadge');if(state.loading){b.className='status-pill loading';b.textContent='Memuat...';return}if(!state.selectedStudent){b.className='status-pill empty';b.textContent='Belum ada data';return}b.className='status-pill partial';b.textContent='Data dimuat'}
+function extractArray(d,...k){if(Array.isArray(d))return d;if(!d||typeof d!=='object')return[];for(const key of[...k,'data','students','results']){if(Array.isArray(d[key]))return d[key]}return[]}
+async function fetchJson(u){try{const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}catch(e){toast('API Error: '+e.message,'error');return null}}
+
+async function loadSchools(){state.loading=true;updateStatus();const d=await fetchJson(API_BASE+'/schools');state.loading=false;if(!d){updateStatus();return}state.schools=extractArray(d,'schools');const s=$('#schoolSelect');s.innerHTML='<option value="">-- Pilih sekolah --</option>';state.schools.forEach(x=>{const o=document.createElement('option');o.value=x.id;o.textContent=x.name;s.appendChild(o)});updateStatus()}
+
+async function loadStudents(id){state.loading=true;updateStatus();const d=await fetchJson(API_BASE+'/schools/'+id+'/students');state.loading=false;if(!d){updateStatus();return}state.students=extractArray(d,'students');renderStudentList();updateStatus()}
+
+async function loadStudentDetail(id){state.loading=true;updateStatus();const d=await fetchJson(API_BASE+'/students/'+id);state.loading=false;if(!d){updateStatus();return}const s=d.data&&typeof d.data==='object'&&!Array.isArray(d.data)?d.data:d;applyStudentData(s)}
+
+function formatDate(iso){if(!iso)return'';const d=new Date(iso);if(isNaN(d))return iso;const m=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];return d.getDate()+' '+m[d.getMonth()]+' '+d.getFullYear()}
+
+function applyStudentData(d){state.selectedStudent=d;state.fields={nama:d.full_name||'--',alamat:d.address||'--',ttl:((d.birth_place||'')+(d.birth_date?', '+formatDate(d.birth_date):''))||'--',agama:d.religion_label||d.religion||'--',nis:d.nis||'--'};state.qrSvg=d.qr_svg||null;if(d.school){const big=$('#headerText .line-big'),addr=$('#headerText .line-addr');if(big&&d.school.name)big.textContent=d.school.name.toUpperCase();if(addr&&d.school.address)addr.textContent=d.school.address}$('#selectedStudent').classList.remove('hidden');$('#selectedName').textContent=state.fields.nama;$('#selectedMeta').textContent=(d.classroom?d.classroom.name:'--')+' - NIS '+state.fields.nis;renderFields();renderQR();renderWatermark();updateStatus();toast('Data '+state.fields.nama+' dimuat')}
+
+function renderFields(){$('#fNama').textContent=(state.fields.nama||'--').toUpperCase();$('#fAlamat').textContent=state.fields.alamat||'--';$('#fTtl').textContent=state.fields.ttl||'--';$('#fAgama').textContent=state.fields.agama||'--';$('#fNis').textContent=state.fields.nis||'--'}
+
+function renderQR(){const s=$('#qrSlot');if(state.qrSvg){s.classList.remove('empty');s.innerHTML=state.qrSvg;const svg=s.querySelector('svg');if(svg){svg.setAttribute('width','100%');svg.setAttribute('height','100%')}}else{s.classList.add('empty');s.innerHTML='<div>QR<br>OTOMATIS</div>'}}
+
+function renderWatermark(){const w=$('#watermark');w.className='watermark '+state.cardType;const n=$('#headerText .line-big').textContent.trim()||'SEKOLAH';const t=state.cardType==='perpus'?'PERPUSTAKAAN '+n+' ':'ORGANISASI SISWA INTRA SEKOLAH ';w.innerHTML='';for(let i=0;i<14;i++){const r=document.createElement('div');r.className='watermark-row';r.innerHTML='<span>'+t+'</span>'.repeat(4);w.appendChild(r)}}
+
+function renderCardType(){const o=state.cardType==='osis';$('#card').classList.toggle('bg-osis',o);$('#card').classList.toggle('bg-perpus',!o);$('#headerBand').classList.toggle('osis',o);$('#headerBand').classList.toggle('perpus',!o);$('#osisEmblem').style.display=o?'block':'none';$('#osisValidity').style.display=o?'block':'none';if(!o){$('#headerText .line-tiny').textContent='PERPUSTAKAAN';$('#headerText .line-small').style.display='none'}else{$('#headerText .line-small').style.display=''}renderWatermark()}
+
+function renderStudentList(){const l=$('#studentList'),q=$('#studentSearch').value.trim().toLowerCase();let f=state.students;if(q)f=f.filter(s=>(s.full_name||'').toLowerCase().includes(q)||String(s.nis||'').includes(q));f=f.slice(0,50);if(!f.length){l.style.display='none';return}l.style.display='block';l.innerHTML=f.map(s=>'<div class="item" data-id="'+s.id+'"><div class="name">'+(s.full_name||'--')+'</div><div class="meta">'+(s.classroom||'--')+' - NIS '+(s.nis||'--')+'</div></div>').join('')}
+
+let currentUploadTarget=null;
+function triggerUpload(t){currentUploadTarget=t;$('#hiddenFileInput').value='';$('#hiddenFileInput').click()}
+$('#hiddenFileInput').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const u=ev.target.result;if(currentUploadTarget==='photo')setPhoto(u);else if(currentUploadTarget==='logoLeft')setLogo('logoLeft',u);else if(currentUploadTarget==='logoRight')setLogo('logoRight',u);else if(currentUploadTarget==='osisEmblem'){state.osisEmblem=u;$('#osisEmblem').innerHTML='<img src="'+u+'" style="width:100%;height:100%;object-fit:contain">';toast('Logo OSIS dimuat')}else if(currentUploadTarget==='signature'){state.signature=u;const s=$('#signatureSlot');s.classList.add('filled');s.innerHTML='<img src="'+u+'">';toast('TTD dimuat')}};r.readAsDataURL(f)});
+
+function setPhoto(u){const img=new Image();img.onload=()=>{const s=$('#photoSlot').getBoundingClientRect();const sr=s.width/s.height,ir=img.naturalWidth/img.naturalHeight;const bs=ir>sr?s.height/img.naturalHeight:s.width/img.naturalWidth;state.photo={url:u,scale:1,offsetX:0,offsetY:0,naturalW:img.naturalWidth,naturalH:img.naturalHeight,baseScale:bs};renderPhoto();toast('Foto dimuat')};img.src=u}
+
+function renderPhoto(){const s=$('#photoSlot');if(!state.photo.url){s.classList.remove('filled');return}s.classList.add('filled');let img=s.querySelector('img');if(!img){img=document.createElement('img');s.appendChild(img)}img.src=state.photo.url;const fs=state.photo.baseScale*state.photo.scale;img.style.width=state.photo.naturalW*fs+'px';img.style.height=state.photo.naturalH*fs+'px';img.style.transform='translate(-50%,-50%) translate('+state.photo.offsetX+'px,'+state.photo.offsetY+'px)'}
+
+function setLogo(k,u){state[k]=u;const s=document.querySelector('[data-slot="'+k+'"]');s.classList.add('filled');const h=s.querySelector('.upload-hint');if(h)h.remove();let img=s.querySelector('img');if(!img){img=document.createElement('img');s.appendChild(img)}img.src=u;toast('Logo dimuat')}
+
+let dragState=null;
+$('#photoSlot').addEventListener('mousedown',e=>{if(!state.photo.url)return;e.preventDefault();dragState={sx:e.clientX,sy:e.clientY,ox:state.photo.offsetX,oy:state.photo.offsetY};document.addEventListener('mousemove',onDrag);document.addEventListener('mouseup',endDrag)});
+function onDrag(e){if(!dragState)return;state.photo.offsetX=dragState.ox+(e.clientX-dragState.sx);state.photo.offsetY=dragState.oy+(e.clientY-dragState.sy);renderPhoto()}
+function endDrag(){dragState=null;document.removeEventListener('mousemove',onDrag);document.removeEventListener('mouseup',endDrag)}
+$('#photoSlot').addEventListener('wheel',e=>{if(!state.photo.url)return;e.preventDefault();const d=e.deltaY>0?-5:5,v=Math.max(50,Math.min(250,parseInt($('#zoomSlider').value)+d));$('#zoomSlider').value=v;$('#zoomSlider').dispatchEvent(new Event('input'))},{passive:false});
+$('#zoomSlider').addEventListener('input',e=>{const v=parseInt(e.target.value);$('#zoomVal').textContent=v+'%';if(state.photo.url){state.photo.scale=v/100;renderPhoto()}});
+$('#photoUploadBtn').addEventListener('click',()=>triggerUpload('photo'));
+$('#photoSlot').addEventListener('click',e=>{if(!state.photo.url)triggerUpload('photo')});
+$('#photoResetBtn').addEventListener('click',()=>{if(!state.photo.url)return;state.photo.scale=1;state.photo.offsetX=0;state.photo.offsetY=0;$('#zoomSlider').value=100;$('#zoomVal').textContent='100%';renderPhoto()});
+
+$$('[data-slot]').forEach(s=>s.addEventListener('click',()=>triggerUpload(s.dataset.slot)));
+$('#signatureSlot').addEventListener('click',()=>triggerUpload('signature'));
+$$('[data-upload]').forEach(b=>b.addEventListener('click',()=>triggerUpload(b.dataset.upload)));
+
+function setCardType(t){state.cardType=t;$$('.toggle-card').forEach(c=>c.classList.toggle('active',c.dataset.type===t));renderCardType()}
+$$('.toggle-card').forEach(c=>c.addEventListener('click',()=>setCardType(c.dataset.type)));
+$$('#headerText [contenteditable]').forEach(e=>e.addEventListener('blur',renderWatermark));
+
+$('#schoolSelect').addEventListener('change',e=>{state.selectedSchoolId=e.target.value;if(state.selectedSchoolId)loadStudents(state.selectedSchoolId);else{state.students=[];renderStudentList()}});
+$('#studentSearch').addEventListener('input',renderStudentList);
+$('#studentList').addEventListener('click',e=>{const i=e.target.closest('.item');if(i)loadStudentDetail(i.dataset.id)});
+
+$('#resetBtn').addEventListener('click',()=>{if(!confirm('Reset semua?'))return;location.reload()});
+
+const HAS_FS='showDirectoryPicker'in window;
+if(!HAS_FS)$('#fsApiWarn').classList.remove('hidden');
+$('#pickDirBtn').addEventListener('click',async()=>{if(!HAS_FS){toast('Tidak didukung, pakai ZIP');return}try{state.outputDirHandle=await window.showDirectoryPicker({mode:'readwrite'});$('#outputDirInfo').innerHTML='<div class="text-[10.5px] font-bold uppercase tracking-wide mb-1" style="color:#047857">Folder terhubung</div><div class="text-[13px] font-bold">'+state.outputDirHandle.name+'</div>';$('#pickDirBtnLabel').textContent='Ganti Folder';toast('Folder terhubung')}catch(e){if(e.name!=='AbortError')toast('Error: '+e.message,'error')}});
+
+$('#exportBtn').addEventListener('click',async()=>{if(!state.selectedStudent){toast('Pilih siswa dulu','error');return}const btn=$('#exportBtn');btn.disabled=true;const orig=state.cardType;try{setCardType('osis');await new Promise(r=>setTimeout(r,200));const osisBlob=await html2canvas($('#card'),{scale:15.748/9.5,backgroundColor:null,useCORS:true,logging:false}).then(c=>new Promise(r=>c.toBlob(r,'image/png')));setCardType('perpus');await new Promise(r=>setTimeout(r,200));const perpusBlob=await html2canvas($('#card'),{scale:15.748/9.5,backgroundColor:null,useCORS:true,logging:false}).then(c=>new Promise(r=>c.toBlob(r,'image/png')));setCardType(orig);const nama=(state.fields.nama||'').replace(/[^a-zA-Z0-9 _-]/g,'').trim().replace(/\s+/g,'-')||'siswa';const nis=state.fields.nis||'0';const kelas=(state.selectedStudent.classroom?state.selectedStudent.classroom.name:'tanpa-kelas').replace(/[^a-zA-Z0-9]/g,'');if(HAS_FS&&state.outputDirHandle){const dir=await state.outputDirHandle.getDirectoryHandle('kelas-'+kelas,{create:true});const w1=await(await dir.getFileHandle(nama+'_'+nis+'_OSIS.png',{create:true})).createWritable();await w1.write(osisBlob);await w1.close();const w2=await(await dir.getFileHandle(nama+'_'+nis+'_PERPUS.png',{create:true})).createWritable();await w2.write(perpusBlob);await w2.close();toast('Tersimpan ke '+state.outputDirHandle.name+'/kelas-'+kelas+'/')}else{const zip=new JSZip();const f=zip.folder('kelas-'+kelas);f.file(nama+'_'+nis+'_OSIS.png',osisBlob);f.file(nama+'_'+nis+'_PERPUS.png',perpusBlob);const c=await zip.generateAsync({type:'blob'});const a=document.createElement('a');a.href=URL.createObjectURL(c);a.download='kartu-'+nama+'_'+nis+'.zip';a.click();toast('ZIP diunduh')}}catch(e){toast('Error: '+e.message,'error');setCardType(orig)}finally{btn.disabled=false}});
+
+renderCardType();renderFields();renderQR();renderWatermark();loadSchools();updateStatus();
+</script>
+</body>
+</html>
