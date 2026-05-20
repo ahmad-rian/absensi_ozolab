@@ -89,7 +89,7 @@ export function QrScanner({ scanEndpoint, scanType = 'CHECK_IN', extraPayload = 
             setTimeout(() => {
                 cooldownRef.current = false;
                 if (mountedRef.current) setLastResult(null);
-            }, 2500);
+            }, 1800);
         }
 
         async function start() {
@@ -110,7 +110,13 @@ export function QrScanner({ scanEndpoint, scanType = 'CHECK_IN', extraPayload = 
                 scanner = new Html5Qrcode(readerId);
                 await scanner.start(
                     { facingMode: 'environment' },
-                    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 4 / 3 },
+                    {
+                        fps: 15,
+                        qrbox: { width: 280, height: 280 },
+                        aspectRatio: 4 / 3,
+                        disableFlip: false,
+                        experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+                    },
                     (text) => processResult(text),
                     () => {},
                 );
