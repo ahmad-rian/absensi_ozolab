@@ -1,214 +1,2495 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kartu Studio · OSIS & Perpustakaan</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&family=Bree+Serif&display=swap" rel="stylesheet">
-<script>
-tailwind.config={theme:{extend:{fontFamily:{sans:['Manrope','sans-serif'],display:['Inter Tight','sans-serif'],mono:['JetBrains Mono','monospace'],serif:['Bree Serif','serif']},colors:{ink:{950:'#0a0a0f',900:'#13131a',800:'#1d1d27',700:'#2a2a37',600:'#3a3a4a'},cream:{50:'#fafaf7',100:'#f5f4ed',200:'#e8e6d8'},accent:{DEFAULT:'#4338ca',hover:'#3730a3',soft:'#eef2ff',ring:'#a5b4fc'}}}}}
-</script>
-<style>
-:root{--card-w-mm:85.6;--card-h-mm:54;--mm:9.5px;--card-w:calc(var(--card-w-mm)*var(--mm));--card-h:calc(var(--card-h-mm)*var(--mm))}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{font-family:'Manrope',sans-serif;background:#f5f4ed;color:#13131a}body{font-feature-settings:'cv11','ss01','ss02';letter-spacing:-0.01em}
-::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#d1cfc0;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#b8b5a3}
-.card-frame{width:var(--card-w);height:var(--card-h);border-radius:calc(var(--mm)*0.8);position:relative;overflow:hidden;box-shadow:0 2px 4px rgba(15,15,30,.05),0 18px 50px -10px rgba(15,15,30,.18),0 0 0 1px rgba(0,0,0,.04);transition:transform .3s cubic-bezier(.16,1,.3,1),box-shadow .3s;isolation:isolate}
-.card-frame:hover{box-shadow:0 4px 8px rgba(15,15,30,.06),0 24px 60px -10px rgba(15,15,30,.22),0 0 0 1px rgba(0,0,0,.04)}
-.bg-perpus{background:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.4) 0%,transparent 50%),linear-gradient(135deg,#d6b88a 0%,#e8d2a8 40%,#d4b380 100%)}
-.bg-perpus::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 10% 80%,rgba(139,90,43,.25) 0%,transparent 40%),radial-gradient(ellipse at 90% 60%,rgba(139,90,43,.18) 0%,transparent 50%);z-index:1}
-.bg-perpus::after{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(95deg,transparent 0,transparent 7px,rgba(139,90,43,.06) 7px,rgba(139,90,43,.06) 8px);z-index:1}
-.card-frame.has-custom-bg.bg-perpus{background:none !important}.card-frame.has-custom-bg.bg-perpus::before,.card-frame.has-custom-bg.bg-perpus::after{display:none !important}
-.custom-bg-layer{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;z-index:0;pointer-events:none}
-.bg-osis{background:radial-gradient(ellipse at 70% 30%,rgba(255,255,255,.5) 0%,transparent 60%),linear-gradient(135deg,#e0f3ff 0%,#c7e9fb 50%,#b8e1f7 100%)}
-.header-band{position:relative;z-index:5;height:calc(var(--mm)*13);display:flex;align-items:center;padding:0 calc(var(--mm)*2);gap:calc(var(--mm)*1.2)}
-.header-band.perpus{background:linear-gradient(180deg,#c9986a 0%,#b07b4a 100%);color:#1a1208}
-.header-band.osis{background:linear-gradient(180deg,#5dc4f5 0%,#3aa8df 100%);color:#06243a}
-.watermark{position:absolute;inset:calc(var(--mm)*13) 0 0 0;z-index:2;overflow:hidden;pointer-events:none;opacity:.35}
-.watermark-row{display:flex;white-space:nowrap;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:calc(var(--mm)*1.4);letter-spacing:-0.02em;line-height:1.6}
-.watermark.perpus .watermark-row{color:rgba(255,255,255,.5)}.watermark.osis .watermark-row{color:rgba(255,255,255,.85)}
-.watermark-row span{padding-right:calc(var(--mm)*1.2)}.watermark-row:nth-child(even){transform:translateX(calc(var(--mm)*-3))}
-.osis-emblem{position:absolute;left:50%;top:calc(var(--mm)*32);transform:translate(-50%,-50%);width:calc(var(--mm)*22);height:calc(var(--mm)*22);z-index:2;opacity:.18;pointer-events:none}
-.logo-slot{width:calc(var(--mm)*8.5);height:calc(var(--mm)*8.5);flex-shrink:0;border-radius:50%;position:relative;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center}
-.logo-slot:not(.filled){border:1.5px dashed rgba(0,0,0,.35);background:rgba(255,255,255,.25)}.logo-slot:not(.filled):hover{background:rgba(255,255,255,.55);border-color:rgba(0,0,0,.7)}
-.logo-slot img{width:100%;height:100%;object-fit:contain;border-radius:50%}
-.logo-slot .upload-hint{font-size:calc(var(--mm)*0.8);color:rgba(0,0,0,.55);font-weight:600;text-align:center;line-height:1.1;padding:4px}
-.header-text{flex:1;text-align:center;font-family:'Inter Tight',sans-serif;line-height:1.05;min-width:0}
-.header-text .line-tiny{font-size:calc(var(--mm)*1.0);font-weight:700}
-.header-text .line-small{font-size:calc(var(--mm)*1.1);font-weight:700;letter-spacing:0.02em}
-.header-text .line-big{font-size:calc(var(--mm)*1.7);font-weight:800;letter-spacing:0.01em;margin-top:2px}
-.header-text .line-addr{font-size:calc(var(--mm)*0.85);font-weight:500;font-family:'Manrope',sans-serif;margin-top:3px;line-height:1.2}
-.header-text [contenteditable]:focus{outline:1.5px solid rgba(67,56,202,.6);outline-offset:2px;border-radius:2px}
-.body-area{position:relative;z-index:5;padding:calc(var(--mm)*1.0) calc(var(--mm)*2.5) 0}
-.field-row{display:flex;font-family:'Manrope',sans-serif;font-size:calc(var(--mm)*1.6);font-weight:800;line-height:1.28;letter-spacing:-0.005em;color:#0c0c14;margin-bottom:calc(var(--mm)*0.12)}
-.field-row .field-label{width:calc(var(--mm)*25);flex-shrink:0}
-.field-row .field-sep{width:calc(var(--mm)*1.5);text-align:left;flex-shrink:0}
-.field-row .field-value{flex:1;font-weight:700;font-family:'Manrope',sans-serif;font-size:calc(var(--mm)*1.55);letter-spacing:-0.012em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.osis-validity{position:absolute;left:50%;top:calc(var(--mm)*28);transform:translateX(-50%);font-family:'Inter Tight',sans-serif;font-weight:800;font-size:calc(var(--mm)*1.4);letter-spacing:0.02em;z-index:6;color:#0c0c14}
-.bottom-row{position:absolute;left:calc(var(--mm)*2.5);right:calc(var(--mm)*2);top:calc(var(--mm)*31);bottom:calc(var(--mm)*2);z-index:6;display:grid;grid-template-columns:auto auto 1fr;gap:calc(var(--mm)*1.5);align-items:center}
-.photo-slot{width:calc(var(--mm)*16);height:calc(var(--mm)*21);border-radius:calc(var(--mm)*0.4);position:relative;overflow:hidden;cursor:pointer;transition:all .15s}
-.photo-slot:not(.filled){background:rgba(255,255,255,.35);border:1.5px dashed rgba(0,0,0,.35)}.photo-slot:not(.filled):hover{background:rgba(255,255,255,.55);border-color:rgba(0,0,0,.7)}
-.photo-slot.filled{background:#0a0a0f;cursor:grab}.photo-slot.dragging{cursor:grabbing}.photo-slot:hover{box-shadow:0 0 0 2px rgba(67,56,202,.6)}
-.photo-slot img{position:absolute;top:50%;left:50%;transform-origin:center center;user-select:none;pointer-events:none;max-width:none}
-.photo-slot .hint{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--mm)*0.5);color:rgba(0,0,0,.55);font-size:calc(var(--mm)*0.9);font-weight:700;text-align:center;padding:calc(var(--mm)*0.5);pointer-events:none;line-height:1.15;letter-spacing:0.005em}
-.photo-slot.filled .hint{display:none}
-.qr-slot{width:calc(var(--mm)*15);height:calc(var(--mm)*15);background:#fff;border-radius:calc(var(--mm)*0.4);padding:calc(var(--mm)*0.35);position:relative;align-self:center;box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.qr-slot svg,.qr-slot img{width:100%;height:100%;display:block}
-.qr-slot.empty{background:rgba(255,255,255,.35);border:1.5px dashed rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--mm)*0.4);font-size:calc(var(--mm)*0.9);color:rgba(0,0,0,.55);font-weight:700;text-align:center;padding:calc(var(--mm)*0.5);line-height:1.15;letter-spacing:0.005em}
-.signature-area{position:relative;height:100%;display:flex}
-.signature-slot{width:100%;height:100%;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--mm)*0.4);border-radius:calc(var(--mm)*0.3);transition:all .15s}
-.signature-slot:not(.filled){border:1.5px dashed rgba(0,0,0,.3);background:rgba(255,255,255,.18)}.signature-slot:not(.filled):hover{background:rgba(255,255,255,.4);border-color:rgba(0,0,0,.6)}
-.signature-slot.filled{padding:calc(var(--mm)*0.3)}.signature-slot.filled:hover{box-shadow:0 0 0 2px rgba(67,56,202,.4)}
-.signature-slot img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
-.signature-slot .hint-label{font-family:'Inter Tight',sans-serif;font-size:calc(var(--mm)*1.15);font-weight:800;letter-spacing:0.01em;color:rgba(0,0,0,.5)}
-.signature-slot .hint-sub{display:flex;align-items:center;gap:4px;font-size:calc(var(--mm)*0.85);color:rgba(0,0,0,.45);font-weight:600}
-.panel{background:#fff;border:1px solid rgba(15,15,30,.08);border-radius:14px;overflow:hidden}
-.panel-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid rgba(15,15,30,.06);background:linear-gradient(180deg,#fafaf7 0%,#fff 100%)}
-.panel-head .num{width:18px;height:18px;border-radius:5px;background:#13131a;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
-.panel-head .title{font-weight:700;font-size:12.5px;letter-spacing:-0.01em;color:#13131a}
-.panel-body{padding:12px 14px}
-.toggle-card{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;border:1.5px solid rgba(15,15,30,.1);cursor:pointer;transition:all .15s;background:#fff}
-.toggle-card:hover{border-color:rgba(67,56,202,.4)}.toggle-card.active{border-color:#4338ca;background:#eef2ff;box-shadow:0 0 0 2px rgba(67,56,202,.15)}
-.toggle-card .swatch{width:28px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.1)}.toggle-card .lbl{font-size:11px;font-weight:700;letter-spacing:-0.005em}
-.input-field{width:100%;padding:8px 10px;border:1px solid #e5e3d6;background:#fafaf7;border-radius:8px;font-size:12.5px;font-weight:500;font-family:'Manrope',sans-serif;color:#13131a;transition:all .15s}
-.input-field:focus{outline:none;border-color:#4338ca;background:#fff;box-shadow:0 0 0 3px rgba(67,56,202,.12)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;letter-spacing:-0.005em;transition:all .12s;cursor:pointer;border:none;font-family:'Manrope',sans-serif}
-.btn-primary{background:#13131a;color:#fff}.btn-primary:hover{background:#2a2a37;transform:translateY(-1px)}.btn-primary:active{transform:translateY(0)}
-.btn-accent{background:#4338ca;color:#fff}.btn-accent:hover{background:#3730a3;transform:translateY(-1px)}
-.btn-ghost{background:transparent;color:#13131a;border:1px solid rgba(15,15,30,.12)}.btn-ghost:hover{background:#fafaf7;border-color:rgba(15,15,30,.2)}
-.zoom-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:#e5e3d6;border-radius:2px;outline:none}
-.zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:#4338ca;cursor:pointer;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.15)}
-.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:-0.005em}
-.status-pill.ready{background:#d1fae5;color:#047857}.status-pill.partial{background:#fef3c7;color:#92400e}.status-pill.empty{background:#fee2e2;color:#b91c1c}.status-pill.loading{background:#ede9fe;color:#5b21b6}
-.status-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
-.dot-grid{background-image:radial-gradient(circle,rgba(0,0,0,.06) 1px,transparent 1px);background-size:18px 18px}
-.student-list{max-height:220px;overflow-y:auto;border:1px solid #e5e3d6;border-radius:8px;background:#fafaf7}
-.student-list .item{padding:8px 10px;border-bottom:1px solid #efedde;cursor:pointer;transition:background .1s;font-size:12px}
-.student-list .item:last-child{border-bottom:none}.student-list .item:hover{background:#eef2ff}.student-list .item.active{background:#4338ca;color:#fff}
-.student-list .item .name{font-weight:700}.student-list .item .meta{font-size:10.5px;opacity:.7;margin-top:1px}
-.tag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;background:#f5f4ed;color:#3a3a4a}
-.canvas-bg-deco{position:absolute;inset:0;background-image:radial-gradient(ellipse 600px 400px at 100% 0%,rgba(67,56,202,.06),transparent),radial-gradient(ellipse 500px 300px at 0% 100%,rgba(180,140,90,.05),transparent);pointer-events:none}
-.brand-mark{width:28px;height:28px;background:#13131a;border-radius:8px;display:flex;align-items:center;justify-content:center;position:relative}
-.brand-mark::before{content:'';position:absolute;inset:6px;border:1.5px solid #fafaf7;border-radius:3px;background:linear-gradient(45deg,transparent 40%,#fafaf7 40%,#fafaf7 50%,transparent 50%),linear-gradient(-45deg,transparent 40%,#fafaf7 40%,#fafaf7 50%,transparent 50%)}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#13131a;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:1000;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:toastIn .25s cubic-bezier(.16,1,.3,1)}
-@keyframes toastIn{from{transform:translate(-50%,20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
-@keyframes spin{to{transform:rotate(360deg)}}
-.export-stage{position:fixed;left:-99999px;top:0;--mm:15.748px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kartu Studio · OSIS & Perpustakaan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&family=Bree+Serif&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Poppins:wght@500;600;700;800&family=Oswald:wght@500;600;700&family=Roboto+Condensed:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Manrope', 'sans-serif'],
+                        display: ['Inter Tight', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        serif: ['Bree Serif', 'serif'],
+                    },
+                    colors: {
+                        ink: { 950: '#0a0a0f', 900: '#13131a', 800: '#1d1d27', 700: '#2a2a37', 600: '#3a3a4a' },
+                        cream: { 50: '#fafaf7', 100: '#f5f4ed', 200: '#e8e6d8' },
+                        accent: { DEFAULT: '#4338ca', hover: '#3730a3', soft: '#eef2ff', ring: '#a5b4fc' },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            /* Card real dimensions in mm */
+            --card-w-mm: 85.6;
+            --card-h-mm: 54;
+            /* Screen preview scale (1mm = this many px). Adjusted by JS for responsive fit. */
+            --mm: 9.5px;
+            --card-w: calc(var(--card-w-mm) * var(--mm));
+            --card-h: calc(var(--card-h-mm) * var(--mm));
+            /* Dynamic typography — controlled by Tipografi panel */
+            --font-family-card: 'Manrope', sans-serif;
+            --font-school: 16px;
+            /* line-big (nama sekolah) */
+            --font-tagline: 10px;
+            /* line-tiny + line-small + line-addr */
+            --font-addr: 8.5px;
+            /* line-addr (alamat header) */
+            --font-field-label: 15px;
+            /* field-row label */
+            --font-field-value: 14.5px;
+            /* field-row value */
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: #f5f4ed;
+            color: #13131a;
+        }
+
+        body {
+            font-feature-settings: 'cv11', 'ss01', 'ss02';
+            letter-spacing: -0.01em;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d1cfc0;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b8b5a3;
+        }
+
+        /* === Card base === */
+        .card-frame {
+            width: var(--card-w);
+            height: var(--card-h);
+            border-radius: calc(var(--mm) * 0.8);
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                0 2px 4px rgba(15, 15, 30, .05),
+                0 18px 50px -10px rgba(15, 15, 30, .18),
+                0 0 0 1px rgba(0, 0, 0, .04);
+            transition: transform .3s cubic-bezier(.16, 1, .3, 1), box-shadow .3s;
+            isolation: isolate;
+        }
+
+        .card-frame:hover {
+            box-shadow: 0 4px 8px rgba(15, 15, 30, .06), 0 24px 60px -10px rgba(15, 15, 30, .22), 0 0 0 1px rgba(0, 0, 0, .04);
+        }
+
+        /* Perpus background — warm wood tone */
+        .bg-perpus {
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, .4) 0%, transparent 50%),
+                linear-gradient(135deg, #d6b88a 0%, #e8d2a8 40%, #d4b380 100%);
+        }
+
+        .bg-perpus::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 10% 80%, rgba(139, 90, 43, .25) 0%, transparent 40%),
+                radial-gradient(ellipse at 90% 60%, rgba(139, 90, 43, .18) 0%, transparent 50%);
+            z-index: 1;
+        }
+
+        .bg-perpus::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                repeating-linear-gradient(95deg, transparent 0, transparent 7px, rgba(139, 90, 43, .06) 7px, rgba(139, 90, 43, .06) 8px);
+            z-index: 1;
+        }
+
+        /* When custom bg image is uploaded, hide all default decorative gradients */
+        .card-frame.has-custom-bg.bg-perpus {
+            background: none !important;
+        }
+
+        .card-frame.has-custom-bg.bg-perpus::before,
+        .card-frame.has-custom-bg.bg-perpus::after {
+            display: none !important;
+        }
+
+        /* Custom bg layer — sits behind everything but above card-frame default bg */
+        .custom-bg-layer {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* OSIS background — sky blue */
+        .bg-osis {
+            background:
+                radial-gradient(ellipse at 70% 30%, rgba(255, 255, 255, .5) 0%, transparent 60%),
+                linear-gradient(135deg, #e0f3ff 0%, #c7e9fb 50%, #b8e1f7 100%);
+        }
+
+        /* Header band */
+        .header-band {
+            position: relative;
+            z-index: 5;
+            height: calc(var(--mm) * 13);
+            display: flex;
+            align-items: center;
+            padding: 0 calc(var(--mm) * 2);
+            gap: calc(var(--mm) * 1.2);
+        }
+
+        .header-band.perpus {
+            background: linear-gradient(180deg, #c9986a 0%, #b07b4a 100%);
+            color: #1a1208;
+        }
+
+        .header-band.osis {
+            background: linear-gradient(180deg, #5dc4f5 0%, #3aa8df 100%);
+            color: #06243a;
+        }
+
+        /* Watermark text repeating pattern */
+        .watermark {
+            position: absolute;
+            inset: calc(var(--mm) * 13) 0 0 0;
+            z-index: 2;
+            overflow: hidden;
+            pointer-events: none;
+            opacity: .35;
+        }
+
+        .watermark-row {
+            display: flex;
+            white-space: nowrap;
+            font-family: 'Inter Tight', sans-serif;
+            font-weight: 800;
+            font-size: calc(var(--mm) * 1.4);
+            letter-spacing: -0.02em;
+            line-height: 1.6;
+        }
+
+        .watermark.perpus .watermark-row {
+            color: rgba(255, 255, 255, .5);
+        }
+
+        .watermark.osis .watermark-row {
+            color: rgba(255, 255, 255, .85);
+        }
+
+        .watermark-row span {
+            padding-right: calc(var(--mm) * 1.2);
+        }
+
+        .watermark-row:nth-child(even) {
+            transform: translateX(calc(var(--mm) * -3));
+        }
+
+        /* OSIS center logo watermark */
+        .osis-emblem {
+            position: absolute;
+            left: 50%;
+            top: calc(var(--mm) * 32);
+            transform: translate(-50%, -50%);
+            width: calc(var(--mm) * 22);
+            height: calc(var(--mm) * 22);
+            z-index: 2;
+            opacity: .18;
+            pointer-events: none;
+        }
+
+        /* Logo slots */
+        .logo-slot {
+            width: calc(var(--mm) * 8.5);
+            height: calc(var(--mm) * 8.5);
+            flex-shrink: 0;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            transition: all .15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-slot:not(.filled) {
+            border: 1.5px dashed rgba(0, 0, 0, .35);
+            background: rgba(255, 255, 255, .25);
+        }
+
+        .logo-slot:not(.filled):hover {
+            background: rgba(255, 255, 255, .55);
+            border-color: rgba(0, 0, 0, .7);
+        }
+
+        .logo-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+
+        .logo-slot .upload-hint {
+            font-size: calc(var(--mm) * 0.8);
+            color: rgba(0, 0, 0, .55);
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.1;
+            padding: 4px;
+        }
+
+        /* Header text */
+        .header-text {
+            flex: 1;
+            text-align: center;
+            font-family: 'Inter Tight', sans-serif;
+            line-height: 1.05;
+            min-width: 0;
+        }
+
+        .header-text .line-tiny {
+            font-size: var(--font-tagline);
+            font-weight: 700;
+            font-family: var(--font-family-card);
+        }
+
+        .header-text .line-small {
+            font-size: var(--font-tagline);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            font-family: var(--font-family-card);
+        }
+
+        .header-text .line-big {
+            font-size: var(--font-school);
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            margin-top: 2px;
+            font-family: var(--font-family-card);
+        }
+
+        .header-text .line-addr {
+            font-size: var(--font-addr);
+            font-weight: 500;
+            font-family: var(--font-family-card);
+            margin-top: 3px;
+            line-height: 1.2;
+        }
+
+        .header-text [contenteditable]:focus {
+            outline: 1.5px solid rgba(67, 56, 202, .6);
+            outline-offset: 2px;
+            border-radius: 2px;
+        }
+
+        /* Body content area */
+        .body-area {
+            position: relative;
+            z-index: 5;
+            padding: calc(var(--mm) * 1.0) calc(var(--mm) * 2.5) 0;
+        }
+
+        /* Field rows */
+        .field-row {
+            display: flex;
+            font-family: var(--font-family-card);
+            font-size: var(--font-field-label);
+            font-weight: 800;
+            line-height: 1.28;
+            letter-spacing: -0.005em;
+            color: #0c0c14;
+            margin-bottom: calc(var(--mm) * 0.12);
+        }
+
+        .field-row .field-label {
+            width: calc(var(--mm) * 25);
+            flex-shrink: 0;
+        }
+
+        .field-row .field-sep {
+            width: calc(var(--mm) * 1.5);
+            text-align: left;
+            flex-shrink: 0;
+        }
+
+        .field-row .field-value {
+            flex: 1;
+            font-weight: 700;
+            font-family: var(--font-family-card);
+            font-size: var(--font-field-value);
+            letter-spacing: -0.012em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        /* OSIS validity stamp */
+        .osis-validity {
+            position: absolute;
+            left: 50%;
+            top: calc(var(--mm) * 28);
+            transform: translateX(-50%);
+            font-family: 'Inter Tight', sans-serif;
+            font-weight: 800;
+            font-size: calc(var(--mm) * 1.4);
+            letter-spacing: 0.02em;
+            z-index: 6;
+            color: #0c0c14;
+        }
+
+        /* Bottom area: photo + QR + signature */
+        .bottom-row {
+            position: absolute;
+            left: calc(var(--mm) * 2.5);
+            right: calc(var(--mm) * 2);
+            top: calc(var(--mm) * 31);
+            bottom: calc(var(--mm) * 2);
+            z-index: 6;
+            display: grid;
+            grid-template-columns: auto auto 1fr;
+            gap: calc(var(--mm) * 1.5);
+            align-items: center;
+        }
+
+        .photo-slot {
+            width: calc(var(--mm) * 16);
+            height: calc(var(--mm) * 21);
+            border-radius: calc(var(--mm) * 0.4);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .photo-slot:not(.filled) {
+            background: rgba(255, 255, 255, .35);
+            border: 1.5px dashed rgba(0, 0, 0, .35);
+        }
+
+        .photo-slot:not(.filled):hover {
+            background: rgba(255, 255, 255, .55);
+            border-color: rgba(0, 0, 0, .7);
+        }
+
+        .photo-slot.filled {
+            background: #0a0a0f;
+            cursor: grab;
+        }
+
+        .photo-slot.dragging {
+            cursor: grabbing;
+        }
+
+        .photo-slot:hover {
+            box-shadow: 0 0 0 2px rgba(67, 56, 202, .6);
+        }
+
+        .photo-slot img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+            user-select: none;
+            pointer-events: none;
+            max-width: none;
+        }
+
+        .photo-slot .hint {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: calc(var(--mm) * 0.5);
+            color: rgba(0, 0, 0, .55);
+            font-size: calc(var(--mm) * 0.9);
+            font-weight: 700;
+            text-align: center;
+            padding: calc(var(--mm) * 0.5);
+            pointer-events: none;
+            line-height: 1.15;
+            letter-spacing: 0.005em;
+        }
+
+        .photo-slot.filled .hint {
+            display: none;
+        }
+
+        .qr-slot {
+            width: calc(var(--mm) * 15);
+            height: calc(var(--mm) * 15);
+            background: #fff;
+            border-radius: calc(var(--mm) * 0.4);
+            padding: calc(var(--mm) * 0.35);
+            position: relative;
+            align-self: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+        }
+
+        .qr-slot svg,
+        .qr-slot img {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .qr-slot.empty {
+            background: rgba(255, 255, 255, .35);
+            border: 1.5px dashed rgba(0, 0, 0, .35);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: calc(var(--mm) * 0.4);
+            font-size: calc(var(--mm) * 0.9);
+            color: rgba(0, 0, 0, .55);
+            font-weight: 700;
+            text-align: center;
+            padding: calc(var(--mm) * 0.5);
+            line-height: 1.15;
+            letter-spacing: 0.005em;
+        }
+
+        .signature-area {
+            position: relative;
+            height: 100%;
+            display: flex;
+        }
+
+        .signature-slot {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: calc(var(--mm) * 0.4);
+            border-radius: calc(var(--mm) * 0.3);
+            transition: all .15s;
+        }
+
+        .signature-slot:not(.filled) {
+            border: 1.5px dashed rgba(0, 0, 0, .3);
+            background: rgba(255, 255, 255, .18);
+        }
+
+        .signature-slot:not(.filled):hover {
+            background: rgba(255, 255, 255, .4);
+            border-color: rgba(0, 0, 0, .6);
+        }
+
+        .signature-slot.filled {
+            padding: calc(var(--mm) * 0.3);
+        }
+
+        .signature-slot.filled:hover {
+            box-shadow: 0 0 0 2px rgba(67, 56, 202, .4);
+        }
+
+        .signature-slot img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .signature-slot .hint-label {
+            font-family: 'Inter Tight', sans-serif;
+            font-size: calc(var(--mm) * 1.15);
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            color: rgba(0, 0, 0, .5);
+        }
+
+        .signature-slot .hint-sub {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: calc(var(--mm) * 0.85);
+            color: rgba(0, 0, 0, .45);
+            font-weight: 600;
+        }
+
+        /* Sidebar panel */
+        .panel {
+            background: #fff;
+            border: 1px solid rgba(15, 15, 30, .08);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(15, 15, 30, .06);
+            background: linear-gradient(180deg, #fafaf7 0%, #fff 100%);
+        }
+
+        .panel-head .num {
+            width: 18px;
+            height: 18px;
+            border-radius: 5px;
+            background: #13131a;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .panel-head .title {
+            font-weight: 700;
+            font-size: 12.5px;
+            letter-spacing: -0.01em;
+            color: #13131a;
+        }
+
+        .panel-body {
+            padding: 12px 14px;
+        }
+
+        .toggle-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(15, 15, 30, .1);
+            cursor: pointer;
+            transition: all .15s;
+            background: #fff;
+        }
+
+        .toggle-card:hover {
+            border-color: rgba(67, 56, 202, .4);
+        }
+
+        .toggle-card.active {
+            border-color: #4338ca;
+            background: #eef2ff;
+            box-shadow: 0 0 0 2px rgba(67, 56, 202, .15);
+        }
+
+        .toggle-card .swatch {
+            width: 28px;
+            height: 18px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, .1);
+        }
+
+        .toggle-card .lbl {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: -0.005em;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #e5e3d6;
+            background: #fafaf7;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 500;
+            font-family: 'Manrope', sans-serif;
+            color: #13131a;
+            transition: all .15s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #4338ca;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(67, 56, 202, .12);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 9px;
+            font-size: 12.5px;
+            font-weight: 700;
+            letter-spacing: -0.005em;
+            transition: all .12s;
+            cursor: pointer;
+            border: none;
+            font-family: 'Manrope', sans-serif;
+        }
+
+        .btn-primary {
+            background: #13131a;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #2a2a37;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-accent {
+            background: #4338ca;
+            color: #fff;
+        }
+
+        .btn-accent:hover {
+            background: #3730a3;
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: #13131a;
+            border: 1px solid rgba(15, 15, 30, .12);
+        }
+
+        .btn-ghost:hover {
+            background: #fafaf7;
+            border-color: rgba(15, 15, 30, .2);
+        }
+
+        .zoom-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #e5e3d6;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4338ca;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .15);
+        }
+
+        .zoom-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4338ca;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: -0.005em;
+        }
+
+        .status-pill.ready {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        .status-pill.partial {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-pill.empty {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .status-pill.loading {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .status-pill::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .dot-grid {
+            background-image: radial-gradient(circle, rgba(0, 0, 0, .06) 1px, transparent 1px);
+            background-size: 18px 18px;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn .25s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Hidden export stage */
+        .export-stage {
+            position: fixed;
+            left: -99999px;
+            top: 0;
+            --mm: 15.748px;
+            /* 400 DPI: 1mm = 400/25.4 ≈ 15.748px */
+        }
+
+        /* Searchable list */
+        .student-list {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid #e5e3d6;
+            border-radius: 8px;
+            background: #fafaf7;
+        }
+
+        .student-list .item {
+            padding: 8px 10px;
+            border-bottom: 1px solid #efedde;
+            cursor: pointer;
+            transition: background .1s;
+            font-size: 12px;
+        }
+
+        .student-list .item:last-child {
+            border-bottom: none;
+        }
+
+        .student-list .item:hover {
+            background: #eef2ff;
+        }
+
+        .student-list .item.active {
+            background: #4338ca;
+            color: #fff;
+        }
+
+        .student-list .item .name {
+            font-weight: 700;
+        }
+
+        .student-list .item .meta {
+            font-size: 10.5px;
+            opacity: .7;
+            margin-top: 1px;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            background: #f5f4ed;
+            color: #3a3a4a;
+        }
+
+        /* Subtle decoration on canvas area corner */
+        .canvas-bg-deco {
+            position: absolute;
+            inset: 0;
+            background-image:
+                radial-gradient(ellipse 600px 400px at 100% 0%, rgba(67, 56, 202, .06), transparent),
+                radial-gradient(ellipse 500px 300px at 0% 100%, rgba(180, 140, 90, .05), transparent);
+            pointer-events: none;
+        }
+
+        /* Brand mark */
+        .brand-mark {
+            width: 28px;
+            height: 28px;
+            background: #13131a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .brand-mark::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border: 1.5px solid #fafaf7;
+            border-radius: 3px;
+            background:
+                linear-gradient(45deg, transparent 40%, #fafaf7 40%, #fafaf7 50%, transparent 50%),
+                linear-gradient(-45deg, transparent 40%, #fafaf7 40%, #fafaf7 50%, transparent 50%);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #13131a;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .2);
+            animation: toastIn .25s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        @keyframes toastIn {
+            from {
+                transform: translate(-50%, 20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
+
 <body>
-<div id="fileProtocolBanner" style="display:none" class="bg-amber-50 border-b border-amber-200 px-5 py-2.5 text-[12.5px] flex items-center gap-3">
-<div class="flex-1 leading-snug"><span class="font-bold text-amber-900">file:// protocol terdeteksi</span> <span class="text-amber-800">API mungkin diblokir CORS.</span></div>
-<button id="dismissBannerBtn" class="text-amber-700 hover:text-amber-900 font-bold text-lg w-6 h-6 flex items-center justify-center rounded hover:bg-amber-100">x</button>
-</div>
-<header class="bg-white border-b border-ink-900/8 px-5 py-3 flex items-center justify-between sticky top-0 z-50">
-<div class="flex items-center gap-3"><div class="brand-mark"></div><div><h1 class="font-display font-extrabold text-[15px] leading-none tracking-tight">Kartu Studio</h1><p class="text-[10.5px] text-ink-600 mt-0.5 font-medium">Generator Kartu OSIS &amp; Perpustakaan - ATM Card Size (85.6 x 54 mm)</p></div></div>
-<div class="flex items-center gap-3"><div id="statusBadge" class="status-pill empty">Belum ada data siswa</div><button id="resetBtn" class="btn btn-ghost">Reset</button><button id="exportBtn" class="btn btn-accent">Simpan 2 Kartu</button></div>
-</header>
-<main class="flex" style="height:calc(100vh - 57px)">
-<aside class="w-[340px] bg-cream-50 border-r border-ink-900/8 overflow-y-auto p-4 space-y-3 flex-shrink-0">
-<section class="panel"><div class="panel-head"><div class="num">1</div><div class="title">Jenis Kartu</div></div><div class="panel-body grid grid-cols-2 gap-2"><div class="toggle-card active" data-type="osis"><div class="swatch" style="background:linear-gradient(135deg,#5dc4f5,#3aa8df)"></div><div class="lbl">Kartu OSIS</div></div><div class="toggle-card" data-type="perpus"><div class="swatch" style="background:linear-gradient(135deg,#c9986a,#b07b4a)"></div><div class="lbl">Kartu Perpus</div></div></div></section>
-<section class="panel"><div class="panel-head"><div class="num">2</div><div class="title">Data Siswa (API)</div></div><div class="panel-body space-y-2.5"><div><label class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 block">Sekolah</label><select id="schoolSelect" class="input-field"><option value="">-- Memuat sekolah --</option></select></div><div><label class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 block">Cari Siswa</label><div class="relative"><input id="studentSearch" type="text" class="input-field pr-7" placeholder="Nama atau NIS..." autocomplete="off"></div></div><div id="studentList" class="student-list" style="display:none"></div><div id="selectedStudent" class="hidden"><div class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1">Terpilih</div><div class="p-2.5 bg-accent-soft border border-accent/20 rounded-lg"><div id="selectedName" class="text-[13px] font-bold leading-tight"></div><div id="selectedMeta" class="text-[11px] text-ink-600 font-medium mt-0.5"></div></div></div></div></section>
-<section class="panel"><div class="panel-head"><div class="num">3</div><div class="title">Foto Siswa</div></div><div class="panel-body space-y-2.5"><div class="flex gap-2"><button id="photoUploadBtn" class="btn btn-ghost flex-1">Upload Foto</button><button id="photoResetBtn" class="btn btn-ghost">Reset</button></div><div><label class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 flex items-center justify-between"><span>Zoom</span><span id="zoomVal" class="text-[10px] font-mono text-ink-600 normal-case tracking-normal">100%</span></label><input id="zoomSlider" type="range" min="50" max="250" value="100" step="1" class="zoom-slider"></div><div class="text-[10.5px] text-ink-600 font-medium leading-snug">Drag foto di kartu untuk reposisi, scroll wheel untuk zoom.</div></div></section>
-<section class="panel"><div class="panel-head"><div class="num">4</div><div class="title">Aset Visual</div></div><div class="panel-body space-y-2"><button class="btn btn-ghost w-full justify-start" data-upload="logoLeft">Logo Kiri (Daerah)</button><button class="btn btn-ghost w-full justify-start" data-upload="logoRight">Logo Kanan (Tut Wuri)</button><button class="btn btn-ghost w-full justify-start" data-upload="osisEmblem">Logo OSIS (Background)</button><button class="btn btn-ghost w-full justify-start" data-upload="perpusBg">Background Kartu Perpus</button><button class="btn btn-ghost w-full justify-start" data-upload="signature">Tanda Tangan (Kepsek)</button></div></section>
-<section class="panel"><div class="panel-head"><div class="num">5</div><div class="title">Folder Output</div></div><div class="panel-body space-y-2.5"><div id="outputDirInfo"><div class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1">Belum dipilih</div><div class="text-[11.5px] text-ink-600 leading-snug">Pilih folder, semua export auto-tersimpan per kelas.</div></div><button id="pickDirBtn" class="btn btn-ghost w-full"><span id="pickDirBtnLabel">Pilih Folder Output</span></button><div id="fsApiWarn" class="hidden text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2 leading-snug">Browser tidak mendukung direct-to-folder. Pakai Chrome/Edge. Fallback: ZIP.</div></div></section>
-<section class="panel"><div class="panel-head"><div class="num">6</div><div class="title">Tips</div></div><div class="panel-body text-[11.5px] text-ink-600 leading-relaxed space-y-1.5"><div>- Klik header kartu untuk edit langsung</div><div>- Background Perpus bisa di-upload custom</div><div>- Output 400 DPI (~1349 x 850 px) siap cetak PVC</div></div></section>
-</aside>
-<section class="flex-1 relative overflow-auto dot-grid"><div class="canvas-bg-deco"></div>
-<div class="relative min-h-full flex flex-col items-center justify-center p-8 gap-6">
-<div id="cardWrap" class="relative">
-<div id="card" class="card-frame bg-osis">
-<div id="customBgLayer" class="custom-bg-layer" style="display:none"></div>
-<div id="headerBand" class="header-band osis">
-<div class="logo-slot" data-slot="logoLeft"><div class="upload-hint">LOGO<br>DAERAH</div></div>
-<div id="headerText" class="header-text">
-<div class="line-tiny" contenteditable="true" spellcheck="false">PEMERINTAH KABUPATEN BANYUMAS</div>
-<div class="line-small" contenteditable="true" spellcheck="false">DINAS PENDIDIKAN</div>
-<div class="line-big" contenteditable="true" spellcheck="false">SMP NEGERI 1 JATILAWANG</div>
-<div class="line-addr" contenteditable="true" spellcheck="false">Jl. Pramuka No.3, Jatilawang, Tunjung, Kec. Jatilawang, Telp. (0281) 6848893</div>
-</div>
-<div class="logo-slot" data-slot="logoRight"><div class="upload-hint">TUT WURI<br>HANDAYANI</div></div>
-</div>
-<div id="watermark" class="watermark osis"></div>
-<div id="osisEmblem" class="osis-emblem"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="none" stroke="#1565a0" stroke-width="1"/><path d="M50 8 L42 30 L18 30 L37 44 L30 68 L50 54 L70 68 L63 44 L82 30 L58 30 Z" fill="none" stroke="#1565a0" stroke-width="1"/><text x="50" y="92" font-family="Inter Tight" font-weight="800" font-size="10" text-anchor="middle" fill="#1565a0">OSIS</text></svg></div>
-<div class="body-area">
-<div class="field-row"><span class="field-label">NAMA</span><span class="field-sep">:</span><span class="field-value" id="fNama">--</span></div>
-<div class="field-row"><span class="field-label">ALAMAT</span><span class="field-sep">:</span><span class="field-value" id="fAlamat">--</span></div>
-<div class="field-row"><span class="field-label">TEMPAT TGL.LAHIR</span><span class="field-sep">:</span><span class="field-value" id="fTtl">--</span></div>
-<div class="field-row"><span class="field-label">AGAMA</span><span class="field-sep">:</span><span class="field-value" id="fAgama">--</span></div>
-<div class="field-row"><span class="field-label">NO.INDUK</span><span class="field-sep">:</span><span class="field-value" id="fNis">--</span></div>
-</div>
-<div id="osisValidity" class="osis-validity">BERLAKU S/D TAMAT BELAJAR</div>
-<div class="bottom-row">
-<div id="photoSlot" class="photo-slot"><div class="hint"><div>UPLOAD<br>FOTO SISWA</div></div></div>
-<div id="qrSlot" class="qr-slot empty"><div>QR<br>OTOMATIS</div></div>
-<div class="signature-area"><div id="signatureSlot" class="signature-slot"><div class="hint-label">KEPALA SEKOLAH</div><div class="hint-sub"><span>Upload TTD + Nama</span></div></div></div>
-</div>
-</div>
-<div class="absolute -bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-3 text-[10.5px] font-mono font-semibold text-ink-600"><span class="tag">85.6 x 54 mm</span><span class="tag">CR80 / ATM</span><span class="tag">400 DPI</span></div>
-</div>
-<div class="text-center text-[11px] text-ink-600 font-medium max-w-md leading-relaxed mt-6">Pilih sekolah &amp; siswa dari panel kiri untuk auto-fill data &amp; QR code.</div>
-</div>
-</section>
-</main>
-<input type="file" id="hiddenFileInput" accept="image/*" style="display:none">
-<div id="exportStage" class="export-stage"></div>
-<script>
-const API_BASE=window.location.origin+'/api';
-const state={cardType:'osis',schools:[],students:[],selectedSchoolId:null,selectedStudent:null,photo:{url:null,scale:1,offsetX:0,offsetY:0,naturalW:0,naturalH:0,baseScale:1},logoLeft:null,logoRight:null,osisEmblem:null,perpusBg:null,signature:null,fields:{nama:'--',alamat:'--',ttl:'--',agama:'--',nis:'--'},qrSvg:null,loading:false,outputDirHandle:null};
-const DEFAULT_OSIS='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="48" fill="none" stroke="#1565a0" stroke-width="1"/><path d="M50 8 L42 30 L18 30 L37 44 L30 68 L50 54 L70 68 L63 44 L82 30 L58 30 Z" fill="none" stroke="#1565a0" stroke-width="1"/><text x="50" y="92" font-family="Inter Tight" font-weight="800" font-size="10" text-anchor="middle" fill="#1565a0">OSIS</text></svg>';
-const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
-function toast(m,t='info'){const d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
-function updateStatus(){const b=$('#statusBadge');if(state.loading){b.className='status-pill loading';b.textContent='Memuat...';return}if(!state.selectedStudent){b.className='status-pill empty';b.textContent='Belum ada data';return}const ok=!!state.photo.url&&state.logoLeft&&state.logoRight&&state.signature;b.className=ok?'status-pill ready':'status-pill partial';b.textContent=ok?'Siap export':'Lengkapi aset'}
-function extractArray(d,...k){if(Array.isArray(d))return d;if(!d||typeof d!=='object')return[];for(const key of[...k,'data','students','results']){if(Array.isArray(d[key]))return d[key]}return[]}
-async function fetchJson(u){try{const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}catch(e){toast('API Error: '+e.message);return null}}
-async function loadSchools(){state.loading=true;updateStatus();const d=await fetchJson(API_BASE+'/schools');state.loading=false;if(!d){updateStatus();return}state.schools=extractArray(d,'schools');const s=$('#schoolSelect');s.innerHTML='<option value="">-- Pilih sekolah --</option>';state.schools.forEach(x=>{const o=document.createElement('option');o.value=x.id;o.textContent=x.name;s.appendChild(o)});updateStatus()}
-async function loadStudents(id){state.loading=true;updateStatus();const d=await fetchJson(API_BASE+'/schools/'+id+'/students');state.loading=false;if(!d){updateStatus();return}state.students=extractArray(d,'students');renderStudentList();updateStatus()}
-async function loadStudentDetail(id){state.loading=true;updateStatus();const d=await fetchJson(API_BASE+'/students/'+id);state.loading=false;if(!d){updateStatus();return}const s=d.data&&typeof d.data==='object'&&!Array.isArray(d.data)?d.data:d;applyStudentData(s)}
-function formatDate(iso){if(!iso)return'';const d=new Date(iso);if(isNaN(d))return iso;const m=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];return d.getDate()+' '+m[d.getMonth()]+' '+d.getFullYear()}
-function applyStudentData(d){state.selectedStudent=d;state.fields={nama:d.full_name||'--',alamat:d.address||'--',ttl:((d.birth_place||'')+(d.birth_date?', '+formatDate(d.birth_date):''))||'--',agama:d.religion_label||d.religion||'--',nis:d.nis||'--'};state.qrSvg=d.qr_svg||null;if(d.school){const big=$('#headerText .line-big'),addr=$('#headerText .line-addr');if(big&&d.school.name)big.textContent=d.school.name.toUpperCase();if(addr&&d.school.address)addr.textContent=d.school.address}$('#selectedStudent').classList.remove('hidden');$('#selectedName').textContent=state.fields.nama;$('#selectedMeta').textContent=((d.classroom&&d.classroom.name)||'--')+' - NIS '+state.fields.nis;renderFields();renderQR();renderWatermark();updateStatus();toast('Data '+state.fields.nama+' dimuat')}
-function renderFields(){$('#fNama').textContent=(state.fields.nama||'--').toUpperCase();$('#fAlamat').textContent=state.fields.alamat||'--';$('#fTtl').textContent=state.fields.ttl||'--';$('#fAgama').textContent=state.fields.agama||'--';$('#fNis').textContent=state.fields.nis||'--'}
-function renderQR(){const s=$('#qrSlot');if(state.qrSvg){s.classList.remove('empty');s.innerHTML=state.qrSvg;const svg=s.querySelector('svg');if(svg){svg.setAttribute('width','100%');svg.setAttribute('height','100%')}}else{s.classList.add('empty');s.innerHTML='<div>QR<br>OTOMATIS</div>'}}
-function renderWatermark(){const w=$('#watermark');w.className='watermark '+state.cardType;const n=$('#headerText .line-big').textContent.trim()||'SEKOLAH';const t=state.cardType==='perpus'?'PERPUSTAKAAN '+n+' ':'ORGANISASI SISWA INTRA SEKOLAH ';w.innerHTML='';for(let i=0;i<14;i++){const r=document.createElement('div');r.className='watermark-row';r.innerHTML='<span>'+t+'</span>'.repeat(4);w.appendChild(r)}}
-function applyCustomBg(){const card=$('#card'),layer=$('#customBgLayer');if(state.cardType==='perpus'&&state.perpusBg){layer.style.backgroundImage='url("'+state.perpusBg+'")';layer.style.display='block';card.classList.add('has-custom-bg')}else{layer.style.backgroundImage='';layer.style.display='none';card.classList.remove('has-custom-bg')}}
-function renderCardType(){const o=state.cardType==='osis';$('#card').classList.toggle('bg-osis',o);$('#card').classList.toggle('bg-perpus',!o);$('#headerBand').classList.toggle('osis',o);$('#headerBand').classList.toggle('perpus',!o);$('#osisEmblem').style.display=o?'block':'none';$('#osisValidity').style.display=o?'block':'none';if(!o){$('#headerText .line-tiny').textContent='PERPUSTAKAAN WIDYA SASTRA';$('#headerText .line-small').style.display='none'}else{$('#headerText .line-small').style.display=''}renderWatermark();applyCustomBg()}
-function renderStudentList(){const l=$('#studentList'),q=$('#studentSearch').value.trim().toLowerCase();let f=state.students;if(q)f=f.filter(s=>(s.full_name||'').toLowerCase().includes(q)||String(s.nis||'').includes(q));f=f.slice(0,50);if(!f.length){l.style.display='none';return}l.style.display='block';l.innerHTML=f.map(s=>'<div class="item" data-id="'+s.id+'"><div class="name">'+(s.full_name||'--')+'</div><div class="meta">'+(s.classroom||'--')+' - NIS '+(s.nis||'--')+'</div></div>').join('')}
-let currentUploadTarget=null;
-function triggerUpload(t){currentUploadTarget=t;$('#hiddenFileInput').value='';$('#hiddenFileInput').click()}
-$('#hiddenFileInput').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const u=ev.target.result;if(currentUploadTarget==='photo')setPhoto(u);else if(currentUploadTarget==='logoLeft')setLogo('logoLeft',u);else if(currentUploadTarget==='logoRight')setLogo('logoRight',u);else if(currentUploadTarget==='osisEmblem'){state.osisEmblem=u;$('#osisEmblem').innerHTML='<img src="'+u+'" style="width:100%;height:100%;object-fit:contain">';toast('Logo OSIS dimuat')}else if(currentUploadTarget==='perpusBg'){state.perpusBg=u;applyCustomBg();toast('Background Perpus dimuat')}else if(currentUploadTarget==='signature'){state.signature=u;const s=$('#signatureSlot');s.classList.add('filled');s.innerHTML='<img src="'+u+'">';toast('TTD dimuat')}updateStatus()};r.readAsDataURL(f)});
-function setPhoto(u){const img=new Image();img.onload=()=>{const s=$('#photoSlot').getBoundingClientRect();const sr=s.width/s.height,ir=img.naturalWidth/img.naturalHeight;const bs=ir>sr?s.height/img.naturalHeight:s.width/img.naturalWidth;state.photo={url:u,scale:1,offsetX:0,offsetY:0,naturalW:img.naturalWidth,naturalH:img.naturalHeight,baseScale:bs};renderPhoto();updateStatus();toast('Foto dimuat')};img.src=u}
-function renderPhoto(){const s=$('#photoSlot');if(!state.photo.url){s.classList.remove('filled');return}s.classList.add('filled');let img=s.querySelector('img');if(!img){img=document.createElement('img');s.appendChild(img)}img.src=state.photo.url;const fs=state.photo.baseScale*state.photo.scale;img.style.width=state.photo.naturalW*fs+'px';img.style.height=state.photo.naturalH*fs+'px';img.style.transform='translate(-50%,-50%) translate('+state.photo.offsetX+'px,'+state.photo.offsetY+'px)'}
-function setLogo(k,u){state[k]=u;const s=document.querySelector('[data-slot="'+k+'"]');s.classList.add('filled');const h=s.querySelector('.upload-hint');if(h)h.remove();let img=s.querySelector('img');if(!img){img=document.createElement('img');s.appendChild(img)}img.src=u;updateStatus();toast('Logo dimuat')}
-let dragState=null;
-$('#photoSlot').addEventListener('mousedown',e=>{if(!state.photo.url)return;e.preventDefault();dragState={sx:e.clientX,sy:e.clientY,ox:state.photo.offsetX,oy:state.photo.offsetY};document.addEventListener('mousemove',onDrag);document.addEventListener('mouseup',endDrag)});
-function onDrag(e){if(!dragState)return;state.photo.offsetX=dragState.ox+(e.clientX-dragState.sx);state.photo.offsetY=dragState.oy+(e.clientY-dragState.sy);renderPhoto()}
-function endDrag(){dragState=null;document.removeEventListener('mousemove',onDrag);document.removeEventListener('mouseup',endDrag)}
-$('#photoSlot').addEventListener('wheel',e=>{if(!state.photo.url)return;e.preventDefault();const d=e.deltaY>0?-5:5,v=Math.max(50,Math.min(250,parseInt($('#zoomSlider').value)+d));$('#zoomSlider').value=v;$('#zoomSlider').dispatchEvent(new Event('input'))},{passive:false});
-$('#zoomSlider').addEventListener('input',e=>{const v=parseInt(e.target.value);$('#zoomVal').textContent=v+'%';if(state.photo.url){state.photo.scale=v/100;renderPhoto()}});
-$('#photoUploadBtn').addEventListener('click',()=>triggerUpload('photo'));
-$('#photoSlot').addEventListener('click',e=>{if(!state.photo.url)triggerUpload('photo')});
-$('#photoResetBtn').addEventListener('click',()=>{if(!state.photo.url)return;state.photo.scale=1;state.photo.offsetX=0;state.photo.offsetY=0;$('#zoomSlider').value=100;$('#zoomVal').textContent='100%';renderPhoto()});
-$$('[data-slot]').forEach(s=>s.addEventListener('click',()=>triggerUpload(s.dataset.slot)));
-$('#signatureSlot').addEventListener('click',()=>triggerUpload('signature'));
-$$('[data-upload]').forEach(b=>b.addEventListener('click',()=>triggerUpload(b.dataset.upload)));
-function setCardType(t){state.cardType=t;$$('.toggle-card').forEach(c=>c.classList.toggle('active',c.dataset.type===t));renderCardType()}
-$$('.toggle-card').forEach(c=>c.addEventListener('click',()=>setCardType(c.dataset.type)));
-$$('#headerText [contenteditable]').forEach(e=>e.addEventListener('blur',renderWatermark));
-$('#schoolSelect').addEventListener('change',e=>{state.selectedSchoolId=e.target.value;if(state.selectedSchoolId)loadStudents(state.selectedSchoolId);else{state.students=[];renderStudentList()}});
-$('#studentSearch').addEventListener('input',renderStudentList);
-$('#studentList').addEventListener('click',e=>{const i=e.target.closest('.item');if(i)loadStudentDetail(i.dataset.id)});
-$('#resetBtn').addEventListener('click',()=>{if(!confirm('Reset semua?'))return;location.reload()});
-const HAS_FS='showDirectoryPicker'in window;
-if(!HAS_FS)$('#fsApiWarn').classList.remove('hidden');
-$('#pickDirBtn').addEventListener('click',async()=>{if(!HAS_FS){toast('Tidak didukung, pakai ZIP');return}try{state.outputDirHandle=await window.showDirectoryPicker({mode:'readwrite'});$('#outputDirInfo').innerHTML='<div class="text-[10.5px] font-bold text-emerald-700 uppercase tracking-wide mb-1">Folder terhubung</div><div class="text-[13px] font-bold">'+state.outputDirHandle.name+'</div>';$('#pickDirBtnLabel').textContent='Ganti Folder';toast('Folder terhubung')}catch(e){if(e.name!=='AbortError')toast('Error: '+e.message)}});
-if(window.location.protocol==='file:')$('#fileProtocolBanner').style.display='flex';
-$('#dismissBannerBtn').addEventListener('click',()=>{$('#fileProtocolBanner').style.display='none'});
-$('#exportBtn').addEventListener('click',async()=>{if(!state.selectedStudent){toast('Pilih siswa dulu');return}const btn=$('#exportBtn');btn.disabled=true;const orig=state.cardType;try{setCardType('osis');await new Promise(r=>setTimeout(r,200));const osisBlob=await html2canvas($('#card'),{scale:15.748/9.5,backgroundColor:null,useCORS:true,logging:false}).then(c=>new Promise(r=>c.toBlob(r,'image/png')));setCardType('perpus');await new Promise(r=>setTimeout(r,200));const perpusBlob=await html2canvas($('#card'),{scale:15.748/9.5,backgroundColor:null,useCORS:true,logging:false}).then(c=>new Promise(r=>c.toBlob(r,'image/png')));setCardType(orig);const nama=(state.fields.nama||'').replace(/[^a-zA-Z0-9 _-]/g,'').trim().replace(/\s+/g,'-')||'siswa';const nis=state.fields.nis||'0';const kelas=(state.selectedStudent.classroom?state.selectedStudent.classroom.name:'tanpa-kelas').replace(/[^a-zA-Z0-9]/g,'');if(HAS_FS&&state.outputDirHandle){const dir=await state.outputDirHandle.getDirectoryHandle('kelas-'+kelas,{create:true});const w1=await(await dir.getFileHandle(nama+'_'+nis+'_OSIS.png',{create:true})).createWritable();await w1.write(osisBlob);await w1.close();const w2=await(await dir.getFileHandle(nama+'_'+nis+'_PERPUS.png',{create:true})).createWritable();await w2.write(perpusBlob);await w2.close();toast('Tersimpan ke '+state.outputDirHandle.name+'/kelas-'+kelas+'/')}else{const zip=new JSZip();const f=zip.folder('kelas-'+kelas);f.file(nama+'_'+nis+'_OSIS.png',osisBlob);f.file(nama+'_'+nis+'_PERPUS.png',perpusBlob);const c=await zip.generateAsync({type:'blob'});const a=document.createElement('a');a.href=URL.createObjectURL(c);a.download='kartu-'+nama+'_'+nis+'.zip';a.click();toast('ZIP diunduh')}}catch(e){toast('Error: '+e.message);setCardType(orig)}finally{btn.disabled=false}});
-renderCardType();renderFields();renderQR();renderWatermark();loadSchools();updateStatus();
-</script>
+
+    <!-- File Protocol Warning Banner -->
+    <div id="fileProtocolBanner" style="display:none"
+        class="bg-amber-50 border-b border-amber-200 px-5 py-2.5 text-[12.5px] flex items-center gap-3">
+        <svg class="text-amber-700 flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <div class="flex-1 leading-snug">
+            <span class="font-bold text-amber-900">file:// protocol terdeteksi —</span>
+            <span class="text-amber-800">API mungkin diblokir CORS, fitur folder output tidak akan jalan. </span>
+            <a href="#" id="showInstructionsBtn" class="text-amber-900 font-bold underline">Cara fix (30 detik) →</a>
+        </div>
+        <button id="dismissBannerBtn"
+            class="text-amber-700 hover:text-amber-900 font-bold text-lg leading-none w-6 h-6 flex items-center justify-center rounded hover:bg-amber-100"
+            title="Tutup">×</button>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructionsModal" style="display:none"
+        class="fixed inset-0 bg-black/55 backdrop-blur-sm z-[60] items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-7 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <div class="font-display font-extrabold text-xl tracking-tight">Setup Local Server</div>
+                    <div class="text-[12px] text-ink-600 font-medium mt-1">Diperlukan untuk akses API + auto-save ke
+                        folder</div>
+                </div>
+                <button id="closeInstructionsBtnX"
+                    class="text-ink-600 hover:text-ink-900 text-2xl leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-cream-100">×</button>
+            </div>
+
+            <div class="text-[12.5px] text-ink-600 mb-5 leading-relaxed">
+                Browser membatasi <code class="font-mono text-[11px] bg-cream-100 px-1.5 py-0.5 rounded">file://</code>
+                protocol: API call gagal CORS, dan File System Access API hanya jalan di secure context. Solusi: serve
+                file ini lewat HTTP lokal.
+            </div>
+
+            <div class="space-y-4">
+
+                <div class="border border-emerald-200 bg-emerald-50/50 rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span
+                            class="text-[10px] font-mono font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded">RECOMMENDED</span>
+                        <div class="font-bold text-[13px]">VS Code · Live Server Extension</div>
+                    </div>
+                    <ol class="text-[12px] text-ink-600 leading-relaxed list-decimal pl-5 space-y-0.5">
+                        <li>Install extension "<b>Live Server</b>" by Ritwick Dey</li>
+                        <li>Buka folder berisi <code class="font-mono text-[11px]">kartu-studio.html</code> di VS Code
+                        </li>
+                        <li>Right-click file → <b>"Open with Live Server"</b></li>
+                        <li>Browser otomatis terbuka di <code class="font-mono text-[11px]">http://127.0.0.1:5500</code>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="border border-ink-900/10 rounded-xl p-4">
+                    <div class="font-bold text-[13px] mb-2">🐍 Python (Mac / Linux)</div>
+                    <pre
+                        class="bg-cream-100 border border-cream-200 rounded-lg p-2.5 font-mono text-[11px] overflow-x-auto leading-relaxed">cd ~/Downloads
+python3 -m http.server 8000</pre>
+                    <div class="text-[11.5px] text-ink-600 leading-snug mt-1.5">Buka <code
+                            class="font-mono text-[11px]">http://localhost:8000/kartu-studio.html</code></div>
+                </div>
+
+                <div class="border border-ink-900/10 rounded-xl p-4">
+                    <div class="font-bold text-[13px] mb-2">📦 Node.js (semua OS)</div>
+                    <pre
+                        class="bg-cream-100 border border-cream-200 rounded-lg p-2.5 font-mono text-[11px] overflow-x-auto leading-relaxed">cd [folder]
+npx serve</pre>
+                    <div class="text-[11.5px] text-ink-600 leading-snug mt-1.5">URL muncul di terminal, biasanya <code
+                            class="font-mono text-[11px]">http://localhost:3000</code></div>
+                </div>
+
+                <div class="border border-ink-900/10 rounded-xl p-4">
+                    <div class="font-bold text-[13px] mb-2">🐘 PHP (sudah ada di Mac)</div>
+                    <pre
+                        class="bg-cream-100 border border-cream-200 rounded-lg p-2.5 font-mono text-[11px] overflow-x-auto leading-relaxed">cd [folder]
+php -S localhost:8000</pre>
+                </div>
+
+            </div>
+
+            <div
+                class="mt-5 p-3 bg-amber-50 border border-amber-200 rounded-lg text-[11.5px] text-amber-900 leading-relaxed">
+                <b>Catatan:</b> Server backend Laravel (<code
+                    class="font-mono text-[10.5px]">absensi.ozodemo.my.id</code>) tetap perlu mengizinkan CORS dari
+                origin localhost. Kalau masih kena CORS, tambah <code
+                    class="font-mono text-[10.5px]">Access-Control-Allow-Origin: *</code> di response API, atau gunakan
+                domain yang sama.
+            </div>
+
+            <button id="closeInstructionsBtn" class="btn btn-primary w-full mt-5">Mengerti</button>
+        </div>
+    </div>
+
+    <!-- TOP BAR -->
+    <header class="bg-white border-b border-ink-900/8 px-5 py-3 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center gap-3">
+            <div class="brand-mark"></div>
+            <div>
+                <h1 class="font-display font-extrabold text-[15px] leading-none tracking-tight">Kartu Studio</h1>
+                <p class="text-[10.5px] text-ink-600 mt-0.5 font-medium">Generator Kartu OSIS &amp; Perpustakaan · ATM
+                    Card Size (85.6 × 54 mm)</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div id="statusBadge" class="status-pill empty">Belum ada data siswa</div>
+            <button id="resetBtn" class="btn btn-ghost" title="Reset semua">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                    <path d="M3 3v5h5" />
+                </svg>
+                Reset
+            </button>
+            <button id="exportBtn" class="btn btn-accent">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17 21 17 13 7 13 7 21" />
+                    <polyline points="7 3 7 8 15 8" />
+                </svg>
+                Simpan 2 Kartu
+            </button>
+            <button id="batchDownloadBtn" class="btn btn-primary hidden"
+                title="Unduh semua siswa di batch sebagai 1 ZIP">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Unduh Batch <span id="batchCount"
+                    class="ml-1.5 px-1.5 py-0.5 bg-white/25 rounded-md text-[10.5px] font-mono">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="flex" style="height: calc(100vh - 57px);">
+
+        <!-- SIDEBAR -->
+        <aside class="w-[340px] bg-cream-50 border-r border-ink-900/8 overflow-y-auto p-4 space-y-3 flex-shrink-0">
+
+            <!-- 1. Jenis Kartu -->
+            <section class="panel">
+                <div class="panel-head">
+                    <div class="num">1</div>
+                    <div class="title">Jenis Kartu</div>
+                </div>
+                <div class="panel-body space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="toggle-card active" data-type="osis">
+                            <div class="swatch" style="background: linear-gradient(135deg, #5dc4f5, #3aa8df);"></div>
+                            <div class="lbl">Kartu OSIS</div>
+                        </div>
+                        <div class="toggle-card" data-type="perpus">
+                            <div class="swatch" style="background: linear-gradient(135deg, #c9986a, #b07b4a);"></div>
+                            <div class="lbl">Kartu Perpus</div>
+                        </div>
+                    </div>
+                    <div class="border-t border-ink-900/8 pt-3">
+                        <label
+                            class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 flex items-center justify-between">
+                            <span>Teks Watermark Background</span>
+                            <span id="watermarkTypeLabel"
+                                class="text-[10px] font-mono normal-case tracking-normal px-1.5 py-0.5 bg-accent-soft text-accent rounded">OSIS</span>
+                        </label>
+                        <textarea id="watermarkInput" rows="2" class="input-field resize-none"
+                            style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.4;"
+                            placeholder="Teks yang berulang di background kartu..."></textarea>
+                        <div class="text-[10.5px] text-ink-600 mt-1.5 leading-snug">Diulang otomatis mengisi background.
+                            Tambah spasi di akhir untuk jarak antar pengulangan.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Data Siswa -->
+            <section class="panel">
+                <div class="panel-head">
+                    <div class="num">2</div>
+                    <div class="title">Data Siswa (API)</div>
+                </div>
+                <div class="panel-body space-y-2.5">
+
+                    <div>
+                        <label
+                            class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 block">Sekolah</label>
+                        <select id="schoolSelect" class="input-field">
+                            <option value="">— Memuat sekolah… —</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 block">Cari
+                            Siswa</label>
+                        <div class="relative">
+                            <input id="studentSearch" type="text" class="input-field pr-7" placeholder="Nama atau NIS…"
+                                autocomplete="off">
+                            <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-600 pointer-events-none"
+                                width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="m21 21-4.3-4.3" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div id="studentList" class="student-list" style="display:none"></div>
+
+                    <div id="selectedStudent" class="hidden">
+                        <div class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1">Terpilih</div>
+                        <div class="p-2.5 bg-accent-soft border border-accent/20 rounded-lg">
+                            <div id="selectedName" class="text-[13px] font-bold leading-tight"></div>
+                            <div id="selectedMeta" class="text-[11px] text-ink-600 font-medium mt-0.5"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. Tipografi -->
+            <section class="panel">
+                <div class="panel-head">
+                    <div class="num">3</div>
+                    <div class="title">Tipografi</div>
+                </div>
+                <div class="panel-body space-y-3">
+
+                    <div>
+                        <label class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 block">Jenis
+                            Font</label>
+                        <select id="fontFamilySelect" class="input-field">
+                            <option value="Manrope">Manrope (default)</option>
+                            <option value="Inter Tight">Inter Tight (condensed)</option>
+                            <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                            <option value="Poppins">Poppins</option>
+                            <option value="Oswald">Oswald (heavy display)</option>
+                            <option value="Roboto Condensed">Roboto Condensed</option>
+                            <option value="Bree Serif">Bree Serif (klasik)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label
+                            class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 flex items-center justify-between">
+                            <span>Nama Sekolah</span>
+                            <span id="fontSchoolVal"
+                                class="text-[10px] font-mono text-ink-600 normal-case tracking-normal">16 px</span>
+                        </label>
+                        <input id="fontSchoolRange" type="range" min="10" max="28" value="16" step="0.5"
+                            class="zoom-slider">
+                    </div>
+
+                    <div>
+                        <label
+                            class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 flex items-center justify-between">
+                            <span>Tagline Header</span>
+                            <span id="fontTaglineVal"
+                                class="text-[10px] font-mono text-ink-600 normal-case tracking-normal">10 px</span>
+                        </label>
+                        <input id="fontTaglineRange" type="range" min="6" max="16" value="10" step="0.5"
+                            class="zoom-slider">
+                    </div>
+
+                    <div>
+                        <label
+                            class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 flex items-center justify-between">
+                            <span>Alamat Header</span>
+                            <span id="fontAddrVal"
+                                class="text-[10px] font-mono text-ink-600 normal-case tracking-normal">8.5 px</span>
+                        </label>
+                        <input id="fontAddrRange" type="range" min="5" max="14" value="8.5" step="0.5"
+                            class="zoom-slider">
+                    </div>
+
+                    <div>
+                        <label
+                            class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 flex items-center justify-between">
+                            <span>Field Body</span>
+                            <span id="fontFieldVal"
+                                class="text-[10px] font-mono text-ink-600 normal-case tracking-normal">15 px</span>
+                        </label>
+                        <input id="fontFieldRange" type="range" min="9" max="22" value="15" step="0.5"
+                            class="zoom-slider">
+                    </div>
+
+                    <button id="resetTypoBtn" class="btn btn-ghost w-full text-[11.5px]">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                            <path d="M3 3v5h5" />
+                        </svg>
+                        Reset Tipografi
+                    </button>
+                </div>
+            </section>
+
+            <!-- 4. Foto Siswa -->
+            <section class="panel">
+                <div class="panel-head">
+                    <div class="num">4</div>
+                    <div class="title">Foto Siswa</div>
+                </div>
+                <div class="panel-body space-y-2.5">
+                    <div class="flex gap-2">
+                        <button id="photoUploadBtn" class="btn btn-ghost flex-1">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            Upload Foto
+                        </button>
+                        <button id="photoResetBtn" class="btn btn-ghost" title="Reset posisi & zoom">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                                <path d="M3 3v5h5" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div>
+                        <label
+                            class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 flex items-center justify-between">
+                            <span>Zoom</span>
+                            <span id="zoomVal"
+                                class="text-[10px] font-mono text-ink-600 normal-case tracking-normal">100%</span>
+                        </label>
+                        <input id="zoomSlider" type="range" min="50" max="250" value="100" step="1" class="zoom-slider">
+                    </div>
+                    <div class="text-[10.5px] text-ink-600 font-medium leading-snug">
+                        💡 Drag foto langsung di kartu untuk reposisi, atau gunakan scroll wheel di atas foto untuk
+                        zoom.
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. Aset Sekolah -->
+            <section class="panel">
+                <div class="panel-head">
+                    <div class="num">5</div>
+                    <div class="title">Aset Visual</div>
+                </div>
+                <div class="panel-body space-y-2">
+                    <button class="btn btn-ghost w-full justify-start" data-upload="logoLeft">
+                        <span
+                            class="w-5 h-5 rounded-md bg-cream-100 border border-ink-900/10 flex items-center justify-center text-[10px] font-mono font-bold">L</span>
+                        Logo Kiri (Daerah)
+                    </button>
+                    <button class="btn btn-ghost w-full justify-start" data-upload="logoRight">
+                        <span
+                            class="w-5 h-5 rounded-md bg-cream-100 border border-ink-900/10 flex items-center justify-center text-[10px] font-mono font-bold">R</span>
+                        Logo Kanan (Tut Wuri)
+                    </button>
+                    <button class="btn btn-ghost w-full justify-start" data-upload="osisEmblem">
+                        <span
+                            class="w-5 h-5 rounded-md bg-cream-100 border border-ink-900/10 flex items-center justify-center text-[11px] font-bold">⬢</span>
+                        Logo OSIS (Background)
+                    </button>
+                    <button class="btn btn-ghost w-full justify-start" data-upload="perpusBg">
+                        <span class="w-5 h-5 rounded-md flex items-center justify-center"
+                            style="background: linear-gradient(135deg, #c9986a, #b07b4a); border: 1px solid rgba(0,0,0,0.1);">
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <path d="m21 15-5-5L5 21" />
+                            </svg>
+                        </span>
+                        Background Kartu Perpus
+                    </button>
+                    <button class="btn btn-ghost w-full justify-start" data-upload="signature">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 19h20" />
+                            <path d="M5 16s2-1 4-1 4 1 6 1 4-1 4-1" />
+                            <path d="M10 5s-1 2-1 5 1 6 1 6" />
+                        </svg>
+                        Tanda Tangan (Kepsek)
+                    </button>
+                </div>
+            </section>
+
+            <!-- 6. Folder Output -->
+            <section class="panel">
+                <div class="panel-head">
+                    <div class="num">6</div>
+                    <div class="title">Folder Output</div>
+                </div>
+                <div class="panel-body space-y-2.5">
+                    <div id="outputDirInfo">
+                        <div class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1">Belum dipilih
+                        </div>
+                        <div class="text-[11.5px] text-ink-600 leading-snug">Pilih folder sekali · semua export
+                            auto-tersimpan ke folder ini, dikelompokkan per kelas otomatis.</div>
+                    </div>
+                    <button id="pickDirBtn" class="btn btn-ghost w-full">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                        </svg>
+                        <span id="pickDirBtnLabel">Pilih Folder Output</span>
+                    </button>
+                    <div id="fsApiWarn"
+                        class="hidden text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2 leading-snug">
+                        ⚠ Browser ini tidak mendukung direct-to-folder. Pakai <b>Chrome</b> / <b>Edge</b> di Windows
+                        untuk auto-save. Fallback: hasil tetap di-download sebagai ZIP.
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. Tips -->
+            <section class="panel">
+                <div class="panel-head">
+                    <div class="num">7</div>
+                    <div class="title">Tips Editing</div>
+                </div>
+                <div class="panel-body text-[11.5px] text-ink-600 leading-relaxed space-y-1.5">
+                    <div>· Klik area teks header di kartu untuk edit langsung</div>
+                    <div>· Logo &amp; tanda tangan bisa di-upload via panel atau klik slot di kartu</div>
+                    <div>· Slot Kepala Sekolah menerima 1 image gabungan (TTD + nama + NIP yang sudah di-design)</div>
+                    <div>· Logo OSIS background bisa di-upload (default pakai SVG sederhana)</div>
+                    <div>· Background Kartu Perpus bisa di-upload (mis. pattern wood asli dari template sekolah)</div>
+                    <div class="text-amber-700"><b>· ZIP mode:</b> klik Simpan → siswa masuk ke <b>batch queue</b>. Klik
+                        "Unduh Batch" di top bar saat selesai → 1 ZIP berisi semua siswa terorganisir per kelas (extract
+                        sekali → folder kelas merge dengan benar)</div>
+                    <div>· File output 400 DPI (~1349 × 850 px) siap cetak kartu PVC</div>
+                </div>
+            </section>
+
+        </aside>
+
+        <!-- CANVAS AREA -->
+        <section class="flex-1 relative overflow-auto dot-grid">
+            <div class="canvas-bg-deco"></div>
+
+            <!-- Centered card preview -->
+            <div class="relative min-h-full flex flex-col items-center justify-center p-8 gap-6">
+
+                <!-- Card -->
+                <div id="cardWrap" class="relative">
+                    <div id="card" class="card-frame">
+                        <!-- Custom uploaded background (Perpus only by default) -->
+                        <div id="customBgLayer" class="custom-bg-layer" style="display:none"></div>
+
+                        <!-- Header -->
+                        <div id="headerBand" class="header-band osis">
+                            <div class="logo-slot" data-slot="logoLeft">
+                                <div class="upload-hint">LOGO<br>DAERAH</div>
+                            </div>
+                            <div id="headerText" class="header-text">
+                                <div class="line-tiny" contenteditable="true" spellcheck="false">PEMERINTAH KABUPATEN
+                                    BANYUMAS</div>
+                                <div class="line-small" contenteditable="true" spellcheck="false">DINAS PENDIDIKAN</div>
+                                <div class="line-big" contenteditable="true" spellcheck="false">SMP NEGERI 1 JATILAWANG
+                                </div>
+                                <div class="line-addr" contenteditable="true" spellcheck="false">Jl. Pramuka No.3,
+                                    Jatilawang, Tunjung, Kec. Jatilawang, Telp. (0281) 6848893</div>
+                            </div>
+                            <div class="logo-slot" data-slot="logoRight">
+                                <div class="upload-hint">TUT WURI<br>HANDAYANI</div>
+                            </div>
+                        </div>
+
+                        <!-- Watermark -->
+                        <div id="watermark" class="watermark osis"></div>
+
+                        <!-- OSIS emblem watermark -->
+                        <div id="osisEmblem" class="osis-emblem">
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="50" cy="50" r="48" fill="none" stroke="#1565a0" stroke-width="1" />
+                                <path d="M50 8 L42 30 L18 30 L37 44 L30 68 L50 54 L70 68 L63 44 L82 30 L58 30 Z"
+                                    fill="none" stroke="#1565a0" stroke-width="1" />
+                                <text x="50" y="92" font-family="Inter Tight" font-weight="800" font-size="10"
+                                    text-anchor="middle" fill="#1565a0">OSIS</text>
+                            </svg>
+                        </div>
+
+                        <!-- Body Fields -->
+                        <div class="body-area">
+                            <div class="field-row"><span class="field-label">NAMA</span><span
+                                    class="field-sep">:</span><span class="field-value" id="fNama">—</span></div>
+                            <div class="field-row"><span class="field-label">ALAMAT</span><span
+                                    class="field-sep">:</span><span class="field-value" id="fAlamat">—</span></div>
+                            <div class="field-row"><span class="field-label">TEMPAT TGL.LAHIR</span><span
+                                    class="field-sep">:</span><span class="field-value" id="fTtl">—</span></div>
+                            <div class="field-row"><span class="field-label">AGAMA</span><span
+                                    class="field-sep">:</span><span class="field-value" id="fAgama">—</span></div>
+                            <div class="field-row"><span class="field-label">NO.INDUK</span><span
+                                    class="field-sep">:</span><span class="field-value" id="fNis">—</span></div>
+                        </div>
+
+                        <!-- OSIS validity text -->
+                        <div id="osisValidity" class="osis-validity">BERLAKU S/D TAMAT BELAJAR</div>
+
+                        <!-- Bottom row: photo + QR + signature -->
+                        <div class="bottom-row">
+                            <div id="photoSlot" class="photo-slot">
+                                <div class="hint">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                        <path d="m21 15-5-5L5 21" />
+                                    </svg>
+                                    <div>UPLOAD<br>FOTO SISWA</div>
+                                </div>
+                            </div>
+                            <div id="qrSlot" class="qr-slot empty">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                                    <line x1="14" y1="14" x2="14" y2="17" />
+                                    <line x1="14" y1="20" x2="14" y2="21" />
+                                    <line x1="17" y1="14" x2="21" y2="14" />
+                                    <line x1="20" y1="17" x2="21" y2="17" />
+                                    <line x1="17" y1="17" x2="17" y2="21" />
+                                    <line x1="20" y1="20" x2="21" y2="21" />
+                                </svg>
+                                <div>QR<br>OTOMATIS</div>
+                            </div>
+                            <div class="signature-area">
+                                <div id="signatureSlot" class="signature-slot">
+                                    <div class="hint-label">KEPALA SEKOLAH</div>
+                                    <div class="hint-sub">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                            <polyline points="17 8 12 3 7 8" />
+                                            <line x1="12" y1="3" x2="12" y2="15" />
+                                        </svg>
+                                        <span>Upload TTD + Nama</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dimension label -->
+                    <div
+                        class="absolute -bottom-7 left-1/2 -translate-x-1/2 flex items-center gap-3 text-[10.5px] font-mono font-semibold text-ink-600">
+                        <span class="tag">85.6 × 54 mm</span>
+                        <span>·</span>
+                        <span class="tag">CR80 / ATM Size</span>
+                        <span>·</span>
+                        <span class="tag">400 DPI Export</span>
+                    </div>
+                </div>
+
+                <!-- Quick fill demo button (loads from API) -->
+                <div class="text-center text-[11px] text-ink-600 font-medium max-w-md leading-relaxed mt-6">
+                    Pilih sekolah &amp; siswa dari panel kiri untuk auto-fill semua data &amp; QR code.
+                    Field bisa di-override manual di header kartu (header text editable).
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- Hidden file input -->
+    <input type="file" id="hiddenFileInput" accept="image/*" style="display:none">
+
+    <!-- Export staging area (hidden, full DPI) -->
+    <div id="exportStage" class="export-stage"></div>
+
+    <script>
+        // ====== STATE ======
+        const state = {
+            cardType: 'osis',
+            schools: [],
+            students: [],
+            selectedSchoolId: null,
+            selectedStudent: null,
+            photo: { url: null, scale: 1, offsetX: 0, offsetY: 0, naturalW: 0, naturalH: 0 },
+            logoLeft: null,
+            logoRight: null,
+            osisEmblem: null,
+            perpusBg: null,
+            signature: null,
+            fields: { nama: '—', alamat: '—', ttl: '—', agama: '—', nis: '—', kelas: '—' },
+            qrSvg: null,
+            loading: false,
+            outputDirHandle: null, // FileSystemDirectoryHandle for direct-to-folder export
+            exportQueue: [], // [{ kelas, nama, nis, osisBlob, perpusBlob }] for ZIP fallback batch mode
+            watermarkText: {
+                osis: 'ORGANISASI SISWA INTRA SEKOLAH',
+                perpus: 'PERPUSTAKAAN WIDYA SASTRA',
+            },
+        };
+
+        const API_BASE = 'https://absensi.ozodemo.my.id/api';
+
+        // Default OSIS emblem SVG (used when no custom upload)
+        const DEFAULT_OSIS_EMBLEM = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="48" fill="none" stroke="#1565a0" stroke-width="1"/>
+  <path d="M50 8 L42 30 L18 30 L37 44 L30 68 L50 54 L70 68 L63 44 L82 30 L58 30 Z" fill="none" stroke="#1565a0" stroke-width="1"/>
+  <text x="50" y="92" font-family="Inter Tight" font-weight="800" font-size="10" text-anchor="middle" fill="#1565a0">OSIS</text>
+</svg>`;
+
+        // ====== UTILS ======
+        const $ = (sel) => document.querySelector(sel);
+        const $$ = (sel) => document.querySelectorAll(sel);
+
+        function toast(msg, type = 'info') {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            const icon = type === 'error'
+                ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+                : type === 'success'
+                    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+            t.innerHTML = `${icon}<span>${msg}</span>`;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2600);
+        }
+
+        function updateStatus() {
+            const b = $('#statusBadge');
+            if (state.loading) { b.className = 'status-pill loading'; b.textContent = 'Memuat data…'; return; }
+            if (!state.selectedStudent) { b.className = 'status-pill empty'; b.textContent = 'Belum ada data siswa'; return; }
+            const hasPhoto = !!state.photo.url;
+            const hasLogos = state.logoLeft && state.logoRight;
+            const hasSig = !!state.signature;
+            if (hasPhoto && hasLogos && hasSig) { b.className = 'status-pill ready'; b.textContent = 'Siap export ✓'; }
+            else { b.className = 'status-pill partial'; b.textContent = 'Lengkapi aset visual'; }
+        }
+
+        // ====== API ======
+        function extractArray(data, ...preferredKeys) {
+            // Try to find the actual array in various Laravel/REST response shapes
+            if (Array.isArray(data)) return data;
+            if (!data || typeof data !== 'object') return [];
+            // Try preferred keys first, then common ones
+            const keys = [...preferredKeys, 'data', 'results', 'items', 'rows'];
+            for (const k of keys) {
+                if (Array.isArray(data[k])) return data[k];
+            }
+            // Try nested: {data: {data: [...]}}
+            if (data.data && typeof data.data === 'object') {
+                for (const k of keys) {
+                    if (Array.isArray(data.data[k])) return data.data[k];
+                }
+            }
+            return [];
+        }
+
+        async function fetchJson(url) {
+            console.log('[API →]', url);
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+                const json = await res.json();
+                console.log('[API ←]', url, json);
+                return json;
+            } catch (e) {
+                console.error('[API ✗]', url, e);
+                let hint = '';
+                if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+                    hint = window.location.protocol === 'file:'
+                        ? ' · Buka via local server (lihat banner kuning di atas)'
+                        : ' · Cek CORS server / koneksi';
+                }
+                toast(`Gagal: ${e.message}${hint}`, 'error');
+                return null;
+            }
+        }
+
+        async function loadSchools() {
+            state.loading = true; updateStatus();
+            const data = await fetchJson(`${API_BASE}/schools`);
+            state.loading = false;
+            if (!data) { updateStatus(); return; }
+            state.schools = extractArray(data, 'schools');
+            console.log(`[Schools loaded] ${state.schools.length} items`);
+            const sel = $('#schoolSelect');
+            sel.innerHTML = '<option value="">— Pilih sekolah —</option>';
+            state.schools.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name || s.nama || `Sekolah #${s.id}`;
+                sel.appendChild(opt);
+            });
+            if (!state.schools.length) toast('Tidak ada sekolah ditemukan di response', 'error');
+            updateStatus();
+        }
+
+        async function loadStudents(schoolId) {
+            state.loading = true; updateStatus();
+            // Try main endpoint first
+            let data = await fetchJson(`${API_BASE}/schools/${schoolId}/students`);
+            // Fallback: try query-param endpoint if first returned nothing
+            if (data && extractArray(data, 'students').length === 0) {
+                console.warn('[Students] First endpoint returned empty — trying fallback');
+                const alt = await fetchJson(`${API_BASE}/students?school_id=${schoolId}&per_page=500`);
+                if (alt && extractArray(alt, 'students').length) data = alt;
+            }
+            state.loading = false;
+            if (!data) { updateStatus(); return; }
+            state.students = extractArray(data, 'students');
+            console.log(`[Students loaded] ${state.students.length} items for school ${schoolId}`);
+            renderStudentList();
+            if (!state.students.length) toast('Tidak ada siswa di sekolah ini (atau response shape tidak dikenali — cek console)', 'error');
+            updateStatus();
+        }
+
+        async function loadStudentDetail(id) {
+            state.loading = true; updateStatus();
+            const data = await fetchJson(`${API_BASE}/students/${id}`);
+            state.loading = false;
+            if (!data) { updateStatus(); return; }
+            // Detail might be wrapped: {data: {...student...}} or raw
+            const student = (data.data && !Array.isArray(data.data) && typeof data.data === 'object') ? data.data : data;
+            applyStudentData(student);
+        }
+
+        function applyStudentData(d) {
+            state.selectedStudent = d;
+            state.fields = {
+                nama: d.full_name || d.name || '—',
+                alamat: d.address || '—',
+                ttl: ((d.birth_place || '') + (d.birth_date ? ', ' + formatDate(d.birth_date) : '')) || '—',
+                agama: d.religion_label || d.religion || '—',
+                nis: d.nis || '—',
+                nisn: d.nisn || '—',
+                kelas: (d.classroom && d.classroom.name) || '—',
+            };
+            state.qrSvg = d.qr_svg || null;
+            // Header auto-fill from school
+            if (d.school) {
+                const big = $('#headerText .line-big');
+                const addr = $('#headerText .line-addr');
+                if (big && d.school.name) big.textContent = d.school.name.toUpperCase();
+                if (addr && d.school.address) addr.textContent = d.school.address;
+            }
+            // Selected indicator
+            $('#selectedStudent').classList.remove('hidden');
+            $('#selectedName').textContent = state.fields.nama;
+            $('#selectedMeta').textContent = `${state.fields.kelas} · NIS ${state.fields.nis}`;
+            renderFields();
+            renderQR();
+            updateStatus();
+            toast(`Data ${state.fields.nama} dimuat`, 'success');
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (isNaN(d)) return iso;
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+        }
+
+        // ====== RENDER ======
+        function renderFields() {
+            $('#fNama').textContent = (state.fields.nama || '—').toUpperCase();
+            $('#fAlamat').textContent = state.fields.alamat || '—';
+            $('#fTtl').textContent = state.fields.ttl || '—';
+            $('#fAgama').textContent = state.fields.agama || '—';
+            $('#fNis').textContent = state.fields.nis || '—';
+        }
+
+        function renderQR() {
+            const slot = $('#qrSlot');
+            if (state.qrSvg) {
+                slot.classList.remove('empty');
+                slot.innerHTML = state.qrSvg;
+                // Ensure SVG fills container
+                const svg = slot.querySelector('svg');
+                if (svg) { svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); }
+            } else {
+                slot.classList.add('empty');
+                slot.innerHTML = `
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="14" y1="20" x2="14" y2="21"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="20" y1="17" x2="21" y2="17"/><line x1="17" y1="17" x2="17" y2="21"/><line x1="20" y1="20" x2="21" y2="21"/></svg>
+      <div>QR<br>OTOMATIS</div>
+    `;
+            }
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function renderWatermark() {
+            const wm = $('#watermark');
+            wm.className = `watermark ${state.cardType}`;
+            // Pull from editable state, normalize newlines → spaces, ensure trailing space for separation
+            let text = (state.watermarkText[state.cardType] || '').replace(/[\r\n]+/g, ' ');
+            if (!text.trim()) text = ' ';
+            if (!text.endsWith(' ')) text += ' ';
+            wm.innerHTML = '';
+            const rows = 14;
+            for (let i = 0; i < rows; i++) {
+                const row = document.createElement('div');
+                row.className = 'watermark-row';
+                let html = '';
+                for (let j = 0; j < 4; j++) html += `<span>${escapeHtml(text)}</span>`;
+                row.innerHTML = html;
+                wm.appendChild(row);
+            }
+        }
+
+        function updateWatermarkInput() {
+            $('#watermarkInput').value = state.watermarkText[state.cardType] || '';
+            $('#watermarkTypeLabel').textContent = state.cardType.toUpperCase();
+        }
+
+        function renderCardType() {
+            const isOsis = state.cardType === 'osis';
+            const card = $('#card');
+            const header = $('#headerBand');
+            card.classList.toggle('bg-osis', isOsis);
+            card.classList.toggle('bg-perpus', !isOsis);
+            header.classList.toggle('osis', isOsis);
+            header.classList.toggle('perpus', !isOsis);
+            $('#osisEmblem').style.display = isOsis ? 'block' : 'none';
+            $('#osisValidity').style.display = isOsis ? 'block' : 'none';
+
+            // Perpus has different header line 1 by default
+            const tinyLine = $('#headerText .line-tiny');
+            const smallLine = $('#headerText .line-small');
+            if (!isOsis) {
+                tinyLine.textContent = 'PERPUSTAKAAN WIDYA SASTRA';
+                smallLine.style.display = 'none';
+            } else {
+                if (!tinyLine.textContent.includes('KABUPATEN')) tinyLine.textContent = 'PEMERINTAH KABUPATEN BANYUMAS';
+                smallLine.style.display = '';
+                if (!smallLine.textContent.trim()) smallLine.textContent = 'DINAS PENDIDIKAN';
+            }
+            renderWatermark();
+            applyCustomBg();
+        }
+
+        function renderStudentList() {
+            const list = $('#studentList');
+            const q = $('#studentSearch').value.trim().toLowerCase();
+            let filtered = state.students;
+            if (q) {
+                filtered = state.students.filter(s => {
+                    const name = (s.full_name || s.name || '').toLowerCase();
+                    const nis = String(s.nis || '');
+                    return name.includes(q) || nis.includes(q);
+                });
+            }
+            filtered = filtered.slice(0, 50);
+            if (!filtered.length) {
+                list.style.display = 'none';
+                return;
+            }
+            list.style.display = 'block';
+            list.innerHTML = filtered.map(s => `
+    <div class="item ${state.selectedStudent && state.selectedStudent.id === s.id ? 'active' : ''}" data-id="${s.id}">
+      <div class="name">${s.full_name || s.name || '—'}</div>
+      <div class="meta">${(s.classroom && s.classroom.name) || s.classroom_name || '—'} · NIS ${s.nis || '—'}</div>
+    </div>
+  `).join('');
+        }
+
+        // ====== UPLOADS ======
+        let currentUploadTarget = null;
+        function triggerUpload(target) {
+            currentUploadTarget = target;
+            $('#hiddenFileInput').value = '';
+            $('#hiddenFileInput').click();
+        }
+
+        $('#hiddenFileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const url = ev.target.result;
+                if (currentUploadTarget === 'photo') setPhoto(url);
+                else if (currentUploadTarget === 'logoLeft') setLogo('logoLeft', url);
+                else if (currentUploadTarget === 'logoRight') setLogo('logoRight', url);
+                else if (currentUploadTarget === 'osisEmblem') setOsisEmblem(url);
+                else if (currentUploadTarget === 'perpusBg') setPerpusBg(url);
+                else if (currentUploadTarget === 'signature') setSignature(url);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function setPhoto(url) {
+            const img = new Image();
+            img.onload = () => {
+                state.photo = { url, scale: 1, offsetX: 0, offsetY: 0, naturalW: img.naturalWidth, naturalH: img.naturalHeight };
+                // Fit cover: scale so smaller dimension fills slot
+                const slot = $('#photoSlot').getBoundingClientRect();
+                const slotRatio = slot.width / slot.height;
+                const imgRatio = img.naturalWidth / img.naturalHeight;
+                const baseScale = imgRatio > slotRatio ? slot.height / img.naturalHeight : slot.width / img.naturalWidth;
+                state.photo.baseScale = baseScale;
+                renderPhoto();
+                updateStatus();
+                toast('Foto dimuat — drag untuk reposisi', 'success');
+            };
+            img.src = url;
+        }
+
+        function renderPhoto() {
+            const slot = $('#photoSlot');
+            if (!state.photo.url) { slot.classList.remove('filled'); return; }
+            slot.classList.add('filled');
+            let img = slot.querySelector('img');
+            if (!img) {
+                img = document.createElement('img');
+                slot.appendChild(img);
+            }
+            img.src = state.photo.url;
+            const finalScale = state.photo.baseScale * state.photo.scale;
+            img.style.width = state.photo.naturalW * finalScale + 'px';
+            img.style.height = state.photo.naturalH * finalScale + 'px';
+            img.style.transform = `translate(-50%, -50%) translate(${state.photo.offsetX}px, ${state.photo.offsetY}px)`;
+        }
+
+        function setLogo(key, url) {
+            state[key] = url;
+            const slot = document.querySelector(`[data-slot="${key}"]`);
+            slot.classList.add('filled');
+            let img = slot.querySelector('img');
+            if (!img) {
+                img = document.createElement('img');
+                slot.appendChild(img);
+                const hint = slot.querySelector('.upload-hint');
+                if (hint) hint.remove();
+            }
+            img.src = url;
+            updateStatus();
+            toast(`Logo ${key === 'logoLeft' ? 'kiri' : 'kanan'} dimuat`, 'success');
+        }
+
+        function setOsisEmblem(url) {
+            state.osisEmblem = url;
+            // Replace the SVG content of the emblem container with the uploaded image.
+            // Container already has opacity:.18 from CSS so transparency is applied.
+            $('#osisEmblem').innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain;display:block;">`;
+            updateStatus();
+            toast('Logo OSIS background dimuat', 'success');
+        }
+
+        function setPerpusBg(url) {
+            state.perpusBg = url;
+            applyCustomBg();
+            updateStatus();
+            if (state.cardType === 'osis') {
+                toast('Background Perpus dimuat (lihat di Kartu Perpus)', 'success');
+            } else {
+                toast('Background Perpus dimuat', 'success');
+            }
+        }
+
+        function applyCustomBg() {
+            // Apply custom background only when on its target card type.
+            // Perpus background applies when cardType === 'perpus'.
+            const card = $('#card');
+            const layer = $('#customBgLayer');
+            if (state.cardType === 'perpus' && state.perpusBg) {
+                layer.style.backgroundImage = `url("${state.perpusBg}")`;
+                layer.style.display = 'block';
+                card.classList.add('has-custom-bg');
+            } else {
+                layer.style.backgroundImage = '';
+                layer.style.display = 'none';
+                card.classList.remove('has-custom-bg');
+            }
+        }
+
+        function setSignature(url) {
+            state.signature = url;
+            const slot = $('#signatureSlot');
+            slot.classList.add('filled');
+            // Clear placeholder children
+            slot.querySelectorAll('.hint-label, .hint-sub').forEach(el => el.remove());
+            let img = slot.querySelector('img');
+            if (!img) {
+                img = document.createElement('img');
+                slot.appendChild(img);
+            }
+            img.src = url;
+            updateStatus();
+            toast('Tanda tangan dimuat', 'success');
+        }
+
+        // ====== PHOTO DRAG & ZOOM ======
+        let dragState = null;
+
+        function getEventPos(e) {
+            if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        $('#photoSlot').addEventListener('mousedown', startPhotoDrag);
+        $('#photoSlot').addEventListener('touchstart', startPhotoDrag, { passive: false });
+
+        function startPhotoDrag(e) {
+            if (!state.photo.url) return;
+            e.preventDefault();
+            const pos = getEventPos(e);
+            dragState = {
+                startX: pos.x,
+                startY: pos.y,
+                origOffsetX: state.photo.offsetX,
+                origOffsetY: state.photo.offsetY,
+            };
+            $('#photoSlot').classList.add('dragging');
+            document.addEventListener('mousemove', onPhotoDrag);
+            document.addEventListener('mouseup', endPhotoDrag);
+            document.addEventListener('touchmove', onPhotoDrag, { passive: false });
+            document.addEventListener('touchend', endPhotoDrag);
+        }
+
+        function onPhotoDrag(e) {
+            if (!dragState) return;
+            e.preventDefault();
+            const pos = getEventPos(e);
+            state.photo.offsetX = dragState.origOffsetX + (pos.x - dragState.startX);
+            state.photo.offsetY = dragState.origOffsetY + (pos.y - dragState.startY);
+            renderPhoto();
+        }
+
+        function endPhotoDrag() {
+            if (!dragState) return;
+            dragState = null;
+            $('#photoSlot').classList.remove('dragging');
+            document.removeEventListener('mousemove', onPhotoDrag);
+            document.removeEventListener('mouseup', endPhotoDrag);
+            document.removeEventListener('touchmove', onPhotoDrag);
+            document.removeEventListener('touchend', endPhotoDrag);
+        }
+
+        $('#photoSlot').addEventListener('wheel', (e) => {
+            if (!state.photo.url) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -5 : 5;
+            const newZoom = Math.max(50, Math.min(250, parseInt($('#zoomSlider').value) + delta));
+            $('#zoomSlider').value = newZoom;
+            $('#zoomSlider').dispatchEvent(new Event('input'));
+        }, { passive: false });
+
+        $('#zoomSlider').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            $('#zoomVal').textContent = val + '%';
+            if (state.photo.url) {
+                state.photo.scale = val / 100;
+                renderPhoto();
+            }
+        });
+
+        $('#photoUploadBtn').addEventListener('click', () => triggerUpload('photo'));
+        $('#photoSlot').addEventListener('click', (e) => {
+            if (state.photo.url) return; // only open dialog when empty
+            triggerUpload('photo');
+        });
+
+        $('#photoResetBtn').addEventListener('click', () => {
+            if (!state.photo.url) return;
+            state.photo.scale = 1;
+            state.photo.offsetX = 0;
+            state.photo.offsetY = 0;
+            $('#zoomSlider').value = 100;
+            $('#zoomVal').textContent = '100%';
+            renderPhoto();
+            toast('Posisi & zoom direset', 'success');
+        });
+
+        // Logo/signature slot direct upload
+        $$('[data-slot]').forEach(slot => {
+            slot.addEventListener('click', () => triggerUpload(slot.dataset.slot));
+        });
+        $('#signatureSlot').addEventListener('click', () => triggerUpload('signature'));
+
+        // Sidebar upload buttons
+        $$('[data-upload]').forEach(btn => {
+            btn.addEventListener('click', () => triggerUpload(btn.dataset.upload));
+        });
+
+        // ====== CARD TYPE TOGGLE ======
+        function setCardType(type) {
+            state.cardType = type;
+            $$('.toggle-card').forEach(c => c.classList.toggle('active', c.dataset.type === type));
+            renderCardType();
+            updateWatermarkInput();
+        }
+        $$('.toggle-card').forEach(card => {
+            card.addEventListener('click', () => setCardType(card.dataset.type));
+        });
+
+        // ====== WATERMARK TEXT EDITOR ======
+        $('#watermarkInput').addEventListener('input', (e) => {
+            state.watermarkText[state.cardType] = e.target.value;
+            renderWatermark();
+        });
+
+        // ====== HEADER TEXT EDIT TRIGGERS WATERMARK UPDATE ======
+        $$('#headerText [contenteditable]').forEach(el => {
+            el.addEventListener('blur', renderWatermark);
+        });
+
+        // ====== STUDENT SEARCH + SELECT ======
+        $('#schoolSelect').addEventListener('change', (e) => {
+            state.selectedSchoolId = e.target.value;
+            if (state.selectedSchoolId) loadStudents(state.selectedSchoolId);
+            else { state.students = []; renderStudentList(); }
+        });
+        $('#studentSearch').addEventListener('input', renderStudentList);
+        $('#studentList').addEventListener('click', (e) => {
+            const item = e.target.closest('.item');
+            if (!item) return;
+            const id = item.dataset.id;
+            loadStudentDetail(id);
+        });
+
+        // ====== RESET ======
+        $('#resetBtn').addEventListener('click', () => {
+            if (!confirm('Reset semua data dan aset? Tindakan ini tidak bisa dibatalkan.')) return;
+            state.photo = { url: null, scale: 1, offsetX: 0, offsetY: 0, naturalW: 0, naturalH: 0 };
+            state.logoLeft = null; state.logoRight = null; state.signature = null; state.osisEmblem = null; state.perpusBg = null;
+            state.selectedStudent = null; state.qrSvg = null;
+            state.fields = { nama: '—', alamat: '—', ttl: '—', agama: '—', nis: '—' };
+            $('#photoSlot').classList.remove('filled');
+            const photoImg = $('#photoSlot').querySelector('img'); if (photoImg) photoImg.remove();
+            ['logoLeft', 'logoRight'].forEach(k => {
+                const slot = document.querySelector(`[data-slot="${k}"]`);
+                slot.classList.remove('filled');
+                const img = slot.querySelector('img'); if (img) img.remove();
+                if (!slot.querySelector('.upload-hint')) {
+                    const hint = document.createElement('div');
+                    hint.className = 'upload-hint';
+                    hint.innerHTML = k === 'logoLeft' ? 'LOGO<br>DAERAH' : 'TUT WURI<br>HANDAYANI';
+                    slot.appendChild(hint);
+                }
+            });
+            // Restore default OSIS emblem
+            $('#osisEmblem').innerHTML = DEFAULT_OSIS_EMBLEM;
+            // Clear custom Perpus background
+            $('#customBgLayer').style.backgroundImage = '';
+            $('#customBgLayer').style.display = 'none';
+            $('#card').classList.remove('has-custom-bg');
+            const sigSlot = $('#signatureSlot');
+            sigSlot.classList.remove('filled');
+            const sigImg = sigSlot.querySelector('img'); if (sigImg) sigImg.remove();
+            if (!sigSlot.querySelector('.hint-label')) {
+                sigSlot.innerHTML = `
+      <div class="hint-label">KEPALA SEKOLAH</div>
+      <div class="hint-sub">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>Upload TTD + Nama</span>
+      </div>
+    `;
+            }
+            $('#selectedStudent').classList.add('hidden');
+            $('#zoomSlider').value = 100;
+            $('#zoomVal').textContent = '100%';
+            // Clear batch queue
+            state.exportQueue = [];
+            updateBatchUI();
+            renderFields(); renderQR();
+            updateStatus();
+            toast('Studio direset', 'success');
+        });
+
+        // ====== OUTPUT FOLDER (File System Access API) ======
+        const HAS_FS_API = 'showDirectoryPicker' in window;
+
+        function updateOutputDirIndicator() {
+            const info = $('#outputDirInfo');
+            const label = $('#pickDirBtnLabel');
+            if (state.outputDirHandle) {
+                info.innerHTML = `
+      <div class="text-[10.5px] font-bold text-emerald-700 uppercase tracking-wide mb-1 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Folder terhubung
+      </div>
+      <div class="text-[13px] font-bold text-ink-900 break-words leading-tight">${state.outputDirHandle.name}</div>
+      <div class="text-[11px] text-ink-600 mt-1 leading-snug">Setiap simpan → 2 PNG ditulis ke subfolder kelas otomatis.</div>
+    `;
+                label.textContent = 'Ganti Folder';
+            } else {
+                info.innerHTML = `
+      <div class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1">Belum dipilih</div>
+      <div class="text-[11.5px] text-ink-600 leading-snug">Pilih folder sekali · semua export auto-tersimpan ke folder ini, dikelompokkan per kelas otomatis.</div>
+    `;
+                label.textContent = 'Pilih Folder Output';
+            }
+        }
+
+        async function pickOutputDir() {
+            if (!HAS_FS_API) {
+                toast('Browser tidak mendukung — fallback ke ZIP download', 'info');
+                return null;
+            }
+            try {
+                const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+                state.outputDirHandle = handle;
+                updateOutputDirIndicator();
+                toast(`Folder "${handle.name}" terhubung`, 'success');
+                return handle;
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error(err);
+                    toast('Gagal pilih folder: ' + err.message, 'error');
+                }
+                return null;
+            }
+        }
+
+        async function verifyDirPermission(dirHandle) {
+            try {
+                const perm = await dirHandle.queryPermission({ mode: 'readwrite' });
+                if (perm === 'granted') return true;
+                const req = await dirHandle.requestPermission({ mode: 'readwrite' });
+                return req === 'granted';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function writeBlobToDir(dirHandle, fileName, blob) {
+            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+        }
+
+        $('#pickDirBtn').addEventListener('click', pickOutputDir);
+
+        // Show warning banner if FS API unavailable
+        if (!HAS_FS_API) $('#fsApiWarn').classList.remove('hidden');
+
+        // ====== EXPORT — Direct-to-folder (FS API) with ZIP fallback ======
+        async function waitFrame(ms = 80) {
+            await new Promise(r => requestAnimationFrame(() => setTimeout(r, ms)));
+        }
+
+        async function waitForImagesIn(el) {
+            const imgs = el.querySelectorAll('img');
+            await Promise.all([...imgs].map(img =>
+                img.complete && img.naturalWidth > 0
+                    ? Promise.resolve()
+                    : new Promise(r => { img.onload = r; img.onerror = r; setTimeout(r, 1500); })
+            ));
+        }
+
+        async function renderCardToBlob() {
+            const card = $('#card');
+            await waitForImagesIn(card);
+            await waitFrame(120);
+            const currentMm = 9.5;
+            const targetMm = 15.748; // 400 DPI
+            const exportScale = targetMm / currentMm;
+            const canvas = await html2canvas(card, {
+                scale: exportScale,
+                backgroundColor: null,
+                useCORS: true,
+                logging: false,
+                width: card.offsetWidth,
+                height: card.offsetHeight,
+            });
+            return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+        }
+
+        function sanitize(s, max = 50) {
+            return String(s || '')
+                .replace(/[^a-zA-Z0-9\- _]/g, '')
+                .trim()
+                .replace(/\s+/g, '-')
+                .slice(0, max) || 'untitled';
+        }
+
+        function showExportLoader(msg) {
+            let loader = document.getElementById('exportLoader');
+            if (!loader) {
+                loader = document.createElement('div');
+                loader.id = 'exportLoader';
+                loader.style.cssText = 'position:fixed;inset:0;background:rgba(13,13,26,.65);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:9999;font-family:Manrope,sans-serif;';
+                loader.innerHTML = `
+      <div style="background:#fff;border-radius:18px;padding:28px 36px;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:280px;box-shadow:0 24px 60px rgba(0,0,0,.3);">
+        <div style="width:42px;height:42px;border:3.5px solid #4338ca;border-right-color:transparent;border-radius:50%;animation:spin .6s linear infinite;"></div>
+        <div id="exportLoaderText" style="font-weight:700;font-size:14px;color:#13131a;text-align:center;letter-spacing:-0.01em;">${msg}</div>
+        <div style="width:200px;height:4px;background:#e5e3d6;border-radius:2px;overflow:hidden;">
+          <div id="exportLoaderBar" style="height:100%;width:0%;background:#4338ca;border-radius:2px;transition:width .25s ease;"></div>
+        </div>
+      </div>
+    `;
+                document.body.appendChild(loader);
+            }
+            $('#exportLoaderText').textContent = msg;
+        }
+
+        function setExportProgress(pct) {
+            const bar = document.getElementById('exportLoaderBar');
+            if (bar) bar.style.width = pct + '%';
+        }
+
+        function hideExportLoader() {
+            const loader = document.getElementById('exportLoader');
+            if (loader) loader.remove();
+        }
+
+        $('#exportBtn').addEventListener('click', async () => {
+            if (!state.selectedStudent) {
+                toast('Pilih siswa dulu sebelum simpan', 'error');
+                return;
+            }
+
+            const exportBtn = $('#exportBtn');
+            exportBtn.disabled = true;
+            const originalType = state.cardType;
+
+            // Determine path: FS API direct-save OR ZIP fallback
+            let useFsApi = false;
+            let targetDir = null;
+
+            if (HAS_FS_API) {
+                if (!state.outputDirHandle) {
+                    // First export — prompt folder
+                    const handle = await pickOutputDir();
+                    if (!handle) { exportBtn.disabled = false; return; } // user cancelled
+                }
+                // Verify permission (handle may have been revoked)
+                const ok = await verifyDirPermission(state.outputDirHandle);
+                if (!ok) {
+                    toast('Permission ke folder ditolak', 'error');
+                    exportBtn.disabled = false;
+                    return;
+                }
+                useFsApi = true;
+                targetDir = state.outputDirHandle;
+            }
+
+            try {
+                showExportLoader('Render Kartu OSIS…');
+                setExportProgress(10);
+
+                // 1. Render OSIS
+                setCardType('osis');
+                await waitFrame(150);
+                setExportProgress(30);
+                const osisBlob = await renderCardToBlob();
+                setExportProgress(50);
+
+                // 2. Render Perpus
+                showExportLoader('Render Kartu Perpustakaan…');
+                setCardType('perpus');
+                await waitFrame(150);
+                setExportProgress(70);
+                const perpusBlob = await renderCardToBlob();
+                setExportProgress(85);
+
+                // 3. Restore card type
+                setCardType(originalType);
+
+                // 4. Save — branch on FS API vs ZIP
+                const kelas = sanitize(state.fields.kelas, 30) || 'tanpa-kelas';
+                const namaSiswa = sanitize(state.fields.nama, 50);
+                const nis = sanitize(state.fields.nis, 20);
+                const osisName = `${namaSiswa}_${nis}_OSIS.png`;
+                const perpusName = `${namaSiswa}_${nis}_PERPUS.png`;
+
+                if (useFsApi) {
+                    showExportLoader('Menulis ke folder…');
+                    const classFolder = await targetDir.getDirectoryHandle(`kelas-${kelas}`, { create: true });
+                    await writeBlobToDir(classFolder, osisName, osisBlob);
+                    setExportProgress(95);
+                    await writeBlobToDir(classFolder, perpusName, perpusBlob);
+                    setExportProgress(100);
+                    await waitFrame(250);
+                    hideExportLoader();
+                    toast(`✓ Tersimpan ke ${targetDir.name}/kelas-${kelas}/`, 'success');
+                } else {
+                    // ZIP fallback — add to batch queue instead of immediate download.
+                    // User clicks "Unduh Batch" in top bar when done to get 1 big ZIP.
+                    state.exportQueue.push({
+                        kelas,
+                        nama: namaSiswa,
+                        nis,
+                        osisBlob,
+                        perpusBlob,
+                        osisName,
+                        perpusName,
+                    });
+                    setExportProgress(100);
+                    await waitFrame(200);
+                    hideExportLoader();
+                    updateBatchUI();
+                    toast(`✓ Ditambah ke batch (${state.exportQueue.length} siswa)`, 'success');
+                }
+            } catch (err) {
+                console.error(err);
+                hideExportLoader();
+                setCardType(originalType);
+                toast('Gagal simpan: ' + err.message, 'error');
+            } finally {
+                exportBtn.disabled = false;
+            }
+        });
+
+        // ====== TYPOGRAPHY PANEL ======
+        const DEFAULT_TYPO = {
+            family: 'Manrope',
+            school: 16,
+            tagline: 10,
+            addr: 8.5,
+            field: 15,
+        };
+
+        function applyTypography(t) {
+            const root = document.documentElement.style;
+            root.setProperty('--font-family-card', `'${t.family}', sans-serif`);
+            root.setProperty('--font-school', t.school + 'px');
+            root.setProperty('--font-tagline', t.tagline + 'px');
+            root.setProperty('--font-addr', t.addr + 'px');
+            root.setProperty('--font-field-label', t.field + 'px');
+            root.setProperty('--font-field-value', (t.field - 0.5) + 'px');
+        }
+
+        function bindRange(id, valId, suffix, cb) {
+            const el = $('#' + id), valEl = $('#' + valId);
+            el.addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                valEl.textContent = v + ' ' + suffix;
+                cb(v);
+            });
+        }
+
+        $('#fontFamilySelect').addEventListener('change', (e) => {
+            document.documentElement.style.setProperty('--font-family-card', `'${e.target.value}', sans-serif`);
+        });
+        bindRange('fontSchoolRange', 'fontSchoolVal', 'px', v => {
+            document.documentElement.style.setProperty('--font-school', v + 'px');
+        });
+        bindRange('fontTaglineRange', 'fontTaglineVal', 'px', v => {
+            document.documentElement.style.setProperty('--font-tagline', v + 'px');
+        });
+        bindRange('fontAddrRange', 'fontAddrVal', 'px', v => {
+            document.documentElement.style.setProperty('--font-addr', v + 'px');
+        });
+        bindRange('fontFieldRange', 'fontFieldVal', 'px', v => {
+            document.documentElement.style.setProperty('--font-field-label', v + 'px');
+            document.documentElement.style.setProperty('--font-field-value', (v - 0.5) + 'px');
+        });
+        $('#resetTypoBtn').addEventListener('click', () => {
+            applyTypography(DEFAULT_TYPO);
+            $('#fontFamilySelect').value = DEFAULT_TYPO.family;
+            $('#fontSchoolRange').value = DEFAULT_TYPO.school;
+            $('#fontSchoolVal').textContent = DEFAULT_TYPO.school + ' px';
+            $('#fontTaglineRange').value = DEFAULT_TYPO.tagline;
+            $('#fontTaglineVal').textContent = DEFAULT_TYPO.tagline + ' px';
+            $('#fontAddrRange').value = DEFAULT_TYPO.addr;
+            $('#fontAddrVal').textContent = DEFAULT_TYPO.addr + ' px';
+            $('#fontFieldRange').value = DEFAULT_TYPO.field;
+            $('#fontFieldVal').textContent = DEFAULT_TYPO.field + ' px';
+            toast('Tipografi direset ke default', 'success');
+        });
+
+        // ====== BATCH QUEUE (ZIP fallback mode) ======
+        function updateBatchUI() {
+            const btn = $('#batchDownloadBtn');
+            const count = state.exportQueue.length;
+            // Only show in ZIP fallback mode (FS API direct-writes, no queue needed)
+            if (count > 0 && !HAS_FS_API) {
+                btn.classList.remove('hidden');
+                $('#batchCount').textContent = count;
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        $('#batchDownloadBtn').addEventListener('click', async () => {
+            if (!state.exportQueue.length) return;
+            const btn = $('#batchDownloadBtn');
+            btn.disabled = true;
+            try {
+                showExportLoader(`Membungkus ${state.exportQueue.length} siswa ke ZIP…`);
+                setExportProgress(10);
+                const zip = new JSZip();
+                state.exportQueue.forEach((item, i) => {
+                    const folder = zip.folder(`kelas-${item.kelas}`);
+                    folder.file(item.osisName, item.osisBlob);
+                    folder.file(item.perpusName, item.perpusBlob);
+                    setExportProgress(10 + ((i + 1) / state.exportQueue.length * 70));
+                });
+                showExportLoader('Compressing ZIP…');
+                const content = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 6 },
+                });
+                setExportProgress(100);
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `kartu-batch_${state.exportQueue.length}-siswa_${new Date().toISOString().slice(0, 10)}.zip`;
+                a.click();
+                URL.revokeObjectURL(url);
+                const total = state.exportQueue.length;
+                state.exportQueue = [];
+                updateBatchUI();
+                await waitFrame(300);
+                hideExportLoader();
+                toast(`✓ ZIP batch diunduh (${total} siswa · ${total * 2} kartu) — extract sekali, folder kelas merge otomatis`, 'success');
+            } catch (err) {
+                console.error(err);
+                hideExportLoader();
+                toast('Gagal bungkus ZIP: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // ====== INIT ======
+        // Detect file:// protocol and show banner with setup instructions
+        if (window.location.protocol === 'file:') {
+            $('#fileProtocolBanner').style.display = 'flex';
+            // Auto-open modal on first load to make sure user sees it
+            setTimeout(() => {
+                if ($('#fileProtocolBanner').style.display !== 'none') {
+                    $('#instructionsModal').style.display = 'flex';
+                }
+            }, 600);
+        }
+
+        $('#showInstructionsBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            $('#instructionsModal').style.display = 'flex';
+        });
+        $('#closeInstructionsBtn').addEventListener('click', () => {
+            $('#instructionsModal').style.display = 'none';
+        });
+        $('#closeInstructionsBtnX').addEventListener('click', () => {
+            $('#instructionsModal').style.display = 'none';
+        });
+        $('#dismissBannerBtn').addEventListener('click', () => {
+            $('#fileProtocolBanner').style.display = 'none';
+        });
+        // Close modal on backdrop click
+        $('#instructionsModal').addEventListener('click', (e) => {
+            if (e.target === $('#instructionsModal')) $('#instructionsModal').style.display = 'none';
+        });
+
+        renderCardType();
+        renderFields();
+        renderQR();
+        renderWatermark();
+        updateWatermarkInput();
+        loadSchools();
+        updateStatus();
+    </script>
 </body>
+
 </html>
