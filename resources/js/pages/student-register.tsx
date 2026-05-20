@@ -355,6 +355,9 @@ export default function StudentRegister({ schools, classrooms }: Props) {
     );
 }
 
+// Bypass app layout — standalone public page, no sidebar
+StudentRegister.layout = (page: React.ReactNode) => page;
+
 function PageWrapper({ children }: { children: React.ReactNode }) {
     return (
         <>

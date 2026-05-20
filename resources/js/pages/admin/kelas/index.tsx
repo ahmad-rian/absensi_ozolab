@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Edit, GraduationCap, Plus, Trash2, Users } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,7 +22,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { dashboard } from '@/routes';
@@ -44,28 +43,29 @@ type ClassroomFormData = {
     grade_level: string;
     academic_year_id: string;
     homeroom_teacher_id: string;
-    capacity: string;
 };
 
-const GRADE_LEVELS = [
-    { value: '7', label: 'Kelas 7' },
-    { value: '8', label: 'Kelas 8' },
-    { value: '9', label: 'Kelas 9' },
-    { value: '10', label: 'Kelas 10' },
-    { value: '11', label: 'Kelas 11' },
-    { value: '12', label: 'Kelas 12' },
-];
+const GRADE_LEVELS = Array.from({ length: 12 }, (_, i) => ({
+    value: String(i + 1),
+    label: `Tingkat ${i + 1}`,
+}));
+
+const PARALLELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c) => ({ value: c, label: c }));
 
 export default function KelasIndex({ classrooms, academic_years, teachers }: PageProps) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
+
+    const [createGradeLevel, setCreateGradeLevel] = useState('');
+    const [createParallel, setCreateParallel] = useState('');
+    const [editGradeLevel, setEditGradeLevel] = useState('');
+    const [editParallel, setEditParallel] = useState('');
 
     const createForm = useForm<ClassroomFormData>({
         name: '',
         grade_level: '',
         academic_year_id: '',
         homeroom_teacher_id: '',
-        capacity: '30',
     });
 
     const editForm = useForm<ClassroomFormData>({
@@ -73,11 +73,31 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
         grade_level: '',
         academic_year_id: '',
         homeroom_teacher_id: '',
-        capacity: '30',
     });
+
+    // Auto-generate class name: "{grade_level}{parallel}" e.g. "7A", "10B"
+    function autoName(gradeLevel: string, parallel: string): string {
+        return gradeLevel && parallel ? `${gradeLevel}${parallel}` : '';
+    }
+
+    // Parse existing class name into grade_level and parallel (e.g. "7A" → "7", "A"; "10B" → "10", "B")
+    function parseName(name: string): { grade: string; parallel: string } {
+        const match = name.match(/^(\d+)([A-Z])$/);
+        return match ? { grade: match[1], parallel: match[2] } : { grade: '', parallel: '' };
+    }
+
+    useEffect(() => {
+        createForm.setData('name', autoName(createGradeLevel, createParallel));
+    }, [createGradeLevel, createParallel]);
+
+    useEffect(() => {
+        editForm.setData('name', autoName(editGradeLevel, editParallel));
+    }, [editGradeLevel, editParallel]);
 
     function openCreateDialog() {
         createForm.reset();
+        setCreateGradeLevel('');
+        setCreateParallel('');
         const activeYear = academic_years.find((ay) => ay.is_active);
         if (activeYear) {
             createForm.setData('academic_year_id', String(activeYear.id));
@@ -94,12 +114,14 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
     }
 
     function openEditDialog(classroom: Classroom) {
+        const parsed = parseName(classroom.name);
+        setEditGradeLevel(parsed.grade || String(classroom.grade_level));
+        setEditParallel(parsed.parallel);
         editForm.setData({
             name: classroom.name,
             grade_level: String(classroom.grade_level),
             academic_year_id: String(classroom.academic_year_id),
             homeroom_teacher_id: classroom.homeroom_teacher_id ? String(classroom.homeroom_teacher_id) : '',
-            capacity: String(classroom.capacity),
         });
         setEditingClassroom(classroom);
     }
@@ -154,9 +176,7 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                                 <CardContent className="space-y-2 pb-2">
                                     <div className="flex items-center gap-2 text-sm">
                                         <Users className="text-muted-foreground size-4" />
-                                        <span>
-                                            {classroom.students_count ?? 0} / {classroom.capacity} siswa
-                                        </span>
+                                        <span>{classroom.students_count ?? 0} siswa</span>
                                     </div>
                                     <div className="text-muted-foreground text-sm">
                                         <span className="font-medium">Wali Kelas:</span>{' '}
@@ -213,35 +233,57 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                     </DialogHeader>
                     <form onSubmit={handleCreate} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="create-name">Nama Kelas</Label>
-                            <Input
-                                id="create-name"
-                                value={createForm.data.name}
-                                onChange={(e) => createForm.setData('name', e.target.value)}
-                                placeholder="Contoh: VII-A"
-                            />
+                            <Label>Nama Kelas</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <Label htmlFor="create-grade" className="text-muted-foreground text-xs">
+                                        Tingkat
+                                    </Label>
+                                    <Select
+                                        value={createGradeLevel}
+                                        onValueChange={(value) => {
+                                            setCreateGradeLevel(value);
+                                            createForm.setData('grade_level', value);
+                                        }}
+                                    >
+                                        <SelectTrigger id="create-grade" className="w-full">
+                                            <SelectValue placeholder="Tingkat" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {GRADE_LEVELS.map((level) => (
+                                                <SelectItem key={level.value} value={level.value}>
+                                                    {level.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="create-parallel" className="text-muted-foreground text-xs">
+                                        Paralel
+                                    </Label>
+                                    <Select value={createParallel} onValueChange={setCreateParallel}>
+                                        <SelectTrigger id="create-parallel" className="w-full">
+                                            <SelectValue placeholder="Paralel" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {PARALLELS.map((p) => (
+                                                <SelectItem key={p.value} value={p.value}>
+                                                    {p.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            {createGradeLevel && createParallel && (
+                                <p className="text-muted-foreground text-sm">
+                                    Nama kelas: <strong>{autoName(createGradeLevel, createParallel)}</strong>
+                                </p>
+                            )}
                             {createForm.errors.name && (
                                 <p className="text-destructive text-sm">{createForm.errors.name}</p>
                             )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="create-grade">Tingkat Kelas</Label>
-                            <Select
-                                value={createForm.data.grade_level}
-                                onValueChange={(value) => createForm.setData('grade_level', value)}
-                            >
-                                <SelectTrigger id="create-grade" className="w-full">
-                                    <SelectValue placeholder="Pilih tingkat kelas" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {GRADE_LEVELS.map((level) => (
-                                        <SelectItem key={level.value} value={level.value}>
-                                            {level.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
                             {createForm.errors.grade_level && (
                                 <p className="text-destructive text-sm">{createForm.errors.grade_level}</p>
                             )}
@@ -291,21 +333,6 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                             )}
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="create-capacity">Kapasitas</Label>
-                            <Input
-                                id="create-capacity"
-                                type="number"
-                                min="1"
-                                max="100"
-                                value={createForm.data.capacity}
-                                onChange={(e) => createForm.setData('capacity', e.target.value)}
-                            />
-                            {createForm.errors.capacity && (
-                                <p className="text-destructive text-sm">{createForm.errors.capacity}</p>
-                            )}
-                        </div>
-
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
                                 Batal
@@ -326,35 +353,57 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                     </DialogHeader>
                     <form onSubmit={handleEdit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="edit-name">Nama Kelas</Label>
-                            <Input
-                                id="edit-name"
-                                value={editForm.data.name}
-                                onChange={(e) => editForm.setData('name', e.target.value)}
-                                placeholder="Contoh: VII-A"
-                            />
+                            <Label>Nama Kelas</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="space-y-1">
+                                    <Label htmlFor="edit-grade" className="text-muted-foreground text-xs">
+                                        Tingkat
+                                    </Label>
+                                    <Select
+                                        value={editGradeLevel}
+                                        onValueChange={(value) => {
+                                            setEditGradeLevel(value);
+                                            editForm.setData('grade_level', value);
+                                        }}
+                                    >
+                                        <SelectTrigger id="edit-grade" className="w-full">
+                                            <SelectValue placeholder="Tingkat" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {GRADE_LEVELS.map((level) => (
+                                                <SelectItem key={level.value} value={level.value}>
+                                                    {level.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="edit-parallel" className="text-muted-foreground text-xs">
+                                        Paralel
+                                    </Label>
+                                    <Select value={editParallel} onValueChange={setEditParallel}>
+                                        <SelectTrigger id="edit-parallel" className="w-full">
+                                            <SelectValue placeholder="Paralel" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {PARALLELS.map((p) => (
+                                                <SelectItem key={p.value} value={p.value}>
+                                                    {p.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            {editGradeLevel && editParallel && (
+                                <p className="text-muted-foreground text-sm">
+                                    Nama kelas: <strong>{autoName(editGradeLevel, editParallel)}</strong>
+                                </p>
+                            )}
                             {editForm.errors.name && (
                                 <p className="text-destructive text-sm">{editForm.errors.name}</p>
                             )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-grade">Tingkat Kelas</Label>
-                            <Select
-                                value={editForm.data.grade_level}
-                                onValueChange={(value) => editForm.setData('grade_level', value)}
-                            >
-                                <SelectTrigger id="edit-grade" className="w-full">
-                                    <SelectValue placeholder="Pilih tingkat kelas" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {GRADE_LEVELS.map((level) => (
-                                        <SelectItem key={level.value} value={level.value}>
-                                            {level.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
                             {editForm.errors.grade_level && (
                                 <p className="text-destructive text-sm">{editForm.errors.grade_level}</p>
                             )}
@@ -401,21 +450,6 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                             </Select>
                             {editForm.errors.homeroom_teacher_id && (
                                 <p className="text-destructive text-sm">{editForm.errors.homeroom_teacher_id}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-capacity">Kapasitas</Label>
-                            <Input
-                                id="edit-capacity"
-                                type="number"
-                                min="1"
-                                max="100"
-                                value={editForm.data.capacity}
-                                onChange={(e) => editForm.setData('capacity', e.target.value)}
-                            />
-                            {editForm.errors.capacity && (
-                                <p className="text-destructive text-sm">{editForm.errors.capacity}</p>
                             )}
                         </div>
 
