@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\Gender;
 use App\Enums\ParentRelation;
+use App\Enums\Religion;
 use App\Enums\UserRole;
 use App\Models\Classroom;
 use App\Models\ParentProfile;
@@ -67,7 +68,7 @@ class ParentAndStudentSeeder extends Seeder
                 'email' => "orangtua{$parentIndex}@sekolah.test",
                 'email_verified_at' => now(),
                 'password' => $password,
-                'phone' => '+628' . fake()->numerify('##########'),
+                'phone' => '+628'.fake()->numerify('##########'),
                 'is_active' => true,
                 'school_id' => $school->id,
             ]);
@@ -77,7 +78,7 @@ class ParentAndStudentSeeder extends Seeder
                 'school_id' => $school->id,
                 'user_id' => $user->id,
                 'nik' => fake()->numerify('################'),
-                'whatsapp_number' => '+628' . fake()->numerify('##########'),
+                'whatsapp_number' => '+628'.fake()->numerify('##########'),
                 'relation' => $relation,
                 'occupation' => fake('id_ID')->jobTitle(),
                 'address' => fake('id_ID')->address(),
@@ -114,6 +115,7 @@ class ParentAndStudentSeeder extends Seeder
                     'nisn' => fake()->unique()->numerify('##########'),
                     'full_name' => "{$firstName} {$lastName}",
                     'gender' => $gender,
+                    'religion' => fake()->randomElement(Religion::cases()),
                     'birth_place' => fake('id_ID')->city(),
                     'birth_date' => fake()->dateTimeBetween('-15 years', '-12 years'),
                     'address' => fake('id_ID')->address(),

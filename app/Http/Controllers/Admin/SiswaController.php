@@ -52,7 +52,9 @@ class SiswaController extends Controller
         $qrSvg = $qrGenerator->renderSvg($siswa);
 
         return Inertia::render('admin/siswa/show', [
-            'student' => $siswa,
+            'student' => array_merge($siswa->toArray(), [
+                'religion_label' => $siswa->religion?->label(),
+            ]),
             'qrSvg' => $qrSvg,
         ]);
     }
@@ -88,6 +90,7 @@ class SiswaController extends Controller
             'nis' => ['nullable', 'string', 'max:50', 'unique:students,nis'],
             'nisn' => ['nullable', 'string', 'max:50', 'unique:students,nisn'],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
+            'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
             'classroom_id' => ['required', 'exists:classrooms,id'],
             'birth_place' => ['nullable', 'string', 'max:255'],
             'birth_date' => ['nullable', 'date'],
@@ -140,6 +143,7 @@ class SiswaController extends Controller
             'nis' => ['nullable', 'string', 'max:50', 'unique:students,nis,'.$siswa->id],
             'nisn' => ['nullable', 'string', 'max:50', 'unique:students,nisn,'.$siswa->id],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
+            'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
             'classroom_id' => ['required', 'exists:classrooms,id'],
             'birth_place' => ['nullable', 'string', 'max:255'],
             'birth_date' => ['nullable', 'date'],

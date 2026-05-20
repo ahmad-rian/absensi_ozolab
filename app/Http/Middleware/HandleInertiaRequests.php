@@ -52,15 +52,22 @@ class HandleInertiaRequests extends Middleware
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,
             ],
-            'currentSchool' => $user?->school_id ? function () use ($user) {
-                $school = School::find($user->school_id);
+            'currentSchool' => function () {
+                // Read from singleton set by SetCurrentSchool middleware — always fresh
+                $school = app()->bound('currentSchool') ? app('currentSchool') : null;
 
                 return $school ? [
                     'id' => $school->id,
                     'name' => $school->name,
-                    'logo' => $school->logo,
+                    'slug' => $school->slug,
+                    'logo' => $school->logo_path,
                 ] : null;
-            } : null,
+            },
+            'schools' => $user ? function () {
+                return School::where('is_active', true)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'slug']);
+            } : [],
             'app' => [
                 'school_name' => Setting::getValue('school_name', 'SMP Nusantara'),
                 'school_logo' => Setting::getValue('school_logo'),

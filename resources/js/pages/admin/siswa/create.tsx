@@ -41,6 +41,7 @@ export default function SiswaCreate({ classrooms, parentProfiles }: PageProps) {
         nis: '',
         nisn: '',
         gender: 'LAKI_LAKI',
+        religion: '',
         classroom_id: '',
         birth_place: '',
         birth_date: '',
@@ -127,6 +128,25 @@ export default function SiswaCreate({ classrooms, parentProfiles }: PageProps) {
                                         </div>
                                     </RadioGroup>
                                     {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
+                                </div>
+
+                                {/* Agama */}
+                                <div className="grid gap-2">
+                                    <Label>Agama</Label>
+                                    <Select value={data.religion} onValueChange={(value) => setData('religion', value)}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Pilih agama" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="ISLAM">Islam</SelectItem>
+                                            <SelectItem value="KRISTEN">Kristen Protestan</SelectItem>
+                                            <SelectItem value="KATOLIK">Katolik</SelectItem>
+                                            <SelectItem value="HINDU">Hindu</SelectItem>
+                                            <SelectItem value="BUDDHA">Buddha</SelectItem>
+                                            <SelectItem value="KONGHUCU">Konghucu</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.religion && <p className="text-sm text-destructive">{errors.religion}</p>}
                                 </div>
 
                                 {/* Kelas */}

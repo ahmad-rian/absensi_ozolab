@@ -110,7 +110,7 @@ export function QrScanner({ scanEndpoint, scanType = 'CHECK_IN', extraPayload = 
                 scanner = new Html5Qrcode(readerId);
                 await scanner.start(
                     { facingMode: 'environment' },
-                    { fps: 8, qrbox: { width: 250, height: 250 }, aspectRatio: 1 },
+                    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 4 / 3 },
                     (text) => processResult(text),
                     () => {},
                 );
@@ -151,7 +151,7 @@ export function QrScanner({ scanEndpoint, scanType = 'CHECK_IN', extraPayload = 
             <Card className="overflow-hidden">
                 <CardContent className="p-0">
                     <div className="relative">
-                        <div id={readerId} className="mx-auto max-w-md" style={{ minHeight: 300 }} />
+                        <div id={readerId} className="mx-auto max-w-lg" style={{ minHeight: 320 }} />
 
                         {status === 'loading' && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900">

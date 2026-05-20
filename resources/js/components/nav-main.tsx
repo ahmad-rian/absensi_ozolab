@@ -9,12 +9,19 @@ import {
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
 
-export function NavMain({ items = [] }: { items: NavItem[] }) {
+interface NavGroupProps {
+    label: string;
+    items: NavItem[];
+}
+
+export function NavGroup({ label, items }: NavGroupProps) {
     const { isCurrentUrl } = useCurrentUrl();
+
+    if (items.length === 0) return null;
 
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
+            <SidebarGroupLabel>{label}</SidebarGroupLabel>
             <SidebarMenu>
                 {items.map((item) => (
                     <SidebarMenuItem key={item.title}>
@@ -33,4 +40,9 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
             </SidebarMenu>
         </SidebarGroup>
     );
+}
+
+// Keep backward-compatible export
+export function NavMain({ items = [] }: { items: NavItem[] }) {
+    return <NavGroup label="Platform" items={items} />;
 }

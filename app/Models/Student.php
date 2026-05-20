@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Gender;
+use App\Enums\Religion;
 use App\Models\Concerns\BelongsToSchool;
 use Database\Factories\StudentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,6 +25,7 @@ class Student extends Model
         'nisn',
         'full_name',
         'gender',
+        'religion',
         'birth_place',
         'birth_date',
         'address',
@@ -38,6 +40,7 @@ class Student extends Model
     {
         return [
             'gender' => Gender::class,
+            'religion' => Religion::class,
             'birth_date' => 'date',
             'qr_issued_at' => 'datetime',
             'qr_rotated_at' => 'datetime',

@@ -56,6 +56,7 @@ export default function SiswaEdit({ student, classrooms, parentProfiles }: PageP
         nis: student.nis ?? '',
         nisn: student.nisn ?? '',
         gender: student.gender,
+        religion: student.religion ?? '',
         classroom_id: student.classroom_id ? String(student.classroom_id) : '',
         birth_place: student.birth_place ?? '',
         birth_date: student.birth_date ? student.birth_date.substring(0, 10) : '',
@@ -143,6 +144,24 @@ export default function SiswaEdit({ student, classrooms, parentProfiles }: PageP
                                         </div>
                                     </RadioGroup>
                                     {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
+                                </div>
+
+                                {/* Agama */}
+                                <div className="grid gap-2">
+                                    <Label>Agama</Label>
+                                    <Select value={data.religion} onValueChange={(value) => setData('religion', value)}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Pilih agama" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="ISLAM">Islam</SelectItem>
+                                            <SelectItem value="KRISTEN">Kristen Protestan</SelectItem>
+                                            <SelectItem value="KATOLIK">Katolik</SelectItem>
+                                            <SelectItem value="HINDU">Hindu</SelectItem>
+                                            <SelectItem value="BUDDHA">Buddha</SelectItem>
+                                            <SelectItem value="KONGHUCU">Konghucu</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 {/* Kelas */}

@@ -1,20 +1,25 @@
 <?php
 
+use App\Http\Controllers\Api\StudentApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes
+| API Routes — Public (no auth required)
 |--------------------------------------------------------------------------
-|
-| Endpoints for scanner devices and WhatsApp webhooks.
-| These will be enabled when the scanner module is built (Phase 3).
-|
+| Endpoints for external HTML card templates (kartu OSIS, kartu perpus, dll).
+| Base URL: /api/...
 */
 
-// POST /api/scanner/scan — QR scanner endpoint (auth via device API token)
-// Route::post('/scanner/scan', [ScannerController::class, 'scan'])
-//     ->middleware('throttle:scanner');
+// Schools
+Route::get('schools', [StudentApiController::class, 'schools']);
+Route::get('schools/{school}/students', [StudentApiController::class, 'schoolStudents']);
 
-// POST /api/webhooks/whatsapp/status — WhatsApp delivery status callback
-// Route::post('/webhooks/whatsapp/status', [WhatsAppWebhookController::class, 'status']);
+// Students
+Route::get('students', [StudentApiController::class, 'index']);
+Route::get('students/{student}', [StudentApiController::class, 'show']);
+Route::get('students/{student}/qr', [StudentApiController::class, 'qr']);
+
+// Lookup
+Route::get('students/by-nis/{nis}', [StudentApiController::class, 'byNis']);
+Route::get('students/by-qr/{token}', [StudentApiController::class, 'byQr']);
