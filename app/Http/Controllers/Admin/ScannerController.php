@@ -68,7 +68,7 @@ class ScannerController extends Controller
                 'classroom' => $student->classroom?->name,
                 'status' => $result['attendance']?->status->label(),
                 'type' => $type->label(),
-                'time' => now()->format('H:i:s'),
+                'time' => now('Asia/Jakarta')->format('H:i:s'),
             ] : null,
         ], $result['success'] ? 200 : 422);
     }

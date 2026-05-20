@@ -7,6 +7,7 @@ use App\Enums\AttendanceType;
 use App\Events\StudentCheckedIn;
 use App\Events\StudentCheckedOut;
 use App\Models\Attendance;
+use App\Models\AttendanceSchedule;
 use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
@@ -28,7 +29,9 @@ class AttendanceRecorder
         ?string $deviceId = null,
         ?Carbon $timestamp = null,
     ): array {
-        $timestamp ??= Carbon::now();
+        $timestamp ??= Carbon::now('Asia/Jakarta');
+        // Ensure timestamp is in Jakarta timezone for correct late threshold comparison
+        $timestamp = $timestamp->setTimezone('Asia/Jakarta');
         $date = $timestamp->toDateString();
 
         $schedule = $this->scheduleResolver->resolve($student, $timestamp);
@@ -77,7 +80,7 @@ class AttendanceRecorder
     private function determineStatus(
         AttendanceType $type,
         Carbon $timestamp,
-        \App\Models\AttendanceSchedule $schedule,
+        AttendanceSchedule $schedule,
     ): AttendanceStatus {
         if ($type === AttendanceType::CheckOut) {
             return AttendanceStatus::Hadir;
