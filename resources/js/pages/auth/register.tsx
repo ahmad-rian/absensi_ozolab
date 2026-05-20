@@ -26,7 +26,6 @@ import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { login } from '@/routes';
-import { store } from '@/routes/register';
 
 type Classroom = { id: number; name: string; grade_level: number };
 type Relation = { value: string; label: string };
@@ -98,7 +97,7 @@ export default function Register({ passwordRules, classrooms, relations }: Props
 
     function handleSubmit() {
         setShowConfirm(false);
-        post(store.url(), { preserveScroll: true });
+        post('/register', { preserveScroll: true });
     }
 
     function onSubmitClick(e: React.FormEvent) {

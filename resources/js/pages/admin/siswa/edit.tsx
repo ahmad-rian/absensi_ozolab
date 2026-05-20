@@ -31,6 +31,7 @@ type ParentProfile = {
 type Student = {
     id: number;
     nis: string | null;
+    no_absen: string | null;
     nisn: string | null;
     full_name: string;
     gender: string;
@@ -54,6 +55,7 @@ export default function SiswaEdit({ student, classrooms, parentProfiles }: PageP
     const { data, setData, put, processing, errors } = useForm({
         full_name: student.full_name,
         nis: student.nis ?? '',
+        no_absen: student.no_absen ?? '',
         nisn: student.nisn ?? '',
         gender: student.gender,
         religion: student.religion ?? '',
@@ -108,6 +110,18 @@ export default function SiswaEdit({ student, classrooms, parentProfiles }: PageP
                                         placeholder="Nomor Induk Siswa"
                                     />
                                     {errors.nis && <p className="text-sm text-destructive">{errors.nis}</p>}
+                                </div>
+
+                                {/* No. Absen */}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="no_absen">No. Absen</Label>
+                                    <Input
+                                        id="no_absen"
+                                        value={data.no_absen}
+                                        onChange={(e) => setData('no_absen', e.target.value)}
+                                        placeholder="Nomor absen siswa"
+                                    />
+                                    {errors.no_absen && <p className="text-sm text-destructive">{errors.no_absen}</p>}
                                 </div>
 
                                 {/* NISN */}

@@ -34,7 +34,7 @@ export function CtaBanner() {
                         </p>
                         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
                             <Link
-                                href="/register"
+                                href="/daftar"
                                 className="inline-flex h-11 items-center justify-center rounded-lg bg-white px-6 text-sm font-semibold text-zinc-900 shadow-lg transition hover:bg-zinc-100"
                             >
                                 Daftar Sekarang
