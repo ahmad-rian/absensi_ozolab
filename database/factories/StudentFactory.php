@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\Gender;
+use App\Enums\Religion;
 use App\Models\Classroom;
 use App\Models\ParentProfile;
 use App\Models\Student;
@@ -27,6 +28,7 @@ class StudentFactory extends Factory
             'nisn' => fake()->unique()->numerify('##########'),
             'full_name' => fake('id_ID')->name($genderFaker),
             'gender' => $gender,
+            'religion' => fake()->randomElement(Religion::cases()),
             'birth_place' => fake('id_ID')->city(),
             'birth_date' => fake()->dateTimeBetween('-15 years', '-12 years'),
             'address' => fake('id_ID')->address(),

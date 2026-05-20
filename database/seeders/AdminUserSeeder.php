@@ -12,19 +12,46 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $school = School::where('slug', 'smp-nusantara')->firstOrFail();
+        $smpNusantara = School::where('slug', 'smp-nusantara')->firstOrFail();
+        $sdMentari = School::where('slug', 'sd-mentari')->firstOrFail();
 
-        $admin = User::create([
-            'name' => 'Administrator',
-            'email' => 'admin@sekolah.test',
+        // Super Admin — platform owner, no school_id (can access all schools)
+        $superAdmin = User::create([
+            'name' => 'Super Admin',
+            'email' => 'superadmin@absenku.test',
+            'email_verified_at' => now(),
+            'password' => Hash::make('password'),
+            'phone' => '+6281200000000',
+            'is_active' => true,
+            'school_id' => $smpNusantara->id, // default to first school
+        ]);
+        $superAdmin->assignRole(UserRole::SuperAdmin->value);
+
+        // Admin SMP Nusantara
+        $adminSmp = User::create([
+            'name' => 'Admin SMP Nusantara',
+            'email' => 'admin@smpnusantara.test',
             'email_verified_at' => now(),
             'password' => Hash::make('password'),
             'phone' => '+6281234567890',
             'is_active' => true,
-            'school_id' => $school->id,
+            'school_id' => $smpNusantara->id,
         ]);
-        $admin->assignRole(UserRole::Admin->value);
+        $adminSmp->assignRole(UserRole::Admin->value);
 
+        // Admin SD Mentari
+        $adminSd = User::create([
+            'name' => 'Admin SD Mentari',
+            'email' => 'admin@sdmentari.test',
+            'email_verified_at' => now(),
+            'password' => Hash::make('password'),
+            'phone' => '+6281234567891',
+            'is_active' => true,
+            'school_id' => $sdMentari->id,
+        ]);
+        $adminSd->assignRole(UserRole::Admin->value);
+
+        // Guru SMP Nusantara
         $teachers = [
             ['name' => 'Budi Santoso', 'email' => 'budi@sekolah.test'],
             ['name' => 'Siti Rahayu', 'email' => 'siti@sekolah.test'],
@@ -37,9 +64,9 @@ class AdminUserSeeder extends Seeder
                 'email' => $teacher['email'],
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
-                'phone' => '+628' . fake()->numerify('##########'),
+                'phone' => '+628'.fake()->numerify('##########'),
                 'is_active' => true,
-                'school_id' => $school->id,
+                'school_id' => $smpNusantara->id,
             ]);
             $user->assignRole(UserRole::Guru->value);
         }

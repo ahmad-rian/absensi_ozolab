@@ -8,14 +8,28 @@ use App\Http\Controllers\Admin\OrangTuaController;
 use App\Http\Controllers\Admin\PengaturanController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\ScannerController;
+use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SiswaController;
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PublicScannerController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 Route::get('scan', [PublicScannerController::class, 'index'])->name('public.scanner');
 Route::post('scan', [PublicScannerController::class, 'scan'])->name('public.scanner.scan');
+
+Route::middleware(['auth'])->post('admin/switch-school', function (Request $request) {
+    $request->validate(['school_id' => ['required', 'exists:schools,id']]);
+
+    $schoolId = (int) $request->school_id;
+    session(['current_school_id' => $schoolId]);
+    $request->user()->update(['school_id' => $schoolId]);
+
+    // Force full Inertia visit to dashboard (not back()) to ensure all shared props refresh
+    return Inertia\Inertia::location(route('dashboard'));
+})->name('admin.switch-school');
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -35,6 +49,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::put('pengaturan', [PengaturanController::class, 'update'])->name('admin.pengaturan.update');
     Route::post('pengaturan/upload-logo', [PengaturanController::class, 'uploadLogo'])->name('admin.pengaturan.upload-logo');
     Route::post('pengaturan/upload-favicon', [PengaturanController::class, 'uploadFavicon'])->name('admin.pengaturan.upload-favicon');
+    Route::resource('users', UserManagementController::class)->except(['show'])->names('admin.users');
+    Route::resource('schools', SchoolController::class)->except(['show'])->names('admin.schools');
     Route::get('roles', [RolePermissionController::class, 'index'])->name('admin.roles');
     Route::post('roles', [RolePermissionController::class, 'store'])->name('admin.roles.store');
     Route::put('roles/{role}', [RolePermissionController::class, 'update'])->name('admin.roles.update');

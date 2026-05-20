@@ -18,12 +18,15 @@ class SchoolSeeder extends Seeder
             'email' => 'info@smpnusantara.sch.id',
             'is_active' => true,
             'settings' => [
-                'check_in_start' => '06:30',
-                'check_in_end' => '07:30',
-                'late_threshold' => '07:00',
-                'check_out_start' => '14:00',
-                'check_out_end' => '16:00',
-                'wa_template' => 'Yth. Bapak/Ibu :parent_name, anak Anda :student_name telah :status pada :datetime.',
+                'school_name' => 'SMP Nusantara',
+                'default_check_in_time' => '07:00',
+                'late_threshold_time' => '07:15',
+                'default_check_out_time' => '14:30',
+                'timezone' => 'Asia/Jakarta',
+                'whatsapp_enabled' => true,
+                'notify_on_check_in' => true,
+                'notify_on_check_out' => false,
+                'whatsapp_template_attendance' => 'Halo Bapak/Ibu Wali, ananda {nama_siswa} ({kelas}) telah {status} di {nama_sekolah} pada {tanggal} pukul {waktu}. Terima kasih.',
             ],
         ]);
 
@@ -36,12 +39,15 @@ class SchoolSeeder extends Seeder
             'email' => 'info@sdmentari.sch.id',
             'is_active' => true,
             'settings' => [
-                'check_in_start' => '06:45',
-                'check_in_end' => '07:15',
-                'late_threshold' => '07:00',
-                'check_out_start' => '12:30',
-                'check_out_end' => '14:00',
-                'wa_template' => 'Yth. Bapak/Ibu :parent_name, anak Anda :student_name telah :status pada :datetime.',
+                'school_name' => 'SD Mentari',
+                'default_check_in_time' => '06:45',
+                'late_threshold_time' => '07:00',
+                'default_check_out_time' => '12:30',
+                'timezone' => 'Asia/Jakarta',
+                'whatsapp_enabled' => true,
+                'notify_on_check_in' => true,
+                'notify_on_check_out' => false,
+                'whatsapp_template_attendance' => 'Halo Bapak/Ibu Wali, ananda {nama_siswa} ({kelas}) telah {status} di {nama_sekolah} pada {tanggal} pukul {waktu}. Terima kasih.',
             ],
         ]);
     }

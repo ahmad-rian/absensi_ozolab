@@ -6,7 +6,6 @@ import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { dashboard } from '@/routes';
 
 export default function ScannerIndex() {
@@ -50,12 +49,11 @@ export default function ScannerIndex() {
                     </p>
                 </div>
 
-                <div className="mx-auto w-full max-w-xl">
-                    {/* Auto-start scanner — CHECK_IN only */}
+                <div className="mx-auto w-full max-w-2xl">
                     <QrScanner scanEndpoint="/admin/scanner/scan" scanType="CHECK_IN" />
+                </div>
 
-                    <Separator className="my-6" />
-
+                <div className="mx-auto w-full max-w-2xl">
                     {/* Manual NIS fallback */}
                     <Card>
                         <CardHeader>

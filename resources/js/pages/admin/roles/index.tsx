@@ -19,7 +19,7 @@ type Role = { id: number; name: string; permissions: string[]; users_count: numb
 type Props = { roles: Role[]; permissions: string[] };
 
 const roleLabels: Record<string, string> = {
-    ADMIN: 'Administrator', GURU: 'Guru / Operator', ORANG_TUA: 'Orang Tua / Wali',
+    SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin Sekolah', GURU: 'Guru / Operator', ORANG_TUA: 'Orang Tua / Wali',
 };
 
 const permissionLabels: Record<string, string> = {
@@ -27,6 +27,8 @@ const permissionLabels: Record<string, string> = {
     'student.update': 'Edit Siswa', 'student.delete': 'Hapus Siswa', 'attendance.view': 'Lihat Absensi',
     'attendance.create': 'Catat Absensi', 'attendance.export': 'Ekspor Absensi', 'classroom.view': 'Lihat Kelas',
     'classroom.manage': 'Kelola Kelas', 'report.view': 'Lihat Laporan', 'setting.manage': 'Kelola Pengaturan',
+    'user.view': 'Lihat Pengguna', 'user.create': 'Tambah Pengguna', 'user.update': 'Edit Pengguna',
+    'user.delete': 'Hapus Pengguna', 'school.manage': 'Kelola Sekolah',
 };
 
 export default function RolesIndex({ roles, permissions }: Props) {

@@ -26,6 +26,8 @@ type Student = {
     nisn: string | null;
     full_name: string;
     gender: string;
+    religion: string | null;
+    religion_label: string | null;
     is_active: boolean;
     birth_place: string | null;
     birth_date: string | null;
@@ -105,6 +107,7 @@ export default function SiswaShow({ student, qrSvg }: PageProps) {
                                     <InfoRow label="Nama Lengkap" value={student.full_name} />
                                     <InfoRow label="Kelas" value={student.classroom?.name} />
                                     <InfoRow label="Jenis Kelamin" value={genderLabel(student.gender)} />
+                                    <InfoRow label="Agama" value={student.religion_label} />
                                     <InfoRow
                                         label="Tempat, Tanggal Lahir"
                                         value={
@@ -136,8 +139,8 @@ export default function SiswaShow({ student, qrSvg }: PageProps) {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-col items-center gap-4">
-                                    {/* QR Frame */}
-                                    <div className="rounded-xl border-2 border-dashed border-gray-300 bg-white p-4 print:border-solid print:border-gray-800">
+                                    {/* QR Frame — this div is the only thing visible when printing */}
+                                    <div className="print-area rounded-xl border-2 border-dashed border-gray-300 bg-white p-6 print:border-solid print:border-gray-800">
                                         <div
                                             className="mx-auto w-full max-w-[250px] [&>svg]:h-auto [&>svg]:w-full"
                                             dangerouslySetInnerHTML={{ __html: qrSvg }}
