@@ -33,8 +33,8 @@ export function HeroSection() {
 
                     <div className="mt-8 flex flex-wrap items-center gap-3">
                         <Button size="lg" className="rounded-[1.3rem] px-6 text-sm font-semibold" asChild>
-                            <Link href="/register">
-                                Daftarkan Sekolah Gratis
+                            <Link href="/daftar">
+                                Daftarkan Siswa Gratis
                                 <ArrowRight className="ml-1 size-4" />
                             </Link>
                         </Button>

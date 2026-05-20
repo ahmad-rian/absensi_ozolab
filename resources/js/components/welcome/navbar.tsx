@@ -100,7 +100,7 @@ export function Navbar() {
                                     <Link href="/login">Masuk</Link>
                                 </Button>
                                 <Button size="sm" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25" asChild>
-                                    <Link href="/register">Daftarkan Sekolah</Link>
+                                    <Link href="/daftar">Daftarkan Siswa</Link>
                                 </Button>
                             </>
                         )}
@@ -182,8 +182,8 @@ export function Navbar() {
                         ) : (
                             <div className="flex flex-col gap-3">
                                 <Button className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-base text-white shadow-lg shadow-blue-500/25" asChild>
-                                    <Link href="/register">
-                                        Daftarkan Sekolah
+                                    <Link href="/daftar">
+                                        Daftarkan Siswa
                                         <ArrowRight className="ml-2 size-4" />
                                     </Link>
                                 </Button>

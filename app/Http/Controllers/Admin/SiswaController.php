@@ -88,6 +88,7 @@ class SiswaController extends Controller
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
             'nis' => ['nullable', 'string', 'max:50', 'unique:students,nis'],
+            'no_absen' => ['nullable', 'string', 'max:20'],
             'nisn' => ['nullable', 'string', 'max:50', 'unique:students,nisn'],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
             'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
@@ -101,6 +102,7 @@ class SiswaController extends Controller
             'full_name.max' => 'Nama lengkap maksimal 255 karakter.',
             'nis.unique' => 'NIS sudah digunakan.',
             'nis.max' => 'NIS maksimal 50 karakter.',
+            'no_absen.max' => 'No. Absen maksimal 20 karakter.',
             'nisn.unique' => 'NISN sudah digunakan.',
             'nisn.max' => 'NISN maksimal 50 karakter.',
             'gender.required' => 'Jenis kelamin wajib dipilih.',
@@ -141,6 +143,7 @@ class SiswaController extends Controller
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
             'nis' => ['nullable', 'string', 'max:50', 'unique:students,nis,'.$siswa->id],
+            'no_absen' => ['nullable', 'string', 'max:20'],
             'nisn' => ['nullable', 'string', 'max:50', 'unique:students,nisn,'.$siswa->id],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
             'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
@@ -155,6 +158,7 @@ class SiswaController extends Controller
             'full_name.max' => 'Nama lengkap maksimal 255 karakter.',
             'nis.unique' => 'NIS sudah digunakan.',
             'nis.max' => 'NIS maksimal 50 karakter.',
+            'no_absen.max' => 'No. Absen maksimal 20 karakter.',
             'nisn.unique' => 'NISN sudah digunakan.',
             'nisn.max' => 'NISN maksimal 50 karakter.',
             'gender.required' => 'Jenis kelamin wajib dipilih.',

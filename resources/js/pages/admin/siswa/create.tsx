@@ -39,6 +39,7 @@ export default function SiswaCreate({ classrooms, parentProfiles }: PageProps) {
     const { data, setData, post, processing, errors } = useForm({
         full_name: '',
         nis: '',
+        no_absen: '',
         nisn: '',
         gender: 'LAKI_LAKI',
         religion: '',
@@ -92,6 +93,18 @@ export default function SiswaCreate({ classrooms, parentProfiles }: PageProps) {
                                         placeholder="Nomor Induk Siswa"
                                     />
                                     {errors.nis && <p className="text-sm text-destructive">{errors.nis}</p>}
+                                </div>
+
+                                {/* No. Absen */}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="no_absen">No. Absen</Label>
+                                    <Input
+                                        id="no_absen"
+                                        value={data.no_absen}
+                                        onChange={(e) => setData('no_absen', e.target.value)}
+                                        placeholder="Nomor absen siswa"
+                                    />
+                                    {errors.no_absen && <p className="text-sm text-destructive">{errors.no_absen}</p>}
                                 </div>
 
                                 {/* NISN */}

@@ -13,12 +13,16 @@ use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PublicScannerController;
+use App\Http\Controllers\StudentRegistrationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 Route::get('scan', [PublicScannerController::class, 'index'])->name('public.scanner');
 Route::post('scan', [PublicScannerController::class, 'scan'])->name('public.scanner.scan');
+
+Route::get('daftar', [StudentRegistrationController::class, 'index'])->name('student.register');
+Route::post('daftar', [StudentRegistrationController::class, 'store'])->name('student.register.store');
 
 Route::middleware(['auth'])->post('admin/switch-school', function (Request $request) {
     $request->validate(['school_id' => ['required', 'exists:schools,id']]);

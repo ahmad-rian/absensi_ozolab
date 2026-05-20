@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
-import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
@@ -110,7 +109,7 @@ export default function Login({ status, canResetPassword }: Props) {
 
                         <p className="text-muted-foreground text-center text-sm">
                             Belum punya akun?{' '}
-                            <TextLink href={register()} tabIndex={6} className="font-semibold text-blue-600 dark:text-blue-400">
+                            <TextLink href="/daftar" tabIndex={6} className="font-semibold text-blue-600 dark:text-blue-400">
                                 Daftar sekarang
                             </TextLink>
                         </p>
