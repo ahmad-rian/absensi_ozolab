@@ -24,14 +24,14 @@ export default function ScannerIndex() {
             });
             const data = await res.json();
             if (data.success) {
-                playSuccessSound();
+                playSuccessSound(data.student.full_name);
                 setManualResult(`${data.student.full_name} — ${data.student.status}`);
             } else {
-                playErrorSound();
+                playErrorSound(data.message);
                 setManualResult(data.message);
             }
         } catch {
-            playErrorSound();
+            playErrorSound('Gagal menghubungi server');
             setManualResult('Gagal menghubungi server.');
         }
         setNis('');

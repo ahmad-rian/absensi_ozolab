@@ -78,12 +78,12 @@ export function QrScanner({ scanEndpoint, scanType = 'CHECK_IN', extraPayload = 
                 setLastResult(data);
                 setScanLog((prev) => [{ ...data, id: ++logIdRef.current, timestamp: new Date().toLocaleTimeString('id-ID') }, ...prev].slice(0, 50));
 
-                if (data.success) playSuccessSound();
-                else playErrorSound();
+                if (data.success) playSuccessSound(data.student?.full_name);
+                else playErrorSound(data.message);
             } catch {
                 if (!mountedRef.current) return;
                 setLastResult({ success: false, message: 'Gagal menghubungi server.' });
-                playErrorSound();
+                playErrorSound('Gagal menghubungi server');
             }
 
             setTimeout(() => {
