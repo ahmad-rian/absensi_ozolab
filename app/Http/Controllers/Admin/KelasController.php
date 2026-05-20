@@ -44,11 +44,13 @@ class KelasController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'grade_level' => ['required', 'integer', 'min:7', 'max:12'],
+            'grade_level' => ['required', 'integer', 'min:1', 'max:12'],
             'academic_year_id' => ['required', 'exists:academic_years,id'],
             'homeroom_teacher_id' => ['nullable', 'exists:users,id'],
-            'capacity' => ['required', 'integer', 'min:1', 'max:100'],
+            'capacity' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
+
+        $validated['capacity'] = $validated['capacity'] ?? 36;
 
         Classroom::create($validated);
 
@@ -59,11 +61,13 @@ class KelasController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'grade_level' => ['required', 'integer', 'min:7', 'max:12'],
+            'grade_level' => ['required', 'integer', 'min:1', 'max:12'],
             'academic_year_id' => ['required', 'exists:academic_years,id'],
             'homeroom_teacher_id' => ['nullable', 'exists:users,id'],
-            'capacity' => ['required', 'integer', 'min:1', 'max:100'],
+            'capacity' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
+
+        $validated['capacity'] = $validated['capacity'] ?? 36;
 
         $classroom->update($validated);
 
