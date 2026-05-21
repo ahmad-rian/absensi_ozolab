@@ -236,10 +236,20 @@ export default function ScannerIndex() {
                                     </div>
                                 )}
 
-                                <div className="text-muted-foreground space-y-1 text-xs">
+                                <div className="text-muted-foreground space-y-1.5 text-xs">
                                     <p><b>Cara kerja:</b> Barcode gun mengirim data sebagai ketikan keyboard diakhiri Enter.</p>
                                     <p>Scanner mendeteksi ketikan cepat (&lt;100ms antar karakter) dan otomatis submit.</p>
-                                    <p>Kompatibel dengan semua barcode/QR gun: iWare, Honeywell, Zebra, dll.</p>
+                                    <p>Kompatibel: <b>iWare</b>, Honeywell, Zebra, Datalogic, dan semua HID barcode gun.</p>
+                                </div>
+                                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs dark:border-blue-800 dark:bg-blue-950">
+                                    <p className="mb-1.5 font-bold text-blue-800 dark:text-blue-200">Setup iWare Barcode Scanner:</p>
+                                    <ol className="list-inside list-decimal space-y-0.5 text-blue-700 dark:text-blue-300">
+                                        <li>Colok iWare ke USB — otomatis terdeteksi sebagai keyboard HID</li>
+                                        <li>Pastikan iWare di-set ke mode <b>QR Code / 2D Barcode</b> (scan manual QR di buku panduan iWare)</li>
+                                        <li>Set suffix ke <b>Enter/CR</b> (default iWare sudah Enter)</li>
+                                        <li>Klik input field di atas, lalu arahkan iWare ke QR siswa</li>
+                                    </ol>
+                                    <p className="mt-1.5 text-blue-600 dark:text-blue-400">Tidak perlu install driver — plug and play di Windows/Mac/Linux.</p>
                                 </div>
                             </CardContent>
                         </Card>
