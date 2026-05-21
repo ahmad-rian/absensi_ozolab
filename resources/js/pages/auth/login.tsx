@@ -1,7 +1,9 @@
 import { Form, Head } from '@inertiajs/react';
 import { AlertCircle, LogIn } from 'lucide-react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import { SimpleCaptcha } from '@/components/simple-captcha';
 import TextLink from '@/components/text-link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -18,6 +20,8 @@ type Props = {
 };
 
 export default function Login({ status, canResetPassword }: Props) {
+    const [captchaVerified, setCaptchaVerified] = useState(false);
+
     return (
         <>
             <Head title="Masuk" />
@@ -40,71 +44,40 @@ export default function Login({ status, canResetPassword }: Props) {
 
                         <div className="grid gap-5">
                             <div className="grid gap-2">
-                                <Label htmlFor="email" className="text-sm font-medium">
-                                    Email
-                                </Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="nama@sekolah.test"
-                                    className="h-11 rounded-xl"
-                                />
+                                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                                <Input id="email" type="email" name="email" required autoFocus tabIndex={1} autoComplete="email" placeholder="nama@sekolah.test" className="h-11 rounded-xl" />
                                 <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password" className="text-sm font-medium">
-                                        Kata Sandi
-                                    </Label>
+                                    <Label htmlFor="password" className="text-sm font-medium">Kata Sandi</Label>
                                     {canResetPassword && (
-                                        <TextLink href={request()} className="ml-auto text-xs" tabIndex={5}>
-                                            Lupa kata sandi?
-                                        </TextLink>
+                                        <TextLink href={request()} className="ml-auto text-xs" tabIndex={5}>Lupa kata sandi?</TextLink>
                                     )}
                                 </div>
-                                <PasswordInput
-                                    id="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Masukkan kata sandi"
-                                    className="h-11 rounded-xl"
-                                />
+                                <PasswordInput id="password" name="password" required tabIndex={2} autoComplete="current-password" placeholder="Masukkan kata sandi" className="h-11 rounded-xl" />
                                 <InputError message={errors.password} />
                             </div>
 
                             <div className="flex items-center space-x-2.5">
                                 <Checkbox id="remember" name="remember" tabIndex={3} />
-                                <Label htmlFor="remember" className="text-sm font-normal">
-                                    Ingat saya di perangkat ini
-                                </Label>
+                                <Label htmlFor="remember" className="text-sm font-normal">Ingat saya</Label>
                             </div>
+
+                            <SimpleCaptcha onVerified={(token) => setCaptchaVerified(!!token)} />
 
                             <Button
                                 type="submit"
                                 tabIndex={4}
-                                disabled={processing}
-                                className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30"
+                                disabled={processing || !captchaVerified}
+                                className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-50"
                             >
-                                {processing ? (
-                                    <Spinner />
-                                ) : (
-                                    <>
-                                        <LogIn className="mr-2 size-4" />
-                                        Masuk
-                                    </>
-                                )}
+                                {processing ? <Spinner /> : <><LogIn className="mr-2 size-4" />Masuk</>}
                             </Button>
                         </div>
 
-                        <p className="text-muted-foreground mt-3 text-center text-xs">
+                        <p className="text-muted-foreground mt-2 text-center text-xs">
                             Halaman ini khusus untuk admin, guru, dan operator sekolah.
                         </p>
                     </>

@@ -3,6 +3,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
+import { SimpleCaptcha } from '@/components/simple-captcha';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,7 @@ const religions = [
 export default function StudentRegister({ schools, classrooms }: Props) {
     const { flash } = usePage().props as unknown as { flash: { success?: string } };
     const [submitted, setSubmitted] = useState(false);
+    const [captchaVerified, setCaptchaVerified] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         school_id: '',
@@ -339,11 +341,16 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         </div>
                     </FormSection>
 
+                    {/* Captcha */}
+                    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <SimpleCaptcha onVerified={(token) => setCaptchaVerified(!!token)} />
+                    </div>
+
                     {/* Submit */}
                     <Button
                         type="submit"
-                        disabled={processing}
-                        className="h-12 w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold text-white shadow-lg shadow-blue-500/25"
+                        disabled={processing || !captchaVerified}
+                        className="h-12 w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
                     >
                         {processing ? <Spinner /> : 'Daftarkan Siswa'}
                     </Button>
