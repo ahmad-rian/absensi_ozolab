@@ -10,22 +10,24 @@ class AcademicYearSeeder extends Seeder
 {
     public function run(): void
     {
-        $school = School::where('slug', 'smp-nusantara')->firstOrFail();
+        $schools = School::all();
 
-        for ($startYear = 2024; $startYear <= 2039; $startYear++) {
-            $endYear = $startYear + 1;
+        foreach ($schools as $school) {
+            for ($startYear = 2024; $startYear <= 2039; $startYear++) {
+                $endYear = $startYear + 1;
 
-            AcademicYear::firstOrCreate(
-                [
-                    'school_id' => $school->id,
-                    'name' => "{$startYear}/{$endYear}",
-                ],
-                [
-                    'start_date' => "{$startYear}-07-15",
-                    'end_date' => "{$endYear}-06-30",
-                    'is_active' => $startYear === 2025,
-                ],
-            );
+                AcademicYear::firstOrCreate(
+                    [
+                        'school_id' => $school->id,
+                        'name' => "{$startYear}/{$endYear}",
+                    ],
+                    [
+                        'start_date' => "{$startYear}-07-15",
+                        'end_date' => "{$endYear}-06-30",
+                        'is_active' => $startYear === 2025,
+                    ],
+                );
+            }
         }
     }
 }
