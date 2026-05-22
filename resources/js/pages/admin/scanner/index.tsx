@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Camera, Keyboard, ScanBarcode, Zap } from 'lucide-react';
+import { Camera, CheckCircle2, Keyboard, ScanBarcode, ShieldCheck, UserCheck, Zap } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { QrScanner } from '@/components/scanner/qr-scanner';
 import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-sound';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { dashboard } from '@/routes';
 
 type ScanMode = 'barcode' | 'camera' | 'manual';
+type ScanPurpose = 'attendance' | 'validate';
 
 type ScanLogItem = {
     id: number;
@@ -17,17 +18,31 @@ type ScanLogItem = {
     status: string;
     success: boolean;
     time: string;
+    mode: string;
+};
+
+type ValidateResult = {
+    full_name: string;
+    nis: string | null;
+    nisn: string | null;
+    no_absen: string | null;
+    classroom: string | null;
+    gender: string | null;
+    photo_url: string | null;
+    is_active: boolean;
+    has_qr: boolean;
 };
 
 let logId = 0;
 
 export default function ScannerIndex() {
     const [mode, setMode] = useState<ScanMode>('barcode');
+    const [purpose, setPurpose] = useState<ScanPurpose>('attendance');
     const [nis, setNis] = useState('');
-    const [lastResult, setLastResult] = useState<{ success: boolean; message: string; student?: any } | null>(null);
+    const [lastResult, setLastResult] = useState<{ success: boolean; message: string; student?: any; mode?: string } | null>(null);
+    const [validateResult, setValidateResult] = useState<ValidateResult | null>(null);
     const [scanLog, setScanLog] = useState<ScanLogItem[]>([]);
     const [barcodeBuffer, setBarcodeBuffer] = useState('');
-    const barcodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const barcodeInputRef = useRef<HTMLInputElement>(null);
 
     const csrfToken = typeof document !== 'undefined'
@@ -40,32 +55,42 @@ export default function ScannerIndex() {
             const res = await fetch('/admin/scanner/scan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-                body: JSON.stringify({ token: token.trim(), type: 'CHECK_IN' }),
+                body: JSON.stringify({ token: token.trim(), type: 'CHECK_IN', mode: purpose }),
             });
             const data = await res.json();
 
-            setLastResult(data);
-            setScanLog((prev) => [{
-                id: ++logId,
-                name: data.student?.full_name || token,
-                status: data.success ? (data.student?.status || 'Hadir') : data.message,
-                success: data.success,
-                time: new Date().toLocaleTimeString('id-ID'),
-            }, ...prev].slice(0, 50));
-
-            if (data.success) {
+            if (data.mode === 'validate' && data.success) {
+                setValidateResult(data.student);
                 playSuccessSound(data.student?.full_name);
             } else {
-                playErrorSound(data.message);
-            }
+                setValidateResult(null);
+                setLastResult(data);
 
-            setTimeout(() => setLastResult(null), 2500);
+                setScanLog((prev) => [{
+                    id: ++logId,
+                    name: data.student?.full_name || token,
+                    status: data.success
+                        ? (data.mode === 'validate' ? 'Valid' : (data.student?.status || 'Hadir'))
+                        : data.message,
+                    success: data.success,
+                    time: new Date().toLocaleTimeString('id-ID'),
+                    mode: data.mode || purpose,
+                }, ...prev].slice(0, 50));
+
+                if (data.success) {
+                    playSuccessSound(data.student?.full_name);
+                } else {
+                    playErrorSound(data.message);
+                }
+
+                setTimeout(() => setLastResult(null), 2500);
+            }
         } catch {
             playErrorSound('Gagal menghubungi server');
             setLastResult({ success: false, message: 'Gagal menghubungi server.' });
             setTimeout(() => setLastResult(null), 2500);
         }
-    }, [csrfToken]);
+    }, [csrfToken, purpose]);
 
     // Barcode gun mode — listen for rapid keystrokes ending with Enter
     useEffect(() => {
@@ -75,7 +100,6 @@ export default function ScannerIndex() {
         let timer: ReturnType<typeof setTimeout> | null = null;
 
         function onKeyDown(e: KeyboardEvent) {
-            // Ignore if user is typing in an input/textarea
             const tag = (e.target as HTMLElement)?.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
@@ -89,12 +113,10 @@ export default function ScannerIndex() {
                 return;
             }
 
-            // Only accept printable characters
             if (e.key.length === 1) {
                 buffer += e.key;
                 setBarcodeBuffer(buffer);
 
-                // Reset buffer after 100ms of no input (barcode guns type very fast)
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(() => {
                     buffer = '';
@@ -110,7 +132,6 @@ export default function ScannerIndex() {
         };
     }, [mode, submitScan]);
 
-    // Auto-focus barcode hidden input for mobile barcode guns
     useEffect(() => {
         if (mode === 'barcode' && barcodeInputRef.current) {
             barcodeInputRef.current.focus();
@@ -143,9 +164,35 @@ export default function ScannerIndex() {
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Scanner Absensi</h1>
                     <p className="text-muted-foreground text-sm">
-                        Pilih mode scanner sesuai perangkat yang digunakan.
+                        Pilih mode scanner dan tujuan scan.
                     </p>
                 </div>
+
+                {/* Purpose Toggle */}
+                <div className="mx-auto flex w-full max-w-2xl gap-2">
+                    <Button
+                        variant={purpose === 'attendance' ? 'default' : 'outline'}
+                        className="flex-1"
+                        onClick={() => { setPurpose('attendance'); setValidateResult(null); }}
+                    >
+                        <UserCheck className="mr-2 size-4" />
+                        Absensi
+                    </Button>
+                    <Button
+                        variant={purpose === 'validate' ? 'default' : 'outline'}
+                        className="flex-1"
+                        onClick={() => { setPurpose('validate'); setValidateResult(null); }}
+                    >
+                        <ShieldCheck className="mr-2 size-4" />
+                        Validasi Data
+                    </Button>
+                </div>
+
+                {purpose === 'validate' && (
+                    <div className="mx-auto w-full max-w-2xl rounded-lg border border-blue-200 bg-blue-50 p-3 text-center text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                        Mode Validasi: scan/input untuk mengecek data siswa tanpa mencatat absensi.
+                    </div>
+                )}
 
                 {/* Mode Selector */}
                 <div className="mx-auto flex w-full max-w-2xl gap-2">
@@ -163,7 +210,7 @@ export default function ScannerIndex() {
                         onClick={() => setMode('camera')}
                     >
                         <Camera className="mr-2 size-4" />
-                        Kamera / Webcam
+                        Kamera
                     </Button>
                     <Button
                         variant={mode === 'manual' ? 'default' : 'outline'}
@@ -203,7 +250,6 @@ export default function ScannerIndex() {
                                         </div>
                                     )}
 
-                                    {/* Hidden input for barcode guns that need focus target */}
                                     <form onSubmit={handleBarcodeInputSubmit} className="mt-3">
                                         <input
                                             ref={barcodeInputRef}
@@ -217,24 +263,7 @@ export default function ScannerIndex() {
                                 </div>
 
                                 {/* Result overlay */}
-                                {lastResult && (
-                                    <div className={`rounded-xl p-4 text-center ${
-                                        lastResult.success
-                                            ? 'border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950'
-                                            : 'border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950'
-                                    }`}>
-                                        {lastResult.success ? (
-                                            <>
-                                                <p className="text-lg font-bold text-green-800 dark:text-green-200">{lastResult.student?.full_name}</p>
-                                                <p className="text-sm text-green-600 dark:text-green-400">
-                                                    {lastResult.student?.classroom} &middot; {lastResult.student?.status} &middot; {lastResult.student?.time}
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <p className="font-semibold text-red-700 dark:text-red-300">{lastResult.message}</p>
-                                        )}
-                                    </div>
-                                )}
+                                <ResultBanner result={lastResult} />
 
                                 <div className="text-muted-foreground space-y-1.5 text-xs">
                                     <p><b>Cara kerja:</b> Barcode gun mengirim data sebagai ketikan keyboard diakhiri Enter.</p>
@@ -257,7 +286,7 @@ export default function ScannerIndex() {
 
                     {/* === CAMERA MODE === */}
                     {mode === 'camera' && (
-                        <QrScanner scanEndpoint="/admin/scanner/scan" scanType="CHECK_IN" />
+                        <QrScanner scanEndpoint="/admin/scanner/scan" scanType="CHECK_IN" extraPayload={{ mode: purpose }} />
                     )}
 
                     {/* === MANUAL MODE === */}
@@ -268,39 +297,102 @@ export default function ScannerIndex() {
                                     <Keyboard className="size-4" />
                                     Input Manual
                                 </CardTitle>
-                                <CardDescription>Ketik NIS atau QR token siswa secara manual.</CardDescription>
+                                <CardDescription>
+                                    Ketik NISN siswa untuk {purpose === 'attendance' ? 'absensi' : 'validasi data'}.
+                                    NISN digunakan karena unik secara nasional (berbeda dengan NIS yang bisa sama antar sekolah).
+                                </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <form onSubmit={handleManualSubmit} className="flex gap-2">
                                     <Input
                                         type="text"
-                                        placeholder="NIS atau QR token..."
+                                        placeholder="Ketik NISN siswa..."
                                         value={nis}
                                         onChange={(e) => setNis(e.target.value)}
                                         className="flex-1"
                                         autoFocus
                                     />
-                                    <Button type="submit" disabled={!nis.trim()}>Absen</Button>
+                                    <Button type="submit" disabled={!nis.trim()}>
+                                        {purpose === 'attendance' ? 'Absen' : 'Validasi'}
+                                    </Button>
                                 </form>
 
-                                {lastResult && (
-                                    <div className={`rounded-xl p-4 text-center ${
-                                        lastResult.success
-                                            ? 'border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950'
-                                            : 'border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950'
-                                    }`}>
-                                        {lastResult.success ? (
-                                            <>
-                                                <p className="text-lg font-bold text-green-800 dark:text-green-200">{lastResult.student?.full_name}</p>
-                                                <p className="text-sm text-green-600 dark:text-green-400">
-                                                    {lastResult.student?.classroom} &middot; {lastResult.student?.status}
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <p className="font-semibold text-red-700 dark:text-red-300">{lastResult.message}</p>
-                                        )}
+                                <ResultBanner result={lastResult} />
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* === VALIDATE RESULT CARD === */}
+                    {validateResult && (
+                        <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base text-green-800 dark:text-green-200">
+                                    <CheckCircle2 className="size-5" />
+                                    Data Siswa Valid
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex gap-4">
+                                    {validateResult.photo_url ? (
+                                        <img
+                                            src={validateResult.photo_url}
+                                            alt={validateResult.full_name}
+                                            className="size-20 shrink-0 rounded-lg border-2 border-green-300 object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex size-20 shrink-0 items-center justify-center rounded-lg border-2 border-green-300 bg-green-100 text-2xl dark:bg-green-900">
+                                            👤
+                                        </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <h3 className="text-lg font-bold text-green-900 dark:text-green-100">{validateResult.full_name}</h3>
+                                        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                            {validateResult.nisn && (
+                                                <>
+                                                    <span className="text-green-700 dark:text-green-300">NISN</span>
+                                                    <span className="font-medium text-green-900 dark:text-green-100">{validateResult.nisn}</span>
+                                                </>
+                                            )}
+                                            {validateResult.nis && (
+                                                <>
+                                                    <span className="text-green-700 dark:text-green-300">NIS</span>
+                                                    <span className="font-medium text-green-900 dark:text-green-100">{validateResult.nis}</span>
+                                                </>
+                                            )}
+                                            {validateResult.classroom && (
+                                                <>
+                                                    <span className="text-green-700 dark:text-green-300">Kelas</span>
+                                                    <span className="font-medium text-green-900 dark:text-green-100">{validateResult.classroom}</span>
+                                                </>
+                                            )}
+                                            {validateResult.no_absen && (
+                                                <>
+                                                    <span className="text-green-700 dark:text-green-300">No. Absen</span>
+                                                    <span className="font-medium text-green-900 dark:text-green-100">{validateResult.no_absen}</span>
+                                                </>
+                                            )}
+                                            {validateResult.gender && (
+                                                <>
+                                                    <span className="text-green-700 dark:text-green-300">Gender</span>
+                                                    <span className="font-medium text-green-900 dark:text-green-100">{validateResult.gender}</span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <div className="mt-3 flex gap-2">
+                                            <Badge className="bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200">
+                                                {validateResult.is_active ? 'Aktif' : 'Nonaktif'}
+                                            </Badge>
+                                            <Badge variant={validateResult.has_qr ? 'default' : 'secondary'}>
+                                                {validateResult.has_qr ? 'QR Tersedia' : 'Belum Ada QR'}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                )}
+                                </div>
+                                <div className="mt-4 flex justify-end">
+                                    <Button variant="outline" size="sm" onClick={() => setValidateResult(null)}>
+                                        Tutup
+                                    </Button>
+                                </div>
                             </CardContent>
                         </Card>
                     )}
@@ -321,7 +413,7 @@ export default function ScannerIndex() {
                                             }`}
                                         >
                                             <Badge variant={entry.success ? 'default' : 'destructive'} className="shrink-0">
-                                                {entry.success ? 'OK' : 'GAGAL'}
+                                                {entry.success ? (entry.mode === 'validate' ? 'VALID' : 'OK') : 'GAGAL'}
                                             </Badge>
                                             <div className="min-w-0 flex-1">
                                                 <p className="font-medium">{entry.name}</p>
@@ -337,6 +429,29 @@ export default function ScannerIndex() {
                 </div>
             </div>
         </>
+    );
+}
+
+function ResultBanner({ result }: { result: { success: boolean; message: string; student?: any } | null }) {
+    if (!result) return null;
+
+    return (
+        <div className={`rounded-xl p-4 text-center ${
+            result.success
+                ? 'border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950'
+                : 'border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950'
+        }`}>
+            {result.success ? (
+                <>
+                    <p className="text-lg font-bold text-green-800 dark:text-green-200">{result.student?.full_name}</p>
+                    <p className="text-sm text-green-600 dark:text-green-400">
+                        {result.student?.classroom} &middot; {result.student?.status} &middot; {result.student?.time}
+                    </p>
+                </>
+            ) : (
+                <p className="font-semibold text-red-700 dark:text-red-300">{result.message}</p>
+            )}
+        </div>
     );
 }
 
