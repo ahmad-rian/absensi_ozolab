@@ -2,10 +2,16 @@ import { Link } from '@inertiajs/react';
 import {
     BarChart3,
     Bell,
+    BookOpen,
     Building2,
     CalendarCheck,
+    CreditCard,
+    Frame,
     GraduationCap,
+    HardDrive,
     LayoutGrid,
+    LayoutTemplate,
+    Printer,
     QrCode,
     School,
     Settings,
@@ -41,6 +47,14 @@ const academicItems: NavItem[] = [
     { title: 'Scanner', href: '/admin/scanner', icon: QrCode },
 ];
 
+const cardItems: NavItem[] = [
+    { title: 'Frame & Bingkai', href: '/admin/frames', icon: Frame },
+    { title: 'Layout Kartu', href: '/admin/card-layouts', icon: LayoutTemplate },
+    { title: 'Generate Kartu', href: '/admin/card-generation', icon: CreditCard },
+    { title: 'Layout Album', href: '/admin/album-layouts', icon: BookOpen },
+    { title: 'Generate Album', href: '/admin/album-generation', icon: Printer },
+];
+
 const reportItems: NavItem[] = [
     { title: 'Laporan', href: '/admin/laporan', icon: BarChart3 },
     { title: 'Notifikasi', href: '/admin/notifikasi', icon: Bell },
@@ -50,6 +64,7 @@ const adminItems: NavItem[] = [
     { title: 'Pengguna', href: '/admin/users', icon: UserCog },
     { title: 'Sekolah', href: '/admin/schools', icon: Building2 },
     { title: 'Role & Izin', href: '/admin/roles', icon: ShieldCheck },
+    { title: 'Google Drive', href: '/admin/drive-config', icon: HardDrive },
     { title: 'Pengaturan', href: '/admin/pengaturan', icon: Settings },
 ];
 
@@ -74,6 +89,7 @@ export function AppSidebar() {
             <SidebarContent>
                 <NavGroup label="Utama" items={overviewItems} />
                 <NavGroup label="Akademik" items={academicItems} />
+                <NavGroup label="Kartu & Album" items={cardItems} />
                 <NavGroup label="Laporan" items={reportItems} />
                 <NavGroup label="Administrasi" items={adminItems} />
             </SidebarContent>

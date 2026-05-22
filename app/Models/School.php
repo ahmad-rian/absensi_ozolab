@@ -6,6 +6,7 @@ use Database\Factories\SchoolFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class School extends Model
@@ -63,6 +64,31 @@ class School extends Model
     public function parentProfiles(): HasMany
     {
         return $this->hasMany(ParentProfile::class);
+    }
+
+    public function driveConfig(): HasOne
+    {
+        return $this->hasOne(SchoolDriveConfig::class);
+    }
+
+    public function frames(): HasMany
+    {
+        return $this->hasMany(SchoolFrame::class);
+    }
+
+    public function cardLayouts(): HasMany
+    {
+        return $this->hasMany(SchoolCardLayout::class);
+    }
+
+    public function albumLayouts(): HasMany
+    {
+        return $this->hasMany(SchoolAlbumLayout::class);
+    }
+
+    public function cardGenerationLogs(): HasMany
+    {
+        return $this->hasMany(CardGenerationLog::class);
     }
 
     /**
