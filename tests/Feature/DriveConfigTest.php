@@ -29,21 +29,14 @@ test('authenticated users can visit drive config page', function () {
     );
 });
 
-test('drive config can be saved', function () {
+test('drive config folders can be saved', function () {
     $user = createUserWithSchool();
 
-    $validJson = json_encode([
-        'type' => 'service_account',
-        'project_id' => 'test-project',
-        'private_key_id' => 'key123',
-        'private_key' => 'pk',
-        'client_email' => 'test@test.iam.gserviceaccount.com',
-        'client_id' => '123',
-    ]);
-
     $response = $this->actingAs($user)->post(route('admin.drive-config.update'), [
-        'service_account_json' => $validJson,
         'root_folder_id' => 'abc123folder',
+        'cards_folder_id' => 'cards-folder-id',
+        'albums_folder_id' => 'albums-folder-id',
+        'parents_folder_id' => 'parents-folder-id',
         'is_active' => true,
     ]);
 
@@ -52,20 +45,9 @@ test('drive config can be saved', function () {
     $this->assertDatabaseHas('school_drive_configs', [
         'school_id' => $user->school_id,
         'root_folder_id' => 'abc123folder',
+        'cards_folder_id' => 'cards-folder-id',
         'is_active' => true,
     ]);
-});
-
-test('drive config rejects invalid json', function () {
-    $user = createUserWithSchool();
-
-    $response = $this->actingAs($user)->post(route('admin.drive-config.update'), [
-        'service_account_json' => '{"type": "not_service_account"}',
-        'root_folder_id' => 'abc123',
-        'is_active' => false,
-    ]);
-
-    $response->assertSessionHasErrors('service_account_json');
 });
 
 test('drive config page shows existing config', function () {
