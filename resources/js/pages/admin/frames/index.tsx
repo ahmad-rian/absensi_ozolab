@@ -4,7 +4,8 @@ import { type FormEvent, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -254,6 +255,14 @@ export default function FramesIndex({ frames, filters }: Props) {
                                 onChange={(e) => editForm.setData('sort_order', Number(e.target.value))}
                                 min={0}
                             />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                id="edit_is_active"
+                                checked={editForm.data.is_active}
+                                onCheckedChange={(c) => editForm.setData('is_active', c === true)}
+                            />
+                            <Label htmlFor="edit_is_active">Aktif</Label>
                         </div>
                         <DialogFooter>
                             <Button type="submit" disabled={editForm.processing}>Simpan</Button>

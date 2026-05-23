@@ -4,7 +4,6 @@ use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
 use App\Models\Attendance;
 use App\Models\Student;
-use App\Models\User;
 
 test('guests are redirected to the login page', function () {
     $response = $this->get(route('dashboard'));
@@ -12,7 +11,7 @@ test('guests are redirected to the login page', function () {
 });
 
 test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
@@ -20,7 +19,7 @@ test('authenticated users can visit the dashboard', function () {
 });
 
 test('dashboard returns stats props', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $response = $this->actingAs($user)->get(route('dashboard'));
 
@@ -39,8 +38,8 @@ test('dashboard returns stats props', function () {
 });
 
 test('dashboard stats reflect attendance data', function () {
-    $user = User::factory()->create();
-    $student = Student::factory()->create();
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
 
     Attendance::factory()->create([
         'student_id' => $student->id,

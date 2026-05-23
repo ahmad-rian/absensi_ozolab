@@ -7,8 +7,10 @@ use App\Models\User;
 function createUserWithSchool(): User
 {
     $school = School::factory()->create();
+    $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
-    return User::factory()->create(['school_id' => $school->id]);
+    return $user;
 }
 
 test('guests are redirected from drive config page', function () {

@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -87,9 +88,9 @@ class SiswaController extends Controller
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'nis' => ['nullable', 'string', 'max:50', 'unique:students,nis'],
+            'nis' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nis')->where('school_id', auth()->user()->school_id)],
             'no_absen' => ['nullable', 'string', 'max:20'],
-            'nisn' => ['nullable', 'string', 'max:50', 'unique:students,nisn'],
+            'nisn' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nisn')->where('school_id', auth()->user()->school_id)],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
             'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
             'classroom_id' => ['required', 'exists:classrooms,id'],
@@ -142,9 +143,9 @@ class SiswaController extends Controller
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'nis' => ['nullable', 'string', 'max:50', 'unique:students,nis,'.$siswa->id],
+            'nis' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nis')->where('school_id', auth()->user()->school_id)->ignore($siswa->id)],
             'no_absen' => ['nullable', 'string', 'max:20'],
-            'nisn' => ['nullable', 'string', 'max:50', 'unique:students,nisn,'.$siswa->id],
+            'nisn' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nisn')->where('school_id', auth()->user()->school_id)->ignore($siswa->id)],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
             'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
             'classroom_id' => ['required', 'exists:classrooms,id'],

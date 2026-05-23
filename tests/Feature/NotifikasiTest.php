@@ -1,14 +1,14 @@
 <?php
 
 use App\Models\NotificationLog;
-use App\Models\User;
+use App\Models\Student;
 
 test('guests are redirected from notifikasi page', function () {
     $this->get(route('admin.notifikasi'))->assertRedirect(route('login'));
 });
 
 test('authenticated users can visit the notifikasi page', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $this->actingAs($user)
         ->get(route('admin.notifikasi'))
@@ -16,7 +16,7 @@ test('authenticated users can visit the notifikasi page', function () {
 });
 
 test('notifikasi page returns expected props', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $this->actingAs($user)
         ->get(route('admin.notifikasi'))
@@ -28,10 +28,11 @@ test('notifikasi page returns expected props', function () {
 });
 
 test('notifikasi page filters by status', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
 
-    NotificationLog::factory()->create(['status' => 'SENT']);
-    NotificationLog::factory()->create(['status' => 'FAILED']);
+    NotificationLog::factory()->create(['status' => 'SENT', 'student_id' => $student->id, 'school_id' => $user->school_id]);
+    NotificationLog::factory()->create(['status' => 'FAILED', 'student_id' => $student->id, 'school_id' => $user->school_id]);
 
     $this->actingAs($user)
         ->get(route('admin.notifikasi', ['status' => 'SENT']))
@@ -41,10 +42,11 @@ test('notifikasi page filters by status', function () {
 });
 
 test('notifikasi page filters by date range', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
 
-    NotificationLog::factory()->create(['created_at' => '2026-01-10 10:00:00']);
-    NotificationLog::factory()->create(['created_at' => '2026-01-20 10:00:00']);
+    NotificationLog::factory()->create(['created_at' => '2026-01-10 10:00:00', 'student_id' => $student->id, 'school_id' => $user->school_id]);
+    NotificationLog::factory()->create(['created_at' => '2026-01-20 10:00:00', 'student_id' => $student->id, 'school_id' => $user->school_id]);
 
     $this->actingAs($user)
         ->get(route('admin.notifikasi', ['date_from' => '2026-01-09', 'date_to' => '2026-01-11']))

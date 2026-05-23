@@ -1,6 +1,6 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { AlertTriangle, BookOpen, Download, HardDrive, Loader2 } from 'lucide-react';
-import { type FormEvent } from 'react';
+import { type FormEvent, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,17 +26,21 @@ type Props = {
 };
 
 export default function AlbumGenerationIndex({ layouts, classrooms, driveConfigured }: Props) {
-    const form = useForm({
-        layout_id: '',
-        classroom_id: '',
-    });
+    const [layoutId, setLayoutId] = useState('');
+    const [classroomId, setClassroomId] = useState('');
+    const [generating, setGenerating] = useState(false);
 
     function handleGenerate(e: FormEvent) {
         e.preventDefault();
-        // Use form submission that allows file download
-        form.post('/admin/album-generation/generate', {
-            preserveScroll: true,
-        });
+        if (!layoutId) return;
+
+        setGenerating(true);
+        const params = new URLSearchParams({ layout_id: layoutId });
+        if (classroomId) params.set('classroom_id', classroomId);
+
+        // Use window.location for file download (not Inertia)
+        window.location.href = `/admin/album-generation/download?${params.toString()}`;
+        setTimeout(() => setGenerating(false), 3000);
     }
 
     return (
@@ -80,7 +84,7 @@ export default function AlbumGenerationIndex({ layouts, classrooms, driveConfigu
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label>Layout Album</Label>
-                                    <Select value={form.data.layout_id} onValueChange={(v) => form.setData('layout_id', v)}>
+                                    <Select value={layoutId} onValueChange={setLayoutId}>
                                         <SelectTrigger><SelectValue placeholder="Pilih layout" /></SelectTrigger>
                                         <SelectContent>
                                             {layouts.map((l) => (
@@ -93,7 +97,7 @@ export default function AlbumGenerationIndex({ layouts, classrooms, driveConfigu
                                 </div>
                                 <div className="grid gap-2">
                                     <Label>Kelas (opsional)</Label>
-                                    <Select value={form.data.classroom_id || 'all'} onValueChange={(v) => form.setData('classroom_id', v === 'all' ? '' : v)}>
+                                    <Select value={classroomId || 'all'} onValueChange={(v) => setClassroomId(v === 'all' ? '' : v)}>
                                         <SelectTrigger><SelectValue placeholder="Semua kelas" /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="all">Semua Kelas</SelectItem>
@@ -104,8 +108,8 @@ export default function AlbumGenerationIndex({ layouts, classrooms, driveConfigu
                                     </Select>
                                 </div>
                             </div>
-                            <Button type="submit" disabled={!form.data.layout_id || form.processing} className="gap-2">
-                                {form.processing ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                            <Button type="submit" disabled={!layoutId || generating} className="gap-2">
+                                {generating ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
                                 Generate & Download Album
                             </Button>
                         </form>

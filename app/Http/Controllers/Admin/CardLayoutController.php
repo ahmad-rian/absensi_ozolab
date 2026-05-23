@@ -75,6 +75,8 @@ class CardLayoutController extends Controller
 
     public function edit(SchoolCardLayout $cardLayout): Response
     {
+        abort_unless($cardLayout->school_id === auth()->user()->school_id, 403);
+
         $frames = SchoolFrame::forSchool()
             ->where('category', 'card')
             ->where('is_active', true)
@@ -101,6 +103,8 @@ class CardLayoutController extends Controller
 
     public function update(Request $request, SchoolCardLayout $cardLayout): RedirectResponse
     {
+        abort_unless($cardLayout->school_id === auth()->user()->school_id, 403);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', 'in:osis,perpustakaan,identitas'],
@@ -125,6 +129,8 @@ class CardLayoutController extends Controller
 
     public function destroy(SchoolCardLayout $cardLayout): RedirectResponse
     {
+        abort_unless($cardLayout->school_id === auth()->user()->school_id, 403);
+
         $cardLayout->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Layout kartu berhasil dihapus.']);

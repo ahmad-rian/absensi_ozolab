@@ -5,14 +5,13 @@ use App\Enums\AttendanceType;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\Student;
-use App\Models\User;
 
 test('guests are redirected from absensi page', function () {
     $this->get(route('admin.absensi'))->assertRedirect(route('login'));
 });
 
 test('authenticated users can visit the absensi page', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $this->actingAs($user)
         ->get(route('admin.absensi'))
@@ -20,7 +19,7 @@ test('authenticated users can visit the absensi page', function () {
 });
 
 test('absensi page returns expected props', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $this->actingAs($user)
         ->get(route('admin.absensi'))
@@ -34,8 +33,8 @@ test('absensi page returns expected props', function () {
 });
 
 test('absensi page filters by date', function () {
-    $user = User::factory()->create();
-    $student = Student::factory()->create();
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
 
     Attendance::factory()->create([
         'student_id' => $student->id,
@@ -61,10 +60,10 @@ test('absensi page filters by date', function () {
 });
 
 test('absensi page filters by classroom', function () {
-    $user = User::factory()->create();
-    $classroom = Classroom::factory()->create();
-    $student = Student::factory()->create(['classroom_id' => $classroom->id]);
-    $otherStudent = Student::factory()->create();
+    $user = createAdminUser();
+    $classroom = Classroom::factory()->create(['school_id' => $user->school_id]);
+    $student = Student::factory()->create(['classroom_id' => $classroom->id, 'school_id' => $user->school_id]);
+    $otherStudent = Student::factory()->create(['school_id' => $user->school_id]);
 
     Attendance::factory()->create([
         'student_id' => $student->id,
@@ -90,8 +89,8 @@ test('absensi page filters by classroom', function () {
 });
 
 test('absensi page filters by status', function () {
-    $user = User::factory()->create();
-    $student = Student::factory()->create();
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
 
     Attendance::factory()->create([
         'student_id' => $student->id,
@@ -102,7 +101,7 @@ test('absensi page filters by status', function () {
     ]);
 
     Attendance::factory()->create([
-        'student_id' => Student::factory()->create()->id,
+        'student_id' => Student::factory()->create(['school_id' => $user->school_id])->id,
         'attendance_date' => today(),
         'type' => AttendanceType::CheckIn,
         'status' => AttendanceStatus::Terlambat,
@@ -117,8 +116,8 @@ test('absensi page filters by status', function () {
 });
 
 test('authenticated users can store manual attendance', function () {
-    $user = User::factory()->create();
-    $student = Student::factory()->create();
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
 
     $this->actingAs($user)
         ->post(route('admin.absensi.store'), [
@@ -140,7 +139,7 @@ test('authenticated users can store manual attendance', function () {
 });
 
 test('store validates required fields', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $this->actingAs($user)
         ->post(route('admin.absensi.store'), [])

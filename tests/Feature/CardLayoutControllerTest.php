@@ -11,6 +11,7 @@ test('guests cannot access card layouts page', function () {
 test('authenticated users can view card layouts', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
     $this->actingAs($user)->get(route('admin.card-layouts'))
         ->assertOk()
@@ -20,6 +21,7 @@ test('authenticated users can view card layouts', function () {
 test('card layout can be created', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
     $response = $this->actingAs($user)->post(route('admin.card-layouts.store'), [
         'name' => 'Kartu OSIS Biru',
@@ -39,6 +41,7 @@ test('card layout can be created', function () {
 test('card layout editor page loads for create', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
     $this->actingAs($user)->get(route('admin.card-layouts.create'))
         ->assertOk()
@@ -48,6 +51,7 @@ test('card layout editor page loads for create', function () {
 test('card layout can be updated', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
     $layout = SchoolCardLayout::create([
         'school_id' => $school->id,
@@ -74,6 +78,7 @@ test('card layout can be updated', function () {
 test('card layout can be deleted', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
     $layout = SchoolCardLayout::create([
         'school_id' => $school->id,

@@ -73,6 +73,8 @@ class FrameController extends Controller
 
     public function update(Request $request, SchoolFrame $frame): RedirectResponse
     {
+        abort_unless($frame->school_id === auth()->user()->school_id, 403);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:card,album'],
@@ -89,6 +91,8 @@ class FrameController extends Controller
 
     public function destroy(SchoolFrame $frame): RedirectResponse
     {
+        abort_unless($frame->school_id === auth()->user()->school_id, 403);
+
         if ($frame->image_path && Storage::disk('public')->exists($frame->image_path)) {
             Storage::disk('public')->delete($frame->image_path);
         }

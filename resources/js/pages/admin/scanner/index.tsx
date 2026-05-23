@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Camera, CheckCircle2, Keyboard, ScanBarcode, ShieldCheck, UserCheck, Zap } from 'lucide-react';
+import { Camera, CheckCircle2, Clock, Keyboard, LogIn, LogOut, ScanBarcode, ShieldCheck, UserCheck, Zap } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { QrScanner } from '@/components/scanner/qr-scanner';
 import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-sound';
@@ -11,6 +11,7 @@ import { dashboard } from '@/routes';
 
 type ScanMode = 'barcode' | 'camera' | 'manual';
 type ScanPurpose = 'attendance' | 'validate';
+type AttendanceType = 'CHECK_IN' | 'CHECK_OUT';
 
 type ScanLogItem = {
     id: number;
@@ -38,6 +39,7 @@ let logId = 0;
 export default function ScannerIndex() {
     const [mode, setMode] = useState<ScanMode>('barcode');
     const [purpose, setPurpose] = useState<ScanPurpose>('attendance');
+    const [attendanceType, setAttendanceType] = useState<AttendanceType>('CHECK_IN');
     const [nis, setNis] = useState('');
     const [lastResult, setLastResult] = useState<{ success: boolean; message: string; student?: any; mode?: string } | null>(null);
     const [validateResult, setValidateResult] = useState<ValidateResult | null>(null);
@@ -55,7 +57,7 @@ export default function ScannerIndex() {
             const res = await fetch('/admin/scanner/scan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-                body: JSON.stringify({ token: token.trim(), type: 'CHECK_IN', mode: purpose }),
+                body: JSON.stringify({ token: token.trim(), type: attendanceType, mode: purpose }),
             });
             const data = await res.json();
 
@@ -90,7 +92,7 @@ export default function ScannerIndex() {
             setLastResult({ success: false, message: 'Gagal menghubungi server.' });
             setTimeout(() => setLastResult(null), 2500);
         }
-    }, [csrfToken, purpose]);
+    }, [csrfToken, purpose, attendanceType]);
 
     // Barcode gun mode — listen for rapid keystrokes ending with Enter
     useEffect(() => {
@@ -187,6 +189,28 @@ export default function ScannerIndex() {
                         Validasi Data
                     </Button>
                 </div>
+
+                {/* Attendance Type Toggle (only in attendance mode) */}
+                {purpose === 'attendance' && (
+                    <div className="mx-auto flex w-full max-w-2xl gap-2">
+                        <Button
+                            variant={attendanceType === 'CHECK_IN' ? 'default' : 'outline'}
+                            className="flex-1"
+                            onClick={() => setAttendanceType('CHECK_IN')}
+                        >
+                            <LogIn className="mr-2 size-4" />
+                            Masuk
+                        </Button>
+                        <Button
+                            variant={attendanceType === 'CHECK_OUT' ? 'default' : 'outline'}
+                            className="flex-1"
+                            onClick={() => setAttendanceType('CHECK_OUT')}
+                        >
+                            <LogOut className="mr-2 size-4" />
+                            Pulang
+                        </Button>
+                    </div>
+                )}
 
                 {purpose === 'validate' && (
                     <div className="mx-auto w-full max-w-2xl rounded-lg border border-blue-200 bg-blue-50 p-3 text-center text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
@@ -286,7 +310,7 @@ export default function ScannerIndex() {
 
                     {/* === CAMERA MODE === */}
                     {mode === 'camera' && (
-                        <QrScanner scanEndpoint="/admin/scanner/scan" scanType="CHECK_IN" extraPayload={{ mode: purpose }} />
+                        <QrScanner scanEndpoint="/admin/scanner/scan" scanType={attendanceType} extraPayload={{ mode: purpose }} />
                     )}
 
                     {/* === MANUAL MODE === */}

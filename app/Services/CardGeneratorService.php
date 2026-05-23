@@ -159,7 +159,7 @@ class CardGeneratorService
             return null;
         }
 
-        $frame = SchoolFrame::find($frameId);
+        $frame = SchoolFrame::where('school_id', $layout->school_id)->find($frameId);
 
         return $frame?->image_path
             ? Storage::disk('public')->url($frame->image_path)
