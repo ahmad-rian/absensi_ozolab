@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Services\Attendance\AttendanceRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,6 +36,14 @@ class PublicScannerController extends Controller
             ->where('is_active', true)
             ->with('classroom')
             ->first();
+
+        if (! $student) {
+            $student = Student::where('nisn', $request->token)
+                ->where('school_id', $request->school_id)
+                ->where('is_active', true)
+                ->with('classroom')
+                ->first();
+        }
 
         if (! $student) {
             $student = Student::where('nis', $request->token)
@@ -65,7 +74,13 @@ class PublicScannerController extends Controller
             'student' => $result['success'] ? [
                 'full_name' => $student->full_name,
                 'nis' => $student->nis,
+                'nisn' => $student->nisn,
+                'no_absen' => $student->no_absen,
                 'classroom' => $student->classroom?->name,
+                'gender' => $student->gender?->label(),
+                'photo_url' => $student->photo_path
+                    ? Storage::disk('public')->url($student->photo_path)
+                    : null,
                 'status' => $result['attendance']?->status->label(),
                 'type' => $type->label(),
                 'time' => now('Asia/Jakarta')->format('H:i:s'),

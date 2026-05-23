@@ -13,6 +13,7 @@ type ScanResult = {
         full_name: string;
         nis: string;
         classroom: string | null;
+        photo_url: string | null;
         status: string;
         type: string;
         time: string;
@@ -244,23 +245,37 @@ export function QrScanner({ scanEndpoint, scanType = 'CHECK_IN', extraPayload = 
 
                         {lastResult && (
                             <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70">
-                                <div className="mx-4 w-full max-w-xs rounded-2xl bg-white p-6 text-center shadow-2xl dark:bg-zinc-900">
+                                <div className="mx-4 w-full max-w-xs rounded-2xl bg-white p-5 shadow-2xl dark:bg-zinc-900">
                                     {lastResult.success ? (
-                                        <>
-                                            <CheckCircle2 className="mx-auto size-14 text-green-500" />
-                                            <p className="mt-3 text-lg font-bold">{lastResult.student?.full_name}</p>
-                                            <p className="text-muted-foreground text-sm">
-                                                {lastResult.student?.classroom} &middot; {lastResult.student?.nis}
-                                            </p>
-                                            <Badge className="mt-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                                {lastResult.student?.status} &middot; {lastResult.student?.time}
-                                            </Badge>
-                                        </>
+                                        <div className="flex gap-4">
+                                            <div className="shrink-0">
+                                                {lastResult.student?.photo_url ? (
+                                                    <img
+                                                        src={lastResult.student.photo_url}
+                                                        alt={lastResult.student.full_name}
+                                                        className="size-20 rounded-xl border-2 border-green-300 object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex size-20 items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 dark:bg-green-900">
+                                                        <CheckCircle2 className="size-10 text-green-500" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1 text-left">
+                                                <p className="text-base font-bold">{lastResult.student?.full_name}</p>
+                                                <p className="text-muted-foreground text-sm">
+                                                    {lastResult.student?.classroom} &middot; {lastResult.student?.nis}
+                                                </p>
+                                                <Badge className="mt-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                    {lastResult.student?.status} &middot; {lastResult.student?.time}
+                                                </Badge>
+                                            </div>
+                                        </div>
                                     ) : (
-                                        <>
-                                            <XCircle className="mx-auto size-14 text-red-500" />
-                                            <p className="mt-3 text-sm font-semibold text-red-600 dark:text-red-400">{lastResult.message}</p>
-                                        </>
+                                        <div className="flex items-center gap-3">
+                                            <XCircle className="size-10 shrink-0 text-red-500" />
+                                            <p className="text-sm font-semibold text-red-600 dark:text-red-400">{lastResult.message}</p>
+                                        </div>
                                     )}
                                 </div>
                             </div>
