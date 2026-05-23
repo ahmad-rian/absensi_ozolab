@@ -17,7 +17,7 @@ class GoogleDriveService
     public function __construct(private SchoolDriveConfig $config)
     {
         $client = new GoogleClient;
-        $client->setAuthConfig($config->getServiceAccountCredentials());
+        $client->setAuthConfig(self::resolveCredentials($config));
         $client->addScope(GoogleDrive::DRIVE);
 
         $this->drive = new GoogleDrive($client);
@@ -26,6 +26,55 @@ class GoogleDriveService
     public static function forSchool(SchoolDriveConfig $config): static
     {
         return new static($config);
+    }
+
+    /**
+     * Resolve credentials: per-school override → global config file → global env JSON.
+     *
+     * @return array<string, mixed>
+     */
+    private static function resolveCredentials(SchoolDriveConfig $config): array
+    {
+        // 1. Per-school override (legacy / advanced use)
+        $perSchool = $config->getServiceAccountCredentials();
+        if ($perSchool) {
+            return $perSchool;
+        }
+
+        // 2. Global config file path
+        $filePath = config('services.google.service_account_file');
+        if ($filePath && file_exists($filePath)) {
+            $decoded = json_decode(file_get_contents($filePath), true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        // 3. Global env JSON string
+        $envJson = config('services.google.service_account_json');
+        if ($envJson) {
+            $decoded = json_decode($envJson, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        throw new \RuntimeException('Google Drive credentials not configured. Set GOOGLE_SERVICE_ACCOUNT_FILE in .env or upload credentials via Super Admin.');
+    }
+
+    /**
+     * Check if global credentials are configured.
+     */
+    public static function hasGlobalCredentials(): bool
+    {
+        $filePath = config('services.google.service_account_file');
+        if ($filePath && file_exists($filePath)) {
+            return true;
+        }
+
+        $envJson = config('services.google.service_account_json');
+
+        return $envJson && json_decode($envJson, true) !== null;
     }
 
     /**

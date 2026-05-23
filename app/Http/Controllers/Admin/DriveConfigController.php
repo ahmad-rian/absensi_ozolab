@@ -27,16 +27,15 @@ class DriveConfigController extends Controller
                 'albums_folder_id' => $config->albums_folder_id,
                 'parents_folder_id' => $config->parents_folder_id,
                 'is_active' => $config->is_active,
-                'has_credentials' => (bool) $config->service_account_json,
                 'last_tested_at' => $config->last_tested_at?->format('d M Y H:i'),
             ] : null,
+            'hasGlobalCredentials' => GoogleDriveService::hasGlobalCredentials(),
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'service_account_json' => ['nullable', 'string'],
             'root_folder_id' => ['nullable', 'string', 'max:255'],
             'cards_folder_id' => ['nullable', 'string', 'max:255'],
             'albums_folder_id' => ['nullable', 'string', 'max:255'],
@@ -45,20 +44,7 @@ class DriveConfigController extends Controller
         ]);
 
         $school = School::findOrFail(auth()->user()->school_id);
-
-        // Validate JSON if provided
-        if (! empty($validated['service_account_json'])) {
-            $decoded = json_decode($validated['service_account_json'], true);
-            if (! is_array($decoded) || ! isset($decoded['type']) || $decoded['type'] !== 'service_account') {
-                return back()->withErrors(['service_account_json' => 'JSON harus berupa Service Account credential dari Google Cloud.']);
-            }
-        }
-
         $config = $school->driveConfig ?? new SchoolDriveConfig(['school_id' => $school->id]);
-
-        if (! empty($validated['service_account_json'])) {
-            $config->service_account_json = $validated['service_account_json'];
-        }
 
         $config->root_folder_id = $validated['root_folder_id'] ?? $config->root_folder_id;
         $config->cards_folder_id = $validated['cards_folder_id'] ?? $config->cards_folder_id;
@@ -67,7 +53,7 @@ class DriveConfigController extends Controller
         $config->is_active = $validated['is_active'] ?? false;
         $config->save();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Konfigurasi Google Drive berhasil disimpan.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Konfigurasi folder Google Drive berhasil disimpan.']);
 
         return to_route('admin.drive-config');
     }
@@ -77,8 +63,14 @@ class DriveConfigController extends Controller
         $school = School::findOrFail(auth()->user()->school_id);
         $config = $school->driveConfig;
 
-        if (! $config || ! $config->service_account_json) {
-            Inertia::flash('toast', ['type' => 'error', 'message' => 'Credential belum dikonfigurasi.']);
+        if (! $config) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Konfigurasi folder belum diisi.']);
+
+            return to_route('admin.drive-config');
+        }
+
+        if (! GoogleDriveService::hasGlobalCredentials() && ! $config->service_account_json) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Credential Google Drive belum dikonfigurasi oleh Super Admin.']);
 
             return to_route('admin.drive-config');
         }
@@ -90,14 +82,9 @@ class DriveConfigController extends Controller
             $config->update(['last_tested_at' => now()]);
 
             if ($success) {
-                // Auto-create subfolders if root is set
-                if ($config->root_folder_id) {
-                    $service->ensureSubfolders();
-                }
-
-                Inertia::flash('toast', ['type' => 'success', 'message' => 'Koneksi Google Drive berhasil! Folder siap digunakan.']);
+                Inertia::flash('toast', ['type' => 'success', 'message' => 'Koneksi Google Drive berhasil!']);
             } else {
-                Inertia::flash('toast', ['type' => 'error', 'message' => 'Koneksi gagal. Periksa credential dan folder ID.']);
+                Inertia::flash('toast', ['type' => 'error', 'message' => 'Koneksi gagal. Periksa folder ID dan pastikan folder di-share ke service account.']);
             }
         } catch (\Throwable $e) {
             Log::error('Google Drive test failed', ['error' => $e->getMessage()]);
