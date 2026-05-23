@@ -10,6 +10,7 @@ use App\Services\Attendance\QrTokenGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -55,6 +56,9 @@ class SiswaController extends Controller
         return Inertia::render('admin/siswa/show', [
             'student' => array_merge($siswa->toArray(), [
                 'religion_label' => $siswa->religion?->label(),
+                'photo_url' => $siswa->photo_path
+                    ? Storage::disk('public')->url($siswa->photo_path)
+                    : null,
             ]),
             'qrSvg' => $qrSvg,
         ]);
