@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     BarChart3,
     Bell,
@@ -19,6 +19,7 @@ import {
     UserCog,
     Users,
 } from 'lucide-react';
+import { useMemo } from 'react';
 import AppLogo from '@/components/app-logo';
 import { NavGroup } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -60,7 +61,8 @@ const reportItems: NavItem[] = [
     { title: 'Notifikasi', href: '/admin/notifikasi', icon: Bell },
 ];
 
-const adminItems: NavItem[] = [
+// Admin items — filtered by role
+const adminItemsSuperAdmin: NavItem[] = [
     { title: 'Pengguna', href: '/admin/users', icon: UserCog },
     { title: 'Sekolah', href: '/admin/schools', icon: Building2 },
     { title: 'Role & Izin', href: '/admin/roles', icon: ShieldCheck },
@@ -68,7 +70,25 @@ const adminItems: NavItem[] = [
     { title: 'Pengaturan', href: '/admin/pengaturan', icon: Settings },
 ];
 
+const adminItemsAdmin: NavItem[] = [
+    { title: 'Pengguna', href: '/admin/users', icon: UserCog },
+    { title: 'Google Drive', href: '/admin/drive-config', icon: HardDrive },
+    { title: 'Pengaturan', href: '/admin/pengaturan', icon: Settings },
+];
+
 export function AppSidebar() {
+    const { auth } = usePage().props as unknown as { auth: { user: { roles: string[] } | null } };
+    const roles = auth?.user?.roles ?? [];
+
+    const isSuperAdmin = roles.includes('SUPER_ADMIN');
+    const isAdmin = roles.includes('ADMIN');
+
+    const adminItems = useMemo(() => {
+        if (isSuperAdmin) return adminItemsSuperAdmin;
+        if (isAdmin) return adminItemsAdmin;
+        return [];
+    }, [isSuperAdmin, isAdmin]);
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -91,7 +111,9 @@ export function AppSidebar() {
                 <NavGroup label="Akademik" items={academicItems} />
                 <NavGroup label="Kartu & Album" items={cardItems} />
                 <NavGroup label="Laporan" items={reportItems} />
-                <NavGroup label="Administrasi" items={adminItems} />
+                {adminItems.length > 0 && (
+                    <NavGroup label="Administrasi" items={adminItems} />
+                )}
             </SidebarContent>
 
             <SidebarFooter>

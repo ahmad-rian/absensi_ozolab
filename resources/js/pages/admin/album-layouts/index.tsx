@@ -142,7 +142,7 @@ export default function AlbumLayoutsIndex({ layouts }: Props) {
                                         </div>
                                     </div>
                                     <div className="text-muted-foreground mb-4 space-y-1 text-sm">
-                                        <p>{layout.paper_size} • {layout.orientation === 'portrait' ? 'Potrait' : 'Landscape'}</p>
+                                        <p>{layout.paper_size} • {layout.orientation === 'portrait' ? 'Portrait' : 'Landscape'}</p>
                                         <p>{layout.columns} kolom x {layout.rows} baris = {layout.columns * layout.rows} siswa/halaman</p>
                                     </div>
 

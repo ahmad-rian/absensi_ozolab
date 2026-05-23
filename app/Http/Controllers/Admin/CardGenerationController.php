@@ -63,8 +63,8 @@ class CardGenerationController extends Controller
             'student_id' => ['required', 'exists:students,id'],
         ]);
 
-        $layout = SchoolCardLayout::findOrFail($request->layout_id);
-        $student = Student::with('classroom')->findOrFail($request->student_id);
+        $layout = SchoolCardLayout::forSchool()->findOrFail($request->layout_id);
+        $student = Student::forSchool()->with('classroom')->findOrFail($request->student_id);
 
         $service = new CardGeneratorService;
         $result = $service->generateCard($student, $layout);
@@ -87,21 +87,23 @@ class CardGenerationController extends Controller
             'classroom_id' => ['nullable', 'exists:classrooms,id'],
         ]);
 
-        $layout = SchoolCardLayout::findOrFail($validated['layout_id']);
+        $layout = SchoolCardLayout::forSchool()->findOrFail($validated['layout_id']);
 
-        // Resolve student list
+        // Resolve student list — always scoped by school
+        $query = Student::forSchool();
+
         $studentIds = $validated['student_ids'] ?? [];
         $isAll = empty($studentIds) || in_array('all', $studentIds, true);
 
-        if ($isAll) {
-            $query = Student::forSchool();
-            if (! empty($validated['classroom_id'])) {
-                $query->where('classroom_id', $validated['classroom_id']);
-            }
-            $students = $query->get();
-        } else {
-            $students = Student::whereIn('id', $studentIds)->get();
+        if (! $isAll) {
+            $query->whereIn('id', $studentIds);
         }
+
+        if (! empty($validated['classroom_id'])) {
+            $query->where('classroom_id', $validated['classroom_id']);
+        }
+
+        $students = $query->get();
 
         if ($students->isEmpty()) {
             Inertia::flash('toast', ['type' => 'warning', 'message' => 'Tidak ada siswa yang ditemukan.']);

@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Classroom;
+use App\Models\School;
 use App\Models\Setting;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -121,7 +122,8 @@ class LaporanController extends Controller
             'total_alpa' => $reportData->sum('alpa'),
         ];
 
-        $schoolName = Setting::getValue('school_name', 'Sekolah');
+        $school = School::find($schoolId);
+        $schoolName = $school?->name ?? Setting::getValue('school_name', 'Sekolah');
 
         $pdf = Pdf::loadView('pdf.laporan', [
             'reportData' => $reportData,
@@ -145,14 +147,14 @@ class LaporanController extends Controller
     {
         $query = Attendance::when($schoolId, fn ($q) => $q->whereHas('student', fn ($sq) => $sq->where('school_id', $schoolId)))
             ->select(
-            'student_id',
-            DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Hadir->value.'\' THEN 1 END) as hadir_count'),
-            DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Terlambat->value.'\' THEN 1 END) as terlambat_count'),
-            DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Izin->value.'\' THEN 1 END) as izin_count'),
-            DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Sakit->value.'\' THEN 1 END) as sakit_count'),
-            DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Alpa->value.'\' THEN 1 END) as alpa_count'),
-            DB::raw('COUNT(*) as total_records'),
-        )
+                'student_id',
+                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Hadir->value.'\' THEN 1 END) as hadir_count'),
+                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Terlambat->value.'\' THEN 1 END) as terlambat_count'),
+                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Izin->value.'\' THEN 1 END) as izin_count'),
+                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Sakit->value.'\' THEN 1 END) as sakit_count'),
+                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Alpa->value.'\' THEN 1 END) as alpa_count'),
+                DB::raw('COUNT(*) as total_records'),
+            )
             ->whereBetween('attendance_date', [$startDate, $endDate])
             ->when($classroomId, function ($q) use ($classroomId) {
                 $q->whereHas('student', fn ($sq) => $sq->where('classroom_id', $classroomId));

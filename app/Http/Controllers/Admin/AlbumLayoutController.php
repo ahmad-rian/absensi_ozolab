@@ -58,6 +58,8 @@ class AlbumLayoutController extends Controller
 
     public function update(Request $request, SchoolAlbumLayout $albumLayout): RedirectResponse
     {
+        abort_unless($albumLayout->school_id === auth()->user()->school_id, 403);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'paper_size' => ['required', 'in:A4,A3,Letter'],
@@ -84,6 +86,8 @@ class AlbumLayoutController extends Controller
 
     public function destroy(SchoolAlbumLayout $albumLayout): RedirectResponse
     {
+        abort_unless($albumLayout->school_id === auth()->user()->school_id, 403);
+
         $albumLayout->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Layout album berhasil dihapus.']);

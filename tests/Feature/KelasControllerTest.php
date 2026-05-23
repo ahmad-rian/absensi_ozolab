@@ -3,7 +3,6 @@
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\Student;
-use App\Models\User;
 
 test('guests are redirected from kelas index', function () {
     $this->get(route('kelas.index'))
@@ -11,7 +10,7 @@ test('guests are redirected from kelas index', function () {
 });
 
 test('authenticated users can visit kelas index', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $this->actingAs($user)
         ->get(route('kelas.index'))
@@ -19,8 +18,8 @@ test('authenticated users can visit kelas index', function () {
 });
 
 test('kelas index returns classrooms with relations', function () {
-    $user = User::factory()->create();
-    $classroom = Classroom::factory()->create();
+    $user = createAdminUser();
+    $classroom = Classroom::factory()->create(['school_id' => $user->school_id]);
 
     $this->actingAs($user)
         ->get(route('kelas.index'))
@@ -34,7 +33,7 @@ test('kelas index returns classrooms with relations', function () {
 });
 
 test('authenticated users can create a classroom', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
     $academicYear = AcademicYear::factory()->create();
 
     $this->actingAs($user)
@@ -54,7 +53,7 @@ test('authenticated users can create a classroom', function () {
 });
 
 test('store validation requires name', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
     $academicYear = AcademicYear::factory()->create();
 
     $this->actingAs($user)
@@ -67,7 +66,7 @@ test('store validation requires name', function () {
 });
 
 test('store validation requires grade_level between 7 and 12', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
     $academicYear = AcademicYear::factory()->create();
 
     $this->actingAs($user)
@@ -81,7 +80,7 @@ test('store validation requires grade_level between 7 and 12', function () {
 });
 
 test('authenticated users can update a classroom', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
     $classroom = Classroom::factory()->create(['name' => 'VII-A']);
 
     $this->actingAs($user)
@@ -99,7 +98,7 @@ test('authenticated users can update a classroom', function () {
 });
 
 test('authenticated users can delete a classroom without students', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
     $classroom = Classroom::factory()->create();
 
     $this->actingAs($user)
@@ -110,7 +109,7 @@ test('authenticated users can delete a classroom without students', function () 
 });
 
 test('classroom with students cannot be deleted', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
     $classroom = Classroom::factory()->create();
     Student::factory()->create(['classroom_id' => $classroom->id]);
 

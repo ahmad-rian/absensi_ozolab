@@ -11,6 +11,7 @@ test('guests cannot access album layouts page', function () {
 test('authenticated users can view album layouts', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
     $this->actingAs($user)->get(route('admin.album-layouts'))
         ->assertOk()
@@ -20,6 +21,7 @@ test('authenticated users can view album layouts', function () {
 test('album layout can be created', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
     $response = $this->actingAs($user)->post(route('admin.album-layouts.store'), [
         'name' => 'Album A4 3x4',
@@ -43,6 +45,7 @@ test('album layout can be created', function () {
 test('album layout can be updated', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
     $layout = SchoolAlbumLayout::create([
         'school_id' => $school->id,
@@ -76,6 +79,7 @@ test('album layout can be updated', function () {
 test('album layout can be deleted', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
     $layout = SchoolAlbumLayout::create([
         'school_id' => $school->id,

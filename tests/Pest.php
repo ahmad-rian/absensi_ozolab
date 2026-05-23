@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\School;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /*
@@ -16,6 +19,13 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        // Seed roles for spatie permission middleware
+        $roles = ['SUPER_ADMIN', 'ADMIN', 'GURU', 'ORANG_TUA'];
+        foreach ($roles as $role) {
+            Role::findOrCreate($role, 'web');
+        }
+    })
     ->in('Feature');
 
 /*
@@ -44,7 +54,14 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function createAdminUser(array $attributes = []): User
 {
-    // ..
+    $school = School::factory()->create();
+    $user = User::factory()->create([
+        'school_id' => $school->id,
+        ...$attributes,
+    ]);
+    $user->assignRole('ADMIN');
+
+    return $user;
 }

@@ -5,14 +5,13 @@ use App\Enums\AttendanceType;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\Student;
-use App\Models\User;
 
 test('guests are redirected from laporan page', function () {
     $this->get(route('admin.laporan'))->assertRedirect(route('login'));
 });
 
 test('authenticated users can visit laporan page', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $response = $this->actingAs($user)->get(route('admin.laporan'));
 
@@ -27,8 +26,8 @@ test('authenticated users can visit laporan page', function () {
 });
 
 test('laporan returns attendance summary data', function () {
-    $user = User::factory()->create();
-    $student = Student::factory()->create();
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
 
     Attendance::factory()->create([
         'student_id' => $student->id,
@@ -64,8 +63,8 @@ test('guests are redirected from laporan export', function () {
 });
 
 test('authenticated users can export laporan as csv', function () {
-    $user = User::factory()->create();
-    $student = Student::factory()->create();
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
 
     Attendance::factory()->create([
         'student_id' => $student->id,
@@ -93,11 +92,11 @@ test('authenticated users can export laporan as csv', function () {
 });
 
 test('laporan export filters by classroom', function () {
-    $user = User::factory()->create();
-    $classroom1 = Classroom::factory()->create();
-    $classroom2 = Classroom::factory()->create();
-    $student1 = Student::factory()->create(['classroom_id' => $classroom1->id]);
-    $student2 = Student::factory()->create(['classroom_id' => $classroom2->id]);
+    $user = createAdminUser();
+    $classroom1 = Classroom::factory()->create(['school_id' => $user->school_id]);
+    $classroom2 = Classroom::factory()->create(['school_id' => $user->school_id]);
+    $student1 = Student::factory()->create(['classroom_id' => $classroom1->id, 'school_id' => $user->school_id]);
+    $student2 = Student::factory()->create(['classroom_id' => $classroom2->id, 'school_id' => $user->school_id]);
 
     Attendance::factory()->create([
         'student_id' => $student1->id,
@@ -129,11 +128,11 @@ test('laporan export filters by classroom', function () {
 });
 
 test('laporan filters by classroom', function () {
-    $user = User::factory()->create();
-    $classroom1 = Classroom::factory()->create();
-    $classroom2 = Classroom::factory()->create();
-    $student1 = Student::factory()->create(['classroom_id' => $classroom1->id]);
-    $student2 = Student::factory()->create(['classroom_id' => $classroom2->id]);
+    $user = createAdminUser();
+    $classroom1 = Classroom::factory()->create(['school_id' => $user->school_id]);
+    $classroom2 = Classroom::factory()->create(['school_id' => $user->school_id]);
+    $student1 = Student::factory()->create(['classroom_id' => $classroom1->id, 'school_id' => $user->school_id]);
+    $student2 = Student::factory()->create(['classroom_id' => $classroom2->id, 'school_id' => $user->school_id]);
 
     Attendance::factory()->create([
         'student_id' => $student1->id,

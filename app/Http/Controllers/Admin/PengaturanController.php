@@ -72,9 +72,11 @@ class PengaturanController extends Controller
         $school = School::find(auth()->user()->school_id);
 
         if ($school) {
+            $settings = $school->settings ?? [];
             foreach ($validated as $key => $value) {
-                $school->setSetting($key, $value);
+                $settings[$key] = $value;
             }
+            $school->settings = $settings;
 
             if (isset($validated['school_name']) && $validated['school_name']) {
                 $school->name = $validated['school_name'];

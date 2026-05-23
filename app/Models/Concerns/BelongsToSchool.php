@@ -34,9 +34,10 @@ trait BelongsToSchool
         $schoolId = $schoolId ?? auth()->user()?->school_id;
 
         if ($schoolId) {
-            return $query->where($this->getTable() . '.school_id', $schoolId);
+            return $query->where($this->getTable().'.school_id', $schoolId);
         }
 
-        return $query;
+        // Jika tidak ada school_id, return empty result untuk mencegah data leak
+        return $query->whereRaw('1 = 0');
     }
 }

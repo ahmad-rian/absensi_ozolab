@@ -74,7 +74,6 @@ class StudentApiController extends Controller
             'address' => $student->address,
             'photo_path' => $student->photo_path,
             'is_active' => $student->is_active,
-            'qr_token' => $student->qr_token,
             'qr_svg' => $this->qrGenerator->renderSvg($student),
             'classroom' => $student->classroom ? [
                 'id' => $student->classroom->id,
@@ -111,7 +110,6 @@ class StudentApiController extends Controller
             'student_id' => $student->id,
             'full_name' => $student->full_name,
             'nis' => $student->nis,
-            'qr_token' => $student->qr_token,
             'qr_svg' => $this->qrGenerator->renderSvg($student),
         ]);
     }
@@ -175,7 +173,6 @@ class StudentApiController extends Controller
                 'gender' => $s->gender->value,
                 'classroom' => $s->classroom?->name,
                 'grade_level' => $s->classroom?->grade_level,
-                'qr_token' => $s->qr_token,
             ]);
 
         return response()->json([

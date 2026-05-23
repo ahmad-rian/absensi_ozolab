@@ -94,6 +94,9 @@ class UserManagementController extends Controller
 
     public function edit(User $user): Response
     {
+        $isSuperAdmin = auth()->user()->hasRole(UserRole::SuperAdmin->value);
+        abort_unless($isSuperAdmin || $user->school_id === auth()->user()->school_id, 403);
+
         $roles = Role::whereIn('name', [
             UserRole::Admin->value,
             UserRole::Guru->value,
@@ -114,6 +117,9 @@ class UserManagementController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        $isSuperAdmin = auth()->user()->hasRole(UserRole::SuperAdmin->value);
+        abort_unless($isSuperAdmin || $user->school_id === auth()->user()->school_id, 403);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
@@ -138,6 +144,9 @@ class UserManagementController extends Controller
 
     public function destroy(User $user): RedirectResponse
     {
+        $isSuperAdmin = auth()->user()->hasRole(UserRole::SuperAdmin->value);
+        abort_unless($isSuperAdmin || $user->school_id === auth()->user()->school_id, 403);
+
         if ($user->id === auth()->id()) {
             return back()->withErrors(['delete' => 'Tidak bisa menghapus akun sendiri.']);
         }

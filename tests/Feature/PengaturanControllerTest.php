@@ -1,14 +1,13 @@
 <?php
 
-use App\Models\Setting;
-use App\Models\User;
+use App\Models\School;
 
 test('guests are redirected from pengaturan page', function () {
     $this->get(route('admin.pengaturan'))->assertRedirect(route('login'));
 });
 
 test('authenticated users can visit pengaturan page', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $response = $this->actingAs($user)->get(route('admin.pengaturan'));
 
@@ -20,8 +19,10 @@ test('authenticated users can visit pengaturan page', function () {
 });
 
 test('pengaturan returns existing setting values', function () {
-    $user = User::factory()->create();
-    Setting::setValue('school_name', 'SD Negeri 1');
+    $user = createAdminUser();
+    $school = School::find($user->school_id);
+    $school->setSetting('school_name', 'SD Negeri 1');
+    $school->save();
 
     $response = $this->actingAs($user)->get(route('admin.pengaturan'));
 
@@ -32,7 +33,7 @@ test('pengaturan returns existing setting values', function () {
 });
 
 test('pengaturan can be updated', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $response = $this->actingAs($user)->put(route('admin.pengaturan.update'), [
         'school_name' => 'SD Negeri 2',
@@ -47,13 +48,14 @@ test('pengaturan can be updated', function () {
     ]);
 
     $response->assertRedirect(route('admin.pengaturan'));
-    expect(Setting::getValue('school_name'))->toBe('SD Negeri 2');
-    expect(Setting::getValue('default_check_in_time'))->toBe('07:30');
-    expect(Setting::getValue('timezone'))->toBe('Asia/Makassar');
+    $school = School::find($user->school_id);
+    expect($school->getSetting('school_name'))->toBe('SD Negeri 2');
+    expect($school->getSetting('default_check_in_time'))->toBe('07:30');
+    expect($school->getSetting('timezone'))->toBe('Asia/Makassar');
 });
 
 test('pengaturan validates timezone values', function () {
-    $user = User::factory()->create();
+    $user = createAdminUser();
 
     $response = $this->actingAs($user)->put(route('admin.pengaturan.update'), [
         'timezone' => 'Invalid/Timezone',

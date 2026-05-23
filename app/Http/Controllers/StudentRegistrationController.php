@@ -42,7 +42,7 @@ class StudentRegistrationController extends Controller
             'nisn' => ['nullable', 'string', 'max:20'],
             'gender' => ['required', Rule::enum(Gender::class)],
             'religion' => ['nullable', Rule::enum(Religion::class)],
-            'classroom_id' => ['required', 'exists:classrooms,id'],
+            'classroom_id' => ['required', Rule::exists('classrooms', 'id')->where('school_id', $request->school_id)],
             'birth_place' => ['nullable', 'string', 'max:100'],
             'birth_date' => ['nullable', 'date'],
             'address' => ['nullable', 'string', 'max:500'],

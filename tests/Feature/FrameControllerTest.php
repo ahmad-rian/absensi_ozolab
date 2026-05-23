@@ -9,8 +9,10 @@ use Illuminate\Support\Facades\Storage;
 function createSchoolUser(): User
 {
     $school = School::factory()->create();
+    $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
 
-    return User::factory()->create(['school_id' => $school->id]);
+    return $user;
 }
 
 test('guests cannot access frames page', function () {
