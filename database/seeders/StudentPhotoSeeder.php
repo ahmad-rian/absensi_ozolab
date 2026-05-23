@@ -76,91 +76,65 @@ class StudentPhotoSeeder extends Seeder
     /**
      * @param  int[]  $color  RGB array
      */
+    /**
+     * Generate a 3:4 portrait avatar with initials.
+     *
+     * @param  int[]  $color  RGB array
+     */
     private function generateAvatar(string $initials, array $color, bool $isMale): \GdImage
     {
-        $size = 400;
-        $image = imagecreatetruecolor($size, $size);
+        $w = 300;
+        $h = 400; // 3:4 portrait ratio
 
-        // Background gradient
-        $bgColor = imagecolorallocate($image, $color[0], $color[1], $color[2]);
-        $lightBg = imagecolorallocate(
-            $image,
-            min(255, $color[0] + 40),
-            min(255, $color[1] + 40),
-            min(255, $color[2] + 40),
-        );
+        $image = imagecreatetruecolor($w, $h);
+        imagesavealpha($image, true);
 
-        // Fill with gradient effect
-        for ($y = 0; $y < $size; $y++) {
-            $ratio = $y / $size;
-            $r = (int) ($color[0] + ($color[0] + 40 - $color[0]) * $ratio);
-            $g = (int) ($color[1] + ($color[1] + 40 - $color[1]) * $ratio);
-            $b = (int) ($color[2] + ($color[2] + 40 - $color[2]) * $ratio);
-            $lineColor = imagecolorallocate($image, min(255, $r), min(255, $g), min(255, $b));
-            imageline($image, 0, $y, $size - 1, $y, $lineColor);
+        // Gradient background
+        for ($y = 0; $y < $h; $y++) {
+            $ratio = $y / $h;
+            $r = (int) min(255, $color[0] + 40 * $ratio);
+            $g = (int) min(255, $color[1] + 40 * $ratio);
+            $b = (int) min(255, $color[2] + 40 * $ratio);
+            $lineColor = imagecolorallocate($image, $r, $g, $b);
+            imageline($image, 0, $y, $w - 1, $y, $lineColor);
         }
 
-        // White text for initials
+        // Circle overlay (head silhouette area)
+        $semiWhite = imagecolorallocatealpha($image, 255, 255, 255, 110);
+        imagefilledellipse($image, (int) ($w / 2), (int) ($h * 0.38), (int) ($w * 0.7), (int) ($w * 0.7), $semiWhite);
+
+        // Draw initials centered in upper area (where "face" would be)
         $white = imagecolorallocate($image, 255, 255, 255);
-        $fontSize = 5; // Built-in font (largest)
-
-        $textWidth = imagefontwidth($fontSize) * strlen($initials);
-        $textHeight = imagefontheight($fontSize);
-
-        // Scale up: draw large text centered
-        $x = (int) (($size - $textWidth * 8) / 2);
-        $y = (int) (($size - $textHeight * 8) / 2);
-
-        // Draw initials multiple times for thickness (poor man's bold)
-        for ($sx = -1; $sx <= 1; $sx++) {
-            for ($sy = -1; $sy <= 1; $sy++) {
-                $this->drawScaledString($image, $initials, $size, $white, $sx, $sy);
-            }
-        }
-
-        // Add subtle circle overlay
-        $semiWhite = imagecolorallocatealpha($image, 255, 255, 255, 115);
-        imagefilledellipse($image, $size / 2, $size / 2, (int) ($size * 0.85), (int) ($size * 0.85), $semiWhite);
-
-        // Redraw initials on top of circle
-        $this->drawScaledString($image, $initials, $size, $white, 0, 0);
-
-        return $image;
-    }
-
-    private function drawScaledString(\GdImage $image, string $text, int $size, int $color, int $offsetX, int $offsetY): void
-    {
         $fontSize = 5;
         $charWidth = imagefontwidth($fontSize);
         $charHeight = imagefontheight($fontSize);
-        $scale = 8;
+        $scale = 7;
+        $totalTextW = strlen($initials) * $charWidth * $scale;
+        $startX = (int) (($w - $totalTextW) / 2);
+        $startY = (int) ($h * 0.38 - $charHeight * $scale / 2);
 
-        $totalWidth = strlen($text) * $charWidth * $scale;
-        $startX = (int) (($size - $totalWidth) / 2) + $offsetX;
-        $startY = (int) (($size - $charHeight * $scale) / 2) + $offsetY;
-
-        for ($i = 0; $i < strlen($text); $i++) {
+        for ($i = 0; $i < strlen($initials); $i++) {
             $charImg = imagecreatetruecolor($charWidth, $charHeight);
-            $black = imagecolorallocate($charImg, 0, 0, 0);
-            $white = imagecolorallocate($charImg, 255, 255, 255);
-            imagefill($charImg, 0, 0, $black);
-            imagestring($charImg, $fontSize, 0, 0, $text[$i], $white);
-
+            imagefill($charImg, 0, 0, imagecolorallocate($charImg, 0, 0, 0));
+            imagestring($charImg, $fontSize, 0, 0, $initials[$i], imagecolorallocate($charImg, 255, 255, 255));
             $scaledChar = imagecreatetruecolor($charWidth * $scale, $charHeight * $scale);
             imagecopyresized($scaledChar, $charImg, 0, 0, 0, 0, $charWidth * $scale, $charHeight * $scale, $charWidth, $charHeight);
 
-            // Copy non-black pixels
             for ($px = 0; $px < $charWidth * $scale; $px++) {
                 for ($py = 0; $py < $charHeight * $scale; $py++) {
-                    $pixelColor = imagecolorat($scaledChar, $px, $py);
-                    if ($pixelColor > 0) {
-                        imagesetpixel($image, $startX + $i * $charWidth * $scale + $px, $startY + $py, $color);
+                    if (imagecolorat($scaledChar, $px, $py) > 0) {
+                        imagesetpixel($image, $startX + $i * $charWidth * $scale + $px, $startY + $py, $white);
                     }
                 }
             }
-
             imagedestroy($charImg);
             imagedestroy($scaledChar);
         }
+
+        // Body silhouette (shoulders) at bottom
+        $bodySemi = imagecolorallocatealpha($image, 255, 255, 255, 118);
+        imagefilledellipse($image, (int) ($w / 2), (int) ($h * 0.95), (int) ($w * 1.1), (int) ($h * 0.45), $bodySemi);
+
+        return $image;
     }
 }

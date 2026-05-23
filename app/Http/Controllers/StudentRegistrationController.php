@@ -10,6 +10,7 @@ use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use App\Services\CardGeneratorService;
 use App\Services\GoogleDriveService;
+use App\Services\PhotoCropService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -123,7 +124,7 @@ class StudentRegistrationController extends Controller
     }
 
     /**
-     * Download student photo from Google Drive parents folder by filename.
+     * Download student photo from Google Drive, smart crop to 3:4 portrait, save as WebP.
      */
     private function downloadPhotoFromDrive(Student $student, School $school, string $filename): bool
     {
@@ -139,7 +140,6 @@ class StudentRegistrationController extends Controller
         try {
             $service = GoogleDriveService::forSchool($driveConfig);
 
-            // Search for file in parents folder
             $searchFolderId = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id ?: 'root';
             $files = $service->findFileByName($filename, $searchFolderId);
 
@@ -151,21 +151,16 @@ class StudentRegistrationController extends Controller
 
             $driveFileId = $files[0]['id'];
             $tempPath = tempnam(sys_get_temp_dir(), 'student_photo_');
-
             $service->downloadFile($driveFileId, $tempPath);
 
-            // Convert to WebP and store
-            $dir = sprintf('photos/students/%d', $school->id);
-            Storage::disk('public')->makeDirectory($dir);
-
-            $outputFilename = sprintf('%s/%d-%s.webp', $dir, $student->id, Str::slug($student->full_name));
-            $outputPath = Storage::disk('public')->path($outputFilename);
-
-            $this->convertToWebp($tempPath, $outputPath);
+            // Smart crop to 3:4 portrait + WebP
+            $storagePath = sprintf('photos/students/%d/%d-%s.webp', $school->id, $student->id, Str::slug($student->full_name));
+            $cropService = new PhotoCropService;
+            $cropService->cropAndStore($tempPath, $storagePath);
 
             @unlink($tempPath);
 
-            $student->update(['photo_path' => $outputFilename]);
+            $student->update(['photo_path' => $storagePath]);
 
             return true;
         } catch (\Throwable $e) {
@@ -177,42 +172,6 @@ class StudentRegistrationController extends Controller
 
             return false;
         }
-    }
-
-    /**
-     * Convert image to WebP using GD (handles large Canon photos 5-10MB).
-     */
-    private function convertToWebp(string $inputPath, string $outputPath, int $quality = 80, int $maxWidth = 800): void
-    {
-        $info = getimagesize($inputPath);
-        if (! $info) {
-            throw new \RuntimeException('Cannot read image file.');
-        }
-
-        $image = match ($info[2]) {
-            IMAGETYPE_JPEG => imagecreatefromjpeg($inputPath),
-            IMAGETYPE_PNG => imagecreatefrompng($inputPath),
-            IMAGETYPE_WEBP => imagecreatefromwebp($inputPath),
-            IMAGETYPE_GIF => imagecreatefromgif($inputPath),
-            default => throw new \RuntimeException('Unsupported image format.'),
-        };
-
-        $origWidth = imagesx($image);
-        $origHeight = imagesy($image);
-
-        if ($origWidth > $maxWidth) {
-            $ratio = $maxWidth / $origWidth;
-            $newWidth = $maxWidth;
-            $newHeight = (int) ($origHeight * $ratio);
-
-            $resized = imagecreatetruecolor($newWidth, $newHeight);
-            imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
-            imagedestroy($image);
-            $image = $resized;
-        }
-
-        imagewebp($image, $outputPath, $quality);
-        imagedestroy($image);
     }
 
     /**
@@ -244,12 +203,26 @@ class StudentRegistrationController extends Controller
             }
         }
 
+        // Resolve Drive folder for this student (shared across cards + photo)
+        $studentFolderId = $this->resolveStudentDriveFolder($student, $school);
+
+        // Upload cropped photo to Drive first
+        if ($student->photo_path && $studentFolderId) {
+            $this->uploadPhotoToDrive($student, $school, $studentFolderId);
+        }
+
         foreach ($layouts as $layout) {
             try {
                 $log = $service->generateAndLog($student, $layout, 'registration');
 
-                // Upload to Drive with folder structure: cards_folder/ClassName/StudentName/
-                $driveUrl = $this->uploadCardToDrive($log, $student, $school);
+                // Upload card to student's Drive folder
+                $driveUrl = null;
+                if ($studentFolderId && $log->file_path) {
+                    $driveUrl = $this->uploadFileToDriveFolder($log->file_path, $studentFolderId, $school, 'image/png');
+                    if ($driveUrl) {
+                        $log->update(['drive_url' => $driveUrl]);
+                    }
+                }
 
                 $cards[] = [
                     'type' => $layout->type,
@@ -279,9 +252,9 @@ class StudentRegistrationController extends Controller
     }
 
     /**
-     * Upload card to Drive with folder structure: cards_folder / ClassName / StudentName /
+     * Resolve or create the student's Drive folder: cards_folder / ClassName / NIS - Name
      */
-    private function uploadCardToDrive($log, Student $student, School $school): ?string
+    private function resolveStudentDriveFolder(Student $student, School $school): ?string
     {
         $driveConfig = $school->driveConfig;
         if (! $driveConfig || ! $driveConfig->is_active || ! $driveConfig->cards_folder_id) {
@@ -296,31 +269,51 @@ class StudentRegistrationController extends Controller
             $service = GoogleDriveService::forSchool($driveConfig);
             $student->loadMissing('classroom');
 
-            // Create class folder
             $classroomName = $student->classroom?->name ?? 'Tanpa Kelas';
             $classFolderId = $service->findOrCreateFolder($classroomName, $driveConfig->cards_folder_id);
 
-            // Create student folder
             $studentFolderName = sprintf('%s - %s', $student->nis ?? $student->id, $student->full_name);
-            $studentFolderId = $service->findOrCreateFolder($studentFolderName, $classFolderId);
 
-            // Upload card
-            $fullPath = Storage::disk('public')->path($log->file_path);
-            $fileName = basename($log->file_path);
-            $driveFile = $service->uploadFile($fullPath, $fileName, $studentFolderId, 'image/png');
-            $driveUrl = $service->makePublic($driveFile->getId());
-
-            $log->update([
-                'drive_file_id' => $driveFile->getId(),
-                'drive_url' => $driveUrl,
-            ]);
-
-            return $driveUrl;
+            return $service->findOrCreateFolder($studentFolderName, $classFolderId);
         } catch (\Throwable $e) {
-            Log::warning('Card Drive upload failed', [
-                'student_id' => $student->id,
-                'error' => $e->getMessage(),
-            ]);
+            Log::warning('Failed to create student Drive folder', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Upload cropped photo to student's Drive folder.
+     */
+    private function uploadPhotoToDrive(Student $student, School $school, string $folderId): void
+    {
+        try {
+            $service = GoogleDriveService::forSchool($school->driveConfig);
+            $fullPath = Storage::disk('public')->path($student->photo_path);
+            $fileName = sprintf('foto-%s.webp', Str::slug($student->full_name));
+
+            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, 'image/webp');
+            $service->makePublic($driveFile->getId());
+        } catch (\Throwable $e) {
+            Log::warning('Photo Drive upload failed', ['student_id' => $student->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Upload a file from storage to a specific Drive folder.
+     */
+    private function uploadFileToDriveFolder(string $storagePath, string $folderId, School $school, string $mimeType): ?string
+    {
+        try {
+            $service = GoogleDriveService::forSchool($school->driveConfig);
+            $fullPath = Storage::disk('public')->path($storagePath);
+            $fileName = basename($storagePath);
+
+            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, $mimeType);
+
+            return $service->makePublic($driveFile->getId());
+        } catch (\Throwable $e) {
+            Log::warning('File Drive upload failed', ['error' => $e->getMessage()]);
 
             return null;
         }
