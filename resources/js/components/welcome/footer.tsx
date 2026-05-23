@@ -55,7 +55,7 @@ export function Footer() {
                     <div>
                         <div className="flex items-center gap-2 font-bold">
                             <AppLogoIcon className="size-6 fill-current" />
-                            <span>Absensi OZOLAB</span>
+                            <span>Tyas Photo</span>
                         </div>
                         <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
                             Sistem absensi sekolah modern berbasis QR Code dengan notifikasi WhatsApp real-time.
@@ -81,7 +81,7 @@ export function Footer() {
                 </div>
 
                 <div className="text-muted-foreground mt-10 flex flex-col items-center justify-between gap-4 border-t pt-8 text-sm sm:flex-row">
-                    <p>2026 Absensi OZOLAB - Dibuat di Indonesia</p>
+                    <p>2026 Tyas Photo - Dibuat di Indonesia</p>
                     <div className="flex gap-6">
                         <a href="#privacy" className="hover:text-foreground transition">
                             Privacy Policy

@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 
 export default function AppLogo() {
     const { currentSchool } = usePage<{ currentSchool?: { id: number; name: string; logo?: string } | null }>().props;
-    const schoolName = currentSchool?.name ?? 'Absensi OZOLAB';
+    const schoolName = currentSchool?.name ?? 'Tyas Photo';
 
     return (
         <>

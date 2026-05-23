@@ -517,7 +517,7 @@ function FormSection({ number, title, children }: { number: number; title: strin
 function Footer() {
     return (
         <footer className="border-t border-zinc-200 py-6 text-center dark:border-zinc-800">
-            <p className="text-muted-foreground text-sm">Powered by <span className="font-semibold">Absensi OZOLAB</span></p>
+            <p className="text-muted-foreground text-sm">Powered by <span className="font-semibold">Tyas Photo</span></p>
         </footer>
     );
 }
