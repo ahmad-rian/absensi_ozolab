@@ -206,6 +206,67 @@ class GoogleDriveService
     }
 
     /**
+     * Search for a file by name in a specific folder.
+     *
+     * @return array<int, array{id: string, name: string}>
+     */
+    public function findFileByName(string $name, ?string $folderId = null): array
+    {
+        $folderId = $folderId ?: $this->config->root_folder_id ?: 'root';
+        $escapedName = str_replace("'", "\\'", $name);
+
+        $result = $this->drive->files->listFiles([
+            'q' => "'{$folderId}' in parents and name contains '{$escapedName}' and trashed = false",
+            'pageSize' => 5,
+            'fields' => 'files(id, name, mimeType)',
+            'supportsAllDrives' => true,
+            'includeItemsFromAllDrives' => true,
+        ]);
+
+        return collect($result->getFiles())->map(fn (DriveFile $f) => [
+            'id' => $f->getId(),
+            'name' => $f->getName(),
+        ])->all();
+    }
+
+    /**
+     * Download a file from Drive to a local path.
+     */
+    public function downloadFile(string $fileId, string $outputPath): void
+    {
+        $response = $this->drive->files->get($fileId, [
+            'alt' => 'media',
+            'supportsAllDrives' => true,
+        ]);
+
+        file_put_contents($outputPath, $response->getBody()->getContents());
+    }
+
+    /**
+     * Find existing folder by name or create it.
+     */
+    public function findOrCreateFolder(string $name, string $parentId): string
+    {
+        $escapedName = str_replace("'", "\\'", $name);
+
+        $result = $this->drive->files->listFiles([
+            'q' => "'{$parentId}' in parents and name = '{$escapedName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+            'pageSize' => 1,
+            'fields' => 'files(id)',
+            'supportsAllDrives' => true,
+            'includeItemsFromAllDrives' => true,
+        ]);
+
+        $files = $result->getFiles();
+
+        if (count($files) > 0) {
+            return $files[0]->getId();
+        }
+
+        return $this->createFolder($name, $parentId);
+    }
+
+    /**
      * Delete a file or folder.
      */
     public function delete(string $fileId): void
