@@ -14,17 +14,17 @@ import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 type Classroom = {
-    id: number;
+    id: string;
     name: string;
 };
 
 type ParentUser = {
-    id: number;
+    id: string;
     name: string;
 };
 
 type ParentProfile = {
-    id: number;
+    id: string;
     user: ParentUser | null;
 };
 

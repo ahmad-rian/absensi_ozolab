@@ -9,6 +9,7 @@ use App\Models\Student;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class AttendanceHistorySeeder extends Seeder
 {
@@ -80,6 +81,7 @@ class AttendanceHistorySeeder extends Seeder
 
                 // CHECK_IN record
                 $records[] = [
+                    'id' => (string) Str::ulid(),
                     'school_id' => $student->school_id,
                     'student_id' => $student->id,
                     'attendance_date' => $dateStr,
@@ -98,6 +100,7 @@ class AttendanceHistorySeeder extends Seeder
                     $checkOutMinute = fake()->numberBetween(30, 50);
                     $checkOutSecond = fake()->numberBetween(0, 59);
                     $records[] = [
+                        'id' => (string) Str::ulid(),
                         'school_id' => $student->school_id,
                         'student_id' => $student->id,
                         'attendance_date' => $dateStr,

@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
-type Role = { id: number; name: string; permissions: string[]; users_count: number };
+type Role = { id: string; name: string; permissions: string[]; users_count: number };
 type Props = { roles: Role[]; permissions: string[] };
 
 const roleLabels: Record<string, string> = {
@@ -54,7 +54,7 @@ export default function RolesIndex({ roles, permissions }: Props) {
         editForm.put(`/admin/roles/${editingRole.id}`, { preserveScroll: true, onSuccess: () => setEditingRole(null) });
     }
 
-    function handleDelete(id: number) {
+    function handleDelete(id: string) {
         router.delete(`/admin/roles/${id}`, { preserveScroll: true });
     }
 

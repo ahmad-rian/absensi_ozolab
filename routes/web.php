@@ -35,7 +35,7 @@ Route::middleware(['auth'])->post('admin/switch-school', function (Request $requ
     $request->validate(['school_id' => ['required', 'exists:schools,id']]);
 
     $user = $request->user();
-    $schoolId = (int) $request->school_id;
+    $schoolId = $request->school_id;
 
     // Only SUPER_ADMIN can switch to any school; others can only use their own
     $isSuperAdmin = $user->hasRole(UserRole::SuperAdmin->value);

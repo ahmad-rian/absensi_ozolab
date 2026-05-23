@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('school_card_layouts', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('school_id')->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('school_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('type')->default('osis');
             $table->json('layout_config');

@@ -9,10 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
-type Classroom = { id: number; name: string };
+type Classroom = { id: string; name: string };
 
 type ReportRow = {
-    student_id: number;
+    student_id: string;
     nis: string;
     full_name: string;
     classroom_name: string;

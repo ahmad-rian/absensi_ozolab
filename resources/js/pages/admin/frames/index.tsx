@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { dashboard } from '@/routes';
 
 type FrameItem = {
-    id: number;
+    id: string;
     name: string;
     image_url: string;
     width: number;

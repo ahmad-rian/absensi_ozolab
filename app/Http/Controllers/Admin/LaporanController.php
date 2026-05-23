@@ -143,7 +143,7 @@ class LaporanController extends Controller
     /**
      * @return Collection<int, array{student_id: int, nis: string, full_name: string, classroom_name: string, hadir: int, terlambat: int, izin: int, sakit: int, alpa: int, attendance_rate: float}>
      */
-    private function getReportData(string $startDate, string $endDate, ?string $classroomId, ?int $schoolId): Collection
+    private function getReportData(string $startDate, string $endDate, ?string $classroomId, ?string $schoolId): Collection
     {
         $query = Attendance::when($schoolId, fn ($q) => $q->whereHas('student', fn ($sq) => $sq->where('school_id', $schoolId)))
             ->select(

@@ -12,7 +12,7 @@ import { dashboard } from '@/routes';
 
 const roleLabels: Record<string, string> = { ADMIN: 'Admin Sekolah', GURU: 'Guru' };
 
-type Role = { id: number; name: string };
+type Role = { id: string; name: string };
 
 export default function UsersCreate({ roles }: { roles: Role[] }) {
     const { data, setData, post, processing, errors } = useForm({

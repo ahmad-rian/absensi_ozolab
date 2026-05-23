@@ -11,14 +11,14 @@ import { dashboard } from '@/routes';
 import InputError from '@/components/input-error';
 
 type ParentData = {
-    id: number;
+    id: string;
     whatsapp_number: string;
     relation: string;
     nik: string | null;
     occupation: string | null;
     address: string | null;
     city: string | null;
-    user: { id: number; name: string; email: string; phone: string | null };
+    user: { id: string; name: string; email: string; phone: string | null };
 };
 
 export default function OrangTuaEdit({ parent }: { parent: ParentData }) {

@@ -20,22 +20,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { dashboard } from '@/routes';
 
 type Classroom = {
-    id: number;
+    id: string;
     name: string;
 };
 
 type ParentUser = {
-    id: number;
+    id: string;
     name: string;
 };
 
 type ParentProfile = {
-    id: number;
+    id: string;
     user: ParentUser | null;
 };
 
 type Student = {
-    id: number;
+    id: string;
     nis: string | null;
     nisn: string | null;
     full_name: string;
@@ -92,7 +92,7 @@ export default function SiswaIndex({ students, classrooms, filters }: PageProps)
         );
     }
 
-    function handleDelete(id: number) {
+    function handleDelete(id: string) {
         router.delete(`/admin/siswa/${id}`, {
             preserveScroll: true,
         });

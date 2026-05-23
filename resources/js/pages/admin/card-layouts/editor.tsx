@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { dashboard } from '@/routes';
 
 type FrameItem = {
-    id: number;
+    id: string;
     name: string;
     image_url: string;
     width: number;
@@ -19,7 +19,7 @@ type FrameItem = {
 };
 
 type LayoutData = {
-    id?: number;
+    id?: string;
     name: string;
     type: string;
     is_default: boolean;
@@ -238,7 +238,7 @@ export default function CardLayoutEditor({ layout, frames }: Props) {
                         <Card>
                             <CardHeader><CardTitle className="text-base">Frame</CardTitle></CardHeader>
                             <CardContent>
-                                <Select value={String(config.frame_id ?? 'none')} onValueChange={(v) => updateConfig('frame_id', v === 'none' ? null : Number(v))}>
+                                <Select value={String(config.frame_id ?? 'none')} onValueChange={(v) => updateConfig('frame_id', v === 'none' ? null : v)}>
                                     <SelectTrigger><SelectValue placeholder="Tanpa frame" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="none">Tanpa Frame</SelectItem>

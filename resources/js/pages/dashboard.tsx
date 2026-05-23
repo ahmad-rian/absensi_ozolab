@@ -22,8 +22,8 @@ type TrendItem = { date: string; hadir: number; terlambat: number };
 type StatusItem = { name: string; value: number; color: string };
 type ClassItem = { name: string; rate: number };
 type WeeklyItem = { day: string; hadir: number; terlambat: number; tidakHadir: number };
-type CheckinItem = { id: number; studentName: string; className: string | null; time: string; date: string; status: string; statusColor: string; notificationSent: boolean; initials: string };
-type ActivityItem = { id: number; message: string; time: string; type: string; status: string; initials: string };
+type CheckinItem = { id: string; studentName: string; className: string | null; time: string; date: string; status: string; statusColor: string; notificationSent: boolean; initials: string };
+type ActivityItem = { id: string; message: string; time: string; type: string; status: string; initials: string };
 
 type DashboardProps = {
     stats: Stats;

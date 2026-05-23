@@ -10,7 +10,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { dashboard } from '@/routes';
 
-type SchoolData = { id: number; name: string; address: string | null; city: string | null; phone: string | null; email: string | null; website: string | null; is_active: boolean };
+type SchoolData = { id: string; name: string; address: string | null; city: string | null; phone: string | null; email: string | null; website: string | null; is_active: boolean };
 
 export default function SchoolsEdit({ school }: { school: SchoolData }) {
     const { data, setData, put, processing, errors } = useForm({

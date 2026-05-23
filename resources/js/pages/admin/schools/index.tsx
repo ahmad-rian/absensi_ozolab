@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { dashboard } from '@/routes';
 
 type School = {
-    id: number;
+    id: string;
     name: string;
     slug: string;
     address: string | null;

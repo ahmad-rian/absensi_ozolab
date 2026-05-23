@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('school_drive_configs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('school_id')->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('school_id')->constrained()->cascadeOnDelete();
             $table->text('service_account_json')->nullable();
             $table->string('root_folder_id')->nullable();
             $table->string('cards_folder_id')->nullable();

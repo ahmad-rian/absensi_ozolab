@@ -29,7 +29,7 @@ trait BelongsToSchool
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForSchool(Builder $query, ?int $schoolId = null): Builder
+    public function scopeForSchool(Builder $query, ?string $schoolId = null): Builder
     {
         $schoolId = $schoolId ?? auth()->user()?->school_id;
 

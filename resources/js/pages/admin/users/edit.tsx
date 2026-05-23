@@ -12,8 +12,8 @@ import { dashboard } from '@/routes';
 
 const roleLabels: Record<string, string> = { ADMIN: 'Admin Sekolah', GURU: 'Guru' };
 
-type Role = { id: number; name: string };
-type EditUser = { id: number; name: string; email: string; phone: string | null; is_active: boolean; role: string };
+type Role = { id: string; name: string };
+type EditUser = { id: string; name: string; email: string; phone: string | null; is_active: boolean; role: string };
 
 export default function UsersEdit({ editUser, roles }: { editUser: EditUser; roles: Role[] }) {
     const { data, setData, put, processing, errors } = useForm({

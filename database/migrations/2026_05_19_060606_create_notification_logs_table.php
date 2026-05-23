@@ -9,10 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('notification_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('attendance_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('parent_profile_id')->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('student_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('attendance_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUlid('parent_profile_id')->constrained()->cascadeOnDelete();
             $table->string('channel');
             $table->string('whatsapp_number');
             $table->string('template_key')->nullable();

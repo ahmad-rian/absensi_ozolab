@@ -12,8 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
-type Role = { id: number; name: string };
-type UserItem = { id: number; name: string; email: string; phone: string | null; is_active: boolean; roles: Role[] };
+type Role = { id: string; name: string };
+type UserItem = { id: string; name: string; email: string; phone: string | null; is_active: boolean; roles: Role[] };
 type PaginationLink = { url: string | null; label: string; active: boolean };
 type Paginated = { data: UserItem[]; links: PaginationLink[]; from: number | null; to: number | null; total: number; last_page: number };
 
@@ -48,7 +48,7 @@ export default function UsersIndex({ users, roles, filters }: {
         router.get('/admin/users', { search: filters.search || undefined, role: value === 'all' ? undefined : value }, { preserveState: true, replace: true });
     }
 
-    function handleDelete(id: number) {
+    function handleDelete(id: string) {
         router.delete(`/admin/users/${id}`, { preserveScroll: true });
     }
 

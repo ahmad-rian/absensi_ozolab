@@ -27,7 +27,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { login } from '@/routes';
 
-type Classroom = { id: number; name: string; grade_level: number };
+type Classroom = { id: string; name: string; grade_level: number };
 type Relation = { value: string; label: string };
 type StudentForm = {
     full_name: string;

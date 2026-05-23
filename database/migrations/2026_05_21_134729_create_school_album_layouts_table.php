@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('school_album_layouts', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('school_id')->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('school_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('paper_size')->default('A4');
             $table->string('orientation')->default('portrait');

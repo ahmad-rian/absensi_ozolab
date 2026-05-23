@@ -1,5 +1,5 @@
 export type AcademicYear = {
-    id: number;
+    id: string;
     name: string;
     start_date: string;
     end_date: string;
@@ -7,34 +7,34 @@ export type AcademicYear = {
 };
 
 export type Classroom = {
-    id: number;
-    academic_year_id: number;
+    id: string;
+    academic_year_id: string;
     name: string;
     grade_level: number;
-    homeroom_teacher_id: number | null;
+    homeroom_teacher_id: string | null;
     capacity: number;
     students_count?: number;
     academic_year?: AcademicYear;
-    homeroom_teacher?: { id: number; name: string } | null;
+    homeroom_teacher?: { id: string; name: string } | null;
 };
 
 export type ParentProfile = {
-    id: number;
-    user_id: number;
+    id: string;
+    user_id: string;
     nik: string | null;
     whatsapp_number: string;
     relation: 'AYAH' | 'IBU' | 'WALI';
     occupation: string | null;
     address: string | null;
     city: string | null;
-    user?: { id: number; name: string; email: string };
+    user?: { id: string; name: string; email: string };
     students?: Student[];
 };
 
 export type Student = {
-    id: number;
-    parent_profile_id: number;
-    classroom_id: number | null;
+    id: string;
+    parent_profile_id: string;
+    classroom_id: string | null;
     nis: string;
     nisn: string | null;
     full_name: string;
@@ -50,21 +50,21 @@ export type Student = {
 };
 
 export type Attendance = {
-    id: number;
-    student_id: number;
+    id: string;
+    student_id: string;
     attendance_date: string;
     type: 'CHECK_IN' | 'CHECK_OUT';
     status: 'HADIR' | 'TERLAMBAT' | 'ALPA' | 'IZIN' | 'SAKIT';
     recorded_at: string;
-    recorded_by: number | null;
+    recorded_by: string | null;
     device_id: string | null;
     notes: string | null;
     student?: Student;
 };
 
 export type AttendanceSchedule = {
-    id: number;
-    classroom_id: number | null;
+    id: string;
+    classroom_id: string | null;
     day_of_week: number;
     check_in_start: string;
     check_in_end: string;
@@ -75,10 +75,10 @@ export type AttendanceSchedule = {
 };
 
 export type NotificationLog = {
-    id: number;
-    student_id: number;
-    attendance_id: number | null;
-    parent_profile_id: number;
+    id: string;
+    student_id: string;
+    attendance_id: string | null;
+    parent_profile_id: string;
     channel: 'WHATSAPP' | 'EMAIL';
     whatsapp_number: string;
     template_key: string | null;
@@ -89,7 +89,7 @@ export type NotificationLog = {
 };
 
 export type Setting = {
-    id: number;
+    id: string;
     key: string;
     value: unknown;
     description: string | null;
