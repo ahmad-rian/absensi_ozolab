@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { dashboard } from '@/routes';
 
 type DriveConfig = {
-    id: number;
+    id: string;
     root_folder_id: string | null;
     cards_folder_id: string | null;
     albums_folder_id: string | null;

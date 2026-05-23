@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('attendance_schedules', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('classroom_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('classroom_id')->nullable()->constrained()->cascadeOnDelete();
             $table->unsignedTinyInteger('day_of_week');
             $table->time('check_in_start');
             $table->time('check_in_end');

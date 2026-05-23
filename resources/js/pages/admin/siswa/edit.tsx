@@ -14,30 +14,30 @@ import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
 type Classroom = {
-    id: number;
+    id: string;
     name: string;
 };
 
 type ParentUser = {
-    id: number;
+    id: string;
     name: string;
 };
 
 type ParentProfile = {
-    id: number;
+    id: string;
     user: ParentUser | null;
 };
 
 type Student = {
-    id: number;
+    id: string;
     nis: string | null;
     no_absen: string | null;
     nisn: string | null;
     full_name: string;
     gender: string;
     is_active: boolean;
-    classroom_id: number | null;
-    parent_profile_id: number | null;
+    classroom_id: string | null;
+    parent_profile_id: string | null;
     birth_place: string | null;
     birth_date: string | null;
     address: string | null;

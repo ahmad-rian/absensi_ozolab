@@ -28,7 +28,7 @@ import { dashboard } from '@/routes';
 import type { AcademicYear, Classroom } from '@/types';
 
 type Teacher = {
-    id: number;
+    id: string;
     name: string;
 };
 
@@ -135,7 +135,7 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
         });
     }
 
-    function handleDelete(id: number) {
+    function handleDelete(id: string) {
         router.delete(`/admin/kelas/${id}`, {
             preserveScroll: true,
         });

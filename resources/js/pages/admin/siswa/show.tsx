@@ -6,22 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { dashboard } from '@/routes';
 
 type Classroom = {
-    id: number;
+    id: string;
     name: string;
 };
 
 type ParentUser = {
-    id: number;
+    id: string;
     name: string;
 };
 
 type ParentProfile = {
-    id: number;
+    id: string;
     user: ParentUser | null;
 };
 
 type Student = {
-    id: number;
+    id: string;
     nis: string | null;
     nisn: string | null;
     no_absen: string | null;

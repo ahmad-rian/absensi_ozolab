@@ -7,7 +7,7 @@ import { SidebarMenuButton } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
 type SchoolItem = {
-    id: number;
+    id: string;
     name: string;
     slug: string;
 };
@@ -15,13 +15,13 @@ type SchoolItem = {
 export function SchoolSwitcher() {
     const [open, setOpen] = useState(false);
     const { currentSchool, schools } = usePage().props as {
-        currentSchool: { id: number; name: string; slug: string; logo: string | null } | null;
+        currentSchool: { id: string; name: string; slug: string; logo: string | null } | null;
         schools: SchoolItem[];
     };
 
     if (!schools || !Array.isArray(schools) || schools.length <= 1) return null;
 
-    function switchSchool(schoolId: number) {
+    function switchSchool(schoolId: string) {
         setOpen(false);
         router.post('/admin/switch-school', { school_id: schoolId }, { preserveScroll: true });
     }

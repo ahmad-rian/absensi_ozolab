@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 
 type CheckinRow = {
-    id: number;
+    id: string;
     studentName: string;
     className: string | null;
     time: string;

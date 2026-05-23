@@ -9,6 +9,7 @@ use App\Enums\NotificationStatus;
 use App\Models\Attendance;
 use App\Models\NotificationLog;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class NotificationLogSeeder extends Seeder
 {
@@ -42,6 +43,7 @@ class NotificationLogSeeder extends Seeder
             }
 
             $records[] = [
+                'id' => (string) Str::ulid(),
                 'school_id' => $attendance->student->school_id ?? null,
                 'student_id' => $attendance->student_id,
                 'attendance_id' => $attendance->id,

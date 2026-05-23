@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { dashboard } from '@/routes';
 
 type Layout = {
-    id: number;
+    id: string;
     name: string;
     paper_size: string;
     orientation: string;
@@ -17,7 +17,7 @@ type Layout = {
     rows: number;
 };
 
-type Classroom = { id: number; name: string };
+type Classroom = { id: string; name: string };
 
 type Props = {
     layouts: Layout[];

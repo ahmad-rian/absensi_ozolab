@@ -9,10 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('card_generation_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('school_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('student_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('school_card_layout_id')->nullable()->constrained()->nullOnDelete();
+            $table->ulid('id')->primary();
+            $table->foreignUlid('school_id')->constrained()->cascadeOnDelete();
+            $table->foreignUlid('student_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUlid('school_card_layout_id')->nullable()->constrained()->nullOnDelete();
             $table->string('type')->default('card');
             $table->string('status')->default('pending');
             $table->string('file_path')->nullable();

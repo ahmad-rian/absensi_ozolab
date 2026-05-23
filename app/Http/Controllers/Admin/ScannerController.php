@@ -94,7 +94,7 @@ class ScannerController extends Controller
     /**
      * Cari siswa berdasarkan QR token, NISN, atau NIS.
      */
-    private function findStudent(string $token, int $schoolId): ?Student
+    private function findStudent(string $token, string $schoolId): ?Student
     {
         // 1. Cari berdasarkan QR token (barcode gun / camera scan)
         $student = Student::where('qr_token', $token)

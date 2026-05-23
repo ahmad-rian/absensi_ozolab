@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { dashboard } from '@/routes';
 
 type Layout = {
-    id: number;
+    id: string;
     name: string;
     type: string;
     is_default: boolean;

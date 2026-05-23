@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToSchool;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 
 class SchoolFrame extends Model
 {
-    use BelongsToSchool;
+    use BelongsToSchool, HasUlids;
 
     protected $fillable = [
         'school_id',

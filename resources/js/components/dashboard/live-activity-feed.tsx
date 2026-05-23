@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 
 type ActivityItem = {
-    id: number;
+    id: string;
     message: string;
     time: string;
     type: string;

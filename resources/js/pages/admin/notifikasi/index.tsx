@@ -9,21 +9,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { dashboard } from '@/routes';
 
 type ParentProfile = {
-    id: number;
+    id: string;
     whatsapp_number: string | null;
     user: {
-        id: number;
+        id: string;
         name: string;
     } | null;
 };
 
 type Student = {
-    id: number;
+    id: string;
     full_name: string;
 };
 
 type NotificationLog = {
-    id: number;
+    id: string;
     created_at: string;
     whatsapp_number: string | null;
     status: string;

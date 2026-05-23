@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            $table->foreignId('parent_profile_id')->nullable()->change();
+            $table->foreignUlid('parent_profile_id')->nullable()->change();
             $table->string('parent_name')->nullable()->after('address');
             $table->string('parent_phone')->nullable()->after('parent_name');
         });
@@ -22,7 +22,7 @@ return new class extends Migration
     {
         Schema::table('students', function (Blueprint $table) {
             $table->dropColumn(['parent_name', 'parent_phone']);
-            $table->foreignId('parent_profile_id')->nullable(false)->change();
+            $table->foreignUlid('parent_profile_id')->nullable(false)->change();
         });
     }
 };

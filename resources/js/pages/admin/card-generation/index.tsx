@@ -10,10 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
-type Layout = { id: number; name: string; type: string };
-type Classroom = { id: number; name: string };
+type Layout = { id: string; name: string; type: string };
+type Classroom = { id: string; name: string };
 type LogEntry = {
-    id: number;
+    id: string;
     student_name: string;
     student_nis: string;
     layout_name: string;
@@ -38,7 +38,7 @@ export default function CardGenerationIndex({ layouts, classrooms, logs, driveCo
     const form = useForm({
         layout_id: '',
         classroom_id: '',
-        student_ids: [] as number[],
+        student_ids: [] as string[],
     });
 
     function handleGenerate(e: FormEvent) {

@@ -13,29 +13,29 @@ import { Textarea } from '@/components/ui/textarea';
 import { dashboard } from '@/routes';
 
 type Classroom = {
-    id: number;
+    id: string;
     name: string;
 };
 
 type Student = {
-    id: number;
+    id: string;
     nis: string;
     full_name: string;
-    classroom_id: number | null;
+    classroom_id: string | null;
 };
 
 type Attendance = {
-    id: number;
+    id: string;
     attendance_date: string;
     recorded_at: string;
     type: string;
     status: string;
     notes: string | null;
     student: {
-        id: number;
+        id: string;
         full_name: string;
         classroom: {
-            id: number;
+            id: string;
             name: string;
         } | null;
     };

@@ -6,10 +6,10 @@ use App\Enums\UserRole;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\ParentProfile;
+use App\Models\Role;
 use App\Models\Student;
 use App\Models\User;
 use Laravel\Fortify\Features;
-use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::registration());

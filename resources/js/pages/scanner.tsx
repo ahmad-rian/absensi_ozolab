@@ -5,7 +5,7 @@ import { QrScanner } from '@/components/scanner/qr-scanner';
 import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-sound';
 import AppLogoIcon from '@/components/app-logo-icon';
 
-type School = { id: number; name: string; slug: string; logo_url: string | null } | null;
+type School = { id: string; name: string; slug: string; logo_url: string | null } | null;
 type ScanMode = 'barcode' | 'camera' | 'manual';
 type AttendanceType = 'CHECK_IN' | 'CHECK_OUT';
 

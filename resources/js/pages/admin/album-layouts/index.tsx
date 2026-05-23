@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { dashboard } from '@/routes';
 
 type AlbumLayout = {
-    id: number;
+    id: string;
     name: string;
     paper_size: string;
     orientation: string;

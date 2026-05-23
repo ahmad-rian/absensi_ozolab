@@ -12,8 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 
-type School = { id: number; name: string; logo_path: string | null };
-type Classroom = { id: number; school_id: number; name: string; grade_level: number };
+type School = { id: string; name: string; logo_path: string | null };
+type Classroom = { id: string; school_id: string; name: string; grade_level: number };
 
 type Props = {
     schools: School[];
@@ -32,7 +32,7 @@ type RegistrationResult = {
     success: boolean;
     message: string;
     student: {
-        id: number;
+        id: string;
         full_name: string;
         nis: string;
         nisn: string | null;

@@ -44,7 +44,7 @@ class StudentPhotoSeeder extends Seeder
 
         foreach ($students as $student) {
             $initials = $this->getInitials($student->full_name);
-            $color = $colors[$student->id % count($colors)];
+            $color = $colors[crc32($student->id) % count($colors)];
             $isMale = $student->gender === Gender::LakiLaki;
 
             $image = $this->generateAvatar($initials, $color, $isMale);
