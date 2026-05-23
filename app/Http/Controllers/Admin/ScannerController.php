@@ -81,6 +81,9 @@ class ScannerController extends Controller
                 'full_name' => $student->full_name,
                 'nis' => $student->nis,
                 'classroom' => $student->classroom?->name,
+                'photo_url' => $student->photo_path
+                    ? Storage::disk('public')->url($student->photo_path)
+                    : null,
                 'status' => $result['attendance']?->status->label(),
                 'type' => $type->label(),
                 'time' => now('Asia/Jakarta')->format('H:i:s'),
