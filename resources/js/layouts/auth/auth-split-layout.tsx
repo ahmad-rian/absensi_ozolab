@@ -48,7 +48,7 @@ export default function AuthSplitLayout({ children, title, description }: AuthLa
                             Pantau kehadiran siswa secara real-time dengan pemindaian QR Code dan terima notifikasi langsung via WhatsApp.
                         </p>
                         <div className="mt-4 text-xs text-white/40">
-                            &copy; {new Date().getFullYear()} Absensi OZOLAB
+                            &copy; {new Date().getFullYear()} Tyas Photo
                         </div>
                     </motion.div>
                 </div>

@@ -106,7 +106,7 @@ export default function PublicScanner({ schools }: { schools: School[] }) {
                             <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
                                 <AppLogoIcon className="size-4 fill-current text-white" />
                             </div>
-                            <span className="text-sm font-bold">{selectedSchool?.name ?? 'Absensi OZOLAB'}</span>
+                            <span className="text-sm font-bold">{selectedSchool?.name ?? 'Tyas Photo'}</span>
                         </Link>
                         <div className="flex items-center gap-1 rounded-full bg-slate-100 p-0.5 dark:bg-zinc-800">
                             <button
