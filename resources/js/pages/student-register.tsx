@@ -209,6 +209,24 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                             </div>
                         )}
 
+                        {/* Drive summary */}
+                        {result.cards.some((c) => c.drive_url) && (
+                            <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+                                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                                    {result.photo_downloaded ? '3' : '2'} file tersimpan di Google Drive:
+                                </p>
+                                <ul className="mt-1 list-inside list-disc text-xs text-blue-700 dark:text-blue-300">
+                                    {result.photo_downloaded && <li>Foto siswa (crop 3:4 portrait, WebP)</li>}
+                                    {result.cards.filter((c) => c.status === 'completed').map((c, i) => (
+                                        <li key={i}>{c.name}</li>
+                                    ))}
+                                </ul>
+                                <p className="text-muted-foreground mt-2 text-xs">
+                                    Lokasi: Kartu Siswa / {result.student.classroom} / {result.student.nis} - {result.student.full_name}
+                                </p>
+                            </div>
+                        )}
+
                         <div className="mt-6 text-center">
                             <Button
                                 onClick={handleNewSubmission}
