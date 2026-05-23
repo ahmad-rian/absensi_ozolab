@@ -24,6 +24,7 @@ type Student = {
     id: number;
     nis: string | null;
     nisn: string | null;
+    no_absen: string | null;
     full_name: string;
     gender: string;
     religion: string | null;
@@ -32,6 +33,7 @@ type Student = {
     birth_place: string | null;
     birth_date: string | null;
     address: string | null;
+    photo_url: string | null;
     classroom: Classroom | null;
     parent_profile: ParentProfile | null;
 };
@@ -95,7 +97,38 @@ export default function SiswaShow({ student, qrSvg }: PageProps) {
                 {/* Content */}
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Left: Student Info */}
-                    <div className="lg:col-span-2">
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Photo + Name Header */}
+                        <Card>
+                            <CardContent className="flex items-center gap-5 p-5">
+                                {student.photo_url ? (
+                                    <img
+                                        src={student.photo_url}
+                                        alt={student.full_name}
+                                        className="size-24 shrink-0 rounded-xl border-2 border-blue-200 object-cover shadow-md"
+                                    />
+                                ) : (
+                                    <div className="flex size-24 shrink-0 items-center justify-center rounded-xl border-2 border-zinc-200 bg-zinc-100 text-3xl dark:bg-zinc-800">
+                                        👤
+                                    </div>
+                                )}
+                                <div>
+                                    <h2 className="text-xl font-bold">{student.full_name}</h2>
+                                    <p className="text-muted-foreground text-sm">
+                                        {student.nis && `NIS: ${student.nis}`}
+                                        {student.nisn && ` · NISN: ${student.nisn}`}
+                                    </p>
+                                    <p className="text-muted-foreground text-sm">
+                                        {student.classroom?.name}
+                                        {student.no_absen && ` · No. Absen: ${student.no_absen}`}
+                                    </p>
+                                    <Badge variant={student.is_active ? 'default' : 'secondary'} className="mt-2">
+                                        {student.is_active ? 'Aktif' : 'Nonaktif'}
+                                    </Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
+
                         <Card>
                             <CardHeader>
                                 <CardTitle>Informasi Siswa</CardTitle>

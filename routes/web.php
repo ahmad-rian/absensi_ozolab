@@ -25,8 +25,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
-Route::get('scan', [PublicScannerController::class, 'index'])->name('public.scanner');
-Route::post('scan', [PublicScannerController::class, 'scan'])->middleware('throttle:30,1')->name('public.scanner.scan');
+Route::get('scan', [PublicScannerController::class, 'index'])->middleware('auth')->name('public.scanner');
+Route::post('scan', [PublicScannerController::class, 'scan'])->middleware(['auth', 'throttle:60,1'])->name('public.scanner.scan');
 
 Route::get('daftar', [StudentRegistrationController::class, 'index'])->name('student.register');
 Route::post('daftar', [StudentRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('student.register.store');
