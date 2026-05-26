@@ -99,28 +99,26 @@ class StudentRegistrationController extends Controller
 
         $student->load('classroom');
 
-        if ($request->wantsJson() || $request->boolean('generate_cards')) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Data siswa berhasil didaftarkan!',
-                'student' => [
-                    'id' => $student->id,
-                    'full_name' => $student->full_name,
-                    'nis' => $student->nis,
-                    'nisn' => $student->nisn,
-                    'classroom' => $student->classroom?->name,
-                    'photo_url' => $student->photo_path
-                        ? Storage::disk('public')->url($student->photo_path)
-                        : null,
-                ],
-                'photo_downloaded' => $photoDownloaded,
-                'cards' => $generatedCards,
-            ]);
-        }
+        $cardsFailed = collect($generatedCards)->where('status', 'failed')->count();
 
-        return redirect()
-            ->route('student.register')
-            ->with('success', 'Data siswa berhasil didaftarkan! Terima kasih telah mengisi formulir pendaftaran.');
+        return response()->json([
+            'success' => true,
+            'message' => $cardsFailed > 0
+                ? "Data siswa berhasil didaftarkan! ({$cardsFailed} kartu gagal digenerate)"
+                : 'Data siswa berhasil didaftarkan!',
+            'student' => [
+                'id' => $student->id,
+                'full_name' => $student->full_name,
+                'nis' => $student->nis,
+                'nisn' => $student->nisn,
+                'classroom' => $student->classroom?->name,
+                'photo_url' => $student->photo_path
+                    ? Storage::disk('public')->url($student->photo_path)
+                    : null,
+            ],
+            'photo_downloaded' => $photoDownloaded,
+            'cards' => $generatedCards,
+        ]);
     }
 
     /**
