@@ -57,8 +57,10 @@ export default function StudentRegister({ schools, classrooms }: Props) {
     const [submitted, setSubmitted] = useState(false);
     const [captchaVerified, setCaptchaVerified] = useState(false);
     const [generating, setGenerating] = useState(false);
+    const [loadingStep, setLoadingStep] = useState('');
     const [result, setResult] = useState<RegistrationResult | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
     const { data, setData, processing, errors, reset } = useForm({
         school_id: '',
@@ -97,6 +99,15 @@ export default function StudentRegister({ schools, classrooms }: Props) {
     async function doSubmit() {
         setShowConfirm(false);
         setGenerating(true);
+        setFormErrors({});
+        setLoadingStep(data.photo_drive_filename
+            ? 'Menyimpan data & mengunduh foto dari Drive...'
+            : data.generate_cards
+                ? 'Menyimpan data & generate kartu...'
+                : 'Menyimpan data siswa...');
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 120000); // 2 menit timeout
 
         try {
             const res = await fetch('/daftar', {
@@ -107,23 +118,48 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                     Accept: 'application/json',
                 },
                 body: JSON.stringify(data),
+                signal: controller.signal,
             });
+
+            clearTimeout(timeout);
+
+            // Handle HTTP errors
+            if (!res.ok) {
+                const errorJson = await res.json().catch(() => null);
+                if (res.status === 422 && errorJson?.errors) {
+                    // Validation errors
+                    const errs: Record<string, string> = {};
+                    Object.entries(errorJson.errors).forEach(([key, messages]) => {
+                        errs[key] = Array.isArray(messages) ? messages[0] : String(messages);
+                    });
+                    setFormErrors(errs);
+                    setGenerating(false);
+                    setLoadingStep('');
+                    return;
+                }
+                throw new Error(errorJson?.message || `Server error (${res.status})`);
+            }
+
             const json = await res.json();
 
             if (json.success) {
                 setResult(json);
                 setSubmitted(true);
                 reset();
-            } else if (json.errors) {
-                // Validation errors — show them
-                Object.entries(json.errors).forEach(([key, messages]) => {
-                    // Use setError equivalent
-                });
+            } else {
+                throw new Error(json.message || 'Pendaftaran gagal');
             }
-        } catch {
-            alert('Gagal menghubungi server. Silakan coba lagi.');
+        } catch (err: unknown) {
+            const message = err instanceof Error
+                ? err.name === 'AbortError'
+                    ? 'Proses terlalu lama (timeout 2 menit). Silakan coba lagi.'
+                    : err.message
+                : 'Gagal menghubungi server';
+            setFormErrors({ _general: message });
         } finally {
+            clearTimeout(timeout);
             setGenerating(false);
+            setLoadingStep('');
         }
     }
 
@@ -210,7 +246,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         )}
 
                         {/* Drive summary */}
-                        {result.cards.some((c) => c.drive_url) && (
+                        {result.cards.some((c) => c.drive_url) ? (
                             <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
                                 <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
                                     {result.photo_downloaded ? '3' : '2'} file tersimpan di Google Drive:
@@ -224,6 +260,14 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                 <p className="text-muted-foreground mt-2 text-xs">
                                     Lokasi: Kartu Siswa / {result.student.classroom} / {result.student.nis} - {result.student.full_name}
                                 </p>
+                            </div>
+                        ) : result.cards.length > 0 && (
+                            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+                                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                    <AlertTriangle className="mr-1 inline size-4" />
+                                    Google Drive belum dikonfigurasi — kartu tersimpan lokal saja.
+                                </p>
+                                <p className="text-muted-foreground mt-1 text-xs">Hubungi admin untuk setup Google Drive agar kartu otomatis tersimpan ke cloud.</p>
                             </div>
                         )}
 
@@ -434,22 +478,25 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         <SimpleCaptcha onVerified={(token) => setCaptchaVerified(!!token)} />
                     </div>
 
+                    {/* General Error */}
+                    {(formErrors._general || Object.keys(formErrors).length > 0) && (
+                        <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+                            {formErrors._general && (
+                                <p className="mb-2 font-semibold text-red-700 dark:text-red-300">{formErrors._general}</p>
+                            )}
+                            {Object.entries(formErrors).filter(([k]) => k !== '_general').map(([key, msg]) => (
+                                <p key={key} className="text-sm text-red-600 dark:text-red-400">• {msg}</p>
+                            ))}
+                        </div>
+                    )}
+
                     {/* Submit */}
                     <Button
                         type="submit"
                         disabled={processing || generating || !captchaVerified}
                         className="h-12 w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
                     >
-                        {generating ? (
-                            <span className="flex items-center gap-2">
-                                <Loader2 className="size-5 animate-spin" />
-                                Memproses & Generate Kartu...
-                            </span>
-                        ) : processing ? (
-                            <Spinner />
-                        ) : (
-                            'Daftarkan Siswa'
-                        )}
+                        {generating ? <Spinner /> : 'Daftarkan Siswa'}
                     </Button>
                 </form>
 
@@ -483,6 +530,23 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                     Ya, Daftarkan & Generate
                                 </Button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Loading Overlay */}
+                {generating && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                        <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-2xl dark:bg-zinc-900">
+                            <Loader2 className="mx-auto mb-4 size-12 animate-spin text-blue-600" />
+                            <h3 className="mb-2 text-lg font-bold">Memproses Pendaftaran</h3>
+                            <p className="text-muted-foreground mb-4 text-sm">{loadingStep || 'Mohon tunggu...'}</p>
+                            <div className="mx-auto h-1.5 w-48 overflow-hidden rounded-full bg-zinc-200">
+                                <div className="h-full animate-pulse rounded-full bg-blue-600" style={{ width: '60%' }} />
+                            </div>
+                            <p className="text-muted-foreground mt-4 text-xs">
+                                Proses ini membutuhkan 10-30 detik. Jangan tutup halaman.
+                            </p>
                         </div>
                     </div>
                 )}

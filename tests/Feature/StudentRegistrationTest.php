@@ -41,8 +41,8 @@ test('a student can be registered via the form', function () {
         'classroom_id' => $classroom->id,
     ]);
 
-    $response->assertRedirect('/daftar');
-    $response->assertSessionHas('success');
+    $response->assertOk();
+    $response->assertJson(['success' => true]);
 
     $student = Student::where('full_name', 'Ahmad Fauzi')->first();
     expect($student)->not->toBeNull()
@@ -73,7 +73,8 @@ test('a student can be registered with all optional fields', function () {
         'parent_phone' => '812345678',
     ]);
 
-    $response->assertRedirect('/daftar');
+    $response->assertOk();
+    $response->assertJson(['success' => true]);
 
     $student = Student::where('full_name', 'Siti Aminah')->first();
     expect($student)->not->toBeNull()

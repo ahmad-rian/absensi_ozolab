@@ -49,8 +49,12 @@ class PhotoCropService
             mkdir($dir, 0755, true);
         }
 
-        imagewebp($image, $fullPath, $quality);
+        $written = imagewebp($image, $fullPath, $quality);
         imagedestroy($image);
+
+        if (! $written || ! file_exists($fullPath)) {
+            throw new \RuntimeException('Failed to write WebP image to: '.$storagePath);
+        }
 
         return $storagePath;
     }
