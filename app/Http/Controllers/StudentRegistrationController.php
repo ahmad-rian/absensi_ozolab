@@ -189,15 +189,40 @@ class StudentRegistrationController extends Controller
             ->whereIn('type', ['osis', 'perpustakaan'])
             ->get();
 
-        // If no layouts exist, create defaults
+        // If no layouts exist, create ATM-sized defaults (85.6x54mm)
         if ($layouts->isEmpty()) {
             $layouts = collect();
-            foreach (['osis', 'perpustakaan'] as $type) {
+            $defaults = [
+                'osis' => [
+                    'name' => 'Kartu OSIS',
+                    'config' => [
+                        'card_width' => 813, 'card_height' => 513,
+                        'header_gradient_start' => '#5dc4f5', 'header_gradient_end' => '#3aa8df',
+                        'header_text_color' => '#06243a',
+                        'watermark_text' => 'ORGANISASI SISWA INTRA SEKOLAH',
+                        'show_emblem' => true, 'show_validity' => true,
+                        'validity_text' => 'BERLAKU S/D TAMAT BELAJAR',
+                        'show_qr' => true, 'show_signature' => true,
+                    ],
+                ],
+                'perpustakaan' => [
+                    'name' => 'Kartu Perpustakaan',
+                    'config' => [
+                        'card_width' => 813, 'card_height' => 513,
+                        'header_gradient_start' => '#c9986a', 'header_gradient_end' => '#b07b4a',
+                        'header_text_color' => '#1a1208',
+                        'watermark_text' => 'PERPUSTAKAAN WIDYA SASTRA',
+                        'show_emblem' => false, 'show_validity' => false,
+                        'show_qr' => true, 'show_signature' => true,
+                    ],
+                ],
+            ];
+            foreach ($defaults as $type => $def) {
                 $layouts->push(SchoolCardLayout::create([
                     'school_id' => $school->id,
-                    'name' => $type === 'osis' ? 'Kartu OSIS' : 'Kartu Perpustakaan',
+                    'name' => $def['name'],
                     'type' => $type,
-                    'layout_config' => ['card_width' => 638, 'card_height' => 1011, 'show_qr' => true],
+                    'layout_config' => $def['config'],
                     'is_default' => true,
                 ]));
             }

@@ -33,28 +33,29 @@ type Props = {
 };
 
 const defaultConfig: Record<string, unknown> = {
-    card_width: 638,
-    card_height: 1011,
-    bg_color: '#ffffff',
-    padding: '40px 30px',
-    logo_size: 60,
-    school_name_size: 16,
-    school_name_color: '#1a1a2e',
-    card_type_size: 14,
-    card_type_color: '#4a4a8a',
-    photo_size: 180,
-    photo_radius: 12,
-    photo_border_color: '#3b82f6',
-    photo_margin: '16px 0',
-    name_size: 22,
-    name_color: '#1a1a2e',
-    info_size: 13,
-    qr_size: 100,
+    // ATM card dimensions (85.6 x 54 mm landscape)
+    card_width: 813,
+    card_height: 513,
+    // Header band
+    header_gradient_start: '#5dc4f5',
+    header_gradient_end: '#3aa8df',
+    header_text_color: '#06243a',
+    // Watermark
+    watermark_text: 'ORGANISASI SISWA INTRA SEKOLAH',
+    show_emblem: true,
+    show_validity: true,
+    validity_text: 'BERLAKU S/D TAMAT BELAJAR',
+    // Photo & QR
+    photo_width_mm: 16,
+    photo_height_mm: 21,
+    qr_size_mm: 15,
     show_qr: true,
-    show_address: false,
-    show_watermark: false,
-    watermark_text: '',
-    header_margin: 20,
+    show_signature: true,
+    // Typography
+    font_family: 'Manrope',
+    font_school: 16,
+    font_field: 15,
+    // Frame
     frame_id: null,
 };
 
@@ -111,99 +112,83 @@ export default function CardLayoutEditor({ layout, frames }: Props) {
                         </CardHeader>
                         <CardContent>
                             <div className="flex justify-center">
+                                {/* ATM Card Preview (landscape 85.6x54mm scaled) */}
                                 <div
-                                    className="relative overflow-hidden rounded-lg border shadow-lg"
+                                    className="relative overflow-hidden rounded-lg shadow-lg"
                                     style={{
-                                        width: Math.min(Number(config.card_width) || 638, 380),
-                                        height: Math.min(Number(config.card_width) || 638, 380) * ((Number(config.card_height) || 1011) / (Number(config.card_width) || 638)),
-                                        background: String(config.bg_color || '#fff'),
+                                        width: 480,
+                                        height: 303,
+                                        background: form.data.type === 'osis'
+                                            ? 'linear-gradient(135deg, #e0f3ff, #b8e1f7)'
+                                            : 'linear-gradient(135deg, #d6b88a, #d4b380)',
                                     }}
                                 >
-                                    {/* Frame overlay */}
-                                    {selectedFrame && (
-                                        <img
-                                            src={selectedFrame.image_url}
-                                            alt="Frame"
-                                            className="pointer-events-none absolute inset-0 z-10 size-full object-contain"
-                                        />
+                                    {/* Header band */}
+                                    <div
+                                        className="flex items-center gap-2 px-3"
+                                        style={{
+                                            height: 72,
+                                            background: `linear-gradient(180deg, ${config.header_gradient_start}, ${config.header_gradient_end})`,
+                                            color: String(config.header_text_color),
+                                        }}
+                                    >
+                                        <div className="size-9 shrink-0 rounded-full bg-white/25" />
+                                        <div className="flex-1 text-center" style={{ fontSize: `${Math.max(Number(config.font_school) || 16, 8) * 0.55}px` }}>
+                                            <div className="text-[6px] font-bold">PEMERINTAH KABUPATEN</div>
+                                            <div className="font-extrabold leading-tight">NAMA SEKOLAH</div>
+                                            <div className="text-[5px] font-medium opacity-80">Alamat sekolah...</div>
+                                        </div>
+                                        <div className="size-9 shrink-0 rounded-full bg-white/25" />
+                                    </div>
+
+                                    {/* Watermark preview */}
+                                    <div className="absolute inset-0 overflow-hidden opacity-[0.06]" style={{ top: 72 }}>
+                                        {Array.from({ length: 6 }).map((_, i) => (
+                                            <div key={i} className="whitespace-nowrap text-[6px] font-extrabold leading-relaxed" style={{ transform: i % 2 ? 'translateX(-20px)' : undefined }}>
+                                                {Array.from({ length: 4 }).map((_, j) => (
+                                                    <span key={j} className="mr-2">{String(config.watermark_text || 'WATERMARK')}</span>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Fields */}
+                                    <div className="relative z-10 space-y-0 px-3 pt-1.5" style={{ fontSize: `${Math.max(Number(config.font_field) || 15, 8) * 0.5}px` }}>
+                                        {['NAMA', 'ALAMAT', 'TTL', 'AGAMA', 'NO.INDUK'].map((label) => (
+                                            <div key={label} className="flex font-bold leading-tight text-zinc-900">
+                                                <span className="w-[35%] shrink-0">{label}</span>
+                                                <span className="w-3 shrink-0">:</span>
+                                                <span className="font-semibold text-zinc-700">XXXXXXX</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Validity (OSIS) */}
+                                    {config.show_validity && (
+                                        <div className="absolute left-1/2 -translate-x-1/2 text-[5px] font-extrabold text-zinc-900" style={{ top: 160 }}>
+                                            {String(config.validity_text || '')}
+                                        </div>
                                     )}
 
-                                    {/* Card content preview */}
-                                    <div className="relative z-20 flex size-full flex-col items-center p-[6%]">
-                                        <div className="mb-2 text-center">
-                                            <div
-                                                className="mx-auto mb-1 size-[10%] rounded-full bg-blue-100"
-                                                style={{ minWidth: 24, minHeight: 24 }}
-                                            />
-                                            <p
-                                                className="font-bold uppercase tracking-wide"
-                                                style={{
-                                                    fontSize: `${Math.max(Number(config.school_name_size) || 16, 8) * 0.6}px`,
-                                                    color: String(config.school_name_color),
-                                                }}
-                                            >
-                                                NAMA SEKOLAH
-                                            </p>
-                                            <p
-                                                className="font-semibold uppercase tracking-widest"
-                                                style={{
-                                                    fontSize: `${Math.max(Number(config.card_type_size) || 14, 8) * 0.6}px`,
-                                                    color: String(config.card_type_color),
-                                                }}
-                                            >
-                                                {form.data.type === 'osis' ? 'KARTU OSIS' : form.data.type === 'perpustakaan' ? 'KARTU PERPUSTAKAAN' : 'KARTU IDENTITAS'}
-                                            </p>
-                                        </div>
-
-                                        <div
-                                            className="my-2 bg-zinc-200"
-                                            style={{
-                                                width: `${Math.max(Number(config.photo_size) || 180, 40) * 0.55}px`,
-                                                height: `${Math.max(Number(config.photo_size) || 180, 40) * 0.55 * 1.3}px`,
-                                                borderRadius: `${Number(config.photo_radius) * 0.6}px`,
-                                                border: `2px solid ${config.photo_border_color}`,
-                                            }}
-                                        />
-
-                                        <p
-                                            className="font-bold"
-                                            style={{
-                                                fontSize: `${Math.max(Number(config.name_size) || 22, 8) * 0.55}px`,
-                                                color: String(config.name_color),
-                                            }}
-                                        >
-                                            NAMA SISWA
-                                        </p>
-
-                                        <div className="mt-1 w-4/5 space-y-0.5">
-                                            {['NIS', 'NISN', 'Kelas'].map((label) => (
-                                                <div key={label} className="flex border-b border-zinc-100 py-0.5" style={{ fontSize: `${Math.max(Number(config.info_size) || 13, 8) * 0.55}px` }}>
-                                                    <span className="w-2/5 text-zinc-400">{label}</span>
-                                                    <span className="w-3/5 font-medium text-zinc-700">xxxxxxx</span>
-                                                </div>
-                                            ))}
-                                        </div>
-
+                                    {/* Bottom row: Photo + QR + Signature */}
+                                    <div className="absolute bottom-2 left-3 right-3 flex items-end gap-2" style={{ top: 175 }}>
+                                        <div className="h-full rounded bg-zinc-300/60" style={{ width: 56, aspectRatio: '3/4' }} />
                                         {config.show_qr && (
-                                            <div className="mt-auto">
-                                                <div
-                                                    className="rounded border bg-white p-1"
-                                                    style={{
-                                                        width: `${Math.max(Number(config.qr_size) || 100, 30) * 0.5}px`,
-                                                        height: `${Math.max(Number(config.qr_size) || 100, 30) * 0.5}px`,
-                                                    }}
-                                                >
-                                                    <div className="grid size-full grid-cols-5 grid-rows-5 gap-px">
-                                                        {Array.from({ length: 25 }).map((_, i) => (
-                                                            <div key={i} className={i % 3 === 0 ? 'bg-zinc-800' : 'bg-white'} />
-                                                        ))}
-                                                    </div>
+                                            <div className="size-[50px] rounded bg-white p-0.5 shadow-sm">
+                                                <div className="grid size-full grid-cols-5 grid-rows-5 gap-px">
+                                                    {Array.from({ length: 25 }).map((_, i) => (
+                                                        <div key={i} className={i % 3 === 0 ? 'bg-zinc-800' : 'bg-white'} />
+                                                    ))}
                                                 </div>
                                             </div>
                                         )}
+                                        <div className="flex flex-1 items-center justify-center rounded border border-dashed border-zinc-400/40 text-[6px] font-bold text-zinc-400" style={{ height: 60 }}>
+                                            KEPALA SEKOLAH
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <p className="text-muted-foreground mt-3 text-center text-xs">85.6 × 54 mm · ATM Card Size · 400 DPI Export</p>
                         </CardContent>
                     </Card>
 
@@ -251,23 +236,46 @@ export default function CardLayoutEditor({ layout, frames }: Props) {
                         </Card>
 
                         <Card>
-                            <CardHeader><CardTitle className="text-base">Ukuran & Warna</CardTitle></CardHeader>
+                            <CardHeader><CardTitle className="text-base">Header Band</CardTitle></CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="grid gap-1.5">
-                                        <Label className="text-xs">Lebar (px)</Label>
-                                        <Input type="number" value={String(config.card_width)} onChange={(e) => updateConfig('card_width', Number(e.target.value))} />
+                                        <Label className="text-xs">Warna Awal</Label>
+                                        <div className="flex gap-2">
+                                            <input type="color" value={String(config.header_gradient_start)} onChange={(e) => updateConfig('header_gradient_start', e.target.value)} className="h-9 w-12 cursor-pointer rounded border" />
+                                            <Input value={String(config.header_gradient_start)} onChange={(e) => updateConfig('header_gradient_start', e.target.value)} className="flex-1 text-xs" />
+                                        </div>
                                     </div>
                                     <div className="grid gap-1.5">
-                                        <Label className="text-xs">Tinggi (px)</Label>
-                                        <Input type="number" value={String(config.card_height)} onChange={(e) => updateConfig('card_height', Number(e.target.value))} />
+                                        <Label className="text-xs">Warna Akhir</Label>
+                                        <div className="flex gap-2">
+                                            <input type="color" value={String(config.header_gradient_end)} onChange={(e) => updateConfig('header_gradient_end', e.target.value)} className="h-9 w-12 cursor-pointer rounded border" />
+                                            <Input value={String(config.header_gradient_end)} onChange={(e) => updateConfig('header_gradient_end', e.target.value)} className="flex-1 text-xs" />
+                                        </div>
                                     </div>
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader><CardTitle className="text-base">Watermark & Teks</CardTitle></CardHeader>
+                            <CardContent className="space-y-3">
                                 <div className="grid gap-1.5">
-                                    <Label className="text-xs">Background</Label>
-                                    <div className="flex gap-2">
-                                        <input type="color" value={String(config.bg_color)} onChange={(e) => updateConfig('bg_color', e.target.value)} className="h-9 w-12 cursor-pointer rounded border" />
-                                        <Input value={String(config.bg_color)} onChange={(e) => updateConfig('bg_color', e.target.value)} className="flex-1" />
+                                    <Label className="text-xs">Teks Watermark</Label>
+                                    <Input value={String(config.watermark_text)} onChange={(e) => updateConfig('watermark_text', e.target.value)} placeholder="ORGANISASI SISWA INTRA SEKOLAH" />
+                                </div>
+                                <div className="grid gap-1.5">
+                                    <Label className="text-xs">Teks Validitas</Label>
+                                    <Input value={String(config.validity_text || '')} onChange={(e) => updateConfig('validity_text', e.target.value)} placeholder="BERLAKU S/D TAMAT BELAJAR" />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox checked={config.show_emblem as boolean} onCheckedChange={(c) => updateConfig('show_emblem', c === true)} id="show_emblem" />
+                                        <Label htmlFor="show_emblem" className="text-xs">Emblem OSIS (background)</Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Checkbox checked={config.show_validity as boolean} onCheckedChange={(c) => updateConfig('show_validity', c === true)} id="show_validity" />
+                                        <Label htmlFor="show_validity" className="text-xs">Teks Validitas</Label>
                                     </div>
                                 </div>
                             </CardContent>
@@ -277,52 +285,27 @@ export default function CardLayoutEditor({ layout, frames }: Props) {
                             <CardHeader><CardTitle className="text-base">Tipografi</CardTitle></CardHeader>
                             <CardContent className="space-y-3">
                                 {[
-                                    { key: 'school_name_size', label: 'Nama Sekolah' },
-                                    { key: 'card_type_size', label: 'Tipe Kartu' },
-                                    { key: 'name_size', label: 'Nama Siswa' },
-                                    { key: 'info_size', label: 'Info Detail' },
+                                    { key: 'font_school', label: 'Nama Sekolah' },
+                                    { key: 'font_field', label: 'Field Body' },
                                 ].map(({ key, label }) => (
                                     <div key={key} className="grid grid-cols-2 items-center gap-2">
                                         <Label className="text-xs">{label}</Label>
-                                        <Input type="number" value={String(config[key])} onChange={(e) => updateConfig(key, Number(e.target.value))} min={8} max={48} />
+                                        <Input type="number" value={String(config[key])} onChange={(e) => updateConfig(key, Number(e.target.value))} min={8} max={28} />
                                     </div>
                                 ))}
                             </CardContent>
                         </Card>
 
                         <Card>
-                            <CardHeader><CardTitle className="text-base">Foto & QR</CardTitle></CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="grid gap-1.5">
-                                        <Label className="text-xs">Ukuran Foto</Label>
-                                        <Input type="number" value={String(config.photo_size)} onChange={(e) => updateConfig('photo_size', Number(e.target.value))} />
-                                    </div>
-                                    <div className="grid gap-1.5">
-                                        <Label className="text-xs">Ukuran QR</Label>
-                                        <Input type="number" value={String(config.qr_size)} onChange={(e) => updateConfig('qr_size', Number(e.target.value))} />
-                                    </div>
+                            <CardHeader><CardTitle className="text-base">Elemen</CardTitle></CardHeader>
+                            <CardContent className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <Checkbox checked={config.show_qr as boolean} onCheckedChange={(c) => updateConfig('show_qr', c === true)} id="show_qr" />
+                                    <Label htmlFor="show_qr" className="text-xs">QR Code</Label>
                                 </div>
-                                <div className="grid gap-1.5">
-                                    <Label className="text-xs">Border Foto</Label>
-                                    <div className="flex gap-2">
-                                        <input type="color" value={String(config.photo_border_color)} onChange={(e) => updateConfig('photo_border_color', e.target.value)} className="h-9 w-12 cursor-pointer rounded border" />
-                                        <Input value={String(config.photo_border_color)} onChange={(e) => updateConfig('photo_border_color', e.target.value)} className="flex-1" />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox checked={config.show_qr as boolean} onCheckedChange={(c) => updateConfig('show_qr', c === true)} id="show_qr" />
-                                        <Label htmlFor="show_qr" className="text-xs">Tampilkan QR Code</Label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox checked={config.show_address as boolean} onCheckedChange={(c) => updateConfig('show_address', c === true)} id="show_address" />
-                                        <Label htmlFor="show_address" className="text-xs">Tampilkan Alamat</Label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox checked={config.show_watermark as boolean} onCheckedChange={(c) => updateConfig('show_watermark', c === true)} id="show_watermark" />
-                                        <Label htmlFor="show_watermark" className="text-xs">Watermark</Label>
-                                    </div>
+                                <div className="flex items-center gap-2">
+                                    <Checkbox checked={config.show_signature as boolean} onCheckedChange={(c) => updateConfig('show_signature', c === true)} id="show_signature" />
+                                    <Label htmlFor="show_signature" className="text-xs">Area Tanda Tangan</Label>
                                 </div>
                             </CardContent>
                         </Card>

@@ -104,8 +104,8 @@ class CardGeneratorService
     private function renderHtmlToImage(string $html, string $outputPath, SchoolCardLayout $layout): void
     {
         $config = $layout->layout_config ?? [];
-        $width = $config['card_width'] ?? 638;
-        $height = $config['card_height'] ?? 1011;
+        $width = $config['card_width'] ?? 813;
+        $height = $config['card_height'] ?? 513;
 
         Browsershot::html($html)
             ->windowSize($width, $height)
