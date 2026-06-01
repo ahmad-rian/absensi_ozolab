@@ -116,9 +116,9 @@ class PhotoCropService
         $faceCenterX = $faceX + $faceW / 2;
         $faceCenterY = $faceY + $faceH / 2;
 
-        // School ID photo: head + face + neck + tie + chest down to waist
-        // Face occupies ~22% of crop height — shows full upper body
-        $cropH = (int) ($faceH / 0.22); // face = 22% of crop height
+        // School ID photo: headroom + face + neck + tie + chest down to waist
+        // Face occupies ~20% of crop height — balanced framing with headroom
+        $cropH = (int) ($faceH / 0.20); // face = 20% of crop height
         $cropW = (int) ($cropH * self::SLOT_RATIO);
 
         // Ensure crop doesn't exceed image
@@ -132,8 +132,8 @@ class PhotoCropService
             $cropH = (int) ($cropW / self::SLOT_RATIO);
         }
 
-        // Position crop: face center at 25% from top (more headroom, more body below)
-        $cropY = (int) ($faceCenterY - $cropH * 0.25);
+        // Position crop: face center at 22% from top (generous headroom above)
+        $cropY = (int) ($faceCenterY - $cropH * 0.22);
         $cropX = (int) ($faceCenterX - $cropW / 2);
 
         // Clamp to image bounds
