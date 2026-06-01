@@ -19,7 +19,7 @@ return new class extends Migration
         }
 
         // Disable FK checks for the conversion
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        Schema::disableForeignKeyConstraints();
 
         try {
             // 1. Primary key tables - convert id columns
@@ -122,7 +122,7 @@ return new class extends Migration
                 }
             }
         } finally {
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            Schema::enableForeignKeyConstraints();
         }
     }
 
