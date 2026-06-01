@@ -57,6 +57,16 @@ class StudentRegistrationController extends Controller
             'parent_phone' => ['nullable', 'string', 'max:20'],
             'photo_drive_filename' => ['nullable', 'string', 'max:500'],
             'generate_cards' => ['nullable', 'boolean'],
+        ], [
+            'school_id.required' => 'Pilih sekolah terlebih dahulu.',
+            'school_id.exists' => 'Sekolah tidak ditemukan.',
+            'full_name.required' => 'Nama lengkap wajib diisi.',
+            'nis.unique' => 'NIS sudah terdaftar. Gunakan NIS lain atau kosongkan untuk auto-generate.',
+            'nisn.unique' => 'NISN sudah terdaftar. Periksa kembali NISN siswa.',
+            'gender.required' => 'Pilih jenis kelamin.',
+            'classroom_id.required' => 'Pilih kelas terlebih dahulu.',
+            'classroom_id.exists' => 'Kelas tidak ditemukan di sekolah ini.',
+            'birth_date.date' => 'Format tanggal lahir tidak valid.',
         ]);
 
         if (empty($validated['nis'])) {
@@ -206,7 +216,7 @@ class StudentRegistrationController extends Controller
             $service->downloadFile($driveFileId, $tempPath);
 
             // Smart crop to 3:4 portrait + WebP
-            $storagePath = sprintf('photos/students/%d/%d-%s.webp', $school->id, $student->id, Str::slug($student->full_name));
+            $storagePath = sprintf('photos/students/%d/%d-%s.png', $school->id, $student->id, Str::slug($student->full_name));
             $cropService = new PhotoCropService;
             $cropService->cropAndStore($tempPath, $storagePath);
 
@@ -367,9 +377,9 @@ class StudentRegistrationController extends Controller
         try {
             $service = GoogleDriveService::forSchool($school->driveConfig);
             $fullPath = Storage::disk('public')->path($student->photo_path);
-            $fileName = sprintf('foto-%s.webp', Str::slug($student->full_name));
+            $fileName = sprintf('foto-%s.png', Str::slug($student->full_name));
 
-            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, 'image/webp');
+            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, 'image/png');
             $service->makePublic($driveFile->getId());
         } catch (\Throwable $e) {
             Log::warning('Photo Drive upload failed', ['student_id' => $student->id, 'error' => $e->getMessage()]);
