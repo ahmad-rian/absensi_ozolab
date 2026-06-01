@@ -61,9 +61,9 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     font-family: 'Inter Tight', sans-serif;
     color: {{ $hTextColor }}; line-height: 1.05; min-width: 0;
 }
-.header-text .line-tiny { font-size: calc(1.0 * var(--mm)); font-weight: 700; }
-.header-text .line-small { font-size: calc(1.1 * var(--mm)); font-weight: 700; letter-spacing: 0.02em; }
-.header-text .line-big { font-size: calc(1.7 * var(--mm)); font-weight: 800; letter-spacing: 0.01em; margin-top: 2px; }
+.header-text .line-tiny { font-size: calc(1.0 * var(--mm)); font-weight: 700; font-family: 'Manrope', sans-serif; }
+.header-text .line-small { font-size: calc(1.1 * var(--mm)); font-weight: 700; letter-spacing: 0.02em; font-family: 'Manrope', sans-serif; }
+.header-text .line-big { font-size: calc(1.7 * var(--mm)); font-weight: 800; letter-spacing: 0.01em; margin-top: 2px; font-family: 'Manrope', sans-serif; }
 .header-text .line-addr { font-size: calc(0.85 * var(--mm)); font-weight: 500; font-family: 'Manrope', sans-serif; margin-top: 3px; line-height: 1.2; }
 
 .watermark {
@@ -89,19 +89,21 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 
 .body-area {
     position: relative; z-index: 5;
-    padding: calc(1.5 * var(--mm)) calc(2.5 * var(--mm)) 0;
+    padding: calc(1.0 * var(--mm)) calc(2.5 * var(--mm)) 0;
 }
 .field-row {
-    display: flex; font-family: 'Inter Tight', sans-serif;
-    font-size: calc(1.1 * var(--mm)); font-weight: 700;
-    line-height: 1.45; letter-spacing: 0.005em; color: #0c0c14;
+    display: flex; font-family: 'Manrope', sans-serif;
+    font-size: calc(1.58 * var(--mm)); font-weight: 800;
+    line-height: 1.28; letter-spacing: -0.005em; color: #0c0c14;
+    margin-bottom: calc(0.12 * var(--mm));
 }
-.field-label { width: calc(21 * var(--mm)); flex-shrink: 0; }
-.field-sep { width: calc(2 * var(--mm)); text-align: center; flex-shrink: 0; }
+.field-label { width: calc(25 * var(--mm)); flex-shrink: 0; }
+.field-sep { width: calc(1.5 * var(--mm)); text-align: left; flex-shrink: 0; }
 .field-value {
-    flex: 1; font-weight: 600; font-family: 'Manrope', sans-serif;
-    font-size: calc(1.1 * var(--mm)); letter-spacing: -0.005em;
+    flex: 1; font-weight: 700; font-family: 'Manrope', sans-serif;
+    font-size: calc(1.53 * var(--mm)); letter-spacing: -0.012em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .validity-text {
