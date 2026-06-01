@@ -16,11 +16,36 @@ class GoogleDriveService
 
     public function __construct(private SchoolDriveConfig $config)
     {
+        $client = $this->buildClient($config);
+        $this->drive = new GoogleDrive($client);
+    }
+
+    /**
+     * Build Google Client — prefers OAuth2 refresh token (user quota), falls back to Service Account.
+     */
+    private function buildClient(SchoolDriveConfig $config): GoogleClient
+    {
+        // Prefer OAuth2 refresh token (files owned by user, uses user's quota)
+        $clientId = config('services.google.oauth_client_id');
+        $clientSecret = config('services.google.oauth_client_secret');
+        $refreshToken = config('services.google.oauth_refresh_token');
+
+        if ($clientId && $clientSecret && $refreshToken) {
+            $client = new GoogleClient;
+            $client->setClientId($clientId);
+            $client->setClientSecret($clientSecret);
+            $client->addScope(GoogleDrive::DRIVE);
+            $client->refreshToken($refreshToken);
+
+            return $client;
+        }
+
+        // Fallback: Service Account (can create folders but not upload files on personal accounts)
         $client = new GoogleClient;
         $client->setAuthConfig(self::resolveCredentials($config));
         $client->addScope(GoogleDrive::DRIVE);
 
-        $this->drive = new GoogleDrive($client);
+        return $client;
     }
 
     public static function forSchool(SchoolDriveConfig $config): static
