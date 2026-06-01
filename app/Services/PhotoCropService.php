@@ -132,8 +132,8 @@ class PhotoCropService
             $cropH = (int) ($cropW / self::SLOT_RATIO);
         }
 
-        // Position crop: face center at 22% from top (generous headroom above)
-        $cropY = (int) ($faceCenterY - $cropH * 0.22);
+        // Position crop: face center at 20% from top (more headroom above)
+        $cropY = (int) ($faceCenterY - $cropH * 0.20);
         $cropX = (int) ($faceCenterX - $cropW / 2);
 
         // Clamp to image bounds
