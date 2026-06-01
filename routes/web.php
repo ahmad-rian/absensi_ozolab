@@ -96,6 +96,7 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN|ADMIN|GURU'])->prefix('
         Route::get('drive-config', [DriveConfigController::class, 'index'])->name('admin.drive-config');
         Route::post('drive-config', [DriveConfigController::class, 'update'])->name('admin.drive-config.update');
         Route::post('drive-config/test', [DriveConfigController::class, 'test'])->name('admin.drive-config.test');
+        Route::get('drive-config/callback', [DriveConfigController::class, 'oauthCallback'])->name('admin.drive-config.callback');
     });
 
     // Super Admin only

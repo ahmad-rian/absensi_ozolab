@@ -93,4 +93,21 @@ class DriveConfigController extends Controller
 
         return to_route('admin.drive-config');
     }
+
+    /**
+     * OAuth2 callback — shows the authorization code for the artisan command.
+     */
+    public function oauthCallback(Request $request): \Illuminate\Http\Response
+    {
+        $code = $request->query('code', '');
+
+        return response(
+            '<html><body style="font-family:monospace;padding:40px;text-align:center;">'.
+            '<h2>Authorization Code</h2>'.
+            '<p>Copy kode ini dan paste di terminal:</p>'.
+            '<textarea readonly style="width:600px;height:80px;font-size:14px;padding:10px;" onclick="this.select()">'.e($code).'</textarea>'.
+            '<p style="color:#888;margin-top:20px;">Setelah paste, tutup tab ini.</p>'.
+            '</body></html>'
+        );
+    }
 }
