@@ -24,7 +24,7 @@
 @endphp
 
 :root {
-    --mm: 9.5px;
+    --mm: {{ $exportMm ?? '9.5' }}px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -96,10 +96,10 @@ body::after {
     line-height: 1.05;
     min-width: 0;
 }
-.header-text .line-tiny { font-size: calc(1.0 * var(--mm)); font-weight: 700; }
-.header-text .line-small { font-size: calc(1.1 * var(--mm)); font-weight: 700; letter-spacing: 0.02em; }
-.header-text .line-big { font-size: calc(1.7 * var(--mm)); font-weight: 800; letter-spacing: 0.01em; margin-top: 2px; }
-.header-text .line-addr { font-size: calc(0.85 * var(--mm)); font-weight: 500; font-family: 'Manrope', sans-serif; margin-top: 3px; line-height: 1.2; }
+.header-text .line-tiny { font-size: calc(1.2 * var(--mm)); font-weight: 700; }
+.header-text .line-small { font-size: calc(1.3 * var(--mm)); font-weight: 700; letter-spacing: 0.02em; }
+.header-text .line-big { font-size: calc(2.0 * var(--mm)); font-weight: 800; letter-spacing: 0.01em; margin-top: calc(0.3 * var(--mm)); }
+.header-text .line-addr { font-size: calc(1.0 * var(--mm)); font-weight: 500; font-family: 'Manrope', sans-serif; margin-top: calc(0.3 * var(--mm)); line-height: 1.2; }
 
 /* Watermark */
 .watermark {
@@ -115,7 +115,7 @@ body::after {
     white-space: nowrap;
     font-family: 'Inter Tight', sans-serif;
     font-weight: 800;
-    font-size: calc(1.4 * var(--mm));
+    font-size: calc(1.6 * var(--mm));
     letter-spacing: -0.02em;
     line-height: 1.6;
     @if($isOsis)
@@ -150,18 +150,18 @@ body::after {
 .field-row {
     display: flex;
     font-family: 'Inter Tight', sans-serif;
-    font-size: calc(1.1 * var(--mm));
+    font-size: calc(1.4 * var(--mm));
     font-weight: 700;
-    line-height: 1.45;
+    line-height: 1.5;
     letter-spacing: 0.005em;
     color: #0c0c14;
 }
 .field-label {
-    width: calc(21 * var(--mm));
+    width: calc(22 * var(--mm));
     flex-shrink: 0;
 }
 .field-sep {
-    width: calc(2 * var(--mm));
+    width: calc(2.5 * var(--mm));
     text-align: center;
     flex-shrink: 0;
 }
@@ -169,7 +169,7 @@ body::after {
     flex: 1;
     font-weight: 600;
     font-family: 'Manrope', sans-serif;
-    font-size: calc(1.1 * var(--mm));
+    font-size: calc(1.4 * var(--mm));
     letter-spacing: -0.005em;
     white-space: nowrap;
     overflow: hidden;
@@ -184,7 +184,7 @@ body::after {
     transform: translateX(-50%);
     font-family: 'Inter Tight', sans-serif;
     font-weight: 800;
-    font-size: calc(1.4 * var(--mm));
+    font-size: calc(1.6 * var(--mm));
     letter-spacing: 0.02em;
     z-index: 6;
     color: #0c0c14;
@@ -253,7 +253,7 @@ body::after {
 }
 .signature-label {
     font-family: 'Inter Tight', sans-serif;
-    font-size: calc(1.15 * var(--mm));
+    font-size: calc(1.4 * var(--mm));
     font-weight: 800;
     letter-spacing: 0.01em;
     color: rgba(0,0,0,0.5);

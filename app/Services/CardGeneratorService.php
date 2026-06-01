@@ -28,6 +28,9 @@ class CardGeneratorService
         $qrGenerator = app(Attendance\QrTokenGenerator::class);
         $qrSvg = $qrGenerator->renderSvg($student);
 
+        // 400 DPI: 1mm = 400/25.4 ≈ 15.748px
+        $exportMm = 15.748;
+
         $html = View::make('cards.student-card', [
             'student' => $student,
             'school' => $school,
@@ -37,6 +40,7 @@ class CardGeneratorService
             'logoUrl' => $this->toBase64DataUri($school->logo_path),
             'photoUrl' => $this->toBase64DataUri($student->photo_path),
             'frameUrl' => $this->resolveFrameUrl($layout),
+            'exportMm' => $exportMm,
         ])->render();
 
         $filename = sprintf(
@@ -100,13 +104,14 @@ class CardGeneratorService
      */
     private function renderHtmlToImage(string $html, string $outputPath, SchoolCardLayout $layout): void
     {
-        $config = $layout->layout_config ?? [];
-        $width = $config['card_width'] ?? 813;
-        $height = $config['card_height'] ?? 513;
+        // 400 DPI native: 85.6mm × 54mm = 1349 × 850px
+        $exportMm = 15.748;
+        $width = (int) round(85.6 * $exportMm);
+        $height = (int) round(54 * $exportMm);
 
         $browsershot = Browsershot::html($html)
             ->windowSize($width, $height)
-            ->deviceScaleFactor(2)
+            ->deviceScaleFactor(1)
             ->waitUntilNetworkIdle()
             ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
 
