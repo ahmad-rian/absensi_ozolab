@@ -3,119 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 @php
     $isOsis = ($layout->type ?? 'osis') === 'osis';
     $c = $config;
-
-    // Dimensions
-    $cardW = $c['card_width'] ?? 813;
-    $cardH = $c['card_height'] ?? 513;
 
     // Header colors
     $hGradStart = $c['header_gradient_start'] ?? ($isOsis ? '#5dc4f5' : '#c9986a');
     $hGradEnd   = $c['header_gradient_end']   ?? ($isOsis ? '#3aa8df' : '#b07b4a');
     $hTextColor = $c['header_text_color']      ?? ($isOsis ? '#06243a' : '#1a1208');
 
-    // Background
-    $bgGradStart = $isOsis ? '#e0f3ff' : '#d6b88a';
-    $bgGradEnd   = $isOsis ? '#b8e1f7' : '#d4b380';
-
     // Watermark
-    $wmText     = $c['watermark_text'] ?? ($isOsis ? 'ORGANISASI SISWA INTRA SEKOLAH' : 'PERPUSTAKAAN WIDYA SASTRA');
-    $showEmblem = $c['show_emblem'] ?? $isOsis;
+    $wmText       = $c['watermark_text'] ?? ($isOsis ? 'ORGANISASI SISWA INTRA SEKOLAH' : 'PERPUSTAKAAN WIDYA SASTRA');
+    $showEmblem   = $c['show_emblem'] ?? $isOsis;
     $showValidity = $c['show_validity'] ?? $isOsis;
     $validityText = $c['validity_text'] ?? 'BERLAKU S/D TAMAT BELAJAR';
-
-    // Photo
-    $photoW = ($c['photo_width_mm'] ?? 16) * 9.5;
-    $photoH = ($c['photo_height_mm'] ?? 21) * 9.5;
-
-    // QR
-    $qrSize = ($c['qr_size_mm'] ?? 15) * 9.5;
-    $showQr = $c['show_qr'] ?? true;
-
-    // Fonts
-    $fontFamily = $c['font_family'] ?? 'Manrope';
-    $fontSchool = $c['font_school'] ?? 16;
-    $fontField  = $c['font_field'] ?? 15;
+    $showQr       = $c['show_qr'] ?? true;
 @endphp
 
+:root {
+    --mm: 9.5px;
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-    width: {{ $cardW }}px;
-    height: {{ $cardH }}px;
+    width: calc(85.6 * var(--mm));
+    height: calc(54 * var(--mm));
     overflow: hidden;
-    font-family: '{{ $fontFamily }}', 'Inter Tight', sans-serif;
+    font-family: 'Manrope', sans-serif;
     position: relative;
-    background: linear-gradient(135deg, {{ $bgGradStart }} 0%, {{ $bgGradEnd }} 100%);
+    @if($isOsis)
+    background:
+        radial-gradient(ellipse at 70% 30%, rgba(255,255,255,0.5) 0%, transparent 60%),
+        linear-gradient(135deg, #e0f3ff 0%, #c7e9fb 50%, #b8e1f7 100%);
+    @else
+    background:
+        radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 50%),
+        linear-gradient(135deg, #d6b88a 0%, #e8d2a8 40%, #d4b380 100%);
+    @endif
 }
+
+/* Perpus texture overlays */
+@unless($isOsis)
+body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 10% 80%, rgba(139,90,43,0.25) 0%, transparent 40%),
+        radial-gradient(ellipse at 90% 60%, rgba(139,90,43,0.18) 0%, transparent 50%);
+    z-index: 1;
+}
+body::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        repeating-linear-gradient(95deg, transparent 0, transparent 7px, rgba(139,90,43,0.06) 7px, rgba(139,90,43,0.06) 8px);
+    z-index: 1;
+}
+@endunless
 
 /* Header band */
 .header-band {
-    height: {{ $cardH * 0.24 }}px;
+    position: relative;
+    z-index: 5;
+    height: calc(13 * var(--mm));
     background: linear-gradient(180deg, {{ $hGradStart }} 0%, {{ $hGradEnd }} 100%);
     display: flex;
     align-items: center;
-    padding: 0 {{ $cardW * 0.025 }}px;
-    gap: {{ $cardW * 0.015 }}px;
-    position: relative;
-    z-index: 5;
+    padding: 0 calc(2 * var(--mm));
+    gap: calc(1.2 * var(--mm));
 }
 .logo-circle {
-    width: {{ $cardH * 0.16 }}px;
-    height: {{ $cardH * 0.16 }}px;
+    width: calc(8.5 * var(--mm));
+    height: calc(8.5 * var(--mm));
     border-radius: 50%;
     flex-shrink: 0;
     overflow: hidden;
     background: rgba(255,255,255,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.logo-circle img { width: 100%; height: 100%; object-fit: contain; }
+.logo-circle img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
 .header-text {
     flex: 1;
     text-align: center;
+    font-family: 'Inter Tight', sans-serif;
     color: {{ $hTextColor }};
     line-height: 1.05;
+    min-width: 0;
 }
-.header-text .line-tiny { font-size: {{ $fontSchool * 0.625 }}px; font-weight: 700; }
-.header-text .line-small { font-size: {{ $fontSchool * 0.625 }}px; font-weight: 700; letter-spacing: 0.02em; }
-.header-text .line-big { font-size: {{ $fontSchool }}px; font-weight: 800; letter-spacing: 0.01em; margin-top: 2px; }
-.header-text .line-addr { font-size: {{ $fontSchool * 0.53 }}px; font-weight: 500; margin-top: 3px; line-height: 1.2; }
+.header-text .line-tiny { font-size: calc(1.0 * var(--mm)); font-weight: 700; }
+.header-text .line-small { font-size: calc(1.1 * var(--mm)); font-weight: 700; letter-spacing: 0.02em; }
+.header-text .line-big { font-size: calc(1.7 * var(--mm)); font-weight: 800; letter-spacing: 0.01em; margin-top: 2px; }
+.header-text .line-addr { font-size: calc(0.85 * var(--mm)); font-weight: 500; font-family: 'Manrope', sans-serif; margin-top: 3px; line-height: 1.2; }
 
 /* Watermark */
 .watermark {
     position: absolute;
-    top: {{ $cardH * 0.24 }}px;
-    left: 0; right: 0; bottom: 0;
+    inset: calc(13 * var(--mm)) 0 0 0;
     z-index: 2;
     overflow: hidden;
     pointer-events: none;
-    opacity: {{ $isOsis ? '0.12' : '0.08' }};
+    opacity: 0.35;
 }
 .watermark-row {
     display: flex;
     white-space: nowrap;
     font-family: 'Inter Tight', sans-serif;
     font-weight: 800;
-    font-size: {{ $cardW * 0.017 }}px;
+    font-size: calc(1.4 * var(--mm));
     letter-spacing: -0.02em;
-    line-height: 1.8;
-    color: {{ $isOsis ? 'rgba(0,80,160,0.9)' : 'rgba(100,60,20,0.7)' }};
+    line-height: 1.6;
+    @if($isOsis)
+    color: rgba(255,255,255,0.85);
+    @else
+    color: rgba(255,255,255,0.5);
+    @endif
 }
-.watermark-row span { padding-right: {{ $cardW * 0.015 }}px; }
-.watermark-row:nth-child(even) { transform: translateX(-{{ $cardW * 0.04 }}px); }
+.watermark-row span { padding-right: calc(1.2 * var(--mm)); }
+.watermark-row:nth-child(even) { transform: translateX(calc(-3 * var(--mm))); }
 
 /* OSIS emblem */
 .osis-emblem {
     position: absolute;
     left: 50%;
-    top: {{ $cardH * 0.62 }}px;
+    top: calc(32 * var(--mm));
     transform: translate(-50%, -50%);
-    width: {{ $cardW * 0.27 }}px;
-    height: {{ $cardW * 0.27 }}px;
+    width: calc(22 * var(--mm));
+    height: calc(22 * var(--mm));
     z-index: 2;
-    opacity: 0.1;
+    opacity: 0.18;
     pointer-events: none;
 }
 .osis-emblem svg { width: 100%; height: 100%; }
@@ -124,24 +145,32 @@ body {
 .body-area {
     position: relative;
     z-index: 5;
-    padding: {{ $cardH * 0.02 }}px {{ $cardW * 0.03 }}px 0;
+    padding: calc(1.5 * var(--mm)) calc(2.5 * var(--mm)) 0;
 }
 .field-row {
     display: flex;
-    font-size: {{ $fontField }}px;
-    font-weight: 800;
-    line-height: 1.28;
-    letter-spacing: -0.005em;
+    font-family: 'Inter Tight', sans-serif;
+    font-size: calc(1.1 * var(--mm));
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: 0.005em;
     color: #0c0c14;
-    margin-bottom: {{ $cardH * 0.002 }}px;
 }
-.field-label { width: {{ $cardW * 0.3 }}px; flex-shrink: 0; }
-.field-sep { width: {{ $cardW * 0.02 }}px; text-align: left; flex-shrink: 0; }
+.field-label {
+    width: calc(21 * var(--mm));
+    flex-shrink: 0;
+}
+.field-sep {
+    width: calc(2 * var(--mm));
+    text-align: center;
+    flex-shrink: 0;
+}
 .field-value {
     flex: 1;
-    font-weight: 700;
-    font-size: {{ $fontField - 0.5 }}px;
-    letter-spacing: -0.012em;
+    font-weight: 600;
+    font-family: 'Manrope', sans-serif;
+    font-size: calc(1.1 * var(--mm));
+    letter-spacing: -0.005em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -151,11 +180,11 @@ body {
 .validity-text {
     position: absolute;
     left: 50%;
-    top: {{ $cardH * 0.545 }}px;
+    top: calc(28 * var(--mm));
     transform: translateX(-50%);
     font-family: 'Inter Tight', sans-serif;
     font-weight: 800;
-    font-size: {{ $cardW * 0.017 }}px;
+    font-size: calc(1.4 * var(--mm));
     letter-spacing: 0.02em;
     z-index: 6;
     color: #0c0c14;
@@ -164,23 +193,23 @@ body {
 /* Bottom row */
 .bottom-row {
     position: absolute;
-    left: {{ $cardW * 0.03 }}px;
-    right: {{ $cardW * 0.025 }}px;
-    top: {{ $cardH * 0.6 }}px;
-    bottom: {{ $cardH * 0.04 }}px;
+    left: calc(2.5 * var(--mm));
+    right: calc(2 * var(--mm));
+    top: calc(31 * var(--mm));
+    bottom: calc(2 * var(--mm));
     z-index: 6;
     display: grid;
     grid-template-columns: auto auto 1fr;
-    gap: {{ $cardW * 0.018 }}px;
+    gap: calc(1.5 * var(--mm));
     align-items: center;
 }
 .photo-slot {
-    width: {{ $photoW }}px;
-    height: {{ $photoH }}px;
-    border-radius: 3px;
+    width: calc(16 * var(--mm));
+    height: calc(21 * var(--mm));
+    border-radius: calc(0.4 * var(--mm));
     overflow: hidden;
     background: rgba(255,255,255,0.35);
-    border: 1.5px dashed rgba(0,0,0,0.3);
+    border: 1.5px dashed rgba(0,0,0,0.35);
 }
 .photo-slot.filled {
     background: #0a0a0f;
@@ -199,16 +228,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: calc(3 * var(--mm));
     color: rgba(0,0,0,0.3);
 }
 .qr-slot {
-    width: {{ $qrSize }}px;
-    height: {{ $qrSize }}px;
+    width: calc(15 * var(--mm));
+    height: calc(15 * var(--mm));
     background: #fff;
-    border-radius: 3px;
-    padding: 3px;
+    border-radius: calc(0.4 * var(--mm));
+    padding: calc(0.35 * var(--mm));
     box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    align-self: center;
 }
 .qr-slot svg { width: 100%; height: 100%; display: block; }
 .signature-area {
@@ -217,12 +247,16 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border-radius: 3px;
+    border-radius: calc(0.3 * var(--mm));
+    border: 1.5px dashed rgba(0,0,0,0.3);
+    background: rgba(255,255,255,0.18);
+}
+.signature-label {
     font-family: 'Inter Tight', sans-serif;
+    font-size: calc(1.15 * var(--mm));
     font-weight: 800;
-    font-size: {{ $cardW * 0.014 }}px;
-    color: rgba(0,0,0,0.4);
     letter-spacing: 0.01em;
+    color: rgba(0,0,0,0.5);
 }
 </style>
 </head>
@@ -245,15 +279,15 @@ body {
             <div class="line-addr">{{ $school->address ?? '' }}</div>
         </div>
         <div class="logo-circle">
-            {{-- Tut Wuri Handayani / second logo placeholder --}}
+            {{-- Tut Wuri Handayani / second logo --}}
         </div>
     </div>
 
     <!-- Watermark -->
     <div class="watermark">
-        @for($i = 0; $i < 12; $i++)
+        @for($i = 0; $i < 14; $i++)
             <div class="watermark-row">
-                @for($j = 0; $j < 5; $j++)
+                @for($j = 0; $j < 4; $j++)
                     <span>{{ $wmText }}</span>
                 @endfor
             </div>
@@ -320,7 +354,7 @@ body {
         @endif
 
         <div class="signature-area">
-            KEPALA SEKOLAH
+            <div class="signature-label">KEPALA SEKOLAH</div>
         </div>
     </div>
 </body>
