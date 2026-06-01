@@ -121,6 +121,8 @@ class GoogleDriveService
             'supportsAllDrives' => true,
         ]);
 
+        $this->transferOwnershipIfConfigured($created->getId());
+
         return $created->getId();
     }
 
@@ -137,13 +139,17 @@ class GoogleDriveService
             'parents' => [$folderId],
         ]);
 
-        return $this->drive->files->create($file, [
+        $created = $this->drive->files->create($file, [
             'data' => file_get_contents($localPath),
             'mimeType' => $mimeType,
             'uploadType' => 'multipart',
             'fields' => 'id, name, webViewLink, webContentLink',
             'supportsAllDrives' => true,
         ]);
+
+        $this->transferOwnershipIfConfigured($created->getId());
+
+        return $created;
     }
 
     /**
@@ -185,6 +191,35 @@ class GoogleDriveService
             'mimeType' => $f->getMimeType(),
             'webViewLink' => $f->getWebViewLink(),
         ])->all();
+    }
+
+    /**
+     * Transfer file ownership to the configured Drive owner email.
+     * This is needed because Service Accounts have 0 storage quota.
+     */
+    private function transferOwnershipIfConfigured(string $fileId): void
+    {
+        $ownerEmail = config('services.google.drive_owner_email');
+        if (! $ownerEmail) {
+            return;
+        }
+
+        try {
+            $this->drive->permissions->create($fileId, new Permission([
+                'type' => 'user',
+                'role' => 'writer',
+                'emailAddress' => $ownerEmail,
+            ]), [
+                'supportsAllDrives' => true,
+                'sendNotificationEmail' => false,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to transfer file ownership', [
+                'fileId' => $fileId,
+                'email' => $ownerEmail,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

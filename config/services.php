@@ -35,6 +35,7 @@ return [
     'google' => [
         'service_account_file' => env('GOOGLE_SERVICE_ACCOUNT_FILE'),
         'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
+        'drive_owner_email' => env('GOOGLE_DRIVE_OWNER_EMAIL'),
     ],
 
     'slack' => [
