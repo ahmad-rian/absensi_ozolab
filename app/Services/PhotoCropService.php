@@ -116,10 +116,10 @@ class PhotoCropService
         $faceCenterX = $faceX + $faceW / 2;
         $faceCenterY = $faceY + $faceH / 2;
 
-        // The crop should frame: head top + face + neck + chest (like a school ID photo)
-        // Face should occupy roughly 25% of the crop height
+        // The crop should frame: head top + face + neck + upper chest (school ID photo)
+        // Face should occupy roughly 30% of the crop height
         // Face center should be at ~30% from top of crop
-        $cropH = (int) ($faceH / 0.25); // face = 25% of crop height
+        $cropH = (int) ($faceH / 0.30); // face = 30% of crop height
         $cropW = (int) ($cropH * self::SLOT_RATIO);
 
         // Ensure crop doesn't exceed image
