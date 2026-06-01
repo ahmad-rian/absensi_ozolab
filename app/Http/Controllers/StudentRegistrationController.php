@@ -44,9 +44,9 @@ class StudentRegistrationController extends Controller
         $validated = $request->validate([
             'school_id' => ['required', 'exists:schools,id'],
             'full_name' => ['required', 'string', 'max:255'],
-            'nis' => ['nullable', 'string', 'max:50'],
+            'nis' => ['nullable', 'string', 'max:50', 'unique:students,nis'],
             'no_absen' => ['nullable', 'string', 'max:10'],
-            'nisn' => ['nullable', 'string', 'max:20'],
+            'nisn' => ['nullable', 'string', 'max:20', 'unique:students,nisn'],
             'gender' => ['required', Rule::enum(Gender::class)],
             'religion' => ['nullable', Rule::enum(Religion::class)],
             'classroom_id' => ['required', Rule::exists('classrooms', 'id')->where('school_id', $request->school_id)],
