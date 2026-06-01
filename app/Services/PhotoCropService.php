@@ -132,8 +132,11 @@ class PhotoCropService
             $cropH = (int) ($cropW / self::SLOT_RATIO);
         }
 
-        // Position crop: face center at 20% from top (more headroom above)
-        $cropY = (int) ($faceCenterY - $cropH * 0.20);
+        // Position: top of face bounding box at ~18% from crop top
+        // This guarantees headroom above the skull (faceY is top of detected skin,
+        // actual hair/head top is ~0.5*faceH higher)
+        $headTop = $faceY - (int) ($faceH * 0.5); // estimate actual head top
+        $cropY = $headTop - (int) ($cropH * 0.08); // 8% padding above head
         $cropX = (int) ($faceCenterX - $cropW / 2);
 
         // Clamp to image bounds
