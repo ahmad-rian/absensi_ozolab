@@ -36,6 +36,9 @@ return [
         'service_account_file' => env('GOOGLE_SERVICE_ACCOUNT_FILE'),
         'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
         'drive_owner_email' => env('GOOGLE_DRIVE_OWNER_EMAIL'),
+        'oauth_client_id' => env('GOOGLE_OAUTH_CLIENT_ID'),
+        'oauth_client_secret' => env('GOOGLE_OAUTH_CLIENT_SECRET'),
+        'oauth_refresh_token' => env('GOOGLE_OAUTH_REFRESH_TOKEN'),
     ],
 
     'slack' => [
