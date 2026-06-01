@@ -28,6 +28,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'chrome' => [
+        'path' => env('CHROME_PATH'),
+    ],
+
     'google' => [
         'service_account_file' => env('GOOGLE_SERVICE_ACCOUNT_FILE'),
         'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),

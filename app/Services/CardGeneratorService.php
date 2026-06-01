@@ -107,12 +107,18 @@ class CardGeneratorService
         $width = $config['card_width'] ?? 813;
         $height = $config['card_height'] ?? 513;
 
-        Browsershot::html($html)
+        $browsershot = Browsershot::html($html)
             ->windowSize($width, $height)
             ->deviceScaleFactor(2)
             ->waitUntilNetworkIdle()
-            ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox'])
-            ->save($outputPath);
+            ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
+
+        $chromePath = config('services.chrome.path');
+        if ($chromePath && file_exists($chromePath)) {
+            $browsershot->setChromePath($chromePath);
+        }
+
+        $browsershot->save($outputPath);
     }
 
     /**
