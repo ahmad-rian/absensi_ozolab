@@ -30,6 +30,7 @@ Route::post('scan', [PublicScannerController::class, 'scan'])->middleware(['auth
 
 Route::get('daftar', [StudentRegistrationController::class, 'index'])->name('student.register');
 Route::post('daftar', [StudentRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('student.register.store');
+Route::post('daftar/preview-photo', [StudentRegistrationController::class, 'previewPhoto'])->middleware('throttle:20,1')->name('student.register.preview-photo');
 
 Route::middleware(['auth'])->post('admin/switch-school', function (Request $request) {
     $request->validate(['school_id' => ['required', 'exists:schools,id']]);
