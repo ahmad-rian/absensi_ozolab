@@ -128,7 +128,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 .photo-slot.filled { background: #0a0a0f; border: none; }
 .photo-slot img {
     width: 100%; height: 100%; object-fit: cover;
-    object-position: center 20%; display: block;
+    object-position: center 15%; display: block;
 }
 .photo-placeholder {
     width:100%; height:100%; display:flex; align-items:center; justify-content:center;
