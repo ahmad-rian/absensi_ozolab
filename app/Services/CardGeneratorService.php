@@ -34,20 +34,17 @@ class CardGeneratorService
             'layout' => $layout,
             'config' => $layout->layout_config ?? [],
             'qrSvg' => $qrSvg,
-            'logoUrl' => $school->logo_path
-                ? Storage::disk('public')->url($school->logo_path)
-                : null,
-            'photoUrl' => $student->photo_path
-                ? Storage::disk('public')->url($student->photo_path)
-                : null,
+            'logoUrl' => $this->toBase64DataUri($school->logo_path),
+            'photoUrl' => $this->toBase64DataUri($student->photo_path),
             'frameUrl' => $this->resolveFrameUrl($layout),
         ])->render();
 
         $filename = sprintf(
-            'cards/%d/%s-%s.png',
+            'cards/%d/%s-%s-%s.png',
             $school->id,
             Str::slug($student->full_name),
             $student->nis ?? $student->id,
+            $layout->type,
         );
 
         $fullPath = Storage::disk('public')->path($filename);
@@ -156,6 +153,26 @@ class CardGeneratorService
         }
     }
 
+    /**
+     * Convert a storage path to a base64 data URI for inline rendering in Browsershot.
+     */
+    private function toBase64DataUri(?string $storagePath): ?string
+    {
+        if (! $storagePath) {
+            return null;
+        }
+
+        $fullPath = Storage::disk('public')->path($storagePath);
+        if (! file_exists($fullPath)) {
+            return null;
+        }
+
+        $mime = mime_content_type($fullPath) ?: 'image/png';
+        $data = base64_encode(file_get_contents($fullPath));
+
+        return "data:{$mime};base64,{$data}";
+    }
+
     private function resolveFrameUrl(SchoolCardLayout $layout): ?string
     {
         $config = $layout->layout_config ?? [];
@@ -168,7 +185,7 @@ class CardGeneratorService
         $frame = SchoolFrame::where('school_id', $layout->school_id)->find($frameId);
 
         return $frame?->image_path
-            ? Storage::disk('public')->url($frame->image_path)
+            ? $this->toBase64DataUri($frame->image_path)
             : null;
     }
 }
