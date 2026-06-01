@@ -1,6 +1,6 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, CreditCard, Download, ExternalLink, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, CheckCircle2, CreditCard, Download, Eye, ExternalLink, Loader2, X } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import { SimpleCaptcha } from '@/components/simple-captcha';
@@ -61,6 +61,9 @@ export default function StudentRegister({ schools, classrooms }: Props) {
     const [result, setResult] = useState<RegistrationResult | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const [photoPreview, setPhotoPreview] = useState<{ url: string; filename: string } | null>(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [previewError, setPreviewError] = useState('');
 
     const { data, setData, processing, errors, reset } = useForm({
         school_id: '',
@@ -162,6 +165,41 @@ export default function StudentRegister({ schools, classrooms }: Props) {
             setLoadingStep('');
         }
     }
+
+    const handlePreviewPhoto = useCallback(async () => {
+        if (!data.photo_drive_filename.trim() || !data.school_id) return;
+
+        setPreviewLoading(true);
+        setPreviewError('');
+        setPhotoPreview(null);
+
+        try {
+            const res = await fetch('/daftar/preview-photo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({
+                    school_id: data.school_id,
+                    filename: data.photo_drive_filename.trim(),
+                }),
+            });
+
+            const json = await res.json();
+
+            if (json.found) {
+                setPhotoPreview({ url: json.preview_url, filename: json.filename });
+            } else {
+                setPreviewError(json.message || 'File tidak ditemukan.');
+            }
+        } catch {
+            setPreviewError('Gagal menghubungi server.');
+        } finally {
+            setPreviewLoading(false);
+        }
+    }, [data.photo_drive_filename, data.school_id, csrfToken]);
 
     function handleNewSubmission() {
         setSubmitted(false);
@@ -444,17 +482,66 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         <div className="grid gap-5">
                             <div className="grid gap-2">
                                 <Label htmlFor="photo_drive_filename" className="text-sm font-medium">Nama File Foto di Google Drive</Label>
-                                <Input
-                                    id="photo_drive_filename"
-                                    value={data.photo_drive_filename}
-                                    onChange={(e) => setData('photo_drive_filename', e.target.value)}
-                                    placeholder="Contoh: Ahmad Rizky.jpg atau IMG_0234.png"
-                                    className="h-11"
-                                />
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="photo_drive_filename"
+                                        value={data.photo_drive_filename}
+                                        onChange={(e) => {
+                                            setData('photo_drive_filename', e.target.value);
+                                            setPhotoPreview(null);
+                                            setPreviewError('');
+                                        }}
+                                        placeholder="Contoh: FIC_0008.JPG atau IMG_0234.png"
+                                        className="h-11"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={!data.photo_drive_filename.trim() || !data.school_id || previewLoading}
+                                        onClick={handlePreviewPhoto}
+                                        className="h-11 shrink-0 gap-1.5"
+                                    >
+                                        {previewLoading ? <Loader2 className="size-4 animate-spin" /> : <Eye className="size-4" />}
+                                        Cek Foto
+                                    </Button>
+                                </div>
                                 <p className="text-muted-foreground text-xs">
-                                    Masukkan nama file foto siswa yang sudah diupload ke folder Orang Tua di Google Drive.
-                                    Foto akan otomatis diambil dan dikompresi. Bisa dikosongkan jika belum ada foto.
+                                    Masukkan nama file foto siswa yang sudah diupload ke folder Foto Siswa di Google Drive.
+                                    Klik "Cek Foto" untuk preview sebelum mendaftar.
                                 </p>
+
+                                {/* Preview Error */}
+                                {previewError && (
+                                    <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+                                        <AlertTriangle className="size-4 shrink-0" />
+                                        {previewError}
+                                    </div>
+                                )}
+
+                                {/* Photo Preview */}
+                                {photoPreview && (
+                                    <div className="relative overflow-hidden rounded-xl border-2 border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950">
+                                        <div className="flex items-center justify-between border-b border-green-200 px-3 py-2 dark:border-green-800">
+                                            <span className="flex items-center gap-1.5 text-sm font-medium text-green-800 dark:text-green-200">
+                                                <CheckCircle2 className="size-4" /> {photoPreview.filename}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPhotoPreview(null)}
+                                                className="rounded-md p-1 text-green-600 hover:bg-green-200 dark:hover:bg-green-800"
+                                            >
+                                                <X className="size-4" />
+                                            </button>
+                                        </div>
+                                        <div className="flex justify-center p-4">
+                                            <img
+                                                src={photoPreview.url}
+                                                alt={photoPreview.filename}
+                                                className="max-h-64 rounded-lg object-contain shadow-md"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">

@@ -122,6 +122,60 @@ class StudentRegistrationController extends Controller
     }
 
     /**
+     * Preview a photo from Google Drive before registration.
+     */
+    public function previewPhoto(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'school_id' => ['required', 'exists:schools,id'],
+            'filename' => ['required', 'string', 'max:500'],
+        ]);
+
+        $school = School::with('driveConfig')->findOrFail($validated['school_id']);
+        $driveConfig = $school->driveConfig;
+
+        if (! $driveConfig || ! $driveConfig->is_active) {
+            return response()->json(['found' => false, 'message' => 'Google Drive belum dikonfigurasi untuk sekolah ini.']);
+        }
+
+        if (! GoogleDriveService::hasGlobalCredentials() && ! $driveConfig->service_account_json) {
+            return response()->json(['found' => false, 'message' => 'Credentials Google Drive belum diset.']);
+        }
+
+        try {
+            $service = GoogleDriveService::forSchool($driveConfig);
+            $searchFolderId = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id ?: 'root';
+            $files = $service->findFileByName($validated['filename'], $searchFolderId);
+
+            if (empty($files)) {
+                return response()->json(['found' => false, 'message' => 'File "'.$validated['filename'].'" tidak ditemukan di folder Foto Siswa.']);
+            }
+
+            // Download to temp for preview
+            $driveFileId = $files[0]['id'];
+            $tempName = 'temp/preview-'.Str::random(16).'.jpg';
+            $fullPath = Storage::disk('public')->path($tempName);
+
+            $dir = dirname($fullPath);
+            if (! is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+
+            $service->downloadFile($driveFileId, $fullPath);
+
+            return response()->json([
+                'found' => true,
+                'filename' => $files[0]['name'],
+                'preview_url' => Storage::disk('public')->url($tempName),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Photo preview failed', ['filename' => $validated['filename'], 'error' => $e->getMessage()]);
+
+            return response()->json(['found' => false, 'message' => 'Gagal mengambil foto: '.$e->getMessage()]);
+        }
+    }
+
+    /**
      * Download student photo from Google Drive, smart crop to 3:4 portrait, save as WebP.
      */
     private function downloadPhotoFromDrive(Student $student, School $school, string $filename): bool

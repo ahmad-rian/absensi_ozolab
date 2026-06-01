@@ -109,3 +109,22 @@ test('student registration does not require authentication', function () {
 
     $response->assertStatus(200);
 });
+
+test('preview photo returns not found when drive is not configured', function () {
+    $school = School::factory()->create(['is_active' => true]);
+
+    $response = $this->postJson('/daftar/preview-photo', [
+        'school_id' => $school->id,
+        'filename' => 'test.jpg',
+    ]);
+
+    $response->assertOk();
+    $response->assertJson(['found' => false]);
+});
+
+test('preview photo validates required fields', function () {
+    $response = $this->postJson('/daftar/preview-photo', []);
+
+    $response->assertUnprocessable();
+    $response->assertJsonValidationErrors(['school_id', 'filename']);
+});
