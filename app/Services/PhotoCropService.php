@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Storage;
 class PhotoCropService
 {
     /**
-     * Process a raw photo: resize, smart crop to 3:4 portrait, save as WebP.
+     * Process a raw photo: resize, smart crop to 3:4 portrait, save as PNG.
      *
      * @param  string  $inputPath  Full path to input image
-     * @param  string  $storagePath  Relative path for storage (e.g. photos/students/1/avatar.webp)
+     * @param  string  $storagePath  Relative path for storage (e.g. photos/students/1/avatar.png)
      * @return string Storage path of the cropped photo
      */
-    public function cropAndStore(string $inputPath, string $storagePath, int $quality = 85): string
+    public function cropAndStore(string $inputPath, string $storagePath, int $quality = 9): string
     {
         $info = getimagesize($inputPath);
         if (! $info) {
@@ -24,8 +24,8 @@ class PhotoCropService
         $origW = imagesx($image);
         $origH = imagesy($image);
 
-        // Step 1: Resize to max 800px on longest side (for performance)
-        $maxDim = 800;
+        // Step 1: Resize to max 1200px on longest side (HD quality)
+        $maxDim = 1200;
         if ($origW > $maxDim || $origH > $maxDim) {
             $ratio = min($maxDim / $origW, $maxDim / $origH);
             $newW = (int) ($origW * $ratio);
@@ -42,18 +42,18 @@ class PhotoCropService
         $targetRatio = 3 / 4; // width / height
         $image = $this->smartCropPortrait($image, $origW, $origH, $targetRatio);
 
-        // Step 3: Save as WebP
+        // Step 3: Save as PNG
         $fullPath = Storage::disk('public')->path($storagePath);
         $dir = dirname($fullPath);
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        $written = imagewebp($image, $fullPath, $quality);
+        $written = imagepng($image, $fullPath, $quality);
         imagedestroy($image);
 
         if (! $written || ! file_exists($fullPath)) {
-            throw new \RuntimeException('Failed to write WebP image to: '.$storagePath);
+            throw new \RuntimeException('Failed to write PNG image to: '.$storagePath);
         }
 
         return $storagePath;
@@ -62,16 +62,19 @@ class PhotoCropService
     /**
      * Smart crop to portrait ratio with face-aware positioning.
      * Uses skin-tone heuristic to find face area.
+     *
+     * Positioning constants (from professional photo studio conventions):
+     * - Eyes at 31.5% from top of frame
+     * - Face height = 27.5% of total crop height
      */
     private function smartCropPortrait(\GdImage $image, int $w, int $h, float $targetRatio): \GdImage
     {
         $currentRatio = $w / $h;
 
         if (abs($currentRatio - $targetRatio) < 0.01) {
-            return $image; // Already correct ratio
+            return $image;
         }
 
-        // Find face center using skin-tone heuristic
         $faceCenter = $this->detectFaceCenter($image, $w, $h);
 
         if ($currentRatio > $targetRatio) {
@@ -79,7 +82,6 @@ class PhotoCropService
             $cropW = (int) ($h * $targetRatio);
             $cropH = $h;
 
-            // Center on face X position, fallback to center
             $centerX = $faceCenter ? $faceCenter['x'] : $w / 2;
             $cropX = (int) max(0, min($w - $cropW, $centerX - $cropW / 2));
             $cropY = 0;
@@ -88,17 +90,34 @@ class PhotoCropService
             $cropW = $w;
             $cropH = (int) ($w / $targetRatio);
 
-            // Position face in upper third of frame (portrait convention)
             if ($faceCenter) {
-                // Place face center at ~35% from top
-                $targetFaceY = $cropH * 0.35;
-                $cropY = (int) max(0, min($h - $cropH, $faceCenter['y'] - $targetFaceY));
+                $eyePosition = 0.315; // Eyes at 31.5% from top
+                $faceHeightRatio = 0.275; // Face = 27.5% of crop height
+
+                // Calculate ideal crop height based on face size
+                $faceH = $faceCenter['h'] ?? ($h * 0.2);
+                $idealCropH = $faceH / $faceHeightRatio;
+
+                // Use the smaller of ideal crop and actual crop
+                $cropH = (int) min($cropH, max($idealCropH, $w / $targetRatio));
+                $cropW = (int) ($cropH * $targetRatio);
+
+                // Clamp to image bounds
+                if ($cropW > $w) {
+                    $cropW = $w;
+                    $cropH = (int) ($w / $targetRatio);
+                }
+
+                // Position eyes at 31.5% from top
+                $eyeY = $faceCenter['y'];
+                $cropY = (int) ($eyeY - $cropH * $eyePosition);
+                $cropY = (int) max(0, min($h - $cropH, $cropY));
+                $cropX = (int) max(0, min($w - $cropW, $faceCenter['x'] - $cropW / 2));
             } else {
-                // No face detected: crop from top with slight offset (30% bias)
-                // This works well for half-body and full-body photos
-                $cropY = (int) max(0, ($h - $cropH) * 0.15);
+                // No face: crop with 12% bias from top (good for half/full body)
+                $cropY = (int) max(0, ($h - $cropH) * 0.12);
+                $cropX = 0;
             }
-            $cropX = 0;
         }
 
         $cropped = imagecreatetruecolor($cropW, $cropH);
@@ -109,19 +128,19 @@ class PhotoCropService
     }
 
     /**
-     * Detect approximate face center using skin-tone sampling.
+     * Detect approximate face center and size using skin-tone sampling.
      * Scans the image in a grid and finds the densest skin-tone cluster.
      *
-     * @return array{x: int, y: int}|null
+     * @return array{x: int, y: int, h: int}|null
      */
     private function detectFaceCenter(\GdImage $image, int $w, int $h): ?array
     {
-        $stepX = max(1, (int) ($w / 40));
-        $stepY = max(1, (int) ($h / 40));
+        $stepX = max(1, (int) ($w / 50));
+        $stepY = max(1, (int) ($h / 50));
         $skinPoints = [];
 
-        // Focus on upper 70% of image (face is usually not at bottom)
-        $scanH = (int) ($h * 0.7);
+        // Focus on upper 75% of image (face is usually not at bottom)
+        $scanH = (int) ($h * 0.75);
 
         for ($y = 0; $y < $scanH; $y += $stepY) {
             for ($x = 0; $x < $w; $x += $stepX) {
@@ -136,12 +155,10 @@ class PhotoCropService
             }
         }
 
-        // Need enough skin pixels to be confident
         if (count($skinPoints) < 15) {
             return null;
         }
 
-        // Find the densest cluster of skin pixels (likely the face)
         return $this->findDensestCluster($skinPoints, $w, $h);
     }
 
@@ -186,14 +203,14 @@ class PhotoCropService
 
     /**
      * Find the densest cluster of points using grid-based density estimation.
+     * Returns center position and estimated face height.
      *
      * @param  array<int, array{x: int, y: int}>  $points
-     * @return array{x: int, y: int}
+     * @return array{x: int, y: int, h: int}
      */
     private function findDensestCluster(array $points, int $imgW, int $imgH): array
     {
-        // Divide image into grid cells
-        $cellSize = max($imgW, $imgH) / 8;
+        $cellSize = max($imgW, $imgH) / 10;
         $cells = [];
 
         foreach ($points as $p) {
@@ -201,31 +218,35 @@ class PhotoCropService
             $cy = (int) ($p['y'] / $cellSize);
             $key = "{$cx},{$cy}";
             if (! isset($cells[$key])) {
-                $cells[$key] = ['count' => 0, 'sumX' => 0, 'sumY' => 0];
+                $cells[$key] = ['count' => 0, 'sumX' => 0, 'sumY' => 0, 'minY' => PHP_INT_MAX, 'maxY' => 0];
             }
             $cells[$key]['count']++;
             $cells[$key]['sumX'] += $p['x'];
             $cells[$key]['sumY'] += $p['y'];
+            $cells[$key]['minY'] = min($cells[$key]['minY'], $p['y']);
+            $cells[$key]['maxY'] = max($cells[$key]['maxY'], $p['y']);
         }
 
-        // Find cell with most skin pixels
-        $maxCell = null;
+        // Find cell with most skin pixels and include adjacent cells
+        $maxKey = null;
         $maxCount = 0;
-        foreach ($cells as $cell) {
+        foreach ($cells as $key => $cell) {
             if ($cell['count'] > $maxCount) {
                 $maxCount = $cell['count'];
-                $maxCell = $cell;
+                $maxKey = $key;
             }
         }
 
-        if (! $maxCell) {
-            return ['x' => $imgW / 2, 'y' => $imgH / 3];
+        if (! $maxKey || ! isset($cells[$maxKey])) {
+            return ['x' => (int) ($imgW / 2), 'y' => (int) ($imgH / 3), 'h' => (int) ($imgH * 0.2)];
         }
 
-        return [
-            'x' => (int) ($maxCell['sumX'] / $maxCell['count']),
-            'y' => (int) ($maxCell['sumY'] / $maxCell['count']),
-        ];
+        $cell = $cells[$maxKey];
+        $centerX = (int) ($cell['sumX'] / $cell['count']);
+        $centerY = (int) ($cell['sumY'] / $cell['count']);
+        $faceH = max((int) ($cell['maxY'] - $cell['minY']), (int) ($imgH * 0.15));
+
+        return ['x' => $centerX, 'y' => $centerY, 'h' => $faceH];
     }
 
     private function loadImage(string $path, int $type): \GdImage

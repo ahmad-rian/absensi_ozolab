@@ -372,7 +372,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                     {schools.map((school) => (<SelectItem key={school.id} value={String(school.id)}>{school.name}</SelectItem>))}
                                 </SelectContent>
                             </Select>
-                            <InputError message={errors.school_id} />
+                            <InputError message={errors.school_id || formErrors.school_id} />
                         </div>
                     </FormSection>
 
@@ -382,24 +382,24 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                             <div className="grid gap-2">
                                 <Label htmlFor="full_name" className="text-sm font-medium">Nama Lengkap <span className="text-red-500">*</span></Label>
                                 <Input id="full_name" value={data.full_name} onChange={(e) => setData('full_name', e.target.value)} placeholder="Nama lengkap siswa" className="h-11" />
-                                <InputError message={errors.full_name} />
+                                <InputError message={errors.full_name || formErrors.full_name} />
                             </div>
 
                             <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
                                 <div className="grid gap-2">
                                     <Label htmlFor="nis" className="text-sm font-medium">NIS</Label>
                                     <Input id="nis" value={data.nis} onChange={(e) => setData('nis', e.target.value)} placeholder="Nomor Induk Siswa" className="h-11" />
-                                    <InputError message={errors.nis} />
+                                    <InputError message={errors.nis || formErrors.nis} />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="no_absen" className="text-sm font-medium">No. Absen</Label>
                                     <Input id="no_absen" value={data.no_absen} onChange={(e) => setData('no_absen', e.target.value)} placeholder="Nomor absen" className="h-11" />
-                                    <InputError message={errors.no_absen} />
+                                    <InputError message={errors.no_absen || formErrors.no_absen} />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="nisn" className="text-sm font-medium">NISN</Label>
                                     <Input id="nisn" value={data.nisn} onChange={(e) => setData('nisn', e.target.value)} placeholder="Nomor Induk Siswa Nasional" className="h-11" />
-                                    <InputError message={errors.nisn} />
+                                    <InputError message={errors.nisn || formErrors.nisn} />
                                 </div>
                             </div>
 
@@ -413,7 +413,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                         <RadioGroupItem value="PEREMPUAN" id="gender-p" /> Perempuan
                                     </label>
                                 </RadioGroup>
-                                <InputError message={errors.gender} />
+                                <InputError message={errors.gender || formErrors.gender} />
                             </div>
 
                             <div className="grid gap-2">
@@ -435,7 +435,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                         {filteredClassrooms.map((c) => (<SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>))}
                                     </SelectContent>
                                 </Select>
-                                <InputError message={errors.classroom_id} />
+                                <InputError message={errors.classroom_id || formErrors.classroom_id} />
                             </div>
                         </div>
                     </FormSection>
