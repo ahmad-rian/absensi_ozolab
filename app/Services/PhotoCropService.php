@@ -236,16 +236,28 @@ class PhotoCropService
      */
     private function fixExifOrientation(\GdImage $image, string $path, int $type): \GdImage
     {
-        if ($type !== IMAGETYPE_JPEG || ! function_exists('exif_read_data')) {
+        if ($type !== IMAGETYPE_JPEG) {
             return $image;
         }
 
-        $exif = @exif_read_data($path);
-        if (! $exif || empty($exif['Orientation'])) {
+        $orientation = null;
+
+        // Try PHP exif extension first
+        if (function_exists('exif_read_data')) {
+            $exif = @exif_read_data($path);
+            $orientation = $exif['Orientation'] ?? null;
+        }
+
+        // Fallback: read EXIF orientation directly from JPEG binary
+        if ($orientation === null) {
+            $orientation = $this->readJpegOrientation($path);
+        }
+
+        if (! $orientation) {
             return $image;
         }
 
-        $rotated = match ((int) $exif['Orientation']) {
+        $rotated = match ((int) $orientation) {
             3 => imagerotate($image, 180, 0),
             6 => imagerotate($image, -90, 0),
             8 => imagerotate($image, 90, 0),
@@ -259,6 +271,81 @@ class PhotoCropService
         }
 
         return $image;
+    }
+
+    /**
+     * Read JPEG EXIF orientation tag directly from file bytes.
+     * Fallback for when the PHP exif extension is not installed.
+     */
+    private function readJpegOrientation(string $path): ?int
+    {
+        $data = @file_get_contents($path, false, null, 0, 65536);
+        if (! $data || strlen($data) < 12) {
+            return null;
+        }
+
+        // Must start with JPEG SOI marker
+        if (ord($data[0]) !== 0xFF || ord($data[1]) !== 0xD8) {
+            return null;
+        }
+
+        $offset = 2;
+        $len = strlen($data);
+
+        while ($offset < $len - 4) {
+            if (ord($data[$offset]) !== 0xFF) {
+                return null;
+            }
+
+            $marker = ord($data[$offset + 1]);
+
+            // APP1 (EXIF) marker = 0xE1
+            if ($marker === 0xE1) {
+                $segLen = (ord($data[$offset + 2]) << 8) | ord($data[$offset + 3]);
+
+                // Check "Exif\0\0" header
+                if (substr($data, $offset + 4, 6) !== "Exif\x00\x00") {
+                    return null;
+                }
+
+                $tiffStart = $offset + 10;
+                $byteOrder = substr($data, $tiffStart, 2);
+                $littleEndian = $byteOrder === 'II';
+
+                $read16 = function (int $pos) use ($data, $littleEndian) {
+                    $a = ord($data[$pos]);
+                    $b = ord($data[$pos + 1]);
+
+                    return $littleEndian ? ($b << 8) | $a : ($a << 8) | $b;
+                };
+
+                $ifdOffset = $tiffStart + 4;
+                $firstIfd = $tiffStart + $read16($ifdOffset);
+                $numEntries = $read16($firstIfd);
+
+                for ($i = 0; $i < $numEntries && $firstIfd + 2 + ($i * 12) + 12 <= $len; $i++) {
+                    $entryOffset = $firstIfd + 2 + ($i * 12);
+                    $tag = $read16($entryOffset);
+
+                    // Orientation tag = 0x0112
+                    if ($tag === 0x0112) {
+                        return $read16($entryOffset + 8);
+                    }
+                }
+
+                return null;
+            }
+
+            // Skip other segments
+            if ($marker === 0xDA) {
+                return null; // SOS — no more metadata
+            }
+
+            $segLen = (ord($data[$offset + 2]) << 8) | ord($data[$offset + 3]);
+            $offset += 2 + $segLen;
+        }
+
+        return null;
     }
 
     private function loadImage(string $path, int $type): \GdImage

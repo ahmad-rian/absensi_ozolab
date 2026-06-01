@@ -89,18 +89,18 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 
 .body-area {
     position: relative; z-index: 5;
-    padding: calc(1.0 * var(--mm)) calc(2.5 * var(--mm)) 0;
+    padding: calc(0.8 * var(--mm)) calc(2.5 * var(--mm)) 0;
 }
 .field-row {
     display: flex; font-family: 'Inter Tight', sans-serif;
-    font-size: calc(1.8 * var(--mm)); font-weight: 800;
-    line-height: 1.3; letter-spacing: -0.005em; color: #0c0c14;
+    font-size: calc(2.0 * var(--mm)); font-weight: 800;
+    line-height: 1.25; letter-spacing: -0.01em; color: #0c0c14;
 }
-.field-label { width: calc(19 * var(--mm)); flex-shrink: 0; }
-.field-sep { width: calc(1.5 * var(--mm)); text-align: center; flex-shrink: 0; }
+.field-label { width: calc(18 * var(--mm)); flex-shrink: 0; }
+.field-sep { width: calc(1.2 * var(--mm)); text-align: center; flex-shrink: 0; }
 .field-value {
-    flex: 1; font-weight: 700; font-family: 'Manrope', sans-serif;
-    font-size: calc(1.7 * var(--mm)); letter-spacing: -0.005em;
+    flex: 1; font-weight: 700; font-family: 'Inter Tight', sans-serif;
+    font-size: calc(2.0 * var(--mm)); letter-spacing: -0.01em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
