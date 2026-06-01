@@ -36,7 +36,8 @@ class GoogleDriveAuth extends Command
         $client->addScope(GoogleDrive::DRIVE);
         $client->setAccessType('offline');
         $client->setPrompt('consent');
-        $client->setRedirectUri('urn:ietf:wg:oauth:2.0:oob');
+        $redirectUri = config('app.url').'/admin/drive-config/callback';
+        $client->setRedirectUri($redirectUri);
 
         $authUrl = $client->createAuthUrl();
 
@@ -44,6 +45,8 @@ class GoogleDriveAuth extends Command
         $this->info('Open this URL in your browser and authorize:');
         $this->newLine();
         $this->line($authUrl);
+        $this->newLine();
+        $this->warn('After authorizing, you will be redirected. Copy the "code" parameter from the URL.');
         $this->newLine();
 
         $code = $this->ask('Paste the authorization code here');
