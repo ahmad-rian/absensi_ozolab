@@ -64,7 +64,7 @@ class AdminUserSeeder extends Seeder
                 'email' => $teacher['email'],
                 'email_verified_at' => now(),
                 'password' => Hash::make('password'),
-                'phone' => '+628'.fake()->numerify('##########'),
+                'phone' => '+628'.str_pad((string) random_int(1000000000, 9999999999), 10, '0', STR_PAD_LEFT),
                 'is_active' => true,
                 'school_id' => $smpNusantara->id,
             ]);
