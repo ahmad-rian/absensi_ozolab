@@ -89,21 +89,19 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 
 .body-area {
     position: relative; z-index: 5;
-    padding: calc(1.2 * var(--mm)) calc(2.5 * var(--mm)) 0;
+    padding: calc(1.5 * var(--mm)) calc(2.5 * var(--mm)) 0;
 }
 .field-row {
     display: flex; font-family: 'Inter Tight', sans-serif;
-    font-size: calc(1.25 * var(--mm)); font-weight: 700;
-    line-height: 1.35; letter-spacing: 0.005em; color: #0c0c14;
-    margin-bottom: calc(0.1 * var(--mm));
+    font-size: calc(1.3 * var(--mm)); font-weight: 700;
+    line-height: 1.45; letter-spacing: 0.005em; color: #0c0c14;
 }
-.field-label { width: calc(22 * var(--mm)); flex-shrink: 0; }
-.field-sep { width: calc(1.5 * var(--mm)); text-align: center; flex-shrink: 0; }
+.field-label { width: calc(21 * var(--mm)); flex-shrink: 0; }
+.field-sep { width: calc(2 * var(--mm)); text-align: center; flex-shrink: 0; }
 .field-value {
     flex: 1; font-weight: 600; font-family: 'Manrope', sans-serif;
-    font-size: calc(1.2 * var(--mm)); letter-spacing: -0.005em;
+    font-size: calc(1.3 * var(--mm)); letter-spacing: -0.005em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    min-width: 0;
 }
 
 .validity-text {
@@ -130,7 +128,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 .photo-slot.filled { background: #0a0a0f; border: none; }
 .photo-slot img {
     width: 100%; height: 100%; object-fit: cover;
-    object-position: center 15%; display: block;
+    object-position: center center; display: block;
 }
 .photo-placeholder {
     width:100%; height:100%; display:flex; align-items:center; justify-content:center;
