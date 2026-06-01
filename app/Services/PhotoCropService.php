@@ -60,12 +60,8 @@ class PhotoCropService
     }
 
     /**
-     * Smart crop to portrait ratio with face-aware positioning.
-     * Uses skin-tone heuristic to find face area.
-     *
-     * Positioning constants (from professional photo studio conventions):
-     * - Eyes at 31.5% from top of frame
-     * - Face height = 27.5% of total crop height
+     * Simple smart crop to portrait ratio.
+     * Centers on face if detected, otherwise crops from top with slight offset.
      */
     private function smartCropPortrait(\GdImage $image, int $w, int $h, float $targetRatio): \GdImage
     {
@@ -78,46 +74,27 @@ class PhotoCropService
         $faceCenter = $this->detectFaceCenter($image, $w, $h);
 
         if ($currentRatio > $targetRatio) {
-            // Image is wider than target — crop sides
+            // Image is wider — crop sides, center on face X
             $cropW = (int) ($h * $targetRatio);
             $cropH = $h;
-
-            $centerX = $faceCenter ? $faceCenter['x'] : $w / 2;
+            $centerX = $faceCenter ? $faceCenter['x'] : (int) ($w / 2);
             $cropX = (int) max(0, min($w - $cropW, $centerX - $cropW / 2));
             $cropY = 0;
         } else {
-            // Image is taller than target — crop top/bottom
+            // Image is taller — crop top/bottom
             $cropW = $w;
             $cropH = (int) ($w / $targetRatio);
 
             if ($faceCenter) {
-                $eyePosition = 0.315; // Eyes at 31.5% from top
-                $faceHeightRatio = 0.275; // Face = 27.5% of crop height
-
-                // Calculate ideal crop height based on face size
-                $faceH = $faceCenter['h'] ?? ($h * 0.2);
-                $idealCropH = $faceH / $faceHeightRatio;
-
-                // Use the smaller of ideal crop and actual crop
-                $cropH = (int) min($cropH, max($idealCropH, $w / $targetRatio));
-                $cropW = (int) ($cropH * $targetRatio);
-
-                // Clamp to image bounds
-                if ($cropW > $w) {
-                    $cropW = $w;
-                    $cropH = (int) ($w / $targetRatio);
-                }
-
-                // Position eyes at 31.5% from top
-                $eyeY = $faceCenter['y'];
-                $cropY = (int) ($eyeY - $cropH * $eyePosition);
-                $cropY = (int) max(0, min($h - $cropH, $cropY));
-                $cropX = (int) max(0, min($w - $cropW, $faceCenter['x'] - $cropW / 2));
+                // Place face center at ~30% from top of crop
+                $cropY = (int) ($faceCenter['y'] - $cropH * 0.30);
             } else {
-                // No face: crop with 12% bias from top (good for half/full body)
-                $cropY = (int) max(0, ($h - $cropH) * 0.12);
-                $cropX = 0;
+                // No face: start from near top (10% offset)
+                $cropY = (int) (($h - $cropH) * 0.10);
             }
+
+            $cropX = 0;
+            $cropY = (int) max(0, min($h - $cropH, $cropY));
         }
 
         $cropped = imagecreatetruecolor($cropW, $cropH);
