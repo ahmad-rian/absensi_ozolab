@@ -12,6 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Only applies to MySQL — SQLite already has correct column types from fresh migrations
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Skip if already converted
         $type = DB::selectOne("SHOW COLUMNS FROM students WHERE Field = 'id'")?->Type ?? '';
         if (! str_contains($type, 'bigint')) {
