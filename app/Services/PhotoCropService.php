@@ -6,11 +6,19 @@ use Illuminate\Support\Facades\Storage;
 
 class PhotoCropService
 {
+    // Card photo slot ratio: 16mm wide × 21mm tall
+    private const SLOT_RATIO = 16 / 21; // 0.762
+
+    // Minimum output dimensions for quality
+    private const MIN_WIDTH = 480;
+
+    private const MIN_HEIGHT = 630;
+
     /**
-     * Process a raw photo: resize, smart crop to 3:4 portrait, save as PNG.
+     * Process a raw photo: fix orientation, smart crop for ID card, save as PNG.
      *
      * @param  string  $inputPath  Full path to input image
-     * @param  string  $storagePath  Relative path for storage (e.g. photos/students/1/avatar.png)
+     * @param  string  $storagePath  Relative path for storage
      * @return string Storage path of the cropped photo
      */
     public function cropAndStore(string $inputPath, string $storagePath, int $quality = 9): string
@@ -22,31 +30,43 @@ class PhotoCropService
 
         $image = $this->loadImage($inputPath, $info[2]);
 
-        // Step 0: Fix EXIF orientation (phone photos are often rotated)
+        // Step 0: Fix EXIF orientation (phone photos)
         $image = $this->fixExifOrientation($image, $inputPath, $info[2]);
 
-        $origW = imagesx($image);
-        $origH = imagesy($image);
+        $w = imagesx($image);
+        $h = imagesy($image);
 
-        // Step 1: Resize to max 1200px on longest side (HD quality)
-        $maxDim = 1200;
-        if ($origW > $maxDim || $origH > $maxDim) {
-            $ratio = min($maxDim / $origW, $maxDim / $origH);
-            $newW = (int) ($origW * $ratio);
-            $newH = (int) ($origH * $ratio);
+        // Step 1: Resize to max 1600px (keep enough detail for face detection)
+        $maxDim = 1600;
+        if ($w > $maxDim || $h > $maxDim) {
+            $scale = min($maxDim / $w, $maxDim / $h);
+            $newW = (int) ($w * $scale);
+            $newH = (int) ($h * $scale);
             $resized = imagecreatetruecolor($newW, $newH);
-            imagecopyresampled($resized, $image, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+            imagecopyresampled($resized, $image, 0, 0, 0, 0, $newW, $newH, $w, $h);
             imagedestroy($image);
             $image = $resized;
-            $origW = $newW;
-            $origH = $newH;
+            $w = $newW;
+            $h = $newH;
         }
 
-        // Step 2: Smart crop to 3:4 portrait ratio
-        $targetRatio = 3 / 4; // width / height
-        $image = $this->smartCropPortrait($image, $origW, $origH, $targetRatio);
+        // Step 2: Smart crop to card slot ratio (16:21) with face-centered framing
+        $image = $this->smartCropForCard($image, $w, $h);
 
-        // Step 3: Save as PNG
+        // Step 3: Ensure minimum output resolution
+        $finalW = imagesx($image);
+        $finalH = imagesy($image);
+        if ($finalW < self::MIN_WIDTH || $finalH < self::MIN_HEIGHT) {
+            $upscale = max(self::MIN_WIDTH / $finalW, self::MIN_HEIGHT / $finalH);
+            $upW = (int) ($finalW * $upscale);
+            $upH = (int) ($finalH * $upscale);
+            $upscaled = imagecreatetruecolor($upW, $upH);
+            imagecopyresampled($upscaled, $image, 0, 0, 0, 0, $upW, $upH, $finalW, $finalH);
+            imagedestroy($image);
+            $image = $upscaled;
+        }
+
+        // Step 4: Save as PNG
         $fullPath = Storage::disk('public')->path($storagePath);
         $dir = dirname($fullPath);
         if (! is_dir($dir)) {
@@ -64,41 +84,90 @@ class PhotoCropService
     }
 
     /**
-     * Simple smart crop to portrait ratio.
-     * Centers on face if detected, otherwise crops from top with slight offset.
+     * Smart crop optimized for ID card photos.
+     *
+     * Strategy: detect face region, then create a tight crop that frames
+     * head + upper shoulders — like a proper passport/ID photo.
+     * Uses card slot ratio (16:21) so no additional cropping is needed in CSS.
      */
-    private function smartCropPortrait(\GdImage $image, int $w, int $h, float $targetRatio): \GdImage
+    private function smartCropForCard(\GdImage $image, int $w, int $h): \GdImage
+    {
+        $face = $this->detectFaceRegion($image, $w, $h);
+
+        if ($face) {
+            return $this->cropAroundFace($image, $w, $h, $face);
+        }
+
+        // No face detected — fall back to center-top crop
+        return $this->fallbackCrop($image, $w, $h);
+    }
+
+    /**
+     * Crop the image tightly around the detected face for an ID card look.
+     *
+     * @param  array{x: int, y: int, w: int, h: int}  $face  Bounding box of face
+     */
+    private function cropAroundFace(\GdImage $image, int $imgW, int $imgH, array $face): \GdImage
+    {
+        $faceX = $face['x'];
+        $faceY = $face['y'];
+        $faceW = $face['w'];
+        $faceH = $face['h'];
+        $faceCenterX = $faceX + $faceW / 2;
+        $faceCenterY = $faceY + $faceH / 2;
+
+        // The crop should frame: forehead (above face top) + face + neck + upper shoulders
+        // Face should occupy roughly 40-50% of the crop height
+        // Face center should be at ~35% from top of crop
+        $cropH = (int) ($faceH / 0.40); // face = 40% of crop height
+        $cropW = (int) ($cropH * self::SLOT_RATIO);
+
+        // Ensure crop doesn't exceed image
+        $cropW = min($cropW, $imgW);
+        $cropH = min($cropH, $imgH);
+
+        // Recalculate to maintain ratio after clamping
+        if ($cropW / $cropH > self::SLOT_RATIO) {
+            $cropW = (int) ($cropH * self::SLOT_RATIO);
+        } else {
+            $cropH = (int) ($cropW / self::SLOT_RATIO);
+        }
+
+        // Position crop: face center at 35% from top
+        $cropY = (int) ($faceCenterY - $cropH * 0.35);
+        $cropX = (int) ($faceCenterX - $cropW / 2);
+
+        // Clamp to image bounds
+        $cropX = max(0, min($imgW - $cropW, $cropX));
+        $cropY = max(0, min($imgH - $cropH, $cropY));
+
+        $cropped = imagecreatetruecolor($cropW, $cropH);
+        imagecopyresampled($cropped, $image, 0, 0, $cropX, $cropY, $cropW, $cropH, $cropW, $cropH);
+        imagedestroy($image);
+
+        return $cropped;
+    }
+
+    /**
+     * Fallback crop when no face is detected.
+     * Assumes standard portrait photo — crops center-top with card ratio.
+     */
+    private function fallbackCrop(\GdImage $image, int $w, int $h): \GdImage
     {
         $currentRatio = $w / $h;
 
-        if (abs($currentRatio - $targetRatio) < 0.01) {
-            return $image;
-        }
-
-        $faceCenter = $this->detectFaceCenter($image, $w, $h);
-
-        if ($currentRatio > $targetRatio) {
-            // Image is wider — crop sides, center on face X
-            $cropW = (int) ($h * $targetRatio);
+        if ($currentRatio > self::SLOT_RATIO) {
+            // Wider than needed — crop sides
+            $cropW = (int) ($h * self::SLOT_RATIO);
             $cropH = $h;
-            $centerX = $faceCenter ? $faceCenter['x'] : (int) ($w / 2);
-            $cropX = (int) max(0, min($w - $cropW, $centerX - $cropW / 2));
+            $cropX = (int) (($w - $cropW) / 2);
             $cropY = 0;
         } else {
-            // Image is taller — crop top/bottom
+            // Taller than needed — crop bottom mostly
             $cropW = $w;
-            $cropH = (int) ($w / $targetRatio);
-
-            if ($faceCenter) {
-                // Place face center at ~30% from top of crop
-                $cropY = (int) ($faceCenter['y'] - $cropH * 0.30);
-            } else {
-                // No face: start from near top (10% offset)
-                $cropY = (int) (($h - $cropH) * 0.10);
-            }
-
+            $cropH = (int) ($w / self::SLOT_RATIO);
             $cropX = 0;
-            $cropY = (int) max(0, min($h - $cropH, $cropY));
+            $cropY = (int) (($h - $cropH) * 0.08); // keep mostly top
         }
 
         $cropped = imagecreatetruecolor($cropW, $cropH);
@@ -109,19 +178,23 @@ class PhotoCropService
     }
 
     /**
-     * Detect approximate face center and size using skin-tone sampling.
-     * Scans the image in a grid and finds the densest skin-tone cluster.
+     * Detect face region using multi-pass skin-tone analysis.
      *
-     * @return array{x: int, y: int, h: int}|null
+     * Pass 1: Scan upper portion for skin-tone pixels on a grid
+     * Pass 2: Find the densest vertical column of skin (face is vertically compact)
+     * Pass 3: Extract bounding box of the face cluster, excluding outliers
+     *
+     * @return array{x: int, y: int, w: int, h: int}|null Bounding box or null
      */
-    private function detectFaceCenter(\GdImage $image, int $w, int $h): ?array
+    private function detectFaceRegion(\GdImage $image, int $w, int $h): ?array
     {
-        $stepX = max(1, (int) ($w / 50));
-        $stepY = max(1, (int) ($h / 50));
+        // Higher resolution scan for better accuracy
+        $stepX = max(1, (int) ($w / 80));
+        $stepY = max(1, (int) ($h / 80));
         $skinPoints = [];
 
-        // Focus on upper 75% of image (face is usually not at bottom)
-        $scanH = (int) ($h * 0.75);
+        // Only scan upper 60% — face is always in the top portion
+        $scanH = (int) ($h * 0.60);
 
         for ($y = 0; $y < $scanH; $y += $stepY) {
             for ($x = 0; $x < $w; $x += $stepX) {
@@ -136,79 +209,28 @@ class PhotoCropService
             }
         }
 
-        if (count($skinPoints) < 15) {
+        if (count($skinPoints) < 20) {
             return null;
         }
 
-        return $this->findDensestCluster($skinPoints, $w, $h);
-    }
-
-    /**
-     * Check if a pixel color matches skin tone range.
-     * Covers diverse skin tones using RGB rules.
-     */
-    private function isSkinTone(int $r, int $g, int $b): bool
-    {
-        // Rule 1: R > G > B pattern (common across skin tones)
-        if ($r <= $g || $g <= $b) {
-            return false;
-        }
-
-        // Rule 2: Minimum brightness (not too dark)
-        if ($r < 60) {
-            return false;
-        }
-
-        // Rule 3: Not too saturated (not vivid red/orange clothing)
-        $max = max($r, $g, $b);
-        $min = min($r, $g, $b);
-        $saturation = $max > 0 ? ($max - $min) / $max : 0;
-        if ($saturation > 0.68) {
-            return false;
-        }
-
-        // Rule 4: R-G difference within skin range
-        $rgDiff = $r - $g;
-        if ($rgDiff < 10 || $rgDiff > 120) {
-            return false;
-        }
-
-        // Rule 5: Luminance check
-        $luminance = 0.299 * $r + 0.587 * $g + 0.114 * $b;
-        if ($luminance < 50 || $luminance > 230) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Find the densest cluster of points using grid-based density estimation.
-     * Returns center position and estimated face height.
-     *
-     * @param  array<int, array{x: int, y: int}>  $points
-     * @return array{x: int, y: int, h: int}
-     */
-    private function findDensestCluster(array $points, int $imgW, int $imgH): array
-    {
-        $cellSize = max($imgW, $imgH) / 10;
+        // Find densest cluster using smaller grid cells for precision
+        $cellSize = max($w, $h) / 16;
         $cells = [];
 
-        foreach ($points as $p) {
+        foreach ($skinPoints as $p) {
             $cx = (int) ($p['x'] / $cellSize);
             $cy = (int) ($p['y'] / $cellSize);
             $key = "{$cx},{$cy}";
             if (! isset($cells[$key])) {
-                $cells[$key] = ['count' => 0, 'sumX' => 0, 'sumY' => 0, 'minY' => PHP_INT_MAX, 'maxY' => 0];
+                $cells[$key] = ['count' => 0, 'sumX' => 0, 'sumY' => 0, 'points' => []];
             }
             $cells[$key]['count']++;
             $cells[$key]['sumX'] += $p['x'];
             $cells[$key]['sumY'] += $p['y'];
-            $cells[$key]['minY'] = min($cells[$key]['minY'], $p['y']);
-            $cells[$key]['maxY'] = max($cells[$key]['maxY'], $p['y']);
+            $cells[$key]['points'][] = $p;
         }
 
-        // Find cell with most skin pixels and include adjacent cells
+        // Find the densest cell and merge with adjacent cells
         $maxKey = null;
         $maxCount = 0;
         foreach ($cells as $key => $cell) {
@@ -218,16 +240,99 @@ class PhotoCropService
             }
         }
 
-        if (! $maxKey || ! isset($cells[$maxKey])) {
-            return ['x' => (int) ($imgW / 2), 'y' => (int) ($imgH / 3), 'h' => (int) ($imgH * 0.2)];
+        if (! $maxKey) {
+            return null;
         }
 
-        $cell = $cells[$maxKey];
-        $centerX = (int) ($cell['sumX'] / $cell['count']);
-        $centerY = (int) ($cell['sumY'] / $cell['count']);
-        $faceH = max((int) ($cell['maxY'] - $cell['minY']), (int) ($imgH * 0.15));
+        // Merge the densest cell with its neighbors to get full face region
+        [$bestCx, $bestCy] = explode(',', $maxKey);
+        $bestCx = (int) $bestCx;
+        $bestCy = (int) $bestCy;
 
-        return ['x' => $centerX, 'y' => $centerY, 'h' => $faceH];
+        $facePoints = [];
+        for ($dx = -1; $dx <= 1; $dx++) {
+            for ($dy = -1; $dy <= 1; $dy++) {
+                $nk = ($bestCx + $dx).','.($bestCy + $dy);
+                if (isset($cells[$nk])) {
+                    $facePoints = array_merge($facePoints, $cells[$nk]['points']);
+                }
+            }
+        }
+
+        if (count($facePoints) < 10) {
+            return null;
+        }
+
+        // Calculate bounding box with percentile trimming (remove outliers)
+        $xs = array_column($facePoints, 'x');
+        $ys = array_column($facePoints, 'y');
+        sort($xs);
+        sort($ys);
+
+        $trim = (int) (count($xs) * 0.10); // trim 10% from each end
+        $trimmedXs = array_slice($xs, $trim, -$trim ?: null);
+        $trimmedYs = array_slice($ys, $trim, -$trim ?: null);
+
+        if (empty($trimmedXs) || empty($trimmedYs)) {
+            return null;
+        }
+
+        $minX = $trimmedXs[0];
+        $maxX = end($trimmedXs);
+        $minY = $trimmedYs[0];
+        $maxY = end($trimmedYs);
+
+        $faceW = max($maxX - $minX, (int) ($w * 0.08));
+        $faceH = max($maxY - $minY, (int) ($h * 0.08));
+
+        // Face should be roughly as wide as tall (or taller). If width >> height, it's probably not a face.
+        if ($faceW > $faceH * 2.5) {
+            return null;
+        }
+
+        return [
+            'x' => $minX,
+            'y' => $minY,
+            'w' => $faceW,
+            'h' => $faceH,
+        ];
+    }
+
+    /**
+     * Check if a pixel color matches skin tone range.
+     */
+    private function isSkinTone(int $r, int $g, int $b): bool
+    {
+        // R > G > B pattern
+        if ($r <= $g || $g <= $b) {
+            return false;
+        }
+
+        if ($r < 60) {
+            return false;
+        }
+
+        // Not too saturated (reject vivid clothing)
+        $max = max($r, $g, $b);
+        $min = min($r, $g, $b);
+        $saturation = $max > 0 ? ($max - $min) / $max : 0;
+        if ($saturation > 0.68) {
+            return false;
+        }
+
+        // R-G difference within skin range
+        $rgDiff = $r - $g;
+        if ($rgDiff < 10 || $rgDiff > 120) {
+            return false;
+        }
+
+        // Luminance check
+        $luminance = 0.299 * $r + 0.587 * $g + 0.114 * $b;
+        if ($luminance < 50 || $luminance > 230) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -242,13 +347,11 @@ class PhotoCropService
 
         $orientation = null;
 
-        // Try PHP exif extension first
         if (function_exists('exif_read_data')) {
             $exif = @exif_read_data($path);
             $orientation = $exif['Orientation'] ?? null;
         }
 
-        // Fallback: read EXIF orientation directly from JPEG binary
         if ($orientation === null) {
             $orientation = $this->readJpegOrientation($path);
         }
@@ -284,7 +387,6 @@ class PhotoCropService
             return null;
         }
 
-        // Must start with JPEG SOI marker
         if (ord($data[0]) !== 0xFF || ord($data[1]) !== 0xD8) {
             return null;
         }
@@ -299,11 +401,7 @@ class PhotoCropService
 
             $marker = ord($data[$offset + 1]);
 
-            // APP1 (EXIF) marker = 0xE1
             if ($marker === 0xE1) {
-                $segLen = (ord($data[$offset + 2]) << 8) | ord($data[$offset + 3]);
-
-                // Check "Exif\0\0" header
                 if (substr($data, $offset + 4, 6) !== "Exif\x00\x00") {
                     return null;
                 }
@@ -327,7 +425,6 @@ class PhotoCropService
                     $entryOffset = $firstIfd + 2 + ($i * 12);
                     $tag = $read16($entryOffset);
 
-                    // Orientation tag = 0x0112
                     if ($tag === 0x0112) {
                         return $read16($entryOffset + 8);
                     }
@@ -336,9 +433,8 @@ class PhotoCropService
                 return null;
             }
 
-            // Skip other segments
             if ($marker === 0xDA) {
-                return null; // SOS — no more metadata
+                return null;
             }
 
             $segLen = (ord($data[$offset + 2]) << 8) | ord($data[$offset + 3]);

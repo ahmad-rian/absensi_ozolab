@@ -222,9 +222,9 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         {/* Student info */}
                         <div className="mb-6 flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-800">
                             {result.student.photo_url ? (
-                                <img src={result.student.photo_url} alt={result.student.full_name} className="size-20 rounded-xl border-2 border-green-300 object-cover" />
+                                <img src={result.student.photo_url} alt={result.student.full_name} className="h-24 w-[72px] rounded-xl border-2 border-green-300 object-cover" />
                             ) : (
-                                <div className="flex size-20 items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 text-3xl dark:bg-green-900">👤</div>
+                                <div className="flex h-24 w-[72px] items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 text-3xl dark:bg-green-900">👤</div>
                             )}
                             <div>
                                 <h3 className="text-lg font-bold">{result.student.full_name}</h3>
