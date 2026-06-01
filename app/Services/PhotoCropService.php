@@ -21,6 +21,10 @@ class PhotoCropService
         }
 
         $image = $this->loadImage($inputPath, $info[2]);
+
+        // Step 0: Fix EXIF orientation (phone photos are often rotated)
+        $image = $this->fixExifOrientation($image, $inputPath, $info[2]);
+
         $origW = imagesx($image);
         $origH = imagesy($image);
 
@@ -224,6 +228,37 @@ class PhotoCropService
         $faceH = max((int) ($cell['maxY'] - $cell['minY']), (int) ($imgH * 0.15));
 
         return ['x' => $centerX, 'y' => $centerY, 'h' => $faceH];
+    }
+
+    /**
+     * Fix EXIF orientation — phone photos often have rotation metadata
+     * that GD doesn't apply automatically, causing "tilted" images.
+     */
+    private function fixExifOrientation(\GdImage $image, string $path, int $type): \GdImage
+    {
+        if ($type !== IMAGETYPE_JPEG || ! function_exists('exif_read_data')) {
+            return $image;
+        }
+
+        $exif = @exif_read_data($path);
+        if (! $exif || empty($exif['Orientation'])) {
+            return $image;
+        }
+
+        $rotated = match ((int) $exif['Orientation']) {
+            3 => imagerotate($image, 180, 0),
+            6 => imagerotate($image, -90, 0),
+            8 => imagerotate($image, 90, 0),
+            default => null,
+        };
+
+        if ($rotated) {
+            imagedestroy($image);
+
+            return $rotated;
+        }
+
+        return $image;
     }
 
     private function loadImage(string $path, int $type): \GdImage
