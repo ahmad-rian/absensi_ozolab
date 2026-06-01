@@ -35,7 +35,8 @@ class GoogleDriveService
             $client->setClientId($clientId);
             $client->setClientSecret($clientSecret);
             $client->addScope(GoogleDrive::DRIVE);
-            $client->refreshToken($refreshToken);
+            $client->setAccessType('offline');
+            $client->fetchAccessTokenWithRefreshToken($refreshToken);
 
             return $client;
         }
