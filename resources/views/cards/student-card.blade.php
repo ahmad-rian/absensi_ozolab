@@ -89,33 +89,33 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 
 .body-area {
     position: relative; z-index: 5;
-    padding: calc(1.5 * var(--mm)) calc(2.5 * var(--mm)) 0;
+    padding: calc(1.0 * var(--mm)) calc(2.5 * var(--mm)) 0;
 }
 .field-row {
     display: flex; font-family: 'Inter Tight', sans-serif;
-    font-size: calc(1.3 * var(--mm)); font-weight: 700;
-    line-height: 1.45; letter-spacing: 0.005em; color: #0c0c14;
+    font-size: calc(1.8 * var(--mm)); font-weight: 800;
+    line-height: 1.3; letter-spacing: -0.005em; color: #0c0c14;
 }
-.field-label { width: calc(21 * var(--mm)); flex-shrink: 0; }
-.field-sep { width: calc(2 * var(--mm)); text-align: center; flex-shrink: 0; }
+.field-label { width: calc(19 * var(--mm)); flex-shrink: 0; }
+.field-sep { width: calc(1.5 * var(--mm)); text-align: center; flex-shrink: 0; }
 .field-value {
-    flex: 1; font-weight: 600; font-family: 'Manrope', sans-serif;
-    font-size: calc(1.3 * var(--mm)); letter-spacing: -0.005em;
+    flex: 1; font-weight: 700; font-family: 'Manrope', sans-serif;
+    font-size: calc(1.7 * var(--mm)); letter-spacing: -0.005em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .validity-text {
-    position: absolute; left: 50%; top: calc(28 * var(--mm));
+    position: absolute; left: 50%; top: calc(27 * var(--mm));
     transform: translateX(-50%);
     font-family: 'Inter Tight', sans-serif; font-weight: 800;
-    font-size: calc(1.4 * var(--mm)); letter-spacing: 0.02em;
+    font-size: calc(1.5 * var(--mm)); letter-spacing: 0.02em;
     z-index: 6; color: #0c0c14;
 }
 
 .bottom-row {
     position: absolute;
     left: calc(2.5 * var(--mm)); right: calc(2 * var(--mm));
-    top: calc(31 * var(--mm)); bottom: calc(2 * var(--mm));
+    top: calc(30 * var(--mm)); bottom: calc(2 * var(--mm));
     z-index: 6; display: grid;
     grid-template-columns: auto auto 1fr;
     gap: calc(1.5 * var(--mm)); align-items: center;
