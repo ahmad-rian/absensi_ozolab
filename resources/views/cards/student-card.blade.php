@@ -94,6 +94,22 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     position: relative; z-index: 5;
     padding: calc(0.8 * var(--mm)) calc(2.5 * var(--mm)) 0;
 }
+@if($hasFrame)
+.body-area { padding-top: calc(13.5 * var(--mm)); }
+.field-row {
+    display: flex; font-family: 'Inter Tight', sans-serif;
+    font-size: calc(1.6 * var(--mm)); font-weight: 800;
+    line-height: 1.3; letter-spacing: -0.01em; color: #0c0c14;
+    padding-left: calc(20.5 * var(--mm));
+}
+.field-label { display: none; }
+.field-sep { display: none; }
+.field-value {
+    flex: 1; font-weight: 700; font-family: 'Inter Tight', sans-serif;
+    font-size: calc(1.6 * var(--mm)); letter-spacing: -0.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+@else
 .field-row {
     display: flex; font-family: 'Inter Tight', sans-serif;
     font-size: calc(1.6 * var(--mm)); font-weight: 800;
@@ -106,6 +122,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     font-size: calc(1.6 * var(--mm)); letter-spacing: -0.01em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+@endif
 
 .validity-text {
     position: absolute; left: 50%; top: calc(27 * var(--mm));
@@ -126,9 +143,13 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 .photo-slot {
     width: calc(16 * var(--mm)); height: calc(21 * var(--mm));
     border-radius: calc(0.4 * var(--mm)); overflow: hidden;
+    @if($hasFrame)
+    background: transparent; border: none;
+    @else
     background: rgba(255,255,255,0.35); border: 1.5px dashed rgba(0,0,0,0.35);
+    @endif
 }
-.photo-slot.filled { background: #0a0a0f; border: none; }
+.photo-slot.filled { background: transparent; border: none; }
 .photo-slot img {
     width: 100%; height: 100%; object-fit: cover;
     object-position: center center; display: block;
@@ -139,9 +160,14 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 }
 .qr-slot {
     width: calc(15 * var(--mm)); height: calc(15 * var(--mm));
-    background: #fff; border-radius: calc(0.4 * var(--mm));
-    padding: calc(0.35 * var(--mm)); box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    border-radius: calc(0.4 * var(--mm));
+    padding: calc(0.35 * var(--mm));
     align-self: center;
+    @if($hasFrame)
+    background: transparent; box-shadow: none;
+    @else
+    background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    @endif
 }
 .qr-slot svg { width:100%; height:100%; display:block; }
 .signature-area {
@@ -216,9 +242,11 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
         @if($showQr)
             <div class="qr-slot">{!! $qrSvg !!}</div>
         @endif
+        @unless($hasFrame)
         <div class="signature-area">
             <div class="signature-label">KEPALA SEKOLAH</div>
         </div>
+        @endunless
     </div>
 </body>
 </html>
