@@ -132,16 +132,31 @@ class PhotoCropService
             $cropH = (int) ($cropW / self::SLOT_RATIO);
         }
 
-        // Position: top of face bounding box at ~18% from crop top
-        // This guarantees headroom above the skull (faceY is top of detected skin,
-        // actual hair/head top is ~0.5*faceH higher)
-        $headTop = $faceY - (int) ($faceH * 0.5); // estimate actual head top
-        $cropY = $headTop - (int) ($cropH * 0.25); // 25% padding above head
+        // Position face center at 30% from top of crop — guarantees headroom
+        // even when face is near top of original photo
+        $desiredFaceCenterY = (int) ($cropH * 0.30);
+        $cropY = (int) ($faceCenterY - $desiredFaceCenterY);
         $cropX = (int) ($faceCenterX - $cropW / 2);
 
         // Clamp to image bounds
         $cropX = max(0, min($imgW - $cropW, $cropX));
         $cropY = max(0, min($imgH - $cropH, $cropY));
+
+        // If clamping pushed face too high, pad with background color on top
+        $actualFaceCenterInCrop = $faceCenterY - $cropY;
+        if ($actualFaceCenterInCrop < $desiredFaceCenterY * 0.8) {
+            // Need to add padding — sample background color from top-left corner
+            $bgColor = imagecolorat($image, 5, 5);
+            $padded = imagecreatetruecolor($cropW, $cropH);
+            imagefill($padded, 0, 0, $bgColor);
+
+            $shift = $desiredFaceCenterY - $actualFaceCenterInCrop;
+            $srcH = $cropH - $shift;
+            imagecopyresampled($padded, $image, 0, $shift, $cropX, $cropY, $cropW, $srcH, $cropW, $srcH);
+            imagedestroy($image);
+
+            return $padded;
+        }
 
         $cropped = imagecreatetruecolor($cropW, $cropH);
         imagecopyresampled($cropped, $image, 0, 0, $cropX, $cropY, $cropW, $cropH, $cropW, $cropH);
