@@ -58,6 +58,17 @@ const defaultConfig: Record<string, unknown> = {
     font_field: 15,
     // Frame
     frame_id: null,
+    // Frame positioning (mm) — only used when frame is set
+    frame_body_top: 14,
+    frame_body_left: 2.5,
+    frame_body_font: 1.6,
+    frame_photo_top: 30,
+    frame_photo_left: 2.5,
+    frame_photo_w: 16,
+    frame_photo_h: 21,
+    frame_qr_top: 33,
+    frame_qr_left: 22,
+    frame_qr_size: 15,
 };
 
 // 1mm = 5.607px at 480px card width (480 / 85.6)
@@ -264,6 +275,69 @@ export default function CardLayoutEditor({ layout, frames }: Props) {
                                 </Select>
                             </CardContent>
                         </Card>
+
+                        {config.frame_id && (
+                            <Card>
+                                <CardHeader><CardTitle className="text-base">Posisi Komponen (mm)</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div>
+                                        <Label className="text-xs font-semibold">Body Data</Label>
+                                        <div className="mt-1 grid grid-cols-3 gap-2">
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Atas</Label>
+                                                <Input type="number" step="0.5" value={Number(config.frame_body_top)} onChange={(e) => updateConfig('frame_body_top', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Kiri</Label>
+                                                <Input type="number" step="0.5" value={Number(config.frame_body_left)} onChange={(e) => updateConfig('frame_body_left', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Font</Label>
+                                                <Input type="number" step="0.1" value={Number(config.frame_body_font)} onChange={(e) => updateConfig('frame_body_font', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs font-semibold">Foto</Label>
+                                        <div className="mt-1 grid grid-cols-4 gap-2">
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Atas</Label>
+                                                <Input type="number" step="0.5" value={Number(config.frame_photo_top)} onChange={(e) => updateConfig('frame_photo_top', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Kiri</Label>
+                                                <Input type="number" step="0.5" value={Number(config.frame_photo_left)} onChange={(e) => updateConfig('frame_photo_left', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Lebar</Label>
+                                                <Input type="number" step="0.5" value={Number(config.frame_photo_w)} onChange={(e) => updateConfig('frame_photo_w', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Tinggi</Label>
+                                                <Input type="number" step="0.5" value={Number(config.frame_photo_h)} onChange={(e) => updateConfig('frame_photo_h', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs font-semibold">QR Code</Label>
+                                        <div className="mt-1 grid grid-cols-3 gap-2">
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Atas</Label>
+                                                <Input type="number" step="0.5" value={Number(config.frame_qr_top)} onChange={(e) => updateConfig('frame_qr_top', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Kiri</Label>
+                                                <Input type="number" step="0.5" value={Number(config.frame_qr_left)} onChange={(e) => updateConfig('frame_qr_left', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                            <div className="grid gap-1">
+                                                <Label className="text-muted-foreground text-[10px]">Ukuran</Label>
+                                                <Input type="number" step="0.5" value={Number(config.frame_qr_size)} onChange={(e) => updateConfig('frame_qr_size', Number(e.target.value))} className="h-8 text-xs" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
 
                         <Card>
                             <CardHeader><CardTitle className="text-base">Header Band</CardTitle></CardHeader>
