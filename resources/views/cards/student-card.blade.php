@@ -20,6 +20,18 @@
     $showValidity = !$hasFrame && ($c['show_validity'] ?? $isOsis);
     $validityText = $c['validity_text'] ?? 'BERLAKU S/D TAMAT BELAJAR';
     $showQr       = $c['show_qr'] ?? true;
+
+    // Frame positioning (mm) — configurable per layout
+    $bodyTop   = $c['frame_body_top']   ?? 14;
+    $bodyLeft  = $c['frame_body_left']  ?? 2.5;
+    $bodyFont  = $c['frame_body_font']  ?? 1.6;
+    $photoTop  = $c['frame_photo_top']  ?? 30;
+    $photoLeft = $c['frame_photo_left'] ?? 2.5;
+    $photoW    = $c['frame_photo_w']    ?? 16;
+    $photoH    = $c['frame_photo_h']    ?? 21;
+    $qrTop     = $c['frame_qr_top']     ?? 33;
+    $qrLeft    = $c['frame_qr_left']    ?? 22;
+    $qrSize    = $c['frame_qr_size']    ?? 15;
 @endphp
 
 :root { --mm: {{ $exportMm ?? '9.5' }}px; }
@@ -90,13 +102,58 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 }
 .osis-emblem svg { width:100%; height:100%; }
 
+@if($hasFrame)
+/* === FRAME MODE: absolute positioning === */
+.body-area {
+    position: absolute; z-index: 5;
+    top: calc({{ $bodyTop }} * var(--mm));
+    left: calc({{ $bodyLeft }} * var(--mm));
+    right: calc(2 * var(--mm));
+}
+.field-row {
+    display: flex; font-family: 'Inter Tight', sans-serif;
+    font-size: calc({{ $bodyFont }} * var(--mm)); font-weight: 800;
+    line-height: 1.3; letter-spacing: -0.01em; color: #0c0c14;
+}
+.field-label { width: calc(18 * var(--mm)); flex-shrink: 0; white-space: nowrap; }
+.field-sep { width: calc(1.2 * var(--mm)); text-align: center; flex-shrink: 0; }
+.field-value {
+    flex: 1; font-weight: 700; font-family: 'Inter Tight', sans-serif;
+    font-size: calc({{ $bodyFont }} * var(--mm)); letter-spacing: -0.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.photo-slot {
+    position: absolute; z-index: 6;
+    top: calc({{ $photoTop }} * var(--mm));
+    left: calc({{ $photoLeft }} * var(--mm));
+    width: calc({{ $photoW }} * var(--mm));
+    height: calc({{ $photoH }} * var(--mm));
+    border-radius: calc(0.4 * var(--mm)); overflow: hidden;
+    background: transparent; border: none;
+}
+.photo-slot img { width:100%; height:100%; object-fit:cover; display:block; }
+.photo-placeholder {
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    font-size: calc(3 * var(--mm)); color: rgba(0,0,0,0.3);
+}
+.qr-slot {
+    position: absolute; z-index: 6;
+    top: calc({{ $qrTop }} * var(--mm));
+    left: calc({{ $qrLeft }} * var(--mm));
+    width: calc({{ $qrSize }} * var(--mm));
+    height: calc({{ $qrSize }} * var(--mm));
+    border-radius: calc(0.4 * var(--mm));
+    padding: calc(0.3 * var(--mm));
+    background: transparent;
+}
+.qr-slot svg { width:100%; height:100%; display:block; }
+.bottom-row, .validity-text, .signature-area { display: none; }
+@else
+/* === DEFAULT MODE: flow layout === */
 .body-area {
     position: relative; z-index: 5;
     padding: calc(0.8 * var(--mm)) calc(2.5 * var(--mm)) 0;
 }
-@if($hasFrame)
-.body-area { padding-top: calc(13.5 * var(--mm)); }
-@endif
 .field-row {
     display: flex; font-family: 'Inter Tight', sans-serif;
     font-size: calc(1.6 * var(--mm)); font-weight: 800;
@@ -109,7 +166,6 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     font-size: calc(1.6 * var(--mm)); letter-spacing: -0.01em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
 .validity-text {
     position: absolute; left: 50%; top: calc(27 * var(--mm));
     transform: translateX(-50%);
@@ -117,7 +173,6 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     font-size: calc(1.5 * var(--mm)); letter-spacing: 0.02em;
     z-index: 6; color: #0c0c14;
 }
-
 .bottom-row {
     position: absolute;
     left: calc(2.5 * var(--mm)); right: calc(2 * var(--mm));
@@ -129,17 +184,10 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 .photo-slot {
     width: calc(16 * var(--mm)); height: calc(21 * var(--mm));
     border-radius: calc(0.4 * var(--mm)); overflow: hidden;
-    @if($hasFrame)
-    background: transparent; border: none;
-    @else
     background: rgba(255,255,255,0.35); border: 1.5px dashed rgba(0,0,0,0.35);
-    @endif
 }
 .photo-slot.filled { background: transparent; border: none; }
-.photo-slot img {
-    width: 100%; height: 100%; object-fit: cover;
-    object-position: center center; display: block;
-}
+.photo-slot img { width:100%; height:100%; object-fit:cover; object-position:center; display:block; }
 .photo-placeholder {
     width:100%; height:100%; display:flex; align-items:center; justify-content:center;
     font-size: calc(3 * var(--mm)); color: rgba(0,0,0,0.3);
@@ -149,11 +197,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     border-radius: calc(0.4 * var(--mm));
     padding: calc(0.35 * var(--mm));
     align-self: center;
-    @if($hasFrame)
-    background: transparent; box-shadow: none;
-    @else
     background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.08);
-    @endif
 }
 .qr-slot svg { width:100%; height:100%; display:block; }
 .signature-area {
@@ -167,6 +211,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     font-size: calc(1.15 * var(--mm)); font-weight: 800;
     letter-spacing: 0.01em; color: rgba(0,0,0,0.5);
 }
+@endif
 </style>
 </head>
 <body>
@@ -213,11 +258,8 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
         <div class="field-row"><span class="field-label">NO.INDUK</span><span class="field-sep">:</span><span class="field-value">{{ $student->nis ?? '—' }}</span></div>
     </div>
 
-    @if($showValidity)
-        <div class="validity-text">{{ $validityText }}</div>
-    @endif
-
-    <div class="bottom-row">
+    @if($hasFrame)
+        {{-- Frame mode: photo & QR as standalone absolute elements --}}
         <div class="photo-slot {{ $photoUrl ? 'filled' : '' }}">
             @if($photoUrl)
                 <img src="{{ $photoUrl }}" alt="{{ $student->full_name }}">
@@ -228,9 +270,26 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
         @if($showQr)
             <div class="qr-slot">{!! $qrSvg !!}</div>
         @endif
-        <div class="signature-area">
-            <div class="signature-label">KEPALA SEKOLAH</div>
+    @else
+        @if($showValidity)
+            <div class="validity-text">{{ $validityText }}</div>
+        @endif
+
+        <div class="bottom-row">
+            <div class="photo-slot {{ $photoUrl ? 'filled' : '' }}">
+                @if($photoUrl)
+                    <img src="{{ $photoUrl }}" alt="{{ $student->full_name }}">
+                @else
+                    <div class="photo-placeholder">👤</div>
+                @endif
+            </div>
+            @if($showQr)
+                <div class="qr-slot">{!! $qrSvg !!}</div>
+            @endif
+            <div class="signature-area">
+                <div class="signature-label">KEPALA SEKOLAH</div>
+            </div>
         </div>
-    </div>
+    @endif
 </body>
 </html>
