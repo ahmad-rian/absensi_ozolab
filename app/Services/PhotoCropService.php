@@ -116,9 +116,9 @@ class PhotoCropService
         $faceCenterX = $faceX + $faceW / 2;
         $faceCenterY = $faceY + $faceH / 2;
 
-        // School ID photo: headroom + face + neck + tie + upper chest
-        // Face occupies ~28% of crop height — tighter framing, more zoom
-        $cropH = (int) ($faceH / 0.28); // face = 28% of crop height
+        // School ID photo: headroom + face + neck + tie area
+        // Face occupies ~35% of crop height — tight ID card framing
+        $cropH = (int) ($faceH / 0.35); // face = 35% of crop height
         $cropW = (int) ($cropH * self::SLOT_RATIO);
 
         // Ensure crop doesn't exceed image
@@ -136,7 +136,7 @@ class PhotoCropService
         // This guarantees headroom above the skull (faceY is top of detected skin,
         // actual hair/head top is ~0.5*faceH higher)
         $headTop = $faceY - (int) ($faceH * 0.5); // estimate actual head top
-        $cropY = $headTop - (int) ($cropH * 0.12); // 12% padding above head
+        $cropY = $headTop - (int) ($cropH * 0.15); // 15% padding above head
         $cropX = (int) ($faceCenterX - $cropW / 2);
 
         // Clamp to image bounds
