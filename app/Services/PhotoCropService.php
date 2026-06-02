@@ -136,7 +136,7 @@ class PhotoCropService
         // This guarantees headroom above the skull (faceY is top of detected skin,
         // actual hair/head top is ~0.5*faceH higher)
         $headTop = $faceY - (int) ($faceH * 0.5); // estimate actual head top
-        $cropY = $headTop - (int) ($cropH * 0.10); // 10% padding above head
+        $cropY = $headTop - (int) ($cropH * 0.20); // 20% padding above head
         $cropX = (int) ($faceCenterX - $cropW / 2);
 
         // Clamp to image bounds
