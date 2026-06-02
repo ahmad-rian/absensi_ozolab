@@ -132,31 +132,32 @@ class PhotoCropService
             $cropH = (int) ($cropW / self::SLOT_RATIO);
         }
 
-        // Position face center at 30% from top of crop — guarantees headroom
-        // even when face is near top of original photo
-        $desiredFaceCenterY = (int) ($cropH * 0.30);
-        $cropY = (int) ($faceCenterY - $desiredFaceCenterY);
+        // Position face center at 35% from top of crop — guarantees headroom
+        $desiredFaceCenterY = (int) ($cropH * 0.35);
+        $rawCropY = (int) ($faceCenterY - $desiredFaceCenterY);
         $cropX = (int) ($faceCenterX - $cropW / 2);
 
-        // Clamp to image bounds
+        // Clamp X to image bounds
         $cropX = max(0, min($imgW - $cropW, $cropX));
-        $cropY = max(0, min($imgH - $cropH, $cropY));
 
-        // If clamping pushed face too high, pad with background color on top
-        $actualFaceCenterInCrop = $faceCenterY - $cropY;
-        if ($actualFaceCenterInCrop < $desiredFaceCenterY * 0.8) {
-            // Need to add padding — sample background color from top-left corner
+        if ($rawCropY < 0) {
+            // Not enough space above in original photo — pad with background color
+            $shift = abs($rawCropY); // how many pixels to pad on top
             $bgColor = imagecolorat($image, 5, 5);
             $padded = imagecreatetruecolor($cropW, $cropH);
             imagefill($padded, 0, 0, $bgColor);
 
-            $shift = $desiredFaceCenterY - $actualFaceCenterInCrop;
-            $srcH = $cropH - $shift;
-            imagecopyresampled($padded, $image, 0, $shift, $cropX, $cropY, $cropW, $srcH, $cropW, $srcH);
+            // Copy from top of image (y=0), place it $shift pixels down in output
+            $srcH = min($cropH - $shift, $imgH);
+            imagecopyresampled($padded, $image, 0, $shift, $cropX, 0, $cropW, $srcH, $cropW, $srcH);
             imagedestroy($image);
 
             return $padded;
         }
+
+        // Normal case — enough space above
+        $cropY = min($rawCropY, $imgH - $cropH);
+        $cropY = max(0, $cropY);
 
         $cropped = imagecreatetruecolor($cropW, $cropH);
         imagecopyresampled($cropped, $image, 0, 0, $cropX, $cropY, $cropW, $cropH, $cropW, $cropH);
