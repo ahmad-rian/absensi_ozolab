@@ -96,20 +96,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 }
 @if($hasFrame)
 .body-area { padding-top: calc(13.5 * var(--mm)); }
-.field-row {
-    display: flex; font-family: 'Inter Tight', sans-serif;
-    font-size: calc(1.6 * var(--mm)); font-weight: 800;
-    line-height: 1.3; letter-spacing: -0.01em; color: #0c0c14;
-    padding-left: calc(20.5 * var(--mm));
-}
-.field-label { display: none; }
-.field-sep { display: none; }
-.field-value {
-    flex: 1; font-weight: 700; font-family: 'Inter Tight', sans-serif;
-    font-size: calc(1.6 * var(--mm)); letter-spacing: -0.01em;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-@else
+@endif
 .field-row {
     display: flex; font-family: 'Inter Tight', sans-serif;
     font-size: calc(1.6 * var(--mm)); font-weight: 800;
@@ -122,7 +109,6 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     font-size: calc(1.6 * var(--mm)); letter-spacing: -0.01em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-@endif
 
 .validity-text {
     position: absolute; left: 50%; top: calc(27 * var(--mm));
@@ -242,11 +228,9 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
         @if($showQr)
             <div class="qr-slot">{!! $qrSvg !!}</div>
         @endif
-        @unless($hasFrame)
         <div class="signature-area">
             <div class="signature-label">KEPALA SEKOLAH</div>
         </div>
-        @endunless
     </div>
 </body>
 </html>
