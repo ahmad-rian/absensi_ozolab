@@ -74,8 +74,74 @@ const defaultConfig: Record<string, unknown> = {
 // 1mm = 5.607px at 480px card width (480 / 85.6)
 const S = 5.607;
 
-function CardPreview({ config, type }: { config: Record<string, unknown>; type: string }) {
+function CardPreview({ config, type, frames }: { config: Record<string, unknown>; type: string; frames: FrameItem[] }) {
     const isOsis = type === 'osis';
+    const selectedFrame = frames.find((f) => f.id === config.frame_id);
+    const hasFrame = !!selectedFrame;
+
+    // Frame positioning values (mm → px)
+    const bodyTop = Number(config.frame_body_top ?? 14) * S;
+    const bodyLeft = Number(config.frame_body_left ?? 2.5) * S;
+    const bodyFont = Number(config.frame_body_font ?? 1.6) * S;
+    const photoTop = Number(config.frame_photo_top ?? 30) * S;
+    const photoLeft = Number(config.frame_photo_left ?? 2.5) * S;
+    const photoW = Number(config.frame_photo_w ?? 16) * S;
+    const photoH = Number(config.frame_photo_h ?? 21) * S;
+    const qrTop = Number(config.frame_qr_top ?? 33) * S;
+    const qrLeft = Number(config.frame_qr_left ?? 22) * S;
+    const qrSz = Number(config.frame_qr_size ?? 15) * S;
+
+    if (hasFrame) {
+        return (
+            <div
+                className="relative overflow-hidden rounded-lg shadow-lg"
+                style={{
+                    width: 480,
+                    height: Math.round(54 * S),
+                    background: `url(${selectedFrame.image_url}) center/cover no-repeat`,
+                }}
+            >
+                {/* Body fields — absolute positioned */}
+                <div className="absolute z-10" style={{ top: bodyTop, left: bodyLeft, right: Math.round(2 * S) }}>
+                    {['NAMA', 'ALAMAT', 'TEMPAT TGL.LAHIR', 'AGAMA', 'NO.INDUK'].map((label) => (
+                        <div key={label} className="flex text-zinc-900" style={{
+                            fontFamily: "'Inter Tight', sans-serif", fontSize: bodyFont,
+                            fontWeight: 700, lineHeight: '1.3',
+                        }}>
+                            <span className="shrink-0" style={{ width: Math.round(18 * S) }}>{label}</span>
+                            <span className="shrink-0 text-center" style={{ width: Math.round(1.2 * S) }}>:</span>
+                            <span className="font-semibold">XXXXXXX</span>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Photo — absolute positioned */}
+                <div className="absolute z-10 rounded bg-zinc-400/50" style={{
+                    top: photoTop, left: photoLeft,
+                    width: photoW, height: photoH,
+                }}>
+                    <div className="flex size-full items-center justify-center text-white/70" style={{ fontSize: photoW * 0.4 }}>
+                        👤
+                    </div>
+                </div>
+
+                {/* QR — absolute positioned */}
+                {config.show_qr && (
+                    <div className="absolute z-10 rounded p-0.5" style={{
+                        top: qrTop, left: qrLeft,
+                        width: qrSz, height: qrSz,
+                    }}>
+                        <div className="grid size-full grid-cols-5 grid-rows-5 gap-px">
+                            {Array.from({ length: 25 }).map((_, i) => (
+                                <div key={i} className={i % 3 === 0 ? 'bg-zinc-800' : 'bg-zinc-200'} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div
             className="relative overflow-hidden rounded-lg shadow-lg"
@@ -123,7 +189,7 @@ function CardPreview({ config, type }: { config: Record<string, unknown>; type: 
                 ))}
             </div>
 
-            {/* Body fields — 1.4mm font */}
+            {/* Body fields */}
             <div className="relative z-10" style={{ padding: `${Math.round(1.5 * S)}px ${Math.round(2.5 * S)}px 0` }}>
                 {['NAMA', 'ALAMAT', 'TEMPAT TGL.LAHIR', 'AGAMA', 'NO.INDUK'].map((label) => (
                     <div key={label} className="flex text-zinc-900" style={{
@@ -227,7 +293,7 @@ export default function CardLayoutEditor({ layout, frames }: Props) {
                         <CardContent>
                             <div className="flex justify-center">
                                 {/* ATM Card Preview — 1mm ≈ 5.607px at 480px width */}
-                                <CardPreview config={config} type={form.data.type} />
+                                <CardPreview config={config} type={form.data.type} frames={frames} />
                             </div>
                             <p className="text-muted-foreground mt-3 text-center text-xs">85.6 × 54 mm · ATM Card Size · 400 DPI Export</p>
                         </CardContent>
