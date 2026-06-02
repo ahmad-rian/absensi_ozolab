@@ -132,8 +132,8 @@ class PhotoCropService
             $cropH = (int) ($cropW / self::SLOT_RATIO);
         }
 
-        // Position face center at 35% from top of crop — guarantees headroom
-        $desiredFaceCenterY = (int) ($cropH * 0.35);
+        // Position face center at 42% from top of crop — generous headroom
+        $desiredFaceCenterY = (int) ($cropH * 0.42);
         $rawCropY = (int) ($faceCenterY - $desiredFaceCenterY);
         $cropX = (int) ($faceCenterX - $cropW / 2);
 
