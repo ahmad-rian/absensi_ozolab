@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\School;
+use App\Models\SchoolCardLayout;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -62,7 +63,9 @@ class SchoolController extends Controller
             $validated['slug'] = $baseSlug.'-'.$i++;
         }
 
-        School::create($validated);
+        $school = School::create($validated);
+
+        $this->createDefaultCardLayouts($school);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Sekolah berhasil ditambahkan.']);
 
@@ -106,5 +109,67 @@ class SchoolController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Sekolah berhasil dihapus.']);
 
         return to_route('admin.schools.index');
+    }
+
+    /**
+     * Create default card layouts for a newly created school.
+     */
+    private function createDefaultCardLayouts(School $school): void
+    {
+        SchoolCardLayout::create([
+            'school_id' => $school->id,
+            'name' => 'Kartu OSIS Default',
+            'type' => 'osis',
+            'is_default' => true,
+            'is_active' => true,
+            'layout_config' => [
+                'card_width' => 813,
+                'card_height' => 513,
+                'header_gradient_start' => '#5dc4f5',
+                'header_gradient_end' => '#3aa8df',
+                'header_text_color' => '#06243a',
+                'watermark_text' => 'ORGANISASI SISWA INTRA SEKOLAH',
+                'show_emblem' => true,
+                'show_validity' => true,
+                'validity_text' => 'BERLAKU S/D TAMAT BELAJAR',
+                'photo_width_mm' => 16,
+                'photo_height_mm' => 21,
+                'qr_size_mm' => 15,
+                'show_qr' => true,
+                'show_signature' => true,
+                'font_family' => 'Manrope',
+                'font_school' => 16,
+                'font_field' => 15,
+                'frame_id' => null,
+            ],
+        ]);
+
+        SchoolCardLayout::create([
+            'school_id' => $school->id,
+            'name' => 'Kartu Perpustakaan Default',
+            'type' => 'perpustakaan',
+            'is_default' => true,
+            'is_active' => true,
+            'layout_config' => [
+                'card_width' => 813,
+                'card_height' => 513,
+                'header_gradient_start' => '#c9986a',
+                'header_gradient_end' => '#b07b4a',
+                'header_text_color' => '#1a1208',
+                'watermark_text' => 'PERPUSTAKAAN SEKOLAH',
+                'show_emblem' => false,
+                'show_validity' => false,
+                'validity_text' => 'BERLAKU S/D TAMAT BELAJAR',
+                'photo_width_mm' => 16,
+                'photo_height_mm' => 21,
+                'qr_size_mm' => 15,
+                'show_qr' => true,
+                'show_signature' => true,
+                'font_family' => 'Manrope',
+                'font_school' => 16,
+                'font_field' => 15,
+                'frame_id' => null,
+            ],
+        ]);
     }
 }

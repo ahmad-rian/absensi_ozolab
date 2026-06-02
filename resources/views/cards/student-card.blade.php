@@ -9,14 +9,15 @@
 @php
     $isOsis = ($layout->type ?? 'osis') === 'osis';
     $c = $config;
+    $hasFrame = !empty($frameUrl);
 
     $hGradStart = $c['header_gradient_start'] ?? ($isOsis ? '#5dc4f5' : '#c9986a');
     $hGradEnd   = $c['header_gradient_end']   ?? ($isOsis ? '#3aa8df' : '#b07b4a');
     $hTextColor = $c['header_text_color']      ?? ($isOsis ? '#06243a' : '#1a1208');
 
     $wmText       = $c['watermark_text'] ?? ($isOsis ? 'ORGANISASI SISWA INTRA SEKOLAH' : 'PERPUSTAKAAN WIDYA SASTRA');
-    $showEmblem   = $c['show_emblem'] ?? $isOsis;
-    $showValidity = $c['show_validity'] ?? $isOsis;
+    $showEmblem   = !$hasFrame && ($c['show_emblem'] ?? $isOsis);
+    $showValidity = !$hasFrame && ($c['show_validity'] ?? $isOsis);
     $validityText = $c['validity_text'] ?? 'BERLAKU S/D TAMAT BELAJAR';
     $showQr       = $c['show_qr'] ?? true;
 @endphp
@@ -29,16 +30,18 @@ body {
     overflow: hidden;
     font-family: 'Manrope', sans-serif;
     position: relative;
-    @if($isOsis)
+    @if($hasFrame)
+    background: url('{{ $frameUrl }}') center/cover no-repeat;
+    @elseif($isOsis)
     background: radial-gradient(ellipse at 70% 30%, rgba(255,255,255,0.5) 0%, transparent 60%), linear-gradient(135deg, #e0f3ff 0%, #c7e9fb 50%, #b8e1f7 100%);
     @else
     background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 50%), linear-gradient(135deg, #d6b88a 0%, #e8d2a8 40%, #d4b380 100%);
     @endif
 }
-@unless($isOsis)
+@if(!$hasFrame && !$isOsis)
 body::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse at 10% 80%, rgba(139,90,43,0.25) 0%, transparent 40%), radial-gradient(ellipse at 90% 60%, rgba(139,90,43,0.18) 0%, transparent 50%); z-index:1; }
 body::after { content:''; position:absolute; inset:0; background-image: repeating-linear-gradient(95deg, transparent 0, transparent 7px, rgba(139,90,43,0.06) 7px, rgba(139,90,43,0.06) 8px); z-index:1; }
-@endunless
+@endif
 
 /* === EXACT match Kartu Studio HTML === */
 .header-band {
@@ -155,6 +158,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
 </style>
 </head>
 <body>
+    @unless($hasFrame)
     <div class="header-band">
         <div class="logo-circle">
             @if($logoUrl)<img src="{{ $logoUrl }}" alt="Logo">@endif
@@ -177,6 +181,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
             <div class="watermark-row">@for($j = 0; $j < 4; $j++)<span>{{ $wmText }}</span>@endfor</div>
         @endfor
     </div>
+    @endunless
 
     @if($showEmblem)
         <div class="osis-emblem">
