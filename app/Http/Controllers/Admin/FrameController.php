@@ -54,8 +54,10 @@ class FrameController extends Controller
             2000,
         );
 
-        // Get image dimensions
+        // Auto-crop white borders from frame image
         $fullPath = Storage::disk('public')->path($path);
+        $this->autoCropWhiteBorders($fullPath);
+
         [$width, $height] = getimagesize($fullPath) ?: [0, 0];
 
         SchoolFrame::create([
@@ -87,6 +89,128 @@ class FrameController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Frame berhasil diupdate.']);
 
         return to_route('admin.frames');
+    }
+
+    /**
+     * Auto-crop white/near-white borders from a frame image.
+     */
+    private function autoCropWhiteBorders(string $path): void
+    {
+        $info = getimagesize($path);
+        if (! $info) {
+            return;
+        }
+
+        $image = match ($info[2]) {
+            IMAGETYPE_WEBP => @imagecreatefromwebp($path),
+            IMAGETYPE_PNG => @imagecreatefrompng($path),
+            IMAGETYPE_JPEG => @imagecreatefromjpeg($path),
+            default => null,
+        };
+
+        if (! $image) {
+            return;
+        }
+
+        $w = imagesx($image);
+        $h = imagesy($image);
+        $threshold = 245; // pixels with R,G,B all above this are "white"
+
+        $isWhite = function (int $x, int $y) use ($image, $threshold): bool {
+            $rgb = imagecolorat($image, $x, $y);
+            $r = ($rgb >> 16) & 0xFF;
+            $g = ($rgb >> 8) & 0xFF;
+            $b = $rgb & 0xFF;
+
+            return $r >= $threshold && $g >= $threshold && $b >= $threshold;
+        };
+
+        // Scan from each edge to find first non-white row/column
+        $step = max(1, (int) ($w / 100)); // sample every few pixels for speed
+        $top = 0;
+        $bottom = $h - 1;
+        $left = 0;
+        $right = $w - 1;
+
+        // Top edge
+        for ($y = 0; $y < $h / 2; $y++) {
+            $allWhite = true;
+            for ($x = 0; $x < $w; $x += $step) {
+                if (! $isWhite($x, $y)) {
+                    $allWhite = false;
+                    break;
+                }
+            }
+            if (! $allWhite) {
+                $top = $y;
+                break;
+            }
+        }
+
+        // Bottom edge
+        for ($y = $h - 1; $y > $h / 2; $y--) {
+            $allWhite = true;
+            for ($x = 0; $x < $w; $x += $step) {
+                if (! $isWhite($x, $y)) {
+                    $allWhite = false;
+                    break;
+                }
+            }
+            if (! $allWhite) {
+                $bottom = $y;
+                break;
+            }
+        }
+
+        // Left edge
+        for ($x = 0; $x < $w / 2; $x++) {
+            $allWhite = true;
+            for ($y = $top; $y <= $bottom; $y += $step) {
+                if (! $isWhite($x, $y)) {
+                    $allWhite = false;
+                    break;
+                }
+            }
+            if (! $allWhite) {
+                $left = $x;
+                break;
+            }
+        }
+
+        // Right edge
+        for ($x = $w - 1; $x > $w / 2; $x--) {
+            $allWhite = true;
+            for ($y = $top; $y <= $bottom; $y += $step) {
+                if (! $isWhite($x, $y)) {
+                    $allWhite = false;
+                    break;
+                }
+            }
+            if (! $allWhite) {
+                $right = $x;
+                break;
+            }
+        }
+
+        $cropW = $right - $left + 1;
+        $cropH = $bottom - $top + 1;
+
+        // Only crop if we actually trimmed something significant (>2% per side)
+        $minTrim = (int) ($w * 0.02);
+        if ($top < $minTrim && $left < $minTrim && ($w - $right) < $minTrim && ($h - $bottom) < $minTrim) {
+            imagedestroy($image);
+
+            return;
+        }
+
+        $cropped = imagecreatetruecolor($cropW, $cropH);
+        imagealphablending($cropped, false);
+        imagesavealpha($cropped, true);
+        imagecopyresampled($cropped, $image, 0, 0, $left, $top, $cropW, $cropH, $cropW, $cropH);
+        imagedestroy($image);
+
+        imagewebp($cropped, $path, 90);
+        imagedestroy($cropped);
     }
 
     public function destroy(SchoolFrame $frame): RedirectResponse

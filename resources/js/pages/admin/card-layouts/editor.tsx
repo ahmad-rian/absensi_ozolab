@@ -59,8 +59,8 @@ const defaultConfig: Record<string, unknown> = {
     // Frame
     frame_id: null,
     // Frame positioning (mm) — only used when frame is set
-    frame_body_top: 14,
-    frame_body_left: 2.5,
+    frame_body_top: 16,
+    frame_body_left: 3,
     frame_body_font: 1.6,
     frame_photo_top: 30,
     frame_photo_left: 2.5,

@@ -22,8 +22,8 @@
     $showQr       = $c['show_qr'] ?? true;
 
     // Frame positioning (mm) — configurable per layout
-    $bodyTop   = $c['frame_body_top']   ?? 14;
-    $bodyLeft  = $c['frame_body_left']  ?? 2.5;
+    $bodyTop   = $c['frame_body_top']   ?? 16;
+    $bodyLeft  = $c['frame_body_left']  ?? 3;
     $bodyFont  = $c['frame_body_font']  ?? 1.6;
     $photoTop  = $c['frame_photo_top']  ?? 30;
     $photoLeft = $c['frame_photo_left'] ?? 2.5;
