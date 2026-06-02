@@ -253,7 +253,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     <div class="body-area">
         <div class="field-row"><span class="field-label">NAMA</span><span class="field-sep">:</span><span class="field-value">{{ strtoupper($student->full_name) }}</span></div>
         <div class="field-row"><span class="field-label">ALAMAT</span><span class="field-sep">:</span><span class="field-value">{{ $student->address ?? '—' }}</span></div>
-        <div class="field-row"><span class="field-label">TEMPAT TGL.LAHIR</span><span class="field-sep">:</span><span class="field-value">{{ ($student->birth_place ?? '') }}{{ $student->birth_date ? ', ' . $student->birth_date->translatedFormat('d F Y') : '' }}</span></div>
+        <div class="field-row"><span class="field-label">TTL</span><span class="field-sep">:</span><span class="field-value">{{ ($student->birth_place ?? '') }}{{ $student->birth_date ? ', ' . $student->birth_date->translatedFormat('d F Y') : '' }}</span></div>
         <div class="field-row"><span class="field-label">AGAMA</span><span class="field-sep">:</span><span class="field-value">{{ $student->religion?->label() ?? '—' }}</span></div>
         <div class="field-row"><span class="field-label">NO.INDUK</span><span class="field-sep">:</span><span class="field-value">{{ $student->nis ?? '—' }}</span></div>
     </div>
