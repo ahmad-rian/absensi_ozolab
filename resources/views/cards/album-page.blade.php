@@ -100,8 +100,8 @@
     <div class="grid">
         @foreach($students as $student)
             <div class="student-cell">
-                @if($student->photo_path)
-                    <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo_path) }}"
+                @if(isset($photoMap[$student->id]))
+                    <img src="{{ $photoMap[$student->id] }}"
                          alt="{{ $student->full_name }}"
                          class="student-photo">
                 @else

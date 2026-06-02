@@ -26,6 +26,14 @@ class AlbumGeneratorService
         $pages = [];
 
         foreach ($chunks as $pageNum => $pageStudents) {
+            // Convert student photos to base64 for Browsershot rendering
+            $photoMap = [];
+            foreach ($pageStudents as $student) {
+                if ($student->photo_path) {
+                    $photoMap[$student->id] = $this->toBase64DataUri($student->photo_path);
+                }
+            }
+
             $html = View::make('cards.album-page', [
                 'students' => $pageStudents,
                 'school' => $school,
@@ -33,6 +41,7 @@ class AlbumGeneratorService
                 'config' => $config,
                 'pageNumber' => $pageNum + 1,
                 'totalPages' => $chunks->count(),
+                'photoMap' => $photoMap,
             ])->render();
 
             $filename = sprintf(
@@ -59,6 +68,23 @@ class AlbumGeneratorService
         return $pages;
     }
 
+    private function toBase64DataUri(?string $storagePath): ?string
+    {
+        if (! $storagePath) {
+            return null;
+        }
+
+        $fullPath = Storage::disk('public')->path($storagePath);
+        if (! file_exists($fullPath)) {
+            return null;
+        }
+
+        $mime = mime_content_type($fullPath) ?: 'image/png';
+        $data = base64_encode(file_get_contents($fullPath));
+
+        return "data:{$mime};base64,{$data}";
+    }
+
     private function renderPage(string $html, string $outputPath, SchoolAlbumLayout $layout): void
     {
         $paperSizes = [
@@ -70,11 +96,17 @@ class AlbumGeneratorService
         $size = $paperSizes[$layout->paper_size][$layout->orientation]
             ?? $paperSizes['A4']['portrait'];
 
-        Browsershot::html($html)
+        $browsershot = Browsershot::html($html)
             ->windowSize($size[0], $size[1])
             ->deviceScaleFactor(2)
             ->waitUntilNetworkIdle()
-            ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox'])
-            ->save($outputPath);
+            ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
+
+        $chromePath = config('services.chrome.path');
+        if ($chromePath && file_exists($chromePath)) {
+            $browsershot->setChromePath($chromePath);
+        }
+
+        $browsershot->save($outputPath);
     }
 }
