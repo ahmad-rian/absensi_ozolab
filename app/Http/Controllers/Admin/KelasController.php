@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,6 +18,8 @@ class KelasController extends Controller
 {
     public function index(): Response
     {
+        $this->ensureAcademicYears();
+
         $classrooms = Classroom::forSchool()
             ->withCount('students')
             ->with(['academicYear', 'homeroomTeacher'])
@@ -43,18 +46,56 @@ class KelasController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
             'grade_level' => ['required', 'integer', 'min:1', 'max:12'],
             'academic_year_id' => ['required', 'exists:academic_years,id'],
             'homeroom_teacher_id' => ['nullable', 'exists:users,id'],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'parallel_from' => ['required', 'string', 'size:1', 'regex:/^[A-Z]$/'],
+            'parallel_to' => ['required', 'string', 'size:1', 'regex:/^[A-Z]$/'],
         ]);
 
-        $validated['capacity'] = $validated['capacity'] ?? 36;
+        $capacity = $validated['capacity'] ?? 36;
+        $from = ord($validated['parallel_from']);
+        $to = ord($validated['parallel_to']);
 
-        Classroom::create($validated);
+        if ($from > $to) {
+            return back()->withErrors(['parallel_from' => 'Paralel awal harus sebelum atau sama dengan paralel akhir.']);
+        }
 
-        return back()->with('success', 'Kelas berhasil ditambahkan.');
+        $created = 0;
+        $skipped = 0;
+
+        for ($i = $from; $i <= $to; $i++) {
+            $parallel = chr($i);
+            $name = $validated['grade_level'].$parallel;
+
+            $exists = Classroom::forSchool()
+                ->where('name', $name)
+                ->where('academic_year_id', $validated['academic_year_id'])
+                ->exists();
+
+            if ($exists) {
+                $skipped++;
+
+                continue;
+            }
+
+            Classroom::create([
+                'name' => $name,
+                'grade_level' => $validated['grade_level'],
+                'academic_year_id' => $validated['academic_year_id'],
+                'homeroom_teacher_id' => $validated['homeroom_teacher_id'] ?? null,
+                'capacity' => $capacity,
+            ]);
+            $created++;
+        }
+
+        $message = "{$created} kelas berhasil ditambahkan.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} kelas dilewati karena sudah ada.";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function update(Request $request, Classroom $classroom): RedirectResponse
@@ -83,5 +124,40 @@ class KelasController extends Controller
         $classroom->delete();
 
         return back()->with('success', 'Kelas berhasil dihapus.');
+    }
+
+    /**
+     * Auto-create academic years 2025/2026 through 2040/2041 for the current school.
+     */
+    private function ensureAcademicYears(): void
+    {
+        $schoolId = auth()->user()->school_id;
+
+        $existing = AcademicYear::where('school_id', $schoolId)
+            ->pluck('name')
+            ->toArray();
+
+        $toCreate = [];
+
+        for ($year = 2025; $year <= 2040; $year++) {
+            $name = "{$year}/".($year + 1);
+
+            if (! in_array($name, $existing)) {
+                $toCreate[] = [
+                    'id' => (string) Str::ulid(),
+                    'school_id' => $schoolId,
+                    'name' => $name,
+                    'start_date' => "{$year}-07-01",
+                    'end_date' => ($year + 1).'-06-30',
+                    'is_active' => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        if (! empty($toCreate)) {
+            AcademicYear::insert($toCreate);
+        }
     }
 }

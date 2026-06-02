@@ -32,51 +32,74 @@ test('kelas index returns classrooms with relations', function () {
         );
 });
 
-test('authenticated users can create a classroom', function () {
+test('authenticated users can bulk create classrooms', function () {
     $user = createAdminUser();
-    $academicYear = AcademicYear::factory()->create();
+    $academicYear = AcademicYear::factory()->create(['school_id' => $user->school_id]);
 
     $this->actingAs($user)
         ->post(route('kelas.store'), [
-            'name' => 'VII-A',
             'grade_level' => 7,
+            'parallel_from' => 'A',
+            'parallel_to' => 'C',
             'academic_year_id' => $academicYear->id,
             'capacity' => 30,
         ])
         ->assertRedirect();
 
-    $this->assertDatabaseHas('classrooms', [
-        'name' => 'VII-A',
-        'grade_level' => 7,
-        'capacity' => 30,
-    ]);
+    $this->assertDatabaseHas('classrooms', ['name' => '7A', 'grade_level' => 7, 'capacity' => 30]);
+    $this->assertDatabaseHas('classrooms', ['name' => '7B', 'grade_level' => 7, 'capacity' => 30]);
+    $this->assertDatabaseHas('classrooms', ['name' => '7C', 'grade_level' => 7, 'capacity' => 30]);
 });
 
-test('store validation requires name', function () {
+test('authenticated users can create a single classroom', function () {
     $user = createAdminUser();
-    $academicYear = AcademicYear::factory()->create();
+    $academicYear = AcademicYear::factory()->create(['school_id' => $user->school_id]);
+
+    $this->actingAs($user)
+        ->post(route('kelas.store'), [
+            'grade_level' => 8,
+            'parallel_from' => 'A',
+            'parallel_to' => 'A',
+            'academic_year_id' => $academicYear->id,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('classrooms', ['name' => '8A', 'grade_level' => 8]);
+});
+
+test('store validation requires parallel fields', function () {
+    $user = createAdminUser();
+    $academicYear = AcademicYear::factory()->create(['school_id' => $user->school_id]);
 
     $this->actingAs($user)
         ->post(route('kelas.store'), [
             'grade_level' => 7,
             'academic_year_id' => $academicYear->id,
-            'capacity' => 30,
         ])
-        ->assertSessionHasErrors('name');
+        ->assertSessionHasErrors(['parallel_from', 'parallel_to']);
 });
 
-test('store validation requires grade_level between 7 and 12', function () {
+test('store skips duplicate classrooms', function () {
     $user = createAdminUser();
-    $academicYear = AcademicYear::factory()->create();
+    $academicYear = AcademicYear::factory()->create(['school_id' => $user->school_id]);
+    Classroom::factory()->create([
+        'school_id' => $user->school_id,
+        'name' => '7A',
+        'grade_level' => 7,
+        'academic_year_id' => $academicYear->id,
+    ]);
 
     $this->actingAs($user)
         ->post(route('kelas.store'), [
-            'name' => 'Test',
-            'grade_level' => 6,
+            'grade_level' => 7,
+            'parallel_from' => 'A',
+            'parallel_to' => 'B',
             'academic_year_id' => $academicYear->id,
-            'capacity' => 30,
         ])
-        ->assertSessionHasErrors('grade_level');
+        ->assertRedirect();
+
+    expect(Classroom::where('name', '7A')->count())->toBe(1);
+    $this->assertDatabaseHas('classrooms', ['name' => '7B']);
 });
 
 test('authenticated users can update a classroom', function () {
