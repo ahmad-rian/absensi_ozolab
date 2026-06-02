@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Moon, Sun, X } from 'lucide-react';
+import { ArrowRight, Moon, ScanBarcode, Sun, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
@@ -86,6 +86,12 @@ export function Navbar() {
                             </a>
                         ))}
                         <div className="bg-border mx-3 h-5 w-px" />
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href="/admin/scanner">
+                                <ScanBarcode className="mr-1.5 size-4" />
+                                Scanner
+                            </Link>
+                        </Button>
                         <Button variant="ghost" size="icon" className="size-9" onClick={toggleTheme}>
                             <Sun className="size-4 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
                             <Moon className="absolute size-4 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
@@ -175,6 +181,12 @@ export function Navbar() {
                             }`}
                         style={{ transitionDelay: mobileVisible ? '380ms' : '0ms' }}
                     >
+                        <Button variant="outline" className="mb-3 h-12 w-full rounded-xl text-base" asChild>
+                            <Link href="/admin/scanner" onClick={() => setMobileOpen(false)}>
+                                <ScanBarcode className="mr-2 size-5" />
+                                Scanner Absensi
+                            </Link>
+                        </Button>
                         {auth.user ? (
                             <Button className="h-12 w-full rounded-xl text-base" asChild>
                                 <Link href={dashboard()}>Dashboard</Link>
