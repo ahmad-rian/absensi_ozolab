@@ -103,7 +103,7 @@ function CardPreview({ config, type, frames }: { config: Record<string, unknown>
             >
                 {/* Body fields — absolute positioned */}
                 <div className="absolute z-10" style={{ top: bodyTop, left: bodyLeft, right: Math.round(2 * S) }}>
-                    {['NAMA', 'ALAMAT', 'TEMPAT TGL.LAHIR', 'AGAMA', 'NO.INDUK'].map((label) => (
+                    {['NAMA', 'ALAMAT', 'TTL', 'AGAMA', 'NO.INDUK'].map((label) => (
                         <div key={label} className="flex text-zinc-900" style={{
                             fontFamily: "'Inter Tight', sans-serif", fontSize: bodyFont,
                             fontWeight: 700, lineHeight: '1.3',
@@ -191,7 +191,7 @@ function CardPreview({ config, type, frames }: { config: Record<string, unknown>
 
             {/* Body fields */}
             <div className="relative z-10" style={{ padding: `${Math.round(1.5 * S)}px ${Math.round(2.5 * S)}px 0` }}>
-                {['NAMA', 'ALAMAT', 'TEMPAT TGL.LAHIR', 'AGAMA', 'NO.INDUK'].map((label) => (
+                {['NAMA', 'ALAMAT', 'TTL', 'AGAMA', 'NO.INDUK'].map((label) => (
                     <div key={label} className="flex text-zinc-900" style={{
                         fontFamily: "'Inter Tight', sans-serif", fontSize: Math.round(1.4 * S),
                         fontWeight: 700, lineHeight: '1.5',
