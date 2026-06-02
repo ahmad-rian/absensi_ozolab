@@ -28,7 +28,6 @@ test('kelas index returns classrooms with relations', function () {
             ->component('admin/kelas/index')
             ->has('classrooms', 1)
             ->has('academic_years')
-            ->has('teachers')
         );
 });
 

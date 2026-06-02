@@ -27,22 +27,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { dashboard } from '@/routes';
 import type { AcademicYear, Classroom } from '@/types';
 
-type Teacher = {
-    id: string;
-    name: string;
-};
-
 type PageProps = {
     classrooms: Classroom[];
     academic_years: (AcademicYear & { is_active: boolean })[];
-    teachers: Teacher[];
 };
 
 type ClassroomFormData = {
     name: string;
     grade_level: string;
     academic_year_id: string;
-    homeroom_teacher_id: string;
 };
 
 type BulkCreateFormData = {
@@ -50,7 +43,6 @@ type BulkCreateFormData = {
     parallel_from: string;
     parallel_to: string;
     academic_year_id: string;
-    homeroom_teacher_id: string;
 };
 
 const GRADE_LEVELS = Array.from({ length: 12 }, (_, i) => ({
@@ -60,7 +52,7 @@ const GRADE_LEVELS = Array.from({ length: 12 }, (_, i) => ({
 
 const PARALLELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c) => ({ value: c, label: c }));
 
-export default function KelasIndex({ classrooms, academic_years, teachers }: PageProps) {
+export default function KelasIndex({ classrooms, academic_years }: PageProps) {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
 
@@ -72,14 +64,12 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
         parallel_from: '',
         parallel_to: '',
         academic_year_id: '',
-        homeroom_teacher_id: '',
     });
 
     const editForm = useForm<ClassroomFormData>({
         name: '',
         grade_level: '',
         academic_year_id: '',
-        homeroom_teacher_id: '',
     });
 
     // Auto-generate class name: "{grade_level}{parallel}" e.g. "7A", "10B"
@@ -136,7 +126,6 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
             name: classroom.name,
             grade_level: String(classroom.grade_level),
             academic_year_id: String(classroom.academic_year_id),
-            homeroom_teacher_id: classroom.homeroom_teacher_id ? String(classroom.homeroom_teacher_id) : '',
         });
         setEditingClassroom(classroom);
     }
@@ -192,10 +181,6 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                                     <div className="flex items-center gap-2 text-sm">
                                         <Users className="text-muted-foreground size-4" />
                                         <span>{classroom.students_count ?? 0} siswa</span>
-                                    </div>
-                                    <div className="text-muted-foreground text-sm">
-                                        <span className="font-medium">Wali Kelas:</span>{' '}
-                                        {classroom.homeroom_teacher?.name ?? '-'}
                                     </div>
                                     <div className="text-muted-foreground text-sm">
                                         <span className="font-medium">Tahun Ajaran:</span>{' '}
@@ -339,28 +324,6 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                             )}
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>Wali Kelas</Label>
-                            <Select
-                                value={bulkForm.data.homeroom_teacher_id}
-                                onValueChange={(value) => bulkForm.setData('homeroom_teacher_id', value)}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Pilih wali kelas (opsional)" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {teachers.map((teacher) => (
-                                        <SelectItem key={teacher.id} value={String(teacher.id)}>
-                                            {teacher.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {bulkForm.errors.homeroom_teacher_id && (
-                                <p className="text-destructive text-sm">{bulkForm.errors.homeroom_teacher_id}</p>
-                            )}
-                        </div>
-
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
                                 Batal
@@ -456,28 +419,6 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                             </Select>
                             {editForm.errors.academic_year_id && (
                                 <p className="text-destructive text-sm">{editForm.errors.academic_year_id}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-teacher">Wali Kelas</Label>
-                            <Select
-                                value={editForm.data.homeroom_teacher_id}
-                                onValueChange={(value) => editForm.setData('homeroom_teacher_id', value)}
-                            >
-                                <SelectTrigger id="edit-teacher" className="w-full">
-                                    <SelectValue placeholder="Pilih wali kelas (opsional)" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {teachers.map((teacher) => (
-                                        <SelectItem key={teacher.id} value={String(teacher.id)}>
-                                            {teacher.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {editForm.errors.homeroom_teacher_id && (
-                                <p className="text-destructive text-sm">{editForm.errors.homeroom_teacher_id}</p>
                             )}
                         </div>
 

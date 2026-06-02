@@ -43,12 +43,12 @@ export default function FramesIndex({ frames, filters }: Props) {
     const addForm = useForm<{ name: string; image: File | null; category: string }>({
         name: '',
         image: null,
-        category: 'card',
+        category: 'osis',
     });
 
     const editForm = useForm<{ name: string; category: string; is_active: boolean; sort_order: number }>({
         name: '',
-        category: 'card',
+        category: 'osis',
         is_active: true,
         sort_order: 0,
     });
@@ -120,7 +120,8 @@ export default function FramesIndex({ frames, filters }: Props) {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Semua</SelectItem>
-                            <SelectItem value="card">Kartu Siswa</SelectItem>
+                            <SelectItem value="osis">Kartu OSIS</SelectItem>
+                            <SelectItem value="perpustakaan">Kartu Perpustakaan</SelectItem>
                             <SelectItem value="album">Album Foto</SelectItem>
                         </SelectContent>
                     </Select>
@@ -141,8 +142,8 @@ export default function FramesIndex({ frames, filters }: Props) {
                                 <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg bg-zinc-100 dark:bg-zinc-800">
                                     <img src={frame.image_url} alt={frame.name} className="size-full object-contain p-2" />
                                     <div className="absolute right-2 top-2 flex gap-1">
-                                        <Badge variant={frame.category === 'card' ? 'default' : 'secondary'}>
-                                            {frame.category === 'card' ? 'Kartu' : 'Album'}
+                                        <Badge variant={frame.category === 'album' ? 'secondary' : 'default'}>
+                                            {frame.category === 'osis' ? 'OSIS' : frame.category === 'perpustakaan' ? 'Perpustakaan' : 'Album'}
                                         </Badge>
                                     </div>
                                 </div>
@@ -195,7 +196,8 @@ export default function FramesIndex({ frames, filters }: Props) {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="card">Kartu Siswa</SelectItem>
+                                    <SelectItem value="osis">Kartu OSIS</SelectItem>
+                                    <SelectItem value="perpustakaan">Kartu Perpustakaan</SelectItem>
                                     <SelectItem value="album">Album Foto</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -242,7 +244,8 @@ export default function FramesIndex({ frames, filters }: Props) {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="card">Kartu Siswa</SelectItem>
+                                    <SelectItem value="osis">Kartu OSIS</SelectItem>
+                                    <SelectItem value="perpustakaan">Kartu Perpustakaan</SelectItem>
                                     <SelectItem value="album">Album Foto</SelectItem>
                                 </SelectContent>
                             </Select>
