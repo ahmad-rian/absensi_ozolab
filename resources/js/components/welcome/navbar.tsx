@@ -87,7 +87,7 @@ export function Navbar() {
                         ))}
                         <div className="bg-border mx-3 h-5 w-px" />
                         <Button variant="outline" size="sm" asChild>
-                            <Link href="/admin/scanner">
+                            <Link href="/scan">
                                 <ScanBarcode className="mr-1.5 size-4" />
                                 Scanner
                             </Link>
@@ -182,7 +182,7 @@ export function Navbar() {
                         style={{ transitionDelay: mobileVisible ? '380ms' : '0ms' }}
                     >
                         <Button variant="outline" className="mb-3 h-12 w-full rounded-xl text-base" asChild>
-                            <Link href="/admin/scanner" onClick={() => setMobileOpen(false)}>
+                            <Link href="/scan" onClick={() => setMobileOpen(false)}>
                                 <ScanBarcode className="mr-2 size-5" />
                                 Scanner Absensi
                             </Link>
