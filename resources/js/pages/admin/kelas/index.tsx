@@ -45,6 +45,14 @@ type ClassroomFormData = {
     homeroom_teacher_id: string;
 };
 
+type BulkCreateFormData = {
+    grade_level: string;
+    parallel_from: string;
+    parallel_to: string;
+    academic_year_id: string;
+    homeroom_teacher_id: string;
+};
+
 const GRADE_LEVELS = Array.from({ length: 12 }, (_, i) => ({
     value: String(i + 1),
     label: `Tingkat ${i + 1}`,
@@ -56,14 +64,13 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
 
-    const [createGradeLevel, setCreateGradeLevel] = useState('');
-    const [createParallel, setCreateParallel] = useState('');
     const [editGradeLevel, setEditGradeLevel] = useState('');
     const [editParallel, setEditParallel] = useState('');
 
-    const createForm = useForm<ClassroomFormData>({
-        name: '',
+    const bulkForm = useForm<BulkCreateFormData>({
         grade_level: '',
+        parallel_from: '',
+        parallel_to: '',
         academic_year_id: '',
         homeroom_teacher_id: '',
     });
@@ -86,28 +93,36 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
         return match ? { grade: match[1], parallel: match[2] } : { grade: '', parallel: '' };
     }
 
-    useEffect(() => {
-        createForm.setData('name', autoName(createGradeLevel, createParallel));
-    }, [createGradeLevel, createParallel]);
+    // Generate preview of classes to be created
+    function bulkPreview(): string[] {
+        const { grade_level, parallel_from, parallel_to } = bulkForm.data;
+        if (!grade_level || !parallel_from || !parallel_to) return [];
+        const from = parallel_from.charCodeAt(0);
+        const to = parallel_to.charCodeAt(0);
+        if (from > to) return [];
+        const names: string[] = [];
+        for (let i = from; i <= to; i++) {
+            names.push(`${grade_level}${String.fromCharCode(i)}`);
+        }
+        return names;
+    }
 
     useEffect(() => {
         editForm.setData('name', autoName(editGradeLevel, editParallel));
     }, [editGradeLevel, editParallel]);
 
     function openCreateDialog() {
-        createForm.reset();
-        setCreateGradeLevel('');
-        setCreateParallel('');
+        bulkForm.reset();
         const activeYear = academic_years.find((ay) => ay.is_active);
         if (activeYear) {
-            createForm.setData('academic_year_id', String(activeYear.id));
+            bulkForm.setData('academic_year_id', String(activeYear.id));
         }
         setIsCreateOpen(true);
     }
 
     function handleCreate(e: FormEvent) {
         e.preventDefault();
-        createForm.post('/admin/kelas', {
+        bulkForm.post('/admin/kelas', {
             preserveScroll: true,
             onSuccess: () => setIsCreateOpen(false),
         });
@@ -225,7 +240,7 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                 )}
             </div>
 
-            {/* Create Dialog */}
+            {/* Create Dialog — Bulk */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -233,69 +248,82 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                     </DialogHeader>
                     <form onSubmit={handleCreate} className="space-y-4">
                         <div className="space-y-2">
-                            <Label>Nama Kelas</Label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="space-y-1">
-                                    <Label htmlFor="create-grade" className="text-muted-foreground text-xs">
-                                        Tingkat
-                                    </Label>
-                                    <Select
-                                        value={createGradeLevel}
-                                        onValueChange={(value) => {
-                                            setCreateGradeLevel(value);
-                                            createForm.setData('grade_level', value);
-                                        }}
-                                    >
-                                        <SelectTrigger id="create-grade" className="w-full">
-                                            <SelectValue placeholder="Tingkat" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {GRADE_LEVELS.map((level) => (
-                                                <SelectItem key={level.value} value={level.value}>
-                                                    {level.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="create-parallel" className="text-muted-foreground text-xs">
-                                        Paralel
-                                    </Label>
-                                    <Select value={createParallel} onValueChange={setCreateParallel}>
-                                        <SelectTrigger id="create-parallel" className="w-full">
-                                            <SelectValue placeholder="Paralel" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {PARALLELS.map((p) => (
-                                                <SelectItem key={p.value} value={p.value}>
-                                                    {p.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            {createGradeLevel && createParallel && (
-                                <p className="text-muted-foreground text-sm">
-                                    Nama kelas: <strong>{autoName(createGradeLevel, createParallel)}</strong>
-                                </p>
-                            )}
-                            {createForm.errors.name && (
-                                <p className="text-destructive text-sm">{createForm.errors.name}</p>
-                            )}
-                            {createForm.errors.grade_level && (
-                                <p className="text-destructive text-sm">{createForm.errors.grade_level}</p>
+                            <Label>Tingkat</Label>
+                            <Select
+                                value={bulkForm.data.grade_level}
+                                onValueChange={(value) => bulkForm.setData('grade_level', value)}
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Pilih tingkat" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {GRADE_LEVELS.map((level) => (
+                                        <SelectItem key={level.value} value={level.value}>
+                                            {level.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {bulkForm.errors.grade_level && (
+                                <p className="text-destructive text-sm">{bulkForm.errors.grade_level}</p>
                             )}
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="create-academic-year">Tahun Ajaran</Label>
+                            <Label>Paralel</Label>
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                <Select
+                                    value={bulkForm.data.parallel_from}
+                                    onValueChange={(value) => bulkForm.setData('parallel_from', value)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Dari" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {PARALLELS.map((p) => (
+                                            <SelectItem key={p.value} value={p.value}>
+                                                {p.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <span className="text-muted-foreground text-sm">s/d</span>
+                                <Select
+                                    value={bulkForm.data.parallel_to}
+                                    onValueChange={(value) => bulkForm.setData('parallel_to', value)}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Sampai" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {PARALLELS.map((p) => (
+                                            <SelectItem key={p.value} value={p.value}>
+                                                {p.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {bulkForm.errors.parallel_from && (
+                                <p className="text-destructive text-sm">{bulkForm.errors.parallel_from}</p>
+                            )}
+                            {bulkForm.errors.parallel_to && (
+                                <p className="text-destructive text-sm">{bulkForm.errors.parallel_to}</p>
+                            )}
+                            {bulkPreview().length > 0 && (
+                                <p className="text-muted-foreground text-sm">
+                                    Kelas yang dibuat: <strong>{bulkPreview().join(', ')}</strong>
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Tahun Ajaran</Label>
                             <Select
-                                value={createForm.data.academic_year_id}
-                                onValueChange={(value) => createForm.setData('academic_year_id', value)}
+                                value={bulkForm.data.academic_year_id}
+                                onValueChange={(value) => bulkForm.setData('academic_year_id', value)}
                             >
-                                <SelectTrigger id="create-academic-year" className="w-full">
+                                <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Pilih tahun ajaran" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -306,18 +334,18 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {createForm.errors.academic_year_id && (
-                                <p className="text-destructive text-sm">{createForm.errors.academic_year_id}</p>
+                            {bulkForm.errors.academic_year_id && (
+                                <p className="text-destructive text-sm">{bulkForm.errors.academic_year_id}</p>
                             )}
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="create-teacher">Wali Kelas</Label>
+                            <Label>Wali Kelas</Label>
                             <Select
-                                value={createForm.data.homeroom_teacher_id}
-                                onValueChange={(value) => createForm.setData('homeroom_teacher_id', value)}
+                                value={bulkForm.data.homeroom_teacher_id}
+                                onValueChange={(value) => bulkForm.setData('homeroom_teacher_id', value)}
                             >
-                                <SelectTrigger id="create-teacher" className="w-full">
+                                <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Pilih wali kelas (opsional)" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -328,8 +356,8 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {createForm.errors.homeroom_teacher_id && (
-                                <p className="text-destructive text-sm">{createForm.errors.homeroom_teacher_id}</p>
+                            {bulkForm.errors.homeroom_teacher_id && (
+                                <p className="text-destructive text-sm">{bulkForm.errors.homeroom_teacher_id}</p>
                             )}
                         </div>
 
@@ -337,8 +365,8 @@ export default function KelasIndex({ classrooms, academic_years, teachers }: Pag
                             <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
                                 Batal
                             </Button>
-                            <Button type="submit" disabled={createForm.processing}>
-                                Simpan
+                            <Button type="submit" disabled={bulkForm.processing}>
+                                {bulkPreview().length > 1 ? `Buat ${bulkPreview().length} Kelas` : 'Simpan'}
                             </Button>
                         </DialogFooter>
                     </form>
