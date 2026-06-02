@@ -16,6 +16,7 @@ type FrameItem = {
     image_url: string;
     width: number;
     height: number;
+    category: string;
 };
 
 type LayoutData = {
@@ -256,7 +257,7 @@ export default function CardLayoutEditor({ layout, frames }: Props) {
                                     <SelectTrigger><SelectValue placeholder="Tanpa frame" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="none">Tanpa Frame</SelectItem>
-                                        {frames.map((f) => (
+                                        {frames.filter((f) => f.category === form.data.type).map((f) => (
                                             <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>
                                         ))}
                                     </SelectContent>

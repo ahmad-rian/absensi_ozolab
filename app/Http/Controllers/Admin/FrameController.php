@@ -43,7 +43,7 @@ class FrameController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'image' => ['required', 'image', 'max:5120'],
-            'category' => ['required', 'string', 'in:card,album'],
+            'category' => ['required', 'string', 'in:osis,perpustakaan,album'],
         ]);
 
         $path = $converter->storeAsWebp(
@@ -77,7 +77,7 @@ class FrameController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', 'in:card,album'],
+            'category' => ['required', 'string', 'in:osis,perpustakaan,album'],
             'is_active' => ['boolean'],
             'sort_order' => ['integer', 'min:0'],
         ]);

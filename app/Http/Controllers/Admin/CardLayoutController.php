@@ -35,9 +35,9 @@ class CardLayoutController extends Controller
     public function create(): Response
     {
         $frames = SchoolFrame::forSchool()
-            ->where('category', 'card')
+            ->whereIn('category', ['osis', 'perpustakaan'])
             ->where('is_active', true)
-            ->get(['id', 'name', 'image_path', 'width', 'height']);
+            ->get(['id', 'name', 'image_path', 'width', 'height', 'category']);
 
         return Inertia::render('admin/card-layouts/editor', [
             'layout' => null,
@@ -47,6 +47,7 @@ class CardLayoutController extends Controller
                 'image_url' => Storage::disk('public')->url($f->image_path),
                 'width' => $f->width,
                 'height' => $f->height,
+                'category' => $f->category,
             ]),
         ]);
     }
@@ -78,9 +79,9 @@ class CardLayoutController extends Controller
         abort_unless($cardLayout->school_id === auth()->user()->school_id, 403);
 
         $frames = SchoolFrame::forSchool()
-            ->where('category', 'card')
+            ->whereIn('category', ['osis', 'perpustakaan'])
             ->where('is_active', true)
-            ->get(['id', 'name', 'image_path', 'width', 'height']);
+            ->get(['id', 'name', 'image_path', 'width', 'height', 'category']);
 
         return Inertia::render('admin/card-layouts/editor', [
             'layout' => [
@@ -97,6 +98,7 @@ class CardLayoutController extends Controller
                 'image_url' => Storage::disk('public')->url($f->image_path),
                 'width' => $f->width,
                 'height' => $f->height,
+                'category' => $f->category,
             ]),
         ]);
     }

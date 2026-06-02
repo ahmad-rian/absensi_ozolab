@@ -5,11 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,15 +28,9 @@ class KelasController extends Controller
             ->orderByDesc('start_date')
             ->get(['id', 'name', 'is_active', 'school_id']);
 
-        $schoolId = auth()->user()->school_id;
-        $teachers = Role::where('name', 'GURU')->exists()
-            ? User::role('GURU')->where('school_id', $schoolId)->orderBy('name')->get(['id', 'name'])
-            : new Collection;
-
         return Inertia::render('admin/kelas/index', [
             'classrooms' => $classrooms,
             'academic_years' => $academicYears,
-            'teachers' => $teachers,
         ]);
     }
 
@@ -48,7 +39,6 @@ class KelasController extends Controller
         $validated = $request->validate([
             'grade_level' => ['required', 'integer', 'min:1', 'max:12'],
             'academic_year_id' => ['required', 'exists:academic_years,id'],
-            'homeroom_teacher_id' => ['nullable', 'exists:users,id'],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100'],
             'parallel_from' => ['required', 'string', 'size:1', 'regex:/^[A-Z]$/'],
             'parallel_to' => ['required', 'string', 'size:1', 'regex:/^[A-Z]$/'],
@@ -84,7 +74,6 @@ class KelasController extends Controller
                 'name' => $name,
                 'grade_level' => $validated['grade_level'],
                 'academic_year_id' => $validated['academic_year_id'],
-                'homeroom_teacher_id' => $validated['homeroom_teacher_id'] ?? null,
                 'capacity' => $capacity,
             ]);
             $created++;
@@ -104,7 +93,6 @@ class KelasController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'grade_level' => ['required', 'integer', 'min:1', 'max:12'],
             'academic_year_id' => ['required', 'exists:academic_years,id'],
-            'homeroom_teacher_id' => ['nullable', 'exists:users,id'],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
