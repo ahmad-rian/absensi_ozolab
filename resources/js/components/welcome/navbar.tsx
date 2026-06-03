@@ -21,7 +21,7 @@ export function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mobileVisible, setMobileVisible] = useState(false);
-    const { auth, name } = usePage().props as { auth: { user: unknown }; name: string };
+    const { auth, name, currentSchool } = usePage().props as { auth: { user: unknown }; name: string; currentSchool?: { logo?: string | null } | null };
     const { resolvedAppearance, updateAppearance } = useAppearance();
 
     const toggleTheme = () => updateAppearance(resolvedAppearance === 'dark' ? 'light' : 'dark');
@@ -67,9 +67,13 @@ export function Navbar() {
             >
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                     <Link href="/" className="flex items-center gap-2.5 font-bold">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
-                            <AppLogoIcon className="size-4.5 fill-current text-white" />
-                        </div>
+                        {currentSchool?.logo ? (
+                            <img src={currentSchool.logo} alt={name} className="size-8 rounded-lg object-contain" />
+                        ) : (
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
+                                <AppLogoIcon className="size-4.5 fill-current text-white" />
+                            </div>
+                        )}
                         <span className="text-lg tracking-tight">{name}</span>
                     </Link>
 
@@ -143,9 +147,13 @@ export function Navbar() {
                     <div className={`flex h-16 shrink-0 items-center justify-between px-4 transition-all duration-300 ${mobileVisible ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'
                         }`}>
                         <Link href="/" className="flex items-center gap-2.5 font-bold" onClick={() => setMobileOpen(false)}>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
-                                <AppLogoIcon className="size-4.5 fill-current text-white" />
-                            </div>
+                            {currentSchool?.logo ? (
+                                <img src={currentSchool.logo} alt={name} className="size-8 rounded-lg object-contain" />
+                            ) : (
+                                <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
+                                    <AppLogoIcon className="size-4.5 fill-current text-white" />
+                                </div>
+                            )}
                             <span className="text-lg tracking-tight">{name}</span>
                         </Link>
                         <button
