@@ -4,6 +4,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Admin\AbsensiController;
 use App\Http\Controllers\Admin\AlbumGenerationController;
 use App\Http\Controllers\Admin\AlbumLayoutController;
+use App\Http\Controllers\Admin\AttendanceScheduleController;
 use App\Http\Controllers\Admin\CardGenerationController;
 use App\Http\Controllers\Admin\CardLayoutController;
 use App\Http\Controllers\Admin\DriveConfigController;
@@ -57,6 +58,7 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN|ADMIN|GURU'])->prefix('
     Route::get('siswa/{siswa}/qr', [SiswaController::class, 'qrCode'])->name('admin.siswa.qr');
     Route::resource('orang-tua', OrangTuaController::class)->parameter('orang-tua', 'parentProfile')->names('admin.orang-tua');
     Route::resource('kelas', KelasController::class)->except(['show', 'create', 'edit'])->parameter('kelas', 'classroom');
+    Route::resource('jadwal-absensi', AttendanceScheduleController::class)->except(['show', 'create', 'edit'])->parameter('jadwal-absensi', 'attendanceSchedule');
     Route::get('absensi', [AbsensiController::class, 'index'])->name('admin.absensi');
     Route::post('absensi', [AbsensiController::class, 'store'])->name('admin.absensi.store');
     Route::get('scanner', [ScannerController::class, 'index'])->name('admin.scanner');

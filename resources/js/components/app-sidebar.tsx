@@ -5,6 +5,7 @@ import {
     BookOpen,
     Building2,
     CalendarCheck,
+    Clock,
     CreditCard,
     Frame,
     GraduationCap,
@@ -45,6 +46,7 @@ const academicItems: NavItem[] = [
     { title: 'Orang Tua', href: '/admin/orang-tua', icon: Users },
     { title: 'Kelas', href: '/admin/kelas', icon: School },
     { title: 'Absensi', href: '/admin/absensi', icon: CalendarCheck },
+    { title: 'Jadwal Absensi', href: '/admin/jadwal-absensi', icon: Clock },
     { title: 'Scanner', href: '/admin/scanner', icon: QrCode },
 ];
 
