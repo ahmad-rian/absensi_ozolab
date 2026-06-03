@@ -74,4 +74,36 @@ class AttendanceScheduleController extends Controller
 
         return back()->with('success', 'Jadwal berhasil dihapus.');
     }
+
+    public function generateDefaults(): RedirectResponse
+    {
+        $schoolId = auth()->user()->school_id;
+
+        $existing = AttendanceSchedule::where('school_id', $schoolId)
+            ->whereNull('classroom_id')
+            ->pluck('day_of_week')
+            ->toArray();
+
+        $created = 0;
+
+        for ($day = 1; $day <= 6; $day++) {
+            if (in_array($day, $existing)) {
+                continue;
+            }
+
+            AttendanceSchedule::create([
+                'school_id' => $schoolId,
+                'day_of_week' => $day,
+                'check_in_start' => '06:00',
+                'check_in_end' => '08:00',
+                'late_threshold' => '07:15',
+                'check_out_start' => '12:00',
+                'check_out_end' => '17:00',
+                'is_active' => true,
+            ]);
+            $created++;
+        }
+
+        return back()->with('success', "{$created} jadwal default berhasil dibuat (Senin-Sabtu).");
+    }
 }
