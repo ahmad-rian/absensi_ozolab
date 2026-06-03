@@ -121,6 +121,7 @@ body::after { content:''; position:absolute; inset:0; background-image: repeatin
     flex: 1; font-weight: 700; font-family: 'Inter Tight', sans-serif;
     font-size: calc({{ $bodyFont }} * var(--mm)); letter-spacing: -0.01em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding-left: calc(1 * var(--mm));
 }
 .photo-slot {
     position: absolute; z-index: 6;
