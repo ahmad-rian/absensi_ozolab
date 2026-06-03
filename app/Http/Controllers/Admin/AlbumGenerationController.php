@@ -30,9 +30,22 @@ class AlbumGenerationController extends Controller
         $school = School::with('driveConfig')->find(auth()->user()->school_id);
         $driveConfig = $school?->driveConfig;
 
+        $students = Student::forSchool()
+            ->with('classroom:id,name')
+            ->orderBy('full_name')
+            ->get(['id', 'full_name', 'nis', 'classroom_id', 'photo_path']);
+
         return Inertia::render('admin/album-generation/index', [
             'layouts' => $layouts,
             'classrooms' => $classrooms,
+            'students' => $students->map(fn (Student $s) => [
+                'id' => $s->id,
+                'full_name' => $s->full_name,
+                'nis' => $s->nis,
+                'classroom' => $s->classroom?->name,
+                'classroom_id' => $s->classroom_id,
+                'has_photo' => (bool) $s->photo_path,
+            ]),
             'driveConfigured' => $driveConfig && $driveConfig->is_active && $driveConfig->service_account_json,
         ]);
     }
@@ -42,16 +55,26 @@ class AlbumGenerationController extends Controller
         $validated = $request->validate([
             'layout_id' => ['required', 'exists:school_album_layouts,id'],
             'classroom_id' => ['nullable', 'exists:classrooms,id'],
+            'student_ids' => ['nullable', 'string'],
         ]);
 
         $layout = SchoolAlbumLayout::findOrFail($validated['layout_id']);
         $school = School::findOrFail(auth()->user()->school_id);
 
-        $students = Student::forSchool()
-            ->with('classroom')
-            ->when($validated['classroom_id'] ?? null, fn ($q, $id) => $q->where('classroom_id', $id))
-            ->orderBy('full_name')
-            ->get();
+        $query = Student::forSchool()->with('classroom');
+
+        // Filter by specific student IDs if provided
+        $studentIds = ! empty($validated['student_ids'])
+            ? explode(',', $validated['student_ids'])
+            : null;
+
+        if ($studentIds) {
+            $query->whereIn('id', $studentIds);
+        } elseif ($validated['classroom_id'] ?? null) {
+            $query->where('classroom_id', $validated['classroom_id']);
+        }
+
+        $students = $query->orderBy('full_name')->get();
 
         if ($students->isEmpty()) {
             Inertia::flash('toast', ['type' => 'warning', 'message' => 'Tidak ada siswa yang ditemukan.']);
