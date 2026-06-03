@@ -59,6 +59,7 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN|ADMIN|GURU'])->prefix('
     Route::resource('orang-tua', OrangTuaController::class)->parameter('orang-tua', 'parentProfile')->names('admin.orang-tua');
     Route::resource('kelas', KelasController::class)->except(['show', 'create', 'edit'])->parameter('kelas', 'classroom');
     Route::resource('jadwal-absensi', AttendanceScheduleController::class)->except(['show', 'create', 'edit'])->parameter('jadwal-absensi', 'attendanceSchedule');
+    Route::post('jadwal-absensi/generate-defaults', [AttendanceScheduleController::class, 'generateDefaults'])->name('jadwal-absensi.generate-defaults');
     Route::get('absensi', [AbsensiController::class, 'index'])->name('admin.absensi');
     Route::post('absensi', [AbsensiController::class, 'store'])->name('admin.absensi.store');
     Route::get('scanner', [ScannerController::class, 'index'])->name('admin.scanner');

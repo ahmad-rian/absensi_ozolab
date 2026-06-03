@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Clock, Edit, Plus, Trash2 } from 'lucide-react';
+import { CalendarPlus, Clock, Edit, Plus, Trash2 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import {
     AlertDialog,
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
@@ -60,16 +60,10 @@ type FormData = {
 };
 
 const DAY_LABELS: Record<number, string> = {
-    1: 'Senin',
-    2: 'Selasa',
-    3: 'Rabu',
-    4: 'Kamis',
-    5: 'Jumat',
-    6: 'Sabtu',
-    7: 'Minggu',
+    1: 'Senin', 2: 'Selasa', 3: 'Rabu', 4: 'Kamis', 5: 'Jumat', 6: 'Sabtu', 7: 'Minggu',
 };
 
-function formatTime(t: string) {
+function fmt(t: string) {
     return t?.substring(0, 5) ?? '-';
 }
 
@@ -99,11 +93,11 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
         form.setData({
             day_of_week: String(s.day_of_week),
             classroom_id: s.classroom_id ?? '',
-            check_in_start: formatTime(s.check_in_start),
-            check_in_end: formatTime(s.check_in_end),
-            late_threshold: formatTime(s.late_threshold),
-            check_out_start: formatTime(s.check_out_start),
-            check_out_end: formatTime(s.check_out_end),
+            check_in_start: fmt(s.check_in_start),
+            check_in_end: fmt(s.check_in_end),
+            late_threshold: fmt(s.late_threshold),
+            check_out_start: fmt(s.check_out_start),
+            check_out_end: fmt(s.check_out_end),
             is_active: s.is_active,
         });
         setIsOpen(true);
@@ -112,24 +106,17 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
         if (editingId) {
-            form.put(`/admin/jadwal-absensi/${editingId}`, {
-                preserveScroll: true,
-                onSuccess: () => setIsOpen(false),
-            });
+            form.put(`/admin/jadwal-absensi/${editingId}`, { preserveScroll: true, onSuccess: () => setIsOpen(false) });
         } else {
-            form.post('/admin/jadwal-absensi', {
-                preserveScroll: true,
-                onSuccess: () => setIsOpen(false),
-            });
+            form.post('/admin/jadwal-absensi', { preserveScroll: true, onSuccess: () => setIsOpen(false) });
         }
     }
 
-    // Group schedules by day
-    const grouped = Object.entries(DAY_LABELS).map(([day, label]) => ({
-        day: Number(day),
-        label,
-        items: schedules.filter((s) => s.day_of_week === Number(day)),
-    }));
+    function handleGenerateDefaults() {
+        router.post('/admin/jadwal-absensi/generate-defaults', {}, { preserveScroll: true });
+    }
+
+    const hasSchedules = schedules.length > 0;
 
     return (
         <>
@@ -140,52 +127,74 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
                         <h1 className="text-2xl font-bold tracking-tight">Jadwal Absensi</h1>
                         <p className="text-muted-foreground text-sm">Atur jadwal masuk, batas terlambat, dan pulang per hari.</p>
                     </div>
-                    <Button onClick={openCreate}>
-                        <Plus className="mr-1.5 size-4" />
-                        Tambah Jadwal
-                    </Button>
+                    <div className="flex gap-2">
+                        {!hasSchedules && (
+                            <Button variant="outline" onClick={handleGenerateDefaults}>
+                                <CalendarPlus className="mr-1.5 size-4" />
+                                Generate Default (Sen-Sab)
+                            </Button>
+                        )}
+                        <Button onClick={openCreate}>
+                            <Plus className="mr-1.5 size-4" />
+                            Tambah Jadwal
+                        </Button>
+                    </div>
                 </div>
 
-                <div className="space-y-4">
-                    {grouped.map(({ day, label, items }) => (
-                        <Card key={day}>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    <Clock className="size-4" />
-                                    {label}
-                                    {items.length === 0 && (
-                                        <Badge variant="secondary" className="text-xs">Tidak ada jadwal</Badge>
+                {/* Table */}
+                <Card>
+                    <CardContent className="p-0">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b bg-muted/50">
+                                        <th className="px-4 py-3 text-left font-semibold">Hari</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Kelas</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Jam Masuk</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Batas Terlambat</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Jam Pulang</th>
+                                        <th className="px-4 py-3 text-left font-semibold">Status</th>
+                                        <th className="px-4 py-3 text-right font-semibold">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {!hasSchedules && (
+                                        <tr>
+                                            <td colSpan={7} className="px-4 py-12 text-center">
+                                                <Clock className="text-muted-foreground mx-auto mb-3 size-10" />
+                                                <p className="text-muted-foreground font-medium">Belum ada jadwal absensi.</p>
+                                                <p className="text-muted-foreground mt-1 text-xs">Klik "Generate Default" untuk membuat jadwal Senin-Sabtu otomatis.</p>
+                                            </td>
+                                        </tr>
                                     )}
-                                </CardTitle>
-                            </CardHeader>
-                            {items.length > 0 && (
-                                <CardContent className="pt-0">
-                                    <div className="space-y-2">
-                                        {items.map((s) => (
-                                            <div
-                                                key={s.id}
-                                                className={`flex items-center justify-between rounded-lg border p-3 ${!s.is_active ? 'opacity-50' : ''}`}
-                                            >
-                                                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
-                                                    <div>
-                                                        <span className="text-muted-foreground">Kelas:</span>{' '}
-                                                        <span className="font-medium">{s.classroom?.name ?? 'Semua Kelas'}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-muted-foreground">Masuk:</span>{' '}
-                                                        <span className="font-medium">{formatTime(s.check_in_start)} - {formatTime(s.check_in_end)}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-muted-foreground">Terlambat:</span>{' '}
-                                                        <span className="font-medium text-orange-600">{formatTime(s.late_threshold)}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-muted-foreground">Pulang:</span>{' '}
-                                                        <span className="font-medium">{formatTime(s.check_out_start)} - {formatTime(s.check_out_end)}</span>
-                                                    </div>
-                                                    {!s.is_active && <Badge variant="secondary">Nonaktif</Badge>}
-                                                </div>
-                                                <div className="flex shrink-0 gap-1">
+                                    {schedules.map((s) => (
+                                        <tr key={s.id} className={`border-b last:border-0 ${!s.is_active ? 'opacity-50' : ''}`}>
+                                            <td className="px-4 py-3 font-medium">{DAY_LABELS[s.day_of_week] ?? s.day_of_week}</td>
+                                            <td className="px-4 py-3">
+                                                {s.classroom?.name ?? (
+                                                    <span className="text-muted-foreground">Semua Kelas</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className="font-mono">{fmt(s.check_in_start)}</span>
+                                                <span className="text-muted-foreground mx-1">-</span>
+                                                <span className="font-mono">{fmt(s.check_in_end)}</span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className="font-mono font-semibold text-orange-600">{fmt(s.late_threshold)}</span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className="font-mono">{fmt(s.check_out_start)}</span>
+                                                <span className="text-muted-foreground mx-1">-</span>
+                                                <span className="font-mono">{fmt(s.check_out_end)}</span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Badge variant={s.is_active ? 'default' : 'secondary'}>
+                                                    {s.is_active ? 'Aktif' : 'Nonaktif'}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="flex justify-end gap-1">
                                                     <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(s)}>
                                                         <Edit className="size-3.5" />
                                                     </Button>
@@ -199,7 +208,7 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
                                                             <AlertDialogHeader>
                                                                 <AlertDialogTitle>Hapus Jadwal</AlertDialogTitle>
                                                                 <AlertDialogDescription>
-                                                                    Hapus jadwal {label} {s.classroom?.name ? `(${s.classroom.name})` : '(Semua Kelas)'}?
+                                                                    Hapus jadwal {DAY_LABELS[s.day_of_week]} {s.classroom?.name ? `(${s.classroom.name})` : '(Semua Kelas)'}?
                                                                 </AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
@@ -214,14 +223,14 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
                                                         </AlertDialogContent>
                                                     </AlertDialog>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            )}
-                        </Card>
-                    ))}
-                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Create/Edit Dialog */}
