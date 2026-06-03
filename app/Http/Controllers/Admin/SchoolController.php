@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AttendanceSchedule;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
 use Illuminate\Http\RedirectResponse;
@@ -66,6 +67,7 @@ class SchoolController extends Controller
         $school = School::create($validated);
 
         $this->createDefaultCardLayouts($school);
+        $this->createDefaultSchedules($school);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Sekolah berhasil ditambahkan.']);
 
@@ -171,5 +173,33 @@ class SchoolController extends Controller
                 'frame_id' => null,
             ],
         ]);
+    }
+
+    /**
+     * Create default attendance schedules (Mon-Sat) for a new school.
+     */
+    private function createDefaultSchedules(School $school): void
+    {
+        $schedules = [];
+
+        // Monday (1) to Saturday (6)
+        for ($day = 1; $day <= 6; $day++) {
+            $schedules[] = [
+                'id' => (string) Str::ulid(),
+                'school_id' => $school->id,
+                'classroom_id' => null, // global schedule
+                'day_of_week' => $day,
+                'check_in_start' => '06:00',
+                'check_in_end' => '08:00',
+                'late_threshold' => '07:15',
+                'check_out_start' => '12:00',
+                'check_out_end' => '17:00',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        AttendanceSchedule::insert($schedules);
     }
 }
