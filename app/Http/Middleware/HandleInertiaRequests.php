@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\School;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -60,7 +61,12 @@ class HandleInertiaRequests extends Middleware
                     'id' => $school->id,
                     'name' => $school->name,
                     'slug' => $school->slug,
-                    'logo' => $school->logo_path,
+                    'logo' => $school->logo_path
+                        ? Storage::disk('public')->url($school->logo_path)
+                        : null,
+                    'favicon' => $school->favicon_path
+                        ? Storage::disk('public')->url($school->favicon_path)
+                        : null,
                 ] : null;
             },
             'schools' => $user ? function () {
