@@ -13,9 +13,6 @@ import { dashboard } from '@/routes';
 
 type SettingsData = {
     school_name: string;
-    default_check_in_time: string;
-    late_threshold_time: string;
-    default_check_out_time: string;
     timezone: string;
     whatsapp_enabled: boolean;
     notify_on_check_in: boolean;
@@ -35,9 +32,6 @@ export default function PengaturanIndex({ settings, logoUrl, faviconUrl }: Props
 
     const { data, setData, put, processing } = useForm<SettingsData>({
         school_name: (settings.school_name as string) || '',
-        default_check_in_time: (settings.default_check_in_time as string) || '07:00',
-        late_threshold_time: (settings.late_threshold_time as string) || '07:15',
-        default_check_out_time: (settings.default_check_out_time as string) || '15:00',
         timezone: (settings.timezone as string) || 'Asia/Jakarta',
         whatsapp_enabled: Boolean(settings.whatsapp_enabled),
         notify_on_check_in: Boolean(settings.notify_on_check_in),
@@ -175,46 +169,16 @@ export default function PengaturanIndex({ settings, logoUrl, faviconUrl }: Props
                     </CardContent>
                 </Card>
 
-                {/* Card 2: Konfigurasi Absensi */}
+                {/* Card 2: Zona Waktu */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center gap-2">
                             <Clock className="size-5 text-green-600" />
-                            <CardTitle>Konfigurasi Absensi</CardTitle>
+                            <CardTitle>Zona Waktu</CardTitle>
                         </div>
-                        <CardDescription>Atur jam masuk, batas terlambat, dan jam pulang default.</CardDescription>
+                        <CardDescription>Pengaturan zona waktu untuk sistem absensi.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid gap-4 sm:grid-cols-3">
-                            <div className="grid gap-2">
-                                <Label htmlFor="default_check_in_time" className="text-sm font-medium">Jam Masuk Default</Label>
-                                <Input
-                                    id="default_check_in_time"
-                                    type="time"
-                                    value={data.default_check_in_time}
-                                    onChange={(e) => setData('default_check_in_time', e.target.value)}
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="late_threshold_time" className="text-sm font-medium">Batas Waktu Terlambat</Label>
-                                <Input
-                                    id="late_threshold_time"
-                                    type="time"
-                                    value={data.late_threshold_time}
-                                    onChange={(e) => setData('late_threshold_time', e.target.value)}
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="default_check_out_time" className="text-sm font-medium">Jam Pulang Default</Label>
-                                <Input
-                                    id="default_check_out_time"
-                                    type="time"
-                                    value={data.default_check_out_time}
-                                    onChange={(e) => setData('default_check_out_time', e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        <Separator />
+                    <CardContent>
                         <div className="grid gap-2">
                             <Label htmlFor="timezone" className="text-sm font-medium">Zona Waktu</Label>
                             <Select value={data.timezone} onValueChange={(val) => setData('timezone', val)}>
