@@ -31,9 +31,20 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @php
+            $school = app()->bound('currentSchool') ? app('currentSchool') : null;
+            $faviconUrl = $school?->favicon_path
+                ? Illuminate\Support\Facades\Storage::disk('public')->url($school->favicon_path)
+                : null;
+        @endphp
+        @if($faviconUrl)
+            <link rel="icon" href="{{ $faviconUrl }}" type="image/webp">
+            <link rel="apple-touch-icon" href="{{ $faviconUrl }}">
+        @else
+            <link rel="icon" href="/favicon.ico" sizes="any">
+            <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+            <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @endif
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
