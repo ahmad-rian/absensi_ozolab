@@ -190,13 +190,6 @@ export default function AlbumGenerationIndex({ layouts, classrooms, students, dr
                                                     checked={selectedIds.has(s.id)}
                                                     onCheckedChange={() => toggleStudent(s.id)}
                                                 />
-                                                <div className={`flex size-8 shrink-0 items-center justify-center rounded-md text-xs ${
-                                                    s.has_photo
-                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                                                        : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800'
-                                                }`}>
-                                                    {s.has_photo ? '📷' : '👤'}
-                                                </div>
                                                 <div className="min-w-0 flex-1">
                                                     <p className="truncate text-sm font-medium">{s.full_name}</p>
                                                     <p className="text-muted-foreground text-xs">

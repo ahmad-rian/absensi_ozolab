@@ -147,17 +147,18 @@ export default function AlbumLayoutsIndex({ layouts }: Props) {
                                     </div>
 
                                     {/* Mini preview */}
-                                    <div className="mb-4 rounded border bg-zinc-50 p-2 dark:bg-zinc-900">
+                                    <div
+                                        className="mb-4 overflow-hidden rounded border bg-zinc-50 p-2 dark:bg-zinc-900"
+                                        style={{
+                                            aspectRatio: layout.orientation === 'landscape' ? '1.414/1' : '1/1.414',
+                                        }}
+                                    >
                                         <div
-                                            className="mx-auto grid gap-1"
-                                            style={{
-                                                gridTemplateColumns: `repeat(${layout.columns}, 1fr)`,
-                                                maxWidth: layout.orientation === 'landscape' ? '100%' : '70%',
-                                                aspectRatio: layout.orientation === 'landscape' ? '1.414/1' : '1/1.414',
-                                            }}
+                                            className="grid size-full gap-1"
+                                            style={{ gridTemplateColumns: `repeat(${layout.columns}, 1fr)` }}
                                         >
                                             {Array.from({ length: Math.min(layout.columns * layout.rows, 20) }).map((_, i) => (
-                                                <div key={i} className="aspect-[3/4] rounded-sm bg-zinc-200 dark:bg-zinc-700" />
+                                                <div key={i} className="rounded-sm bg-zinc-200 dark:bg-zinc-700" />
                                             ))}
                                         </div>
                                     </div>

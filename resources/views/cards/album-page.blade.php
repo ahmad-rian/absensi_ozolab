@@ -42,32 +42,39 @@
             gap: {{ $config['grid_gap'] ?? '12' }}px;
         }
         .student-cell {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: left;
             padding: {{ $config['cell_padding'] ?? '8px' }};
             border: 1px solid {{ $config['cell_border_color'] ?? '#e5e7eb' }};
             border-radius: {{ $config['cell_radius'] ?? 8 }}px;
             background: {{ $config['cell_bg'] ?? '#fafafa' }};
+        }
+        .student-data {
+            flex: 1;
+            min-width: 0;
         }
         .student-photo {
             width: {{ $config['photo_size'] ?? 80 }}px;
             height: {{ ($config['photo_size'] ?? 80) * 1.3 }}px;
             border-radius: {{ $config['photo_radius'] ?? 6 }}px;
             object-fit: cover;
-            margin: 0 auto 6px;
             border: 2px solid {{ $config['photo_border_color'] ?? '#cbd5e1' }};
             display: block;
+            flex-shrink: 0;
         }
         .photo-placeholder {
             width: {{ $config['photo_size'] ?? 80 }}px;
             height: {{ ($config['photo_size'] ?? 80) * 1.3 }}px;
             border-radius: {{ $config['photo_radius'] ?? 6 }}px;
-            margin: 0 auto 6px;
             background: #e2e8f0;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #94a3b8;
             font-size: 24px;
+            flex-shrink: 0;
         }
         .student-name {
             font-size: {{ $config['name_size'] ?? 11 }}px;
@@ -79,6 +86,14 @@
             font-size: {{ $config['info_size'] ?? 9 }}px;
             color: #6b7280;
             margin-top: 2px;
+        }
+        .student-field {
+            font-size: {{ $config['info_size'] ?? 9 }}px;
+            color: #374151;
+            line-height: 1.5;
+        }
+        .student-field span {
+            color: #6b7280;
         }
         .footer {
             position: absolute;
@@ -100,20 +115,17 @@
     <div class="grid">
         @foreach($students as $student)
             <div class="student-cell">
+                <div class="student-data">
+                    <div class="student-name">{{ $student->full_name }}</div>
+                    <div class="student-field"><span>Kelas</span> : {{ $student->classroom?->name ?? '-' }}</div>
+                    <div class="student-field"><span>No. Induk</span> : {{ $student->nis ?? '-' }}</div>
+                    <div class="student-field"><span>No. Absen</span> : {{ $student->no_absen ?? '-' }}</div>
+                </div>
                 @if(isset($photoMap[$student->id]))
-                    <img src="{{ $photoMap[$student->id] }}"
-                         alt="{{ $student->full_name }}"
-                         class="student-photo">
+                    <img src="{{ $photoMap[$student->id] }}" alt="{{ $student->full_name }}" class="student-photo">
                 @else
                     <div class="photo-placeholder">👤</div>
                 @endif
-                <div class="student-name">{{ $student->full_name }}</div>
-                <div class="student-info">
-                    {{ $student->nis ?? '-' }}
-                    @if($student->classroom)
-                        · {{ $student->classroom->name }}
-                    @endif
-                </div>
             </div>
         @endforeach
     </div>
