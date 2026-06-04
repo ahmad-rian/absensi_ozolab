@@ -98,8 +98,8 @@
             line-height: 1.6;
         }
         .field-table td { padding: 0; white-space: nowrap; }
-        .field-table .f-label { color: #6b7280; padding-right: 4px; }
-        .field-table .f-sep { padding: 0 3px; color: #9ca3af; }
+        .field-table .f-label { color: #1f2937; padding-right: 4px; }
+        .field-table .f-sep { padding: 0 3px; color: #374151; }
         .field-table .f-value { font-weight: 600; color: #1f2937; }
         .footer {
             position: absolute;
