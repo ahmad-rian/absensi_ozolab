@@ -63,6 +63,7 @@
             width: 1px;
             background: {{ $config['cell_border_color'] ?? '#e5e7eb' }};
             flex-shrink: 0;
+            margin: 10px 0;
         }
         .student-photo-wrap {
             display: flex;
@@ -89,13 +90,6 @@
             justify-content: center;
             color: #94a3b8;
             font-size: 24px;
-        }
-        .student-name {
-            font-size: {{ $config['name_size'] ?? 11 }}px;
-            font-weight: 700;
-            color: #1f2937;
-            line-height: 1.3;
-            margin-bottom: 4px;
         }
         .field-table {
             border-spacing: 0;
@@ -128,8 +122,8 @@
         @foreach($students as $student)
             <div class="student-cell">
                 <div class="student-data">
-                    <div class="student-name">{{ $student->full_name }}</div>
                     <table class="field-table">
+                        <tr><td class="f-label">Nama Lengkap</td><td class="f-sep">:</td><td class="f-value">{{ $student->full_name }}</td></tr>
                         <tr><td class="f-label">Kelas</td><td class="f-sep">:</td><td class="f-value">{{ $student->classroom?->name ?? '-' }}</td></tr>
                         <tr><td class="f-label">No. Induk</td><td class="f-sep">:</td><td class="f-value">{{ $student->nis ?? '-' }}</td></tr>
                         <tr><td class="f-label">No. Absen</td><td class="f-sep">:</td><td class="f-value">{{ $student->no_absen ?? '-' }}</td></tr>
