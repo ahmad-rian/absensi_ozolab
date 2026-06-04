@@ -93,16 +93,17 @@
         }
         .field-table {
             border-spacing: 0;
-            font-size: {{ $config['info_size'] ?? 9 }}px;
-            color: #374151;
-            line-height: 1.6;
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+            font-size: {{ $config['info_size'] ?? 11 }}px;
+            color: #1f2937;
+            line-height: 1.7;
         }
-        .field-table { table-layout: fixed; width: 100%; }
         .field-table td { padding: 1px 0; vertical-align: top; }
-        .field-table .f-label { color: #1f2937; width: 90px; white-space: nowrap; }
-        .field-table .f-sep { width: 12px; }
-        .field-table .f-sep { padding: 0; color: #374151; }
-        .field-table .f-value { font-weight: 600; color: #1f2937; }
+        .field-table .f-label { width: 75px; white-space: nowrap; }
+        .field-table .f-sep { width: 10px; text-align: center; }
+        .field-table .f-value { font-weight: 600; word-break: break-word; overflow-wrap: break-word; }
         .footer {
             position: absolute;
             bottom: 15px;
