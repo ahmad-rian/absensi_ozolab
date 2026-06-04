@@ -63,13 +63,13 @@
             width: 1px;
             background: {{ $config['cell_border_color'] ?? '#e5e7eb' }};
             flex-shrink: 0;
-            margin: 25% 0;
+            margin: 20px 0;
         }
         .student-photo-wrap {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 12px;
+            padding: 14px 20px;
             flex-shrink: 0;
         }
         .student-photo {
