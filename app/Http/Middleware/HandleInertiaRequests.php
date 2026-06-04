@@ -61,12 +61,6 @@ class HandleInertiaRequests extends Middleware
                     'id' => $school->id,
                     'name' => $school->name,
                     'slug' => $school->slug,
-                    'logo' => $school->logo_path
-                        ? Storage::disk('public')->url($school->logo_path)
-                        : null,
-                    'favicon' => $school->favicon_path
-                        ? Storage::disk('public')->url($school->favicon_path)
-                        : null,
                 ] : null;
             },
             'schools' => $user ? function () {
@@ -74,10 +68,16 @@ class HandleInertiaRequests extends Middleware
                     ->orderBy('name')
                     ->get(['id', 'name', 'slug']);
             } : [],
-            'app' => [
-                'school_name' => Setting::getValue('school_name', 'SMP Nusantara'),
-                'school_logo' => Setting::getValue('school_logo'),
-            ],
+            'app' => function () {
+                $logoPath = Setting::getValue('app_logo');
+                $faviconPath = Setting::getValue('app_favicon');
+
+                return [
+                    'school_name' => Setting::getValue('school_name', 'SMP Nusantara'),
+                    'logo' => $logoPath ? Storage::disk('public')->url($logoPath) : null,
+                    'favicon' => $faviconPath ? Storage::disk('public')->url($faviconPath) : null,
+                ];
+            },
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

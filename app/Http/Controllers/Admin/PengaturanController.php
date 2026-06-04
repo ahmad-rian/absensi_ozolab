@@ -41,8 +41,9 @@ class PengaturanController extends Controller
             $settings['school_name'] = $school->getSetting('school_name') ?? $school->name;
         }
 
-        $logoPath = $school?->logo_path ?? ($settings['school_logo'] ?? '');
-        $faviconPath = $school?->favicon_path ?? ($settings['school_favicon'] ?? '');
+        // App-level logo/favicon (global, not per-school)
+        $logoPath = Setting::getValue('app_logo', '');
+        $faviconPath = Setting::getValue('app_favicon', '');
 
         return Inertia::render('admin/pengaturan/index', [
             'settings' => $settings,
@@ -98,22 +99,13 @@ class PengaturanController extends Controller
     {
         $request->validate(['logo' => ['required', 'image', 'max:2048']]);
 
-        $school = School::find(auth()->user()->school_id);
-        $oldPath = $school?->logo_path ?? Setting::getValue('school_logo', '');
-
+        $oldPath = Setting::getValue('app_logo', '');
         if ($oldPath && Storage::disk('public')->exists($oldPath)) {
             Storage::disk('public')->delete($oldPath);
         }
 
         $path = $converter->storeAsWebp($request->file('logo'), 'images/branding', 'public', 85, 512);
-
-        if ($school) {
-            $school->update(['logo_path' => $path]);
-            $school->setSetting('school_logo', $path);
-            $school->save();
-        } else {
-            Setting::setValue('school_logo', $path);
-        }
+        Setting::setValue('app_logo', $path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Logo berhasil diupload.']);
 
@@ -124,22 +116,13 @@ class PengaturanController extends Controller
     {
         $request->validate(['favicon' => ['required', 'image', 'max:2048']]);
 
-        $school = School::find(auth()->user()->school_id);
-        $oldPath = $school?->favicon_path ?? Setting::getValue('school_favicon', '');
-
+        $oldPath = Setting::getValue('app_favicon', '');
         if ($oldPath && Storage::disk('public')->exists($oldPath)) {
             Storage::disk('public')->delete($oldPath);
         }
 
         $path = $converter->storeAsWebp($request->file('favicon'), 'images/branding', 'public', 85, 128);
-
-        if ($school) {
-            $school->update(['favicon_path' => $path]);
-            $school->setSetting('school_favicon', $path);
-            $school->save();
-        } else {
-            Setting::setValue('school_favicon', $path);
-        }
+        Setting::setValue('app_favicon', $path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Favicon berhasil diupload.']);
 

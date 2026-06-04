@@ -32,9 +32,9 @@
         </style>
 
         @php
-            $school = app()->bound('currentSchool') ? app('currentSchool') : null;
-            $faviconUrl = $school?->favicon_path
-                ? Illuminate\Support\Facades\Storage::disk('public')->url($school->favicon_path)
+            $faviconPath = App\Models\Setting::getValue('app_favicon');
+            $faviconUrl = $faviconPath
+                ? Illuminate\Support\Facades\Storage::disk('public')->url($faviconPath)
                 : null;
         @endphp
         @if($faviconUrl)
