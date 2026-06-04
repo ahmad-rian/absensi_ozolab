@@ -52,9 +52,9 @@
             overflow: hidden;
         }
         .student-data {
-            flex: 1;
+            flex: 6;
             min-width: 0;
-            padding: {{ $config['cell_padding'] ?? '8px' }};
+            padding: {{ $config['cell_padding'] ?? '12px' }};
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -63,14 +63,14 @@
             width: 1px;
             background: {{ $config['cell_border_color'] ?? '#e5e7eb' }};
             flex-shrink: 0;
-            margin: 20px 0;
+            margin: 16px 0;
         }
         .student-photo-wrap {
+            flex: 4;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 14px 20px;
-            flex-shrink: 0;
+            padding: 10px;
         }
         .student-photo {
             width: {{ $config['photo_size'] ?? 80 }}px;
