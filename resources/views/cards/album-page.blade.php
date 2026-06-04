@@ -43,17 +43,33 @@
         }
         .student-cell {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            align-items: stretch;
             text-align: left;
-            padding: {{ $config['cell_padding'] ?? '8px' }};
+            padding: 0;
             border: 1px solid {{ $config['cell_border_color'] ?? '#e5e7eb' }};
             border-radius: {{ $config['cell_radius'] ?? 8 }}px;
             background: {{ $config['cell_bg'] ?? '#fafafa' }};
+            overflow: hidden;
         }
         .student-data {
             flex: 1;
             min-width: 0;
+            padding: {{ $config['cell_padding'] ?? '8px' }};
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .student-divider {
+            width: 1px;
+            background: {{ $config['cell_border_color'] ?? '#e5e7eb' }};
+            flex-shrink: 0;
+        }
+        .student-photo-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            flex-shrink: 0;
         }
         .student-photo {
             width: {{ $config['photo_size'] ?? 80 }}px;
@@ -62,7 +78,6 @@
             object-fit: cover;
             border: 2px solid {{ $config['photo_border_color'] ?? '#cbd5e1' }};
             display: block;
-            flex-shrink: 0;
         }
         .photo-placeholder {
             width: {{ $config['photo_size'] ?? 80 }}px;
@@ -74,27 +89,24 @@
             justify-content: center;
             color: #94a3b8;
             font-size: 24px;
-            flex-shrink: 0;
         }
         .student-name {
             font-size: {{ $config['name_size'] ?? 11 }}px;
-            font-weight: 600;
+            font-weight: 700;
             color: #1f2937;
             line-height: 1.3;
+            margin-bottom: 4px;
         }
-        .student-info {
-            font-size: {{ $config['info_size'] ?? 9 }}px;
-            color: #6b7280;
-            margin-top: 2px;
-        }
-        .student-field {
+        .field-table {
+            border-spacing: 0;
             font-size: {{ $config['info_size'] ?? 9 }}px;
             color: #374151;
-            line-height: 1.5;
+            line-height: 1.6;
         }
-        .student-field span {
-            color: #6b7280;
-        }
+        .field-table td { padding: 0; white-space: nowrap; }
+        .field-table .f-label { color: #6b7280; padding-right: 4px; }
+        .field-table .f-sep { padding: 0 3px; color: #9ca3af; }
+        .field-table .f-value { font-weight: 600; color: #1f2937; }
         .footer {
             position: absolute;
             bottom: 15px;
@@ -117,15 +129,20 @@
             <div class="student-cell">
                 <div class="student-data">
                     <div class="student-name">{{ $student->full_name }}</div>
-                    <div class="student-field"><span>Kelas</span> : {{ $student->classroom?->name ?? '-' }}</div>
-                    <div class="student-field"><span>No. Induk</span> : {{ $student->nis ?? '-' }}</div>
-                    <div class="student-field"><span>No. Absen</span> : {{ $student->no_absen ?? '-' }}</div>
+                    <table class="field-table">
+                        <tr><td class="f-label">Kelas</td><td class="f-sep">:</td><td class="f-value">{{ $student->classroom?->name ?? '-' }}</td></tr>
+                        <tr><td class="f-label">No. Induk</td><td class="f-sep">:</td><td class="f-value">{{ $student->nis ?? '-' }}</td></tr>
+                        <tr><td class="f-label">No. Absen</td><td class="f-sep">:</td><td class="f-value">{{ $student->no_absen ?? '-' }}</td></tr>
+                    </table>
                 </div>
-                @if(isset($photoMap[$student->id]))
-                    <img src="{{ $photoMap[$student->id] }}" alt="{{ $student->full_name }}" class="student-photo">
-                @else
-                    <div class="photo-placeholder"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-                @endif
+                <div class="student-divider"></div>
+                <div class="student-photo-wrap">
+                    @if(isset($photoMap[$student->id]))
+                        <img src="{{ $photoMap[$student->id] }}" alt="{{ $student->full_name }}" class="student-photo">
+                    @else
+                        <div class="photo-placeholder"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    @endif
+                </div>
             </div>
         @endforeach
     </div>
