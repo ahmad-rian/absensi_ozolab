@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Eye, Loader2, Save } from 'lucide-react';
+import { Eye, Loader2, Save, User } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -120,8 +120,8 @@ function CardPreview({ config, type, frames }: { config: Record<string, unknown>
                     top: photoTop, left: photoLeft,
                     width: photoW, height: photoH,
                 }}>
-                    <div className="flex size-full items-center justify-center text-white/70" style={{ fontSize: photoW * 0.4 }}>
-                        👤
+                    <div className="flex size-full items-center justify-center text-white/70">
+                        <User style={{ width: photoW * 0.4, height: photoW * 0.4 }} />
                     </div>
                 </div>
 

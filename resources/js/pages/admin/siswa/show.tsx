@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { ArrowLeft, Download, Printer, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -108,8 +108,8 @@ export default function SiswaShow({ student, qrSvg }: PageProps) {
                                         className="size-24 shrink-0 rounded-xl border-2 border-blue-200 object-cover shadow-md"
                                     />
                                 ) : (
-                                    <div className="flex size-24 shrink-0 items-center justify-center rounded-xl border-2 border-zinc-200 bg-zinc-100 text-3xl dark:bg-zinc-800">
-                                        👤
+                                    <div className="flex size-24 shrink-0 items-center justify-center rounded-xl border-2 border-zinc-200 bg-zinc-100 dark:bg-zinc-800">
+                                        <User className="size-10 text-zinc-400" />
                                     </div>
                                 )}
                                 <div>
