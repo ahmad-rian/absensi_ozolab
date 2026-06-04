@@ -97,8 +97,10 @@
             color: #374151;
             line-height: 1.6;
         }
-        .field-table td { padding: 1px 0; white-space: nowrap; vertical-align: top; }
-        .field-table .f-label { color: #1f2937; width: 95px; }
+        .field-table { table-layout: fixed; width: 100%; }
+        .field-table td { padding: 1px 0; vertical-align: top; }
+        .field-table .f-label { color: #1f2937; width: 90px; white-space: nowrap; }
+        .field-table .f-sep { width: 12px; }
         .field-table .f-sep { padding: 0; color: #374151; }
         .field-table .f-value { font-weight: 600; color: #1f2937; }
         .footer {
@@ -123,7 +125,7 @@
             <div class="student-cell">
                 <div class="student-data">
                     <table class="field-table">
-                        <tr><td class="f-label">Nama Lengkap</td><td class="f-sep">:</td><td class="f-value">{{ $student->full_name }}</td></tr>
+                        <tr><td class="f-label">Nama</td><td class="f-sep">:</td><td class="f-value">{{ $student->full_name }}</td></tr>
                         <tr><td class="f-label">Kelas</td><td class="f-sep">:</td><td class="f-value">{{ $student->classroom?->name ?? '-' }}</td></tr>
                         <tr><td class="f-label">No. Induk</td><td class="f-sep">:</td><td class="f-value">{{ $student->nis ?? '-' }}</td></tr>
                         <tr><td class="f-label">No. Absen</td><td class="f-sep">:</td><td class="f-value">{{ $student->no_absen ?? '-' }}</td></tr>
