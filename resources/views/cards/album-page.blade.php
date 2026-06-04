@@ -63,13 +63,13 @@
             width: 1px;
             background: {{ $config['cell_border_color'] ?? '#e5e7eb' }};
             flex-shrink: 0;
-            margin: 10px 0;
+            margin: 14px 0;
         }
         .student-photo-wrap {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 6px;
+            padding: 12px;
             flex-shrink: 0;
         }
         .student-photo {
@@ -97,9 +97,9 @@
             color: #374151;
             line-height: 1.6;
         }
-        .field-table td { padding: 0; white-space: nowrap; }
-        .field-table .f-label { color: #1f2937; padding-right: 4px; }
-        .field-table .f-sep { padding: 0 3px; color: #374151; }
+        .field-table td { padding: 1px 0; white-space: nowrap; vertical-align: top; }
+        .field-table .f-label { color: #1f2937; width: 1px; padding-right: 2px; }
+        .field-table .f-sep { padding: 0 4px; color: #374151; }
         .field-table .f-value { font-weight: 600; color: #1f2937; }
         .footer {
             position: absolute;
