@@ -2,9 +2,12 @@ import AppLogoIcon from '@/components/app-logo-icon';
 import { usePage } from '@inertiajs/react';
 
 export default function AppLogo() {
-    const { currentSchool } = usePage<{ currentSchool?: { id: string; name: string; logo?: string | null } | null }>().props;
+    const { currentSchool, app } = usePage<{
+        currentSchool?: { name: string } | null;
+        app?: { logo?: string | null } | null;
+    }>().props;
     const schoolName = currentSchool?.name ?? 'Tyas Photo';
-    const logoUrl = currentSchool?.logo;
+    const logoUrl = (app as { logo?: string | null } | null)?.logo;
 
     return (
         <>
