@@ -99,7 +99,7 @@
         }
         .field-table td { padding: 1px 0; white-space: nowrap; vertical-align: top; }
         .field-table .f-label { color: #1f2937; width: 95px; }
-        .field-table .f-sep { padding: 0 2px 0 0; color: #374151; }
+        .field-table .f-sep { padding: 0; color: #374151; }
         .field-table .f-value { font-weight: 600; color: #1f2937; }
         .footer {
             position: absolute;
