@@ -1,5 +1,5 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, CreditCard, Download, Eye, ExternalLink, Loader2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, CreditCard, Download, Eye, ExternalLink, Loader2, User, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
@@ -224,7 +224,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                             {result.student.photo_url ? (
                                 <img src={result.student.photo_url} alt={result.student.full_name} className="h-24 w-[72px] rounded-xl border-2 border-green-300 object-cover" />
                             ) : (
-                                <div className="flex h-24 w-[72px] items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 text-3xl dark:bg-green-900">👤</div>
+                                <div className="flex h-24 w-[72px] items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 dark:bg-green-900"><User className="size-8 text-green-400" /></div>
                             )}
                             <div>
                                 <h3 className="text-lg font-bold">{result.student.full_name}</h3>

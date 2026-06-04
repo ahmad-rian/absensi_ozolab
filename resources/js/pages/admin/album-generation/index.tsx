@@ -254,7 +254,7 @@ export default function AlbumGenerationIndex({ layouts, classrooms, students, dr
                         <Card>
                             <CardContent className="pt-6">
                                 <ul className="text-muted-foreground list-inside list-disc space-y-1 text-xs">
-                                    <li>📷 = foto tersedia, 👤 = belum ada foto</li>
+                                    <li>Siswa tanpa foto ditampilkan dengan placeholder.</li>
                                     <li>Hasil berupa PNG (1 halaman) atau ZIP (multi halaman)</li>
                                     <li>Gunakan layout landscape untuk kertas horizontal</li>
                                 </ul>

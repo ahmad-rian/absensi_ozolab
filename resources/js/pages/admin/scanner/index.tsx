@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { CheckCircle2, LogIn, LogOut, ScanBarcode, XCircle, Zap } from 'lucide-react';
+import { Check, CheckCircle2, LogIn, LogOut, ScanBarcode, User, X, XCircle, Zap } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-sound';
 import { Badge } from '@/components/ui/badge';
@@ -247,8 +247,8 @@ export default function ScannerIndex() {
                                             className="size-24 shrink-0 rounded-xl border-2 border-green-300 object-cover shadow-sm"
                                         />
                                     ) : (
-                                        <div className="flex size-24 shrink-0 items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 text-3xl dark:bg-green-900">
-                                            👤
+                                        <div className="flex size-24 shrink-0 items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 dark:bg-green-900">
+                                            <User className="size-10 text-green-400" />
                                         </div>
                                     )}
                                     <div className="min-w-0 flex-1">
@@ -312,7 +312,7 @@ export default function ScannerIndex() {
                                                 <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg text-lg ${
                                                     entry.success ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'
                                                 }`}>
-                                                    {entry.success ? '✓' : '✗'}
+                                                    {entry.success ? <Check className="size-5" /> : <X className="size-5" />}
                                                 </div>
                                             )}
                                             <div className="min-w-0 flex-1">

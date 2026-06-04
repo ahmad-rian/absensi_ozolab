@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { CheckCircle2, Clock, LogIn, LogOut, ScanBarcode, XCircle, Zap } from 'lucide-react';
+import { Check, CheckCircle2, Clock, LogIn, LogOut, ScanBarcode, User, X, XCircle, Zap } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-sound';
 import AppLogoIcon from '@/components/app-logo-icon';
@@ -233,8 +233,8 @@ export default function ScannerPage({ school, userName }: { school: School; user
                                                     className="size-28 rounded-2xl border-3 border-emerald-300 object-cover shadow-lg"
                                                 />
                                             ) : (
-                                                <div className="flex size-28 items-center justify-center rounded-2xl border-3 border-emerald-300 bg-gradient-to-br from-emerald-50 to-green-100 text-4xl shadow-lg dark:from-emerald-900 dark:to-green-900">
-                                                    👤
+                                                <div className="flex size-28 items-center justify-center rounded-2xl border-3 border-emerald-300 bg-gradient-to-br from-emerald-50 to-green-100 shadow-lg dark:from-emerald-900 dark:to-green-900">
+                                                    <User className="size-12 text-emerald-400" />
                                                 </div>
                                             )}
                                         </div>
@@ -298,7 +298,7 @@ export default function ScannerPage({ school, userName }: { school: School; user
                                             <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white ${
                                                 entry.success ? 'bg-emerald-500' : 'bg-red-500'
                                             }`}>
-                                                {entry.success ? '✓' : '✗'}
+                                                {entry.success ? <Check className="size-5" /> : <X className="size-5" />}
                                             </div>
                                         )}
                                         <div className="min-w-0 flex-1">
