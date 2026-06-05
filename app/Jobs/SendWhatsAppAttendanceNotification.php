@@ -6,7 +6,6 @@ use App\Enums\NotificationChannel;
 use App\Enums\NotificationStatus;
 use App\Models\Attendance;
 use App\Models\NotificationLog;
-use App\Models\Setting;
 use App\Services\Notification\MessageTemplateRenderer;
 use App\Services\Notification\WhatsAppGateway;
 use Illuminate\Bus\Queueable;
@@ -50,7 +49,7 @@ class SendWhatsAppAttendanceNotification implements ShouldBeUnique, ShouldQueue
             'waktu' => $attendance->recorded_at?->format('H:i') ?? '-',
             'tanggal' => $attendance->attendance_date->translatedFormat('d F Y'),
             'status' => $attendance->status->label(),
-            'nama_sekolah' => Setting::getValue('school_name', 'Sekolah'),
+            'nama_sekolah' => $student->school?->name ?? 'Sekolah',
         ];
 
         $log = NotificationLog::create([
@@ -60,7 +59,7 @@ class SendWhatsAppAttendanceNotification implements ShouldBeUnique, ShouldQueue
             'parent_profile_id' => $parentProfile->id,
             'channel' => NotificationChannel::Whatsapp,
             'whatsapp_number' => $parentProfile->whatsapp_number,
-            'template_key' => config('whatsapp.attendance_template'),
+            'template_key' => 'attendance_notify',
             'payload' => $variables,
             'status' => NotificationStatus::Pending,
             'attempt_count' => $this->attempts(),
@@ -68,7 +67,7 @@ class SendWhatsAppAttendanceNotification implements ShouldBeUnique, ShouldQueue
 
         $success = $gateway->sendTemplate(
             $parentProfile->whatsapp_number,
-            config('whatsapp.attendance_template'),
+            'attendance_notify',
             $variables,
             $student->school_id,
         );
