@@ -2,27 +2,49 @@
 
 namespace App\Services\Notification;
 
+use App\Models\School;
+use App\Models\SchoolWaConfig;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class DefaultWhatsAppGateway implements WhatsAppGateway
 {
+    private const FONNTE_URL = 'https://api.fonnte.com/send';
+
     public function __construct(
-        private readonly string $baseUrl,
-        private readonly string $apiKey,
-        private readonly string $senderId,
-        private readonly int $timeout,
+        private readonly int $timeout = 10,
     ) {}
 
     /**
      * @param  array<string, string>  $variables
      */
-    public function sendTemplate(string $to, string $templateKey, array $variables): bool
+    public function sendTemplate(string $to, string $templateKey, array $variables, ?string $schoolId = null): bool
     {
-        if (empty($this->baseUrl)) {
-            Log::channel('whatsapp')->warning('WhatsApp base URL not configured, skipping send.', [
+        $message = $this->buildMessage($templateKey, $variables, $schoolId);
+
+        if (! $message) {
+            return false;
+        }
+
+        return $this->sendViaFonnte($to, $message, $schoolId);
+    }
+
+    public function sendText(string $to, string $message, ?string $schoolId = null): bool
+    {
+        return $this->sendViaFonnte($to, $message, $schoolId);
+    }
+
+    /**
+     * Send message via Fonnte API using per-school token.
+     */
+    private function sendViaFonnte(string $to, string $message, ?string $schoolId): bool
+    {
+        $config = $this->getConfig($schoolId);
+
+        if (! $config) {
+            Log::channel('whatsapp')->warning('No WA config for school, skipping.', [
+                'school_id' => $schoolId,
                 'to' => $to,
-                'template' => $templateKey,
             ]);
 
             return false;
@@ -30,37 +52,27 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
 
         try {
             $response = Http::timeout($this->timeout)
-                ->withHeaders([
-                    'Authorization' => "Bearer {$this->apiKey}",
-                    'Content-Type' => 'application/json',
-                ])
-                ->post("{$this->baseUrl}/send-template", [
-                    'sender_id' => $this->senderId,
-                    'to' => $to,
-                    'template_key' => $templateKey,
-                    'variables' => $variables,
+                ->withHeaders(['Authorization' => $config->fonnte_token])
+                ->post(self::FONNTE_URL, [
+                    'target' => $to,
+                    'message' => $message,
+                    'countryCode' => '62',
                 ]);
 
-            if ($response->successful()) {
-                Log::channel('whatsapp')->info('WhatsApp template sent.', [
-                    'to' => $to,
-                    'template' => $templateKey,
-                    'response' => $response->json(),
-                ]);
+            $data = $response->json();
+            $success = ($data['status'] ?? false) === true;
 
-                return true;
-            }
-
-            Log::channel('whatsapp')->error('WhatsApp send failed.', [
+            Log::channel('whatsapp')->info($success ? 'WA sent via Fonnte.' : 'Fonnte send failed.', [
                 'to' => $to,
-                'status' => $response->status(),
-                'body' => $response->body(),
+                'school_id' => $schoolId,
+                'response' => $data,
             ]);
 
-            return false;
+            return $success;
         } catch (\Throwable $e) {
-            Log::channel('whatsapp')->error('WhatsApp send exception.', [
+            Log::channel('whatsapp')->error('Fonnte send exception.', [
                 'to' => $to,
+                'school_id' => $schoolId,
                 'error' => $e->getMessage(),
             ]);
 
@@ -68,32 +80,31 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
         }
     }
 
-    public function sendText(string $to, string $message): bool
+    private function getConfig(?string $schoolId): ?SchoolWaConfig
     {
-        if (empty($this->baseUrl)) {
-            return false;
+        if (! $schoolId) {
+            return null;
         }
 
-        try {
-            $response = Http::timeout($this->timeout)
-                ->withHeaders([
-                    'Authorization' => "Bearer {$this->apiKey}",
-                    'Content-Type' => 'application/json',
-                ])
-                ->post("{$this->baseUrl}/send-text", [
-                    'sender_id' => $this->senderId,
-                    'to' => $to,
-                    'message' => $message,
-                ]);
+        return SchoolWaConfig::where('school_id', $schoolId)
+            ->where('is_active', true)
+            ->first();
+    }
 
-            return $response->successful();
-        } catch (\Throwable $e) {
-            Log::channel('whatsapp')->error('WhatsApp text send exception.', [
-                'to' => $to,
-                'error' => $e->getMessage(),
-            ]);
+    /**
+     * Build message from template by substituting variables.
+     */
+    private function buildMessage(string $templateKey, array $variables, ?string $schoolId): ?string
+    {
+        $school = $schoolId ? School::find($schoolId) : null;
+        $template = $school?->getSetting('whatsapp_template_attendance')
+            ?? 'Halo, {nama_siswa} ({kelas}) telah {status} di {nama_sekolah} pada {tanggal} pukul {waktu}. Terima kasih.';
 
-            return false;
+        $message = $template;
+        foreach ($variables as $key => $value) {
+            $message = str_replace("{{$key}}", $value, $message);
         }
+
+        return $message;
     }
 }

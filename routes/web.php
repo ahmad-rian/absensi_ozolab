@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\ScannerController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PublicScannerController;
 use App\Http\Controllers\StudentRegistrationController;
@@ -100,6 +101,11 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN|ADMIN|GURU'])->prefix('
         Route::post('drive-config', [DriveConfigController::class, 'update'])->name('admin.drive-config.update');
         Route::post('drive-config/test', [DriveConfigController::class, 'test'])->name('admin.drive-config.test');
         Route::get('drive-config/callback', [DriveConfigController::class, 'oauthCallback'])->name('admin.drive-config.callback');
+
+        Route::get('wa-config', [WaConfigController::class, 'index'])->name('admin.wa-config');
+        Route::post('wa-config', [WaConfigController::class, 'store'])->name('admin.wa-config.store');
+        Route::post('wa-config/test', [WaConfigController::class, 'testMessage'])->name('admin.wa-config.test');
+        Route::delete('wa-config', [WaConfigController::class, 'destroy'])->name('admin.wa-config.destroy');
     });
 
     // Super Admin only

@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureEvents(): void
     {
         Event::listen(StudentCheckedIn::class, DispatchAttendanceWhatsAppNotification::class);
+        Event::listen(StudentCheckedOut::class, DispatchAttendanceWhatsAppNotification::class);
         Event::listen(StudentCheckedIn::class, LogAttendanceActivity::class);
         Event::listen(StudentCheckedOut::class, LogAttendanceActivity::class);
     }
