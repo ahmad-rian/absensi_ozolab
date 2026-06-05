@@ -70,6 +70,7 @@ class SendWhatsAppAttendanceNotification implements ShouldBeUnique, ShouldQueue
             $parentProfile->whatsapp_number,
             config('whatsapp.attendance_template'),
             $variables,
+            $student->school_id,
         );
 
         $log->update([

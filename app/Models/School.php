@@ -72,6 +72,11 @@ class School extends Model
         return $this->hasOne(SchoolDriveConfig::class);
     }
 
+    public function waConfig(): HasOne
+    {
+        return $this->hasOne(SchoolWaConfig::class);
+    }
+
     public function frames(): HasMany
     {
         return $this->hasMany(SchoolFrame::class);

@@ -12,9 +12,6 @@ class WhatsAppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(WhatsAppGateway::class, function () {
             return new DefaultWhatsAppGateway(
-                baseUrl: (string) config('whatsapp.base_url'),
-                apiKey: (string) config('whatsapp.api_key'),
-                senderId: (string) config('whatsapp.sender_id'),
                 timeout: (int) config('whatsapp.timeout', 10),
             );
         });

@@ -10,6 +10,7 @@ import {
     Frame,
     GraduationCap,
     HardDrive,
+    MessageSquare,
     LayoutGrid,
     LayoutTemplate,
     Printer,
@@ -68,12 +69,14 @@ const adminItemsSuperAdmin: NavItem[] = [
     { title: 'Pengguna', href: '/admin/users', icon: UserCog },
     { title: 'Sekolah', href: '/admin/schools', icon: Building2 },
     { title: 'Role & Izin', href: '/admin/roles', icon: ShieldCheck },
+    { title: 'WhatsApp', href: '/admin/wa-config', icon: MessageSquare },
     { title: 'Google Drive', href: '/admin/drive-config', icon: HardDrive },
     { title: 'Pengaturan', href: '/admin/pengaturan', icon: Settings },
 ];
 
 const adminItemsAdmin: NavItem[] = [
     { title: 'Pengguna', href: '/admin/users', icon: UserCog },
+    { title: 'WhatsApp', href: '/admin/wa-config', icon: MessageSquare },
     { title: 'Google Drive', href: '/admin/drive-config', icon: HardDrive },
     { title: 'Pengaturan', href: '/admin/pengaturan', icon: Settings },
 ];
