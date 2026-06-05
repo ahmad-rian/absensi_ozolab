@@ -90,8 +90,8 @@ export default function WaConfigIndex({ config }: Props) {
                                     <>
                                         <XCircle className="text-muted-foreground size-8" />
                                         <div>
-                                            <p className="font-semibold">WhatsApp Belum Aktif</p>
-                                            <p className="text-muted-foreground text-sm">Isi form di bawah untuk mengaktifkan notifikasi.</p>
+                                            <p className="font-semibold">Fonnte Belum Disetup</p>
+                                            <p className="text-muted-foreground text-sm">Notifikasi dikirim via gateway default. Setup Fonnte untuk nomor WA khusus sekolah.</p>
                                         </div>
                                     </>
                                 )}

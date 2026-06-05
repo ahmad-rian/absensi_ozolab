@@ -11,6 +11,8 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
 {
     private const FONNTE_URL = 'https://api.fonnte.com/send';
 
+    private const DEFAULT_TEMPLATE = "Informasi Kehadiran - {nama_sekolah}\n\n{nama_siswa} ({kelas}) tercatat {status} pada {tanggal} pukul {waktu}.\n\nPesan ini dikirim otomatis oleh sistem absensi.";
+
     public function __construct(
         private readonly int $timeout = 10,
     ) {}
@@ -20,36 +22,37 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
      */
     public function sendTemplate(string $to, string $templateKey, array $variables, ?string $schoolId = null): bool
     {
-        $message = $this->buildMessage($templateKey, $variables, $schoolId);
+        $message = $this->buildMessage($variables, $schoolId);
 
-        if (! $message) {
-            return false;
-        }
-
-        return $this->sendViaFonnte($to, $message, $schoolId);
+        return $this->send($to, $message, $schoolId);
     }
 
     public function sendText(string $to, string $message, ?string $schoolId = null): bool
     {
-        return $this->sendViaFonnte($to, $message, $schoolId);
+        return $this->send($to, $message, $schoolId);
     }
 
     /**
-     * Send message via Fonnte API using per-school token.
+     * Send via best available gateway: Fonnte (per-school) → Ozolab (global fallback).
      */
-    private function sendViaFonnte(string $to, string $message, ?string $schoolId): bool
+    private function send(string $to, string $message, ?string $schoolId): bool
     {
-        $config = $this->getConfig($schoolId);
+        // Priority 1: Fonnte per-school config
+        $fonnteConfig = $schoolId ? $this->getFonnteConfig($schoolId) : null;
 
-        if (! $config) {
-            Log::channel('whatsapp')->warning('No WA config for school, skipping.', [
-                'school_id' => $schoolId,
-                'to' => $to,
-            ]);
-
-            return false;
+        if ($fonnteConfig) {
+            return $this->sendViaFonnte($to, $message, $fonnteConfig);
         }
 
+        // Priority 2: Ozolab gateway from .env
+        return $this->sendViaOzolab($to, $message);
+    }
+
+    /**
+     * Send via Fonnte API (per-school token).
+     */
+    private function sendViaFonnte(string $to, string $message, SchoolWaConfig $config): bool
+    {
         try {
             $response = Http::timeout($this->timeout)
                 ->withHeaders(['Authorization' => $config->fonnte_token])
@@ -62,25 +65,60 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
             $data = $response->json();
             $success = ($data['status'] ?? false) === true;
 
-            Log::channel('whatsapp')->info($success ? 'WA sent via Fonnte.' : 'Fonnte send failed.', [
+            Log::channel('whatsapp')->info($success ? 'Fonnte: sent.' : 'Fonnte: failed.', [
                 'to' => $to,
-                'school_id' => $schoolId,
                 'response' => $data,
             ]);
 
             return $success;
         } catch (\Throwable $e) {
-            Log::channel('whatsapp')->error('Fonnte send exception.', [
-                'to' => $to,
-                'school_id' => $schoolId,
-                'error' => $e->getMessage(),
-            ]);
+            Log::channel('whatsapp')->error('Fonnte exception.', ['to' => $to, 'error' => $e->getMessage()]);
 
             return false;
         }
     }
 
-    private function getConfig(?string $schoolId): ?SchoolWaConfig
+    /**
+     * Send via Ozolab WA Gateway (global .env config).
+     */
+    private function sendViaOzolab(string $to, string $message): bool
+    {
+        $baseUrl = config('whatsapp.base_url');
+        $apiKey = config('whatsapp.api_key');
+        $sender = config('whatsapp.sender');
+
+        if (empty($apiKey) || empty($sender)) {
+            Log::channel('whatsapp')->warning('Ozolab WA gateway not configured, skipping.', ['to' => $to]);
+
+            return false;
+        }
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->post("{$baseUrl}/send-message", [
+                    'api_key' => $apiKey,
+                    'sender' => $sender,
+                    'number' => $to,
+                    'message' => $message,
+                ]);
+
+            $data = $response->json();
+            $success = ($data['status'] ?? false) === true;
+
+            Log::channel('whatsapp')->info($success ? 'Ozolab: sent.' : 'Ozolab: failed.', [
+                'to' => $to,
+                'response' => $data,
+            ]);
+
+            return $success;
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('Ozolab exception.', ['to' => $to, 'error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    private function getFonnteConfig(?string $schoolId): ?SchoolWaConfig
     {
         if (! $schoolId) {
             return null;
@@ -92,13 +130,12 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
     }
 
     /**
-     * Build message from template by substituting variables.
+     * Build safe attendance message from template.
      */
-    private function buildMessage(string $templateKey, array $variables, ?string $schoolId): ?string
+    private function buildMessage(array $variables, ?string $schoolId): string
     {
         $school = $schoolId ? School::find($schoolId) : null;
-        $template = $school?->getSetting('whatsapp_template_attendance')
-            ?? 'Halo, {nama_siswa} ({kelas}) telah {status} di {nama_sekolah} pada {tanggal} pukul {waktu}. Terima kasih.';
+        $template = $school?->getSetting('whatsapp_template_attendance') ?? self::DEFAULT_TEMPLATE;
 
         $message = $template;
         foreach ($variables as $key => $value) {

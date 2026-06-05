@@ -1,12 +1,13 @@
 <?php
 
 return [
-    'base_url' => env('WHATSAPP_BASE_URL', ''),
-    'api_key' => env('WHATSAPP_API_KEY', ''),
-    'sender_id' => env('WHATSAPP_SENDER_ID', ''),
-    'timeout' => env('WHATSAPP_TIMEOUT', 10),
-    'attendance_template' => env('WHATSAPP_ATTENDANCE_TEMPLATE', 'attendance_notify_v1'),
-    'queue' => env('WHATSAPP_QUEUE', 'whatsapp'),
+    // Ozolab WA Gateway (default fallback)
+    'base_url' => env('WA_BASE_URL', 'https://wa.ozolab.id'),
+    'api_key' => env('WA_API_KEY', ''),
+    'sender' => env('WA_SENDER', ''),
+
+    'timeout' => env('WA_TIMEOUT', 10),
+    'queue' => env('WA_QUEUE', 'whatsapp'),
     'retry' => [
         'times' => 3,
         'backoff' => [30, 120, 600],
