@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
-import { Check, CheckCircle2, LogIn, LogOut, ScanBarcode, User, X, XCircle, Zap } from 'lucide-react';
+import { Camera, Check, CheckCircle2, LogIn, LogOut, ScanBarcode, User, X, XCircle, Zap } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { QrScanner } from '@/components/scanner/qr-scanner';
 import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-sound';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { dashboard } from '@/routes';
 
 type AttendanceType = 'CHECK_IN' | 'CHECK_OUT';
+type ScanMode = 'barcode' | 'webcam';
 
 type StudentResult = {
     id: string;
@@ -33,6 +35,7 @@ const COOLDOWN_MS = 2000;
 let logId = 0;
 
 export default function ScannerIndex() {
+    const [scanMode, setScanMode] = useState<ScanMode>('barcode');
     const [attendanceType, setAttendanceType] = useState<AttendanceType>('CHECK_IN');
     const [lastStudent, setLastStudent] = useState<StudentResult | null>(null);
     const [lastError, setLastError] = useState<string | null>(null);
@@ -189,45 +192,78 @@ export default function ScannerIndex() {
                 </div>
 
                 <div className="mx-auto w-full max-w-2xl space-y-4">
-                    {/* Barcode Scanner Card */}
-                    <Card>
-                        <CardHeader className="text-center">
-                            <div className="bg-primary/10 text-primary mx-auto mb-2 flex size-16 items-center justify-center rounded-2xl">
-                                <ScanBarcode className="size-8" />
-                            </div>
-                            <CardTitle>Barcode Scanner</CardTitle>
-                            <CardDescription>
-                                Arahkan barcode gun ke QR Code siswa. Hasil scan otomatis terdeteksi.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className={`rounded-xl border-2 border-dashed p-6 text-center transition-colors ${cooldown ? 'border-yellow-300 bg-yellow-50 dark:border-yellow-700 dark:bg-yellow-950' : 'border-primary/30 bg-primary/5'}`}>
-                                <Zap className={`mx-auto mb-3 size-8 ${cooldown ? 'text-yellow-500' : 'text-primary'}`} />
-                                <p className="text-sm font-semibold">{cooldown ? 'Memproses...' : 'Scanner Siap'}</p>
-                                <p className="text-muted-foreground mt-1 text-xs">
-                                    Klik area ini lalu scan — data otomatis masuk via barcode gun.
-                                </p>
-                                {barcodeBuffer && (
-                                    <div className="text-primary mt-3 font-mono text-lg font-bold tracking-wider">
-                                        {barcodeBuffer}
-                                        <span className="animate-pulse">|</span>
-                                    </div>
-                                )}
+                    {/* Scan Mode Toggle */}
+                    <div className="flex gap-2 rounded-lg border p-1">
+                        <Button
+                            variant={scanMode === 'barcode' ? 'default' : 'ghost'}
+                            className="flex-1"
+                            size="sm"
+                            onClick={() => setScanMode('barcode')}
+                        >
+                            <ScanBarcode className="mr-2 size-4" />
+                            Barcode Gun
+                        </Button>
+                        <Button
+                            variant={scanMode === 'webcam' ? 'default' : 'ghost'}
+                            className="flex-1"
+                            size="sm"
+                            onClick={() => setScanMode('webcam')}
+                        >
+                            <Camera className="mr-2 size-4" />
+                            Webcam
+                        </Button>
+                    </div>
 
-                                <form onSubmit={handleBarcodeInputSubmit} className="mt-3">
-                                    <input
-                                        ref={barcodeInputRef}
-                                        type="text"
-                                        className="border-input mx-auto block w-full max-w-xs rounded-lg border bg-white/50 px-3 py-2 text-center font-mono text-sm opacity-60 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary/30 dark:bg-black/20"
-                                        placeholder="Klik sini lalu scan..."
-                                        autoFocus
-                                        autoComplete="off"
-                                        disabled={cooldown}
-                                    />
-                                </form>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    {/* Barcode Scanner Card */}
+                    {scanMode === 'barcode' && (
+                        <Card>
+                            <CardHeader className="text-center">
+                                <div className="bg-primary/10 text-primary mx-auto mb-2 flex size-16 items-center justify-center rounded-2xl">
+                                    <ScanBarcode className="size-8" />
+                                </div>
+                                <CardTitle>Barcode Scanner</CardTitle>
+                                <CardDescription>
+                                    Arahkan barcode gun ke QR Code siswa. Hasil scan otomatis terdeteksi.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className={`rounded-xl border-2 border-dashed p-6 text-center transition-colors ${cooldown ? 'border-yellow-300 bg-yellow-50 dark:border-yellow-700 dark:bg-yellow-950' : 'border-primary/30 bg-primary/5'}`}>
+                                    <Zap className={`mx-auto mb-3 size-8 ${cooldown ? 'text-yellow-500' : 'text-primary'}`} />
+                                    <p className="text-sm font-semibold">{cooldown ? 'Memproses...' : 'Scanner Siap'}</p>
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        Klik area ini lalu scan — data otomatis masuk via barcode gun.
+                                    </p>
+                                    {barcodeBuffer && (
+                                        <div className="text-primary mt-3 font-mono text-lg font-bold tracking-wider">
+                                            {barcodeBuffer}
+                                            <span className="animate-pulse">|</span>
+                                        </div>
+                                    )}
+
+                                    <form onSubmit={handleBarcodeInputSubmit} className="mt-3">
+                                        <input
+                                            ref={barcodeInputRef}
+                                            type="text"
+                                            className="border-input mx-auto block w-full max-w-xs rounded-lg border bg-white/50 px-3 py-2 text-center font-mono text-sm opacity-60 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary/30 dark:bg-black/20"
+                                            placeholder="Klik sini lalu scan..."
+                                            autoFocus
+                                            autoComplete="off"
+                                            disabled={cooldown}
+                                        />
+                                    </form>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Webcam Scanner */}
+                    {scanMode === 'webcam' && (
+                        <QrScanner
+                            scanEndpoint="/admin/scanner/scan"
+                            scanType={attendanceType}
+                            extraPayload={{ mode: 'attendance' }}
+                        />
+                    )}
 
                     {/* Student Result Card */}
                     {lastStudent && (
