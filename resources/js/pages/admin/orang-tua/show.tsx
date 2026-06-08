@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,6 +78,21 @@ export default function OrangTuaShow({ parent }: PageProps) {
                                     {parent.city ? `, ${parent.city}` : ''}
                                 </dd>
                             </div>
+                            {parent.created_at && (
+                                <div>
+                                    <dt className="text-muted-foreground text-sm font-medium">Terdaftar Sejak</dt>
+                                    <dd className="mt-1 flex items-center gap-1.5 text-sm">
+                                        <Calendar className="text-muted-foreground size-3.5" />
+                                        {new Date(parent.created_at).toLocaleDateString('id-ID', {
+                                            day: 'numeric',
+                                            month: 'long',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
+                                    </dd>
+                                </div>
+                            )}
                         </dl>
                     </CardContent>
                 </Card>

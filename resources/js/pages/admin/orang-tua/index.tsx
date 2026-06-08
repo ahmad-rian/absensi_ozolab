@@ -105,7 +105,7 @@ export default function OrangTuaIndex({ parents, filters }: PageProps) {
                                 <TableHead>Email</TableHead>
                                 <TableHead>WhatsApp</TableHead>
                                 <TableHead>Hubungan</TableHead>
-                                <TableHead>Jumlah Anak</TableHead>
+                                <TableHead>Anak</TableHead>
                                 <TableHead className="text-right">Aksi</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -125,7 +125,22 @@ export default function OrangTuaIndex({ parents, filters }: PageProps) {
                                         <TableCell>
                                             <Badge variant="secondary">{relationLabel(parent.relation)}</Badge>
                                         </TableCell>
-                                        <TableCell>{parent.students?.length ?? 0} anak</TableCell>
+                                        <TableCell>
+                                            {parent.students && parent.students.length > 0 ? (
+                                                <div className="space-y-0.5">
+                                                    {parent.students.map((student) => (
+                                                        <div key={student.id} className="text-sm">
+                                                            <span className="font-medium">{student.full_name}</span>
+                                                            {student.classroom && (
+                                                                <span className="text-muted-foreground"> — {student.classroom.name}</span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground">-</span>
+                                            )}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
                                                 <Button variant="ghost" size="icon" asChild>

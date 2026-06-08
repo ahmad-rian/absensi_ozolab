@@ -27,6 +27,7 @@ export type ParentProfile = {
     occupation: string | null;
     address: string | null;
     city: string | null;
+    created_at?: string;
     user?: { id: string; name: string; email: string };
     students?: Student[];
 };
