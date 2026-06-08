@@ -19,6 +19,16 @@ class PublicScannerController extends Controller
         $user = $request->user();
         $school = School::find($user->school_id);
 
+        $schools = School::where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (School $s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'slug' => $s->slug,
+                'logo_url' => $s->logo_path ? Storage::disk('public')->url($s->logo_path) : null,
+            ]);
+
         return Inertia::render('scanner', [
             'school' => $school ? [
                 'id' => $school->id,
@@ -26,6 +36,7 @@ class PublicScannerController extends Controller
                 'slug' => $school->slug,
                 'logo_url' => $school->logo_path ? Storage::disk('public')->url($school->logo_path) : null,
             ] : null,
+            'schools' => $schools,
             'userName' => $user->name,
         ]);
     }
@@ -35,9 +46,10 @@ class PublicScannerController extends Controller
         $request->validate([
             'token' => ['required', 'string'],
             'type' => ['sometimes', 'in:CHECK_IN,CHECK_OUT'],
+            'school_id' => ['nullable', 'exists:schools,id'],
         ]);
 
-        $schoolId = $request->user()->school_id;
+        $schoolId = $request->input('school_id', $request->user()->school_id);
 
         // Search: QR token → NISN → NIS
         $student = Student::where('qr_token', $request->token)

@@ -10,10 +10,12 @@ use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use App\Services\CardGeneratorService;
 use App\Services\GoogleDriveService;
+use App\Services\ParentProfileService;
 use App\Services\PhotoCropService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -39,7 +41,7 @@ class StudentRegistrationController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse|RedirectResponse
+    public function store(Request $request, ParentProfileService $parentProfileService): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'school_id' => ['required', 'exists:schools,id'],
@@ -76,24 +78,37 @@ class StudentRegistrationController extends Controller
         $qrToken = Str::random(64);
         $school = School::with('driveConfig')->findOrFail($validated['school_id']);
 
-        $student = Student::create([
-            'school_id' => $validated['school_id'],
-            'full_name' => $validated['full_name'],
-            'nis' => $validated['nis'],
-            'no_absen' => $validated['no_absen'] ?? null,
-            'nisn' => $validated['nisn'] ?? null,
-            'gender' => $validated['gender'],
-            'religion' => $validated['religion'] ?? null,
-            'classroom_id' => $validated['classroom_id'],
-            'birth_place' => $validated['birth_place'] ?? null,
-            'birth_date' => $validated['birth_date'] ?? null,
-            'address' => $validated['address'] ?? null,
-            'parent_name' => $validated['parent_name'] ?? null,
-            'parent_phone' => $validated['parent_phone'] ?? null,
-            'qr_token' => $qrToken,
-            'qr_issued_at' => now(),
-            'is_active' => true,
-        ]);
+        $student = DB::transaction(function () use ($validated, $qrToken, $parentProfileService) {
+            $student = Student::create([
+                'school_id' => $validated['school_id'],
+                'full_name' => $validated['full_name'],
+                'nis' => $validated['nis'],
+                'no_absen' => $validated['no_absen'] ?? null,
+                'nisn' => $validated['nisn'] ?? null,
+                'gender' => $validated['gender'],
+                'religion' => $validated['religion'] ?? null,
+                'classroom_id' => $validated['classroom_id'],
+                'birth_place' => $validated['birth_place'] ?? null,
+                'birth_date' => $validated['birth_date'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'parent_name' => $validated['parent_name'] ?? null,
+                'parent_phone' => $validated['parent_phone'] ?? null,
+                'qr_token' => $qrToken,
+                'qr_issued_at' => now(),
+                'is_active' => true,
+            ]);
+
+            if (! empty($validated['parent_name']) && ! empty($validated['parent_phone'])) {
+                $parentProfile = $parentProfileService->findOrCreateFromRegistration(
+                    $validated['school_id'],
+                    $validated['parent_name'],
+                    $validated['parent_phone'],
+                );
+                $student->update(['parent_profile_id' => $parentProfile->id]);
+            }
+
+            return $student;
+        });
 
         // Download photo from Drive if filename provided
         $photoDownloaded = false;

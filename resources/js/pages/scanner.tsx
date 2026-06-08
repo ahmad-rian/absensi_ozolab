@@ -1,10 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
-import { Check, CheckCircle2, Clock, LogIn, LogOut, ScanBarcode, User, X, XCircle, Zap } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, Clock, LogIn, LogOut, ScanBarcode, School as SchoolIcon, User, X, XCircle, Zap } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-sound';
 import AppLogoIcon from '@/components/app-logo-icon';
 
-type School = { id: string; name: string; slug: string; logo_url: string | null } | null;
+type School = { id: string; name: string; slug: string; logo_url: string | null };
 type AttendanceType = 'CHECK_IN' | 'CHECK_OUT';
 
 type StudentResult = {
@@ -36,7 +36,18 @@ type ScanLogItem = {
 
 let logId = 0;
 
-export default function ScannerPage({ school, userName }: { school: School; userName: string }) {
+type PageProps = {
+    school: School | null;
+    schools: School[];
+    userName: string;
+};
+
+export default function ScannerPage({ school, schools, userName }: PageProps) {
+    const [selectedSchool, setSelectedSchool] = useState<School | null>(() => {
+        if (schools.length === 1) return schools[0];
+        if (school) return school;
+        return null;
+    });
     const [attendanceType, setAttendanceType] = useState<AttendanceType>('CHECK_IN');
     const [lastResult, setLastResult] = useState<ScanResult | null>(null);
     const [scanLog, setScanLog] = useState<ScanLogItem[]>([]);
@@ -66,7 +77,7 @@ export default function ScannerPage({ school, userName }: { school: School; user
             const res = await fetch('/scan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
-                body: JSON.stringify({ token: token.trim(), type: attendanceType }),
+                body: JSON.stringify({ token: token.trim(), type: attendanceType, school_id: selectedSchool?.id }),
             });
             const data: ScanResult = await res.json();
 
@@ -133,6 +144,52 @@ export default function ScannerPage({ school, userName }: { school: School; user
 
     const isCheckIn = attendanceType === 'CHECK_IN';
 
+    // School selection pre-page
+    if (!selectedSchool) {
+        return (
+            <>
+                <Head title="Pilih Sekolah — Scan Absensi" />
+                <div className="flex min-h-dvh flex-col bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
+                    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 py-10">
+                        <div className="mb-8 text-center">
+                            <div className="bg-primary/10 text-primary mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl">
+                                <SchoolIcon className="size-8" />
+                            </div>
+                            <h1 className="text-2xl font-bold tracking-tight">Pilih Sekolah</h1>
+                            <p className="text-muted-foreground mt-1 text-sm">Pilih sekolah untuk memulai scan absensi.</p>
+                        </div>
+                        <div className="grid gap-3">
+                            {schools.map((s) => (
+                                <button
+                                    key={s.id}
+                                    onClick={() => setSelectedSchool(s)}
+                                    className="flex items-center gap-4 rounded-2xl border-2 border-slate-200 bg-white p-5 text-left transition-all hover:border-blue-400 hover:shadow-lg active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:border-blue-500"
+                                >
+                                    {s.logo_url ? (
+                                        <img src={s.logo_url} alt={s.name} className="size-14 shrink-0 rounded-xl object-contain" />
+                                    ) : (
+                                        <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600">
+                                            <SchoolIcon className="size-7 text-white" />
+                                        </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-lg font-bold">{s.name}</p>
+                                        <p className="text-muted-foreground text-sm">{s.slug}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mt-8 text-center">
+                            <Link href="/admin/dashboard" className="text-muted-foreground hover:text-foreground text-sm underline underline-offset-2">
+                                Kembali ke Dashboard
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
     return (
         <>
             <Head title="Scan Absensi" />
@@ -141,15 +198,24 @@ export default function ScannerPage({ school, userName }: { school: School; user
                 <header className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur-xl dark:bg-zinc-900/90">
                     <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-5">
                         <div className="flex items-center gap-3">
-                            {school?.logo_url ? (
-                                <img src={school.logo_url} alt={school.name} className="size-10 rounded-xl object-contain shadow-sm" />
+                            {schools.length > 1 && (
+                                <button
+                                    onClick={() => { setSelectedSchool(null); setScanLog([]); setLastResult(null); }}
+                                    className="text-muted-foreground hover:text-foreground flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-slate-100 dark:hover:bg-zinc-800"
+                                    title="Ganti Sekolah"
+                                >
+                                    <ArrowLeft className="size-5" />
+                                </button>
+                            )}
+                            {selectedSchool.logo_url ? (
+                                <img src={selectedSchool.logo_url} alt={selectedSchool.name} className="size-10 rounded-xl object-contain shadow-sm" />
                             ) : (
                                 <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm">
                                     <AppLogoIcon className="size-5 fill-current text-white" />
                                 </div>
                             )}
                             <div>
-                                <p className="text-base font-bold leading-tight">{school?.name ?? 'Absensi'}</p>
+                                <p className="text-base font-bold leading-tight">{selectedSchool.name}</p>
                                 <p className="text-muted-foreground text-xs">{userName}</p>
                             </div>
                         </div>

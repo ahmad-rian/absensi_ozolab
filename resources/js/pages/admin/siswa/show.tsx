@@ -34,6 +34,8 @@ type Student = {
     birth_date: string | null;
     address: string | null;
     photo_url: string | null;
+    parent_name: string | null;
+    parent_phone: string | null;
     classroom: Classroom | null;
     parent_profile: ParentProfile | null;
 };
@@ -150,7 +152,8 @@ export default function SiswaShow({ student, qrSvg }: PageProps) {
                                         }
                                     />
                                     <InfoRow label="Alamat" value={student.address} />
-                                    <InfoRow label="Orang Tua / Wali" value={student.parent_profile?.user?.name} />
+                                    <InfoRow label="Orang Tua / Wali" value={student.parent_profile?.user?.name ?? student.parent_name} />
+                                    <InfoRow label="No. HP Orang Tua" value={student.parent_phone} />
                                     <InfoRow
                                         label="Status"
                                         value={

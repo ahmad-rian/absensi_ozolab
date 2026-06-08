@@ -38,6 +38,8 @@ type Student = {
     is_active: boolean;
     classroom_id: string | null;
     parent_profile_id: string | null;
+    parent_name: string | null;
+    parent_phone: string | null;
     birth_place: string | null;
     birth_date: string | null;
     address: string | null;
@@ -244,6 +246,11 @@ export default function SiswaEdit({ student, classrooms, parentProfiles }: PageP
                                     </Popover>
                                     {errors.parent_profile_id && (
                                         <p className="text-sm text-destructive">{errors.parent_profile_id}</p>
+                                    )}
+                                    {(student.parent_name || student.parent_phone) && (
+                                        <p className="text-muted-foreground text-xs">
+                                            Data pendaftaran: {student.parent_name ?? '-'} ({student.parent_phone ?? '-'})
+                                        </p>
                                     )}
                                 </div>
 
