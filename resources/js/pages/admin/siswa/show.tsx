@@ -153,7 +153,8 @@ export default function SiswaShow({ student, qrSvg }: PageProps) {
                                     />
                                     <InfoRow label="Alamat" value={student.address} />
                                     <InfoRow label="Orang Tua / Wali" value={student.parent_profile?.user?.name ?? student.parent_name} />
-                                    <InfoRow label="No. HP Orang Tua" value={student.parent_phone} />
+                                    <InfoRow label="Hubungan" value={student.parent_profile?.relation_label} />
+                                    <InfoRow label="No. WhatsApp" value={student.parent_profile?.whatsapp_number ?? student.parent_phone} />
                                     <InfoRow
                                         label="Status"
                                         value={

@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 
 class ParentProfileService
 {
-    public function findOrCreateFromRegistration(string $schoolId, string $parentName, string $parentPhone): ParentProfile
+    public function findOrCreateFromRegistration(string $schoolId, string $parentName, string $parentPhone, string $relation = 'WALI'): ParentProfile
     {
         $phone = trim($parentPhone);
 
@@ -36,7 +36,7 @@ class ParentProfileService
         return $user->parentProfile()->create([
             'school_id' => $schoolId,
             'whatsapp_number' => $phone,
-            'relation' => ParentRelation::Wali,
+            'relation' => ParentRelation::from($relation),
         ]);
     }
 }

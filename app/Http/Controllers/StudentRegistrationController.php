@@ -57,6 +57,7 @@ class StudentRegistrationController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'parent_name' => ['nullable', 'string', 'max:255'],
             'parent_phone' => ['nullable', 'string', 'max:20'],
+            'parent_relation' => ['nullable', 'string', 'in:AYAH,IBU,WALI'],
             'photo_drive_filename' => ['nullable', 'string', 'max:500'],
             'generate_cards' => ['nullable', 'boolean'],
         ], [
@@ -103,6 +104,7 @@ class StudentRegistrationController extends Controller
                     $validated['school_id'],
                     $validated['parent_name'],
                     $validated['parent_phone'],
+                    $validated['parent_relation'] ?? 'WALI',
                 );
                 $student->update(['parent_profile_id' => $parentProfile->id]);
             }
