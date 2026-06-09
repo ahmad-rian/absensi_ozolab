@@ -102,7 +102,6 @@ export default function OrangTuaIndex({ parents, filters }: PageProps) {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Nama</TableHead>
-                                <TableHead>Email</TableHead>
                                 <TableHead>WhatsApp</TableHead>
                                 <TableHead>Hubungan</TableHead>
                                 <TableHead>Anak</TableHead>
@@ -112,7 +111,7 @@ export default function OrangTuaIndex({ parents, filters }: PageProps) {
                         <TableBody>
                             {parents.data.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+                                    <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
                                         Tidak ada data orang tua ditemukan.
                                     </TableCell>
                                 </TableRow>
@@ -120,7 +119,6 @@ export default function OrangTuaIndex({ parents, filters }: PageProps) {
                                 parents.data.map((parent) => (
                                     <TableRow key={parent.id}>
                                         <TableCell className="font-medium">{parent.user?.name ?? '-'}</TableCell>
-                                        <TableCell>{parent.user?.email ?? '-'}</TableCell>
                                         <TableCell>{parent.whatsapp_number}</TableCell>
                                         <TableCell>
                                             <Badge variant="secondary">{relationLabel(parent.relation)}</Badge>
