@@ -11,7 +11,7 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
 {
     private const FONNTE_URL = 'https://api.fonnte.com/send';
 
-    private const DEFAULT_TEMPLATE = "Informasi Kehadiran - {nama_sekolah}\n\n{nama_siswa} ({kelas}) tercatat {status} pada {tanggal} pukul {waktu}.\n\nPesan ini dikirim otomatis oleh sistem absensi.";
+    private const DEFAULT_TEMPLATE = "Assalamualaikum Bapak/Ibu,\n\nBerikut informasi kehadiran putra/putri Anda:\n\nNama  : {nama_siswa}\nKelas : {kelas}\nStatus : {status}\nWaktu : {tanggal}, {waktu}\nSekolah : {nama_sekolah}\n\nTerima kasih atas perhatiannya.\n\n_Pesan otomatis dari sistem absensi {nama_sekolah}_";
 
     public function __construct(
         private readonly int $timeout = 10,
