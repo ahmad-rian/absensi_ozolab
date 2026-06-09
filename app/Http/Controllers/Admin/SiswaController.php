@@ -53,8 +53,13 @@ class SiswaController extends Controller
 
         $qrSvg = $qrGenerator->renderSvg($siswa);
 
+        $studentData = $siswa->toArray();
+        if (isset($studentData['parent_profile'])) {
+            $studentData['parent_profile']['relation_label'] = $siswa->parentProfile?->relation?->label();
+        }
+
         return Inertia::render('admin/siswa/show', [
-            'student' => array_merge($siswa->toArray(), [
+            'student' => array_merge($studentData, [
                 'religion_label' => $siswa->religion?->label(),
                 'photo_url' => $siswa->photo_path
                     ? Storage::disk('public')->url($siswa->photo_path)

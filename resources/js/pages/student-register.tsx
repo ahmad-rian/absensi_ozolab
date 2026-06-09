@@ -79,6 +79,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         address: '',
         parent_name: '',
         parent_phone: '',
+        parent_relation: 'WALI',
         photo_drive_filename: '',
         generate_cards: true,
     });
@@ -468,11 +469,23 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                 <Input id="parent_name" value={data.parent_name} onChange={(e) => setData('parent_name', e.target.value)} placeholder="Nama lengkap orang tua atau wali" className="h-11" />
                             </div>
                             <div className="grid gap-2">
+                                <Label className="text-sm font-medium">Hubungan</Label>
+                                <Select value={data.parent_relation} onValueChange={(v) => setData('parent_relation', v)}>
+                                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="AYAH">Ayah</SelectItem>
+                                        <SelectItem value="IBU">Ibu</SelectItem>
+                                        <SelectItem value="WALI">Wali</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
                                 <Label htmlFor="parent_phone" className="text-sm font-medium">No. WhatsApp</Label>
                                 <div className="flex">
                                     <span className="border-input bg-muted/50 text-muted-foreground inline-flex items-center rounded-l-md border border-r-0 px-3.5 text-sm font-medium">+62</span>
                                     <Input id="parent_phone" type="tel" value={data.parent_phone} onChange={(e) => setData('parent_phone', e.target.value)} placeholder="812xxxxxxxx" className="h-11 rounded-l-none" />
                                 </div>
+                                <p className="text-muted-foreground text-xs">Nomor ini akan menerima notifikasi absensi via WhatsApp.</p>
                             </div>
                         </div>
                     </FormSection>
