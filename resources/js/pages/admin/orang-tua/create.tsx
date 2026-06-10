@@ -19,6 +19,7 @@ export default function OrangTuaCreate() {
         relation: '',
         password: '',
         password_confirmation: '',
+        telegram_chat_id: '',
         nik: '',
         occupation: '',
         address: '',
@@ -105,6 +106,12 @@ export default function OrangTuaCreate() {
                             <div className="grid gap-2">
                                 <Label>Kota</Label>
                                 <Input value={data.city} onChange={(e) => setData('city', e.target.value)} placeholder="Kota" />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Telegram Chat ID</Label>
+                                <Input value={data.telegram_chat_id} onChange={(e) => setData('telegram_chat_id', e.target.value)} placeholder="mis. 123456789" />
+                                <p className="text-muted-foreground text-xs">Untuk notifikasi Telegram. Ortu /start bot lalu cek @userinfobot.</p>
+                                <InputError message={errors.telegram_chat_id} />
                             </div>
                             <div className="grid gap-2 sm:col-span-2">
                                 <Label>Alamat</Label>

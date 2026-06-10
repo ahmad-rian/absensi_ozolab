@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\DriveConfigController;
 use App\Http\Controllers\Admin\FrameController;
 use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\NotificationGatewayController;
 use App\Http\Controllers\Admin\NotifikasiController;
 use App\Http\Controllers\Admin\OrangTuaController;
 use App\Http\Controllers\Admin\PengaturanController;
@@ -103,13 +104,14 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN|ADMIN|GURU'])->prefix('
         Route::get('drive-config/callback', [DriveConfigController::class, 'oauthCallback'])->name('admin.drive-config.callback');
 
         Route::get('wa-config', [WaConfigController::class, 'index'])->name('admin.wa-config');
-        Route::post('wa-config', [WaConfigController::class, 'store'])->name('admin.wa-config.store');
-        Route::post('wa-config/test', [WaConfigController::class, 'testMessage'])->name('admin.wa-config.test');
-        Route::delete('wa-config', [WaConfigController::class, 'destroy'])->name('admin.wa-config.destroy');
     });
 
     // Super Admin only
     Route::middleware('role:SUPER_ADMIN')->group(function () {
+        Route::get('notification-gateways', [NotificationGatewayController::class, 'index'])->name('admin.notification-gateways');
+        Route::put('notification-gateways/{school}', [NotificationGatewayController::class, 'update'])->name('admin.notification-gateways.update');
+        Route::delete('notification-gateways/{school}', [NotificationGatewayController::class, 'destroy'])->name('admin.notification-gateways.destroy');
+        Route::post('notification-gateways/{school}/test', [NotificationGatewayController::class, 'test'])->name('admin.notification-gateways.test');
         Route::resource('schools', SchoolController::class)->except(['show'])->names('admin.schools');
         Route::get('roles', [RolePermissionController::class, 'index'])->name('admin.roles');
         Route::post('roles', [RolePermissionController::class, 'store'])->name('admin.roles.store');

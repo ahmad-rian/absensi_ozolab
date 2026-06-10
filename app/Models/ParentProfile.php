@@ -21,6 +21,7 @@ class ParentProfile extends Model
         'user_id',
         'nik',
         'whatsapp_number',
+        'telegram_chat_id',
         'relation',
         'occupation',
         'address',

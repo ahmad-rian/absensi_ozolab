@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Events\StudentCheckedIn;
 use App\Events\StudentCheckedOut;
-use App\Listeners\DispatchAttendanceWhatsAppNotification;
+use App\Listeners\DispatchAttendanceNotifications;
 use App\Listeners\LogAttendanceActivity;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -39,8 +39,8 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureEvents(): void
     {
-        Event::listen(StudentCheckedIn::class, DispatchAttendanceWhatsAppNotification::class);
-        Event::listen(StudentCheckedOut::class, DispatchAttendanceWhatsAppNotification::class);
+        Event::listen(StudentCheckedIn::class, DispatchAttendanceNotifications::class);
+        Event::listen(StudentCheckedOut::class, DispatchAttendanceNotifications::class);
         Event::listen(StudentCheckedIn::class, LogAttendanceActivity::class);
         Event::listen(StudentCheckedOut::class, LogAttendanceActivity::class);
     }

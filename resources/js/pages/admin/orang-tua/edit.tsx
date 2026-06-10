@@ -13,6 +13,7 @@ import InputError from '@/components/input-error';
 type ParentData = {
     id: string;
     whatsapp_number: string;
+    telegram_chat_id: string | null;
     relation: string;
     nik: string | null;
     occupation: string | null;
@@ -27,6 +28,7 @@ export default function OrangTuaEdit({ parent }: { parent: ParentData }) {
         email: parent.user.email,
         phone: parent.user.phone ?? parent.whatsapp_number,
         relation: parent.relation,
+        telegram_chat_id: parent.telegram_chat_id ?? '',
         nik: parent.nik ?? '',
         occupation: parent.occupation ?? '',
         address: parent.address ?? '',
@@ -103,6 +105,12 @@ export default function OrangTuaEdit({ parent }: { parent: ParentData }) {
                             <div className="grid gap-2">
                                 <Label>Kota</Label>
                                 <Input value={data.city} onChange={(e) => setData('city', e.target.value)} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Telegram Chat ID</Label>
+                                <Input value={data.telegram_chat_id} onChange={(e) => setData('telegram_chat_id', e.target.value)} placeholder="mis. 123456789" />
+                                <p className="text-muted-foreground text-xs">Untuk notifikasi Telegram. Ortu /start bot lalu cek @userinfobot.</p>
+                                <InputError message={errors.telegram_chat_id} />
                             </div>
                             <div className="grid gap-2 sm:col-span-2">
                                 <Label>Alamat</Label>

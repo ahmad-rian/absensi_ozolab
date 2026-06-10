@@ -2,8 +2,9 @@
 
 namespace App\Services\Notification;
 
+use App\Enums\SchoolChannelType;
 use App\Models\School;
-use App\Models\SchoolWaConfig;
+use App\Models\SchoolNotificationChannel;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -33,29 +34,39 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
     }
 
     /**
-     * Send via best available gateway: Fonnte (per-school) → Ozolab (global fallback).
+     * Send via best available WhatsApp gateway: Fonnte (per-school, aktif) → Ozolab (default).
      */
     private function send(string $to, string $message, ?string $schoolId): bool
     {
-        // Priority 1: Fonnte per-school config
-        $fonnteConfig = $schoolId ? $this->getFonnteConfig($schoolId) : null;
+        // Priority 1: Fonnte per-school config (jika channel aktif & ada token).
+        $fonnteChannel = $schoolId ? $this->activeChannel($schoolId, SchoolChannelType::FonnteWa) : null;
+        $fonnteToken = $fonnteChannel?->setting('fonnte_token');
 
-        if ($fonnteConfig) {
-            return $this->sendViaFonnte($to, $message, $fonnteConfig);
+        if ($fonnteChannel && ! empty($fonnteToken)) {
+            return $this->sendViaFonnte($to, $message, $fonnteToken);
         }
 
-        // Priority 2: Ozolab gateway from .env
-        return $this->sendViaOzolab($to, $message);
+        // Priority 2: Ozolab gateway (jika channel aktif, atau tanpa konteks sekolah).
+        if (! $schoolId || $this->activeChannel($schoolId, SchoolChannelType::OzolabWa)) {
+            return $this->sendViaOzolab($to, $message);
+        }
+
+        Log::channel('whatsapp')->warning('No active WhatsApp channel for school, skipping.', [
+            'to' => $to,
+            'school_id' => $schoolId,
+        ]);
+
+        return false;
     }
 
     /**
      * Send via Fonnte API (per-school token).
      */
-    private function sendViaFonnte(string $to, string $message, SchoolWaConfig $config): bool
+    private function sendViaFonnte(string $to, string $message, string $token): bool
     {
         try {
             $response = Http::timeout($this->timeout)
-                ->withHeaders(['Authorization' => $config->fonnte_token])
+                ->withHeaders(['Authorization' => $token])
                 ->post(self::FONNTE_URL, [
                     'target' => $to,
                     'message' => $message,
@@ -118,24 +129,23 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
         }
     }
 
-    private function getFonnteConfig(?string $schoolId): ?SchoolWaConfig
+    private function activeChannel(string $schoolId, SchoolChannelType $type): ?SchoolNotificationChannel
     {
-        if (! $schoolId) {
-            return null;
-        }
-
-        return SchoolWaConfig::where('school_id', $schoolId)
+        return SchoolNotificationChannel::where('school_id', $schoolId)
+            ->where('channel', $type->value)
             ->where('is_active', true)
             ->first();
     }
 
     /**
      * Build safe attendance message from template.
+     *
+     * @param  array<string, string>  $variables
      */
     private function buildMessage(array $variables, ?string $schoolId): string
     {
         $school = $schoolId ? School::find($schoolId) : null;
-        $template = $school?->getSetting('whatsapp_template_attendance') ?? self::DEFAULT_TEMPLATE;
+        $template = $school?->getSetting('whatsapp_template_attendance') ?: self::DEFAULT_TEMPLATE;
 
         $message = $template;
         foreach ($variables as $key => $value) {

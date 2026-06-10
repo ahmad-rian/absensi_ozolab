@@ -65,3 +65,15 @@ function createAdminUser(array $attributes = []): User
 
     return $user;
 }
+
+function createSuperAdminUser(array $attributes = []): User
+{
+    $school = School::factory()->create();
+    $user = User::factory()->create([
+        'school_id' => $school->id,
+        ...$attributes,
+    ]);
+    $user->assignRole('SUPER_ADMIN');
+
+    return $user;
+}
