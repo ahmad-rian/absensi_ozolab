@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ParentTelegramController;
 use App\Http\Controllers\PublicScannerController;
 use App\Http\Controllers\StudentRegistrationController;
 use Illuminate\Http\Request;
@@ -34,6 +35,9 @@ Route::post('scan', [PublicScannerController::class, 'scan'])->middleware(['auth
 Route::get('daftar', [StudentRegistrationController::class, 'index'])->name('student.register');
 Route::post('daftar', [StudentRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('student.register.store');
 Route::post('daftar/preview-photo', [StudentRegistrationController::class, 'previewPhoto'])->middleware('throttle:20,1')->name('student.register.preview-photo');
+
+Route::get('daftar-telegram', [ParentTelegramController::class, 'index'])->name('parent.telegram');
+Route::post('daftar-telegram', [ParentTelegramController::class, 'store'])->middleware('throttle:10,1')->name('parent.telegram.store');
 
 Route::middleware(['auth'])->post('admin/switch-school', function (Request $request) {
     $request->validate(['school_id' => ['required', 'exists:schools,id']]);

@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Moon, ScanBarcode, Sun, X } from 'lucide-react';
+import { ArrowRight, Moon, ScanBarcode, Send, Sun, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
@@ -90,6 +90,12 @@ export function Navbar() {
                             </a>
                         ))}
                         <div className="bg-border mx-3 h-5 w-px" />
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href="/daftar-telegram">
+                                <Send className="mr-1.5 size-4" />
+                                Telegram
+                            </Link>
+                        </Button>
                         <Button variant="outline" size="sm" asChild>
                             <Link href="/scan">
                                 <ScanBarcode className="mr-1.5 size-4" />
@@ -189,6 +195,12 @@ export function Navbar() {
                             }`}
                         style={{ transitionDelay: mobileVisible ? '380ms' : '0ms' }}
                     >
+                        <Button variant="outline" className="mb-3 h-12 w-full rounded-xl text-base" asChild>
+                            <Link href="/daftar-telegram" onClick={() => setMobileOpen(false)}>
+                                <Send className="mr-2 size-5" />
+                                Hubungkan Telegram
+                            </Link>
+                        </Button>
                         <Button variant="outline" className="mb-3 h-12 w-full rounded-xl text-base" asChild>
                             <Link href="/scan" onClick={() => setMobileOpen(false)}>
                                 <ScanBarcode className="mr-2 size-5" />
