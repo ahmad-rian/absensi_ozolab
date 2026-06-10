@@ -87,7 +87,7 @@ class DefaultTelegramGateway implements TelegramGateway
     private function buildMessage(array $variables, ?string $schoolId): string
     {
         $school = $schoolId ? School::find($schoolId) : null;
-        $template = $school?->getSetting('whatsapp_template_attendance') ?: self::DEFAULT_TEMPLATE;
+        $template = $this->normalizeTemplate((string) ($school?->getSetting('whatsapp_template_attendance') ?: self::DEFAULT_TEMPLATE));
 
         $message = $template;
         foreach ($variables as $key => $value) {
@@ -95,5 +95,24 @@ class DefaultTelegramGateway implements TelegramGateway
         }
 
         return $message;
+    }
+
+    /**
+     * Decode a template that was accidentally double JSON-encoded
+     * (stored as "\"Halo Bapak\/Ibu...\"") back to plain text.
+     */
+    private function normalizeTemplate(string $template): string
+    {
+        $trimmed = trim($template);
+
+        if (str_starts_with($trimmed, '"') && str_ends_with($trimmed, '"')) {
+            $decoded = json_decode($trimmed);
+
+            if (is_string($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return $template;
     }
 }

@@ -63,6 +63,19 @@ test('telegram gateway posts to bot sendMessage endpoint', function () {
     Http::assertSent(fn ($r) => str_contains($r->url(), 'bot12345:ABCDEF_token_long/sendMessage'));
 });
 
+test('telegram gateway cleans a double encoded template', function () {
+    $school = School::factory()->create();
+    $school->setSetting('whatsapp_template_attendance', json_encode('Halo Bapak/Ibu Wali, ananda {nama_siswa}.'));
+    $school->save();
+    activateChannel($school, SchoolChannelType::Telegram, ['bot_token' => '12345:ABCDEF_token_long']);
+
+    Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+
+    (new DefaultTelegramGateway)->sendTemplate('999', 'attendance', ['nama_siswa' => 'Budi'], $school->id);
+
+    Http::assertSent(fn ($r) => $r['text'] === 'Halo Bapak/Ibu Wali, ananda Budi.');
+});
+
 test('dispatcher logs one notification per active channel', function () {
     $school = School::factory()->create();
     activateChannel($school, SchoolChannelType::OzolabWa);
