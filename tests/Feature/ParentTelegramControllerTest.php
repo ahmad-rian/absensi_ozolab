@@ -71,6 +71,19 @@ test('whatsapp number is normalized against 62 country code', function () {
     expect($parent->fresh()->telegram_chat_id)->toBe('555');
 });
 
+test('whatsapp stored without leading zero still matches input with zero', function () {
+    [$school, $student, $parent] = telegramSchoolWithStudent('82123479638');
+
+    postJson(route('parent.telegram.store'), [
+        'school_id' => $school->id,
+        'student_id' => $student->id,
+        'whatsapp_number' => '082123479638',
+        'telegram_chat_id' => '777',
+    ])->assertOk()->assertJson(['success' => true]);
+
+    expect($parent->fresh()->telegram_chat_id)->toBe('777');
+});
+
 test('mismatched whatsapp number is rejected', function () {
     [$school, $student, $parent] = telegramSchoolWithStudent();
 

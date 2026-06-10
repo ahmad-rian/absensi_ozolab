@@ -104,14 +104,17 @@ class ParentTelegramController extends Controller
     }
 
     /**
-     * Strip non-digits and normalize a leading 62 country code to 0 for comparison.
+     * Reduce a phone number to its bare national form so different formats
+     * (0812…, +62812…, 62812…, 812…) all compare equal.
      */
     private function normalizePhone(?string $phone): string
     {
         $digits = preg_replace('/\D+/', '', (string) $phone);
 
         if (str_starts_with($digits, '62')) {
-            $digits = '0'.substr($digits, 2);
+            $digits = substr($digits, 2);
+        } elseif (str_starts_with($digits, '0')) {
+            $digits = ltrim($digits, '0');
         }
 
         return $digits;
