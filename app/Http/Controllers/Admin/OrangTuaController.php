@@ -54,6 +54,7 @@ class OrangTuaController extends Controller
             'phone' => ['required', 'string', 'max:20'],
             'relation' => ['required', 'in:AYAH,IBU,WALI'],
             'password' => ['required', 'string', Password::min(8), 'confirmed'],
+            'telegram_chat_id' => ['nullable', 'string', 'max:50'],
             'nik' => ['nullable', 'string', 'max:20'],
             'occupation' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
@@ -86,6 +87,7 @@ class OrangTuaController extends Controller
 
             $user->parentProfile()->create([
                 'whatsapp_number' => $validated['phone'],
+                'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
                 'relation' => $validated['relation'],
                 'nik' => $validated['nik'] ?? null,
                 'occupation' => $validated['occupation'] ?? null,
@@ -125,6 +127,7 @@ class OrangTuaController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$parentProfile->user_id],
             'phone' => ['required', 'string', 'max:20'],
             'relation' => ['required', 'in:AYAH,IBU,WALI'],
+            'telegram_chat_id' => ['nullable', 'string', 'max:50'],
             'nik' => ['nullable', 'string', 'max:20'],
             'occupation' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
@@ -147,6 +150,7 @@ class OrangTuaController extends Controller
 
         $parentProfile->update([
             'whatsapp_number' => $validated['phone'],
+            'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
             'relation' => $validated['relation'],
             'nik' => $validated['nik'] ?? null,
             'occupation' => $validated['occupation'] ?? null,

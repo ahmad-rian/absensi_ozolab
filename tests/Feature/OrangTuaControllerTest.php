@@ -80,3 +80,24 @@ test('authenticated users can visit orang tua show', function () {
             ->has('parent.students', 1)
         );
 });
+
+test('admin can store parent with telegram chat id', function () {
+    $admin = createAdminUser();
+
+    $this->actingAs($admin)
+        ->post(route('admin.orang-tua.store'), [
+            'name' => 'Budi Santoso',
+            'email' => 'budi@example.com',
+            'phone' => '081234567890',
+            'relation' => 'AYAH',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'telegram_chat_id' => '987654321',
+        ])
+        ->assertRedirect(route('admin.orang-tua.index'));
+
+    $this->assertDatabaseHas('parent_profiles', [
+        'telegram_chat_id' => '987654321',
+        'whatsapp_number' => '081234567890',
+    ]);
+});

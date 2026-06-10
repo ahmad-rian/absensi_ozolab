@@ -4,10 +4,10 @@ namespace App\Listeners;
 
 use App\Events\StudentCheckedIn;
 use App\Events\StudentCheckedOut;
-use App\Jobs\SendWhatsAppAttendanceNotification;
+use App\Jobs\SendAttendanceNotifications;
 use App\Models\School;
 
-class DispatchAttendanceWhatsAppNotification
+class DispatchAttendanceNotifications
 {
     public function handle(StudentCheckedIn|StudentCheckedOut $event): void
     {
@@ -18,20 +18,25 @@ class DispatchAttendanceWhatsAppNotification
         $isCheckIn = $event instanceof StudentCheckedIn;
         $settingKey = $isCheckIn ? 'notify_on_check_in' : 'notify_on_check_out';
 
-        $whatsappEnabled = $school?->getSetting('whatsapp_enabled', true) ?? true;
+        $notificationsEnabled = $school?->getSetting('whatsapp_enabled', true) ?? true;
         $notifyThis = $school?->getSetting($settingKey, true) ?? true;
 
-        if (! $whatsappEnabled || ! $notifyThis) {
+        if (! $notificationsEnabled || ! $notifyThis) {
             return;
         }
 
         $parentProfile = $student->parentProfile;
 
-        if (! $parentProfile || empty($parentProfile->whatsapp_number)) {
+        if (! $parentProfile) {
             return;
         }
 
-        SendWhatsAppAttendanceNotification::dispatch($attendance)
+        // Perlu minimal satu tujuan: nomor WA atau chat_id Telegram.
+        if (empty($parentProfile->whatsapp_number) && empty($parentProfile->telegram_chat_id)) {
+            return;
+        }
+
+        SendAttendanceNotifications::dispatch($attendance)
             ->onQueue(config('whatsapp.queue', 'whatsapp'));
     }
 }
