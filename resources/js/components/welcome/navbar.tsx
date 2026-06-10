@@ -8,12 +8,7 @@ import { dashboard } from '@/routes';
 
 const navLinks = [
     { label: 'Fitur', href: '#features' },
-    { label: 'Institusi', href: '#institutions' },
     { label: 'Cara Kerja', href: '#how-it-works' },
-    // { label: 'Keamanan', href: '#multi-tenant' },
-    { label: 'Dashboard', href: '#dashboard' },
-    { label: 'WhatsApp', href: '#whatsapp' },
-    { label: 'Testimonial', href: '#testimonials' },
     { label: 'FAQ', href: '#faq' },
 ];
 
