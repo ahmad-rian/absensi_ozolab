@@ -6,7 +6,10 @@ import { SimpleCaptcha } from '@/components/simple-captcha';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+
+type School = { id: string; name: string; city: string | null };
 
 type StudentResult = {
     id: string;
@@ -17,7 +20,8 @@ type StudentResult = {
     parent_profile: { telegram_chat_id: string | null } | null;
 };
 
-export default function ParentTelegram() {
+export default function ParentTelegram({ schools }: { schools: School[] }) {
+    const [schoolId, setSchoolId] = useState('');
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<StudentResult[]>([]);
     const [searching, setSearching] = useState(false);
@@ -39,8 +43,13 @@ export default function ParentTelegram() {
         ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || ''
         : '';
 
-    // Debounced student search via public API.
+    // Debounced student search via public API, scoped to the chosen school.
     useEffect(() => {
+        if (!schoolId) {
+            setResults([]);
+            setShowDropdown(false);
+            return;
+        }
         if (selected && query === selected.full_name) {
             return;
         }
@@ -56,7 +65,7 @@ export default function ParentTelegram() {
         debounceRef.current = setTimeout(async () => {
             setSearching(true);
             try {
-                const res = await fetch(`/api/students?search=${encodeURIComponent(query.trim())}&per_page=8`, {
+                const res = await fetch(`/api/students?school_id=${encodeURIComponent(schoolId)}&search=${encodeURIComponent(query.trim())}&per_page=8`, {
                     headers: { Accept: 'application/json' },
                 });
                 const json = await res.json();
@@ -74,7 +83,7 @@ export default function ParentTelegram() {
                 clearTimeout(debounceRef.current);
             }
         };
-    }, [query, selected]);
+    }, [query, selected, schoolId]);
 
     // Close dropdown on outside click.
     useEffect(() => {
@@ -112,6 +121,7 @@ export default function ParentTelegram() {
                     Accept: 'application/json',
                 },
                 body: JSON.stringify({
+                    school_id: schoolId,
                     student_id: selected.id,
                     whatsapp_number: whatsappNumber,
                     telegram_chat_id: chatId,
@@ -131,7 +141,7 @@ export default function ParentTelegram() {
         } finally {
             setSubmitting(false);
         }
-    }, [selected, whatsappNumber, chatId, csrfToken]);
+    }, [selected, whatsappNumber, chatId, csrfToken, schoolId]);
 
     if (success) {
         return (
@@ -177,7 +187,38 @@ export default function ParentTelegram() {
                     </p>
                 </div>
 
+                {schools.length === 0 ? (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                        Belum ada sekolah yang mengaktifkan notifikasi Telegram. Hubungi admin sekolah Anda.
+                    </div>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    {/* School select */}
+                    <div className="grid gap-2">
+                        <Label>Sekolah</Label>
+                        <Select
+                            value={schoolId}
+                            onValueChange={(v) => {
+                                setSchoolId(v);
+                                setSelected(null);
+                                setQuery('');
+                                setResults([]);
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Pilih sekolah..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {schools.map((s) => (
+                                    <SelectItem key={s.id} value={s.id}>
+                                        {s.name}{s.city ? ` — ${s.city}` : ''}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-muted-foreground text-xs">Hanya sekolah dengan notifikasi Telegram aktif yang tampil.</p>
+                    </div>
+
                     {/* Student search */}
                     <div className="grid gap-2" ref={boxRef}>
                         <Label>Nama Siswa</Label>
@@ -190,9 +231,10 @@ export default function ParentTelegram() {
                                     setSelected(null);
                                 }}
                                 onFocus={() => results.length > 0 && setShowDropdown(true)}
-                                placeholder="Ketik nama siswa..."
+                                placeholder={schoolId ? 'Ketik nama siswa...' : 'Pilih sekolah dulu'}
                                 className="pl-9"
                                 autoComplete="off"
+                                disabled={!schoolId}
                             />
                             {searching && <Loader2 className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin" />}
 
@@ -287,6 +329,7 @@ export default function ParentTelegram() {
                         {submitting ? <Spinner /> : (<><Send className="mr-2 size-4" /> Hubungkan Telegram</>)}
                     </Button>
                 </form>
+                )}
             </div>
         </Wrapper>
     );
