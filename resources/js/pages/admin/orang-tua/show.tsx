@@ -50,12 +50,32 @@ export default function OrangTuaShow({ parent }: PageProps) {
                                 <dd className="mt-1 text-sm">{parent.user?.name ?? '-'}</dd>
                             </div>
                             <div>
-                                <dt className="text-muted-foreground text-sm font-medium">Email</dt>
+                                <dt className="text-muted-foreground text-sm font-medium">Email Akun (Login)</dt>
                                 <dd className="mt-1 text-sm">{parent.user?.email ?? '-'}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-muted-foreground text-sm font-medium">Email Notifikasi Absensi</dt>
+                                <dd className="mt-1 text-sm">
+                                    {parent.email && !parent.email.endsWith('@internal.app') ? (
+                                        parent.email
+                                    ) : (
+                                        <Badge variant="outline" className="text-amber-600">Belum diisi</Badge>
+                                    )}
+                                </dd>
                             </div>
                             <div>
                                 <dt className="text-muted-foreground text-sm font-medium">Nomor WhatsApp</dt>
                                 <dd className="mt-1 text-sm">{parent.whatsapp_number}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-muted-foreground text-sm font-medium">Telegram</dt>
+                                <dd className="mt-1">
+                                    {parent.telegram_chat_id ? (
+                                        <Badge variant="secondary" className="text-green-700">Terhubung</Badge>
+                                    ) : (
+                                        <Badge variant="outline">Belum terhubung</Badge>
+                                    )}
+                                </dd>
                             </div>
                             <div>
                                 <dt className="text-muted-foreground text-sm font-medium">Hubungan</dt>

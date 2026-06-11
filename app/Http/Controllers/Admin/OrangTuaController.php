@@ -59,6 +59,7 @@ class OrangTuaController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'notification_email' => ['nullable', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
             'relation' => ['required', 'in:AYAH,IBU,WALI'],
             'password' => ['required', 'string', Password::min(8), 'confirmed'],
@@ -96,7 +97,7 @@ class OrangTuaController extends Controller
             $user->parentProfile()->create([
                 'whatsapp_number' => $validated['phone'],
                 'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
-                'email' => $validated['email'],
+                'email' => $validated['notification_email'] ?? $validated['email'],
                 'relation' => $validated['relation'],
                 'nik' => $validated['nik'] ?? null,
                 'occupation' => $validated['occupation'] ?? null,
@@ -134,6 +135,7 @@ class OrangTuaController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$parentProfile->user_id],
+            'notification_email' => ['nullable', 'email', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
             'relation' => ['required', 'in:AYAH,IBU,WALI'],
             'telegram_chat_id' => ['nullable', 'string', 'max:50'],
@@ -160,7 +162,7 @@ class OrangTuaController extends Controller
         $parentProfile->update([
             'whatsapp_number' => $validated['phone'],
             'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
-            'email' => $validated['email'],
+            'email' => $validated['notification_email'] ?: (str_contains($validated['email'], '@internal.app') ? null : $validated['email']),
             'relation' => $validated['relation'],
             'nik' => $validated['nik'] ?? null,
             'occupation' => $validated['occupation'] ?? null,

@@ -23,6 +23,8 @@ export type ParentProfile = {
     user_id: string;
     nik: string | null;
     whatsapp_number: string;
+    telegram_chat_id?: string | null;
+    email?: string | null;
     relation: 'AYAH' | 'IBU' | 'WALI';
     occupation: string | null;
     address: string | null;
