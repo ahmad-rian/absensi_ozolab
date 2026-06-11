@@ -18,6 +18,9 @@ type ParentUser = {
 type ParentProfile = {
     id: string;
     user: ParentUser | null;
+    relation_label?: string;
+    whatsapp_number?: string | null;
+    email?: string | null;
 };
 
 type Student = {
@@ -155,6 +158,14 @@ export default function SiswaShow({ student, qrSvg }: PageProps) {
                                     <InfoRow label="Orang Tua / Wali" value={student.parent_profile?.user?.name ?? student.parent_name} />
                                     <InfoRow label="Hubungan" value={student.parent_profile?.relation_label} />
                                     <InfoRow label="No. WhatsApp" value={student.parent_profile?.whatsapp_number ?? student.parent_phone} />
+                                    <InfoRow
+                                        label="Email Notifikasi"
+                                        value={
+                                            student.parent_profile?.email && !student.parent_profile.email.endsWith('@internal.app')
+                                                ? student.parent_profile.email
+                                                : 'Belum diisi'
+                                        }
+                                    />
                                     <InfoRow
                                         label="Status"
                                         value={

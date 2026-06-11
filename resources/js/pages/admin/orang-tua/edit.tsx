@@ -15,6 +15,7 @@ type ParentData = {
     whatsapp_number: string;
     telegram_chat_id: string | null;
     relation: string;
+    email: string | null;
     nik: string | null;
     occupation: string | null;
     address: string | null;
@@ -26,6 +27,7 @@ export default function OrangTuaEdit({ parent }: { parent: ParentData }) {
     const { data, setData, put, processing, errors } = useForm({
         name: parent.user.name,
         email: parent.user.email,
+        notification_email: parent.email ?? '',
         phone: parent.user.phone ?? parent.whatsapp_number,
         relation: parent.relation,
         telegram_chat_id: parent.telegram_chat_id ?? '',
@@ -64,9 +66,15 @@ export default function OrangTuaEdit({ parent }: { parent: ParentData }) {
                                 <InputError message={errors.name} />
                             </div>
                             <div className="grid gap-2">
-                                <Label>Email</Label>
+                                <Label>Email Akun (Login)</Label>
                                 <Input type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} />
                                 <InputError message={errors.email} />
+                            </div>
+                            <div className="grid gap-2 sm:col-span-2">
+                                <Label>Email Notifikasi Absensi</Label>
+                                <Input type="email" value={data.notification_email} onChange={(e) => setData('notification_email', e.target.value)} placeholder="Email tujuan notifikasi kehadiran" />
+                                <InputError message={errors.notification_email} />
+                                <p className="text-muted-foreground text-xs">Email tujuan notifikasi kehadiran siswa. Kosong = pakai email akun.</p>
                             </div>
                             <div className="grid gap-2">
                                 <Label>No. WhatsApp</Label>

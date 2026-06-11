@@ -15,6 +15,7 @@ export default function OrangTuaCreate() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
+        notification_email: '',
         phone: '',
         relation: '',
         password: '',
@@ -55,9 +56,15 @@ export default function OrangTuaCreate() {
                                 <InputError message={errors.name} />
                             </div>
                             <div className="grid gap-2">
-                                <Label>Email</Label>
+                                <Label>Email Akun (Login)</Label>
                                 <Input type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} placeholder="email@contoh.com" />
                                 <InputError message={errors.email} />
+                            </div>
+                            <div className="grid gap-2 sm:col-span-2">
+                                <Label>Email Notifikasi Absensi</Label>
+                                <Input type="email" value={data.notification_email} onChange={(e) => setData('notification_email', e.target.value)} placeholder="Kosongkan = pakai email akun" />
+                                <InputError message={errors.notification_email} />
+                                <p className="text-muted-foreground text-xs">Email tujuan notifikasi kehadiran siswa. Kosong = pakai email akun di atas.</p>
                             </div>
                             <div className="grid gap-2">
                                 <Label>No. WhatsApp</Label>

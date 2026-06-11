@@ -31,8 +31,8 @@ class DispatchAttendanceNotifications
             return;
         }
 
-        // Perlu minimal satu tujuan: nomor WA atau chat_id Telegram.
-        if (empty($parentProfile->whatsapp_number) && empty($parentProfile->telegram_chat_id)) {
+        // Perlu minimal satu tujuan: nomor WA, chat_id Telegram, atau email.
+        if (empty($parentProfile->whatsapp_number) && empty($parentProfile->telegram_chat_id) && empty($parentProfile->email)) {
             return;
         }
 
