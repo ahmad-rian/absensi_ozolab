@@ -2,6 +2,7 @@
 
 namespace App\Services\Notification;
 
+use App\Enums\AttendanceType;
 use App\Enums\NotificationChannel;
 use App\Enums\NotificationStatus;
 use App\Enums\SchoolChannelType;
@@ -154,6 +155,7 @@ class NotificationDispatcher
     private function buildVariables(Attendance $attendance): array
     {
         $student = $attendance->student;
+        $isCheckOut = $attendance->type === AttendanceType::CheckOut;
 
         return [
             'nama_siswa' => $student->full_name,
@@ -161,6 +163,8 @@ class NotificationDispatcher
             'waktu' => $attendance->recorded_at?->format('H:i') ?? '-',
             'tanggal' => $attendance->attendance_date->translatedFormat('d F Y'),
             'status' => $attendance->status->label(),
+            'jenis' => $isCheckOut ? 'Pulang' : 'Masuk',
+            'aktivitas' => $isCheckOut ? 'kepulangan' : 'kehadiran',
             'nama_sekolah' => $student->school?->name ?? 'Sekolah',
         ];
     }

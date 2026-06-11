@@ -26,10 +26,11 @@ class AttendanceNotificationMail extends Mailable
     {
         $studentName = $this->variables['nama_siswa'] ?? '';
         $schoolName = $this->variables['nama_sekolah'] ?? 'Sekolah';
+        $jenis = $this->variables['jenis'] ?? 'Kehadiran';
 
         return new Envelope(
             from: $this->senderEmail ? new Address($this->senderEmail, $this->senderName ?: $schoolName) : null,
-            subject: 'Notifikasi Kehadiran'.($studentName !== '' ? ' - '.$studentName : ''),
+            subject: 'Notifikasi '.$jenis.($studentName !== '' ? ' - '.$studentName : ''),
         );
     }
 

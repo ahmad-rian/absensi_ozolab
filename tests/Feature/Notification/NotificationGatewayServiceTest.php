@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\AttendanceType;
 use App\Enums\NotificationChannel;
 use App\Enums\NotificationStatus;
 use App\Enums\SchoolChannelType;
@@ -127,6 +128,22 @@ test('dispatcher sends email when channel active and parent has email', function
 
     expect(NotificationLog::where('attendance_id', $attendance->id)->where('channel', NotificationChannel::Email)->where('status', NotificationStatus::Sent)->exists())->toBeTrue();
     Mail::assertSentCount(1);
+});
+
+test('email reflects check-out as Pulang', function () {
+    $school = School::factory()->create();
+    activateChannel($school, SchoolChannelType::Email, ['sender_email' => 'absensi@sekolah.id']);
+
+    $parent = ParentProfile::factory()->create(['school_id' => $school->id, 'whatsapp_number' => '08123', 'telegram_chat_id' => null, 'email' => 'ortu@email.com']);
+    $classroom = Classroom::factory()->create(['school_id' => $school->id]);
+    $student = Student::factory()->create(['school_id' => $school->id, 'parent_profile_id' => $parent->id, 'classroom_id' => $classroom->id]);
+    $attendance = Attendance::factory()->create(['school_id' => $school->id, 'student_id' => $student->id, 'type' => AttendanceType::CheckOut]);
+
+    Mail::fake();
+
+    app(NotificationDispatcher::class)->dispatchAttendance($attendance);
+
+    Mail::assertSent(AttendanceNotificationMail::class, fn ($mail) => ($mail->variables['jenis'] ?? null) === 'Pulang');
 });
 
 test('dispatcher skips email when parent has no email', function () {
