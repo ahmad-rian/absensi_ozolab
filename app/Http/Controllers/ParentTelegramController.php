@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\SchoolChannelType;
 use App\Models\School;
 use App\Models\Student;
+use App\Support\PhoneNumber;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -84,7 +85,7 @@ class ParentTelegramController extends Controller
             ], 422);
         }
 
-        if ($this->normalizePhone($parent->whatsapp_number) !== $this->normalizePhone($validated['whatsapp_number'])) {
+        if (PhoneNumber::normalize($parent->whatsapp_number) !== PhoneNumber::normalize($validated['whatsapp_number'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Nomor WhatsApp tidak cocok dengan data orang tua siswa ini.',
@@ -101,22 +102,5 @@ class ParentTelegramController extends Controller
                 'classroom' => $student->classroom?->name,
             ],
         ]);
-    }
-
-    /**
-     * Reduce a phone number to its bare national form so different formats
-     * (0812…, +62812…, 62812…, 812…) all compare equal.
-     */
-    private function normalizePhone(?string $phone): string
-    {
-        $digits = preg_replace('/\D+/', '', (string) $phone);
-
-        if (str_starts_with($digits, '62')) {
-            $digits = substr($digits, 2);
-        } elseif (str_starts_with($digits, '0')) {
-            $digits = ltrim($digits, '0');
-        }
-
-        return $digits;
     }
 }

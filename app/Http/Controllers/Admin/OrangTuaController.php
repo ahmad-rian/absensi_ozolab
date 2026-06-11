@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\SchoolChannelType;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\ParentProfile;
+use App\Models\SchoolNotificationChannel;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,8 +35,14 @@ class OrangTuaController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $telegramActive = SchoolNotificationChannel::where('school_id', auth()->user()->school_id)
+            ->where('channel', SchoolChannelType::Telegram->value)
+            ->where('is_active', true)
+            ->exists();
+
         return Inertia::render('admin/orang-tua/index', [
             'parents' => $parents,
+            'telegramActive' => $telegramActive,
             'filters' => [
                 'search' => $search,
             ],

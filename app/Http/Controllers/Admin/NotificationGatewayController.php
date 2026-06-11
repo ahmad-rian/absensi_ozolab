@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\SchoolChannelType;
 use App\Http\Controllers\Controller;
+use App\Models\ParentProfile;
 use App\Models\School;
 use App\Models\SchoolNotificationChannel;
+use App\Services\Notification\TelegramConnect;
 use App\Services\Notification\TelegramGateway;
 use App\Services\Notification\WhatsAppGateway;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,7 +33,7 @@ class NotificationGatewayController extends Controller
         ]);
     }
 
-    public function update(Request $request, School $school): RedirectResponse
+    public function update(Request $request, School $school, TelegramConnect $telegramConnect): RedirectResponse
     {
         $validated = $request->validate([
             'channels.OZOLAB_WA.is_active' => ['boolean'],
@@ -67,9 +70,61 @@ class NotificationGatewayController extends Controller
             ], fn ($v) => $v !== null),
         );
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Konfigurasi gateway notifikasi berhasil disimpan.']);
+        // When Telegram is active with a token, resolve the bot username and
+        // (re)register the webhook so parents can self-connect via QR.
+        $warning = $this->syncTelegramConnection($school, $telegramConnect);
+
+        if ($warning) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => $warning]);
+        } else {
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'Konfigurasi gateway notifikasi berhasil disimpan.']);
+        }
 
         return to_route('admin.notification-gateways', ['school' => $school->id]);
+    }
+
+    /**
+     * Resolve the bot username and register the webhook for the active Telegram
+     * channel. Returns a warning message on failure, or null on success/skip.
+     */
+    private function syncTelegramConnection(School $school, TelegramConnect $telegramConnect): ?string
+    {
+        $channel = SchoolNotificationChannel::where('school_id', $school->id)
+            ->where('channel', SchoolChannelType::Telegram->value)
+            ->first();
+
+        if (! $channel || ! $channel->is_active) {
+            return null;
+        }
+
+        $token = (string) $channel->setting('bot_token');
+
+        if ($token === '') {
+            return 'Telegram aktif tetapi Bot Token belum diisi.';
+        }
+
+        $username = $telegramConnect->resolveUsername($token);
+
+        if (! $username) {
+            return 'Bot Token Telegram tidak valid atau gagal menghubungi Telegram. Periksa token.';
+        }
+
+        $secret = (string) ($channel->setting('webhook_secret') ?: Str::random(40));
+        $webhookUrl = route('telegram.webhook', ['school' => $school->id]);
+
+        $registered = $telegramConnect->setWebhook($token, $webhookUrl, $secret);
+
+        $channel->settings = array_merge($channel->settings ?? [], [
+            'bot_username' => $username,
+            'webhook_secret' => $secret,
+        ]);
+        $channel->save();
+
+        if (! $registered) {
+            return 'Bot terhubung tetapi gagal mendaftarkan webhook. Coba simpan ulang.';
+        }
+
+        return null;
     }
 
     public function destroy(School $school): RedirectResponse
@@ -139,6 +194,10 @@ class NotificationGatewayController extends Controller
         $fonnte = $channels->get(SchoolChannelType::FonnteWa->value);
         $telegram = $channels->get(SchoolChannelType::Telegram->value);
 
+        $connect = app(TelegramConnect::class);
+        $botUsername = $telegram?->setting('bot_username');
+        $deepLink = $botUsername ? $connect->deepLink($botUsername) : null;
+
         return [
             'OZOLAB_WA' => [
                 'is_active' => (bool) $channels->get(SchoolChannelType::OzolabWa->value)?->is_active,
@@ -151,6 +210,11 @@ class NotificationGatewayController extends Controller
             'TELEGRAM' => [
                 'is_active' => (bool) $telegram?->is_active,
                 'has_token' => ! empty($telegram?->setting('bot_token')),
+                'bot_username' => $botUsername,
+                'deep_link' => $deepLink,
+                'qr_svg' => $deepLink ? $connect->qrSvg($deepLink) : null,
+                'connected_count' => ParentProfile::where('school_id', $school->id)->whereNotNull('telegram_chat_id')->count(),
+                'total_parents' => ParentProfile::where('school_id', $school->id)->count(),
             ],
         ];
     }

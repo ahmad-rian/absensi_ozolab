@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, Pencil, Plus, Search, Send, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import {
     AlertDialog,
@@ -41,6 +41,7 @@ type Filters = {
 
 type PageProps = {
     parents: PaginatedParents;
+    telegramActive: boolean;
     filters: Filters;
 };
 
@@ -53,7 +54,7 @@ function relationLabel(relation: string): string {
     return labels[relation] ?? relation;
 }
 
-export default function OrangTuaIndex({ parents, filters }: PageProps) {
+export default function OrangTuaIndex({ parents, telegramActive, filters }: PageProps) {
     const [search, setSearch] = useState(filters.search ?? '');
 
     function handleSearch(value: string) {
@@ -104,6 +105,7 @@ export default function OrangTuaIndex({ parents, filters }: PageProps) {
                                 <TableHead>Nama</TableHead>
                                 <TableHead>WhatsApp</TableHead>
                                 <TableHead>Hubungan</TableHead>
+                                {telegramActive && <TableHead>Telegram</TableHead>}
                                 <TableHead>Anak</TableHead>
                                 <TableHead className="text-right">Aksi</TableHead>
                             </TableRow>
@@ -111,7 +113,7 @@ export default function OrangTuaIndex({ parents, filters }: PageProps) {
                         <TableBody>
                             {parents.data.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                                    <TableCell colSpan={telegramActive ? 6 : 5} className="text-muted-foreground py-8 text-center">
                                         Tidak ada data orang tua ditemukan.
                                     </TableCell>
                                 </TableRow>
@@ -123,6 +125,19 @@ export default function OrangTuaIndex({ parents, filters }: PageProps) {
                                         <TableCell>
                                             <Badge variant="secondary">{relationLabel(parent.relation)}</Badge>
                                         </TableCell>
+                                        {telegramActive && (
+                                            <TableCell>
+                                                {(parent as { telegram_chat_id?: string | null }).telegram_chat_id ? (
+                                                    <Badge className="bg-sky-100 text-sky-700 hover:bg-sky-100 dark:bg-sky-950 dark:text-sky-300">
+                                                        <Send className="mr-1 size-3" /> Terhubung
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-muted-foreground">
+                                                        Belum
+                                                    </Badge>
+                                                )}
+                                            </TableCell>
+                                        )}
                                         <TableCell>
                                             {parent.students && parent.students.length > 0 ? (
                                                 <div className="space-y-0.5">
