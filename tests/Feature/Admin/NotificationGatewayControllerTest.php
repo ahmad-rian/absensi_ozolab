@@ -52,6 +52,35 @@ test('superadmin can update channel config', function () {
         ->and($fonnte->setting('fonnte_token'))->toBe('tok-1234567890');
 });
 
+test('activating telegram resolves username and registers webhook', function () {
+    $su = createSuperAdminUser();
+    $school = School::find($su->school_id);
+
+    Http::fake([
+        'api.telegram.org/*getMe' => Http::response(['ok' => true, 'result' => ['username' => 'sekolahbot']]),
+        'api.telegram.org/*setWebhook' => Http::response(['ok' => true]),
+    ]);
+
+    $this->actingAs($su)
+        ->put(route('admin.notification-gateways.update', $school), [
+            'channels' => [
+                'OZOLAB_WA' => ['is_active' => true],
+                'TELEGRAM' => ['is_active' => true, 'bot_token' => '12345:ABCDEF_token_long'],
+            ],
+        ])
+        ->assertRedirect();
+
+    $telegram = SchoolNotificationChannel::where('school_id', $school->id)
+        ->where('channel', SchoolChannelType::Telegram->value)
+        ->first();
+
+    expect($telegram->is_active)->toBeTrue()
+        ->and($telegram->setting('bot_username'))->toBe('sekolahbot')
+        ->and($telegram->setting('webhook_secret'))->not->toBeNull();
+
+    Http::assertSent(fn ($r) => str_contains($r->url(), '/setWebhook'));
+});
+
 test('superadmin reset restores ozolab default', function () {
     $su = createSuperAdminUser();
     $school = School::find($su->school_id);

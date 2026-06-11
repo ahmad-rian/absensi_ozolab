@@ -1,7 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\StudentApiController;
+use App\Http\Controllers\TelegramWebhookController;
 use Illuminate\Support\Facades\Route;
+
+// Telegram bot webhook (per school). Secret validated inside the controller.
+Route::post('telegram/webhook/{school}', [TelegramWebhookController::class, 'handle'])
+    ->middleware('throttle:120,1')
+    ->name('telegram.webhook');
 
 /*
 |--------------------------------------------------------------------------

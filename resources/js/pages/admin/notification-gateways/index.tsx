@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { CheckCircle2, ExternalLink, Loader2, MessageSquare, Save, Send, Trash2, XCircle } from 'lucide-react';
+import { CheckCircle2, Copy, ExternalLink, Loader2, MessageSquare, QrCode, Save, Send, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,15 @@ type ChannelKey = 'OZOLAB_WA' | 'FONNTE_WA' | 'TELEGRAM';
 type Channels = {
     OZOLAB_WA: { is_active: boolean };
     FONNTE_WA: { is_active: boolean; display_phone: string; has_token: boolean };
-    TELEGRAM: { is_active: boolean; has_token: boolean };
+    TELEGRAM: {
+        is_active: boolean;
+        has_token: boolean;
+        bot_username: string | null;
+        deep_link: string | null;
+        qr_svg: string | null;
+        connected_count: number;
+        total_parents: number;
+    };
 };
 
 type Props = {
@@ -194,9 +202,20 @@ export default function NotificationGatewaysIndex({ schools, selectedSchoolId, c
                                         <p className="text-destructive text-sm">{form.errors['channels.TELEGRAM.bot_token' as keyof typeof form.errors]}</p>
                                     )}
                                     <p className="text-muted-foreground text-xs">
-                                        Orang tua harus <strong>/start</strong> ke bot dulu. Isi <code>telegram_chat_id</code> tiap ortu di menu Orang Tua.
+                                        Simpan token, lalu bagikan QR di bawah. Orang tua scan → tekan Start → bagikan nomor. chat_id tersimpan otomatis.
                                     </p>
                                 </div>
+
+                                {channels.TELEGRAM.is_active && channels.TELEGRAM.qr_svg && channels.TELEGRAM.deep_link && (
+                                    <TelegramConnectQr
+                                        qrSvg={channels.TELEGRAM.qr_svg}
+                                        deepLink={channels.TELEGRAM.deep_link}
+                                        username={channels.TELEGRAM.bot_username}
+                                        connected={channels.TELEGRAM.connected_count}
+                                        total={channels.TELEGRAM.total_parents}
+                                    />
+                                )}
+
                                 <TestRow
                                     placeholder="chat_id tujuan (mis. 123456789)"
                                     value={test?.channel === 'TELEGRAM' ? test.destination : ''}
@@ -225,19 +244,14 @@ export default function NotificationGatewaysIndex({ schools, selectedSchoolId, c
                             <GuideCard title="Panduan: Bot Telegram" steps={telegramSteps} link="https://t.me/BotFather" linkLabel="@BotFather" />
                             <Card className="h-fit">
                                 <CardHeader>
-                                    <CardTitle className="text-base">Cara Orang Tua Dapat chat_id</CardTitle>
+                                    <CardTitle className="text-base">Cara Orang Tua Hubungkan Telegram</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3 text-sm">
                                     <ol className="space-y-2">
-                                        <GuideStep n={1}>Orang tua buka bot sekolah di Telegram, tekan <strong>Start</strong>.</GuideStep>
-                                        <GuideStep n={2}>
-                                            Buka chat{' '}
-                                            <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                                                @userinfobot
-                                            </a>
-                                            , tekan Start — bot balas angka <strong>Id</strong>.
-                                        </GuideStep>
-                                        <GuideStep n={3}>Salin angka itu, isikan ke field <strong>Telegram Chat ID</strong> ortu di menu Orang Tua.</GuideStep>
+                                        <GuideStep n={1}>Orang tua <strong>scan QR</strong> di kartu Telegram (cetak/sebar ke grup WA).</GuideStep>
+                                        <GuideStep n={2}>Telegram terbuka di bot sekolah — tekan <strong>Start</strong>.</GuideStep>
+                                        <GuideStep n={3}>Tekan <strong>Bagikan Nomor Saya</strong>. Sistem cocokkan dengan nomor WhatsApp terdaftar.</GuideStep>
+                                        <GuideStep n={4}>Selesai — chat_id tersimpan otomatis. Status muncul di menu <strong>Orang Tua</strong>.</GuideStep>
                                     </ol>
                                     <div className="rounded-lg border bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
                                         Default semua sekolah pakai <strong>WhatsApp Ozolab ID</strong>. Fonnte & Telegram opsional.
@@ -370,9 +384,67 @@ const telegramSteps = [
     'Buka @BotFather di Telegram, kirim <strong>/newbot</strong>.',
     'Beri nama & username bot (harus diakhiri <code>bot</code>).',
     'BotFather balas <strong>Bot Token</strong> — salin.',
-    'Paste token di kartu Telegram, Simpan, lalu centang Aktifkan.',
-    'Minta tiap orang tua <strong>/start</strong> ke bot agar bisa menerima pesan.',
+    'Paste token di kartu Telegram, centang Aktifkan, lalu Simpan.',
+    'Webhook & QR otomatis dibuat. Sebar QR ke orang tua.',
 ];
+
+function TelegramConnectQr({
+    qrSvg,
+    deepLink,
+    username,
+    connected,
+    total,
+}: {
+    qrSvg: string;
+    deepLink: string;
+    username: string | null;
+    connected: number;
+    total: number;
+}) {
+    const [copied, setCopied] = useState(false);
+
+    function copyLink() {
+        navigator.clipboard.writeText(deepLink).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        });
+    }
+
+    return (
+        <div className="space-y-3 rounded-xl border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900 dark:bg-sky-950/40">
+            <div className="flex items-center gap-2 text-sm font-semibold text-sky-800 dark:text-sky-200">
+                <QrCode className="size-4" /> QR Hubungkan Telegram Orang Tua
+            </div>
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+                <div className="size-40 shrink-0 rounded-lg bg-white p-2 shadow-sm [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: qrSvg }} />
+                <div className="space-y-2 text-sm">
+                    <p className="text-muted-foreground">
+                        Orang tua scan QR ini → tekan Start → Bagikan Nomor. chat_id tersimpan otomatis.
+                    </p>
+                    {username && (
+                        <p className="text-xs">
+                            Bot: <code className="rounded bg-white px-1 py-0.5 dark:bg-zinc-800">@{username}</code>
+                        </p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={copyLink}>
+                            {copied ? <CheckCircle2 className="mr-1.5 size-3.5 text-green-600" /> : <Copy className="mr-1.5 size-3.5" />}
+                            {copied ? 'Tersalin' : 'Salin Link'}
+                        </Button>
+                        <Button type="button" size="sm" variant="outline" asChild>
+                            <a href={deepLink} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="mr-1.5 size-3.5" /> Buka Bot
+                            </a>
+                        </Button>
+                    </div>
+                    <p className="text-xs font-medium text-sky-700 dark:text-sky-300">
+                        Terhubung: {connected} / {total} orang tua
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 NotificationGatewaysIndex.layout = {
     breadcrumbs: [
