@@ -386,6 +386,30 @@ export default function NotificationGatewaysIndex({ schools, selectedSchoolId, c
                         <div className="space-y-6">
                             <GuideCard title="Panduan: Fonnte (WhatsApp)" steps={fonnteSteps} link="https://fonnte.com" />
                             <GuideCard title="Panduan: Bot Telegram" steps={telegramSteps} link="https://t.me/BotFather" linkLabel="@BotFather" />
+                            <GuideCard title="Panduan: Email (Gmail)" steps={emailSteps} link="https://myaccount.google.com/apppasswords" linkLabel="Buat App Password Google" />
+                            <Card className="h-fit">
+                                <CardHeader>
+                                    <CardTitle className="text-base">Isi Field Email (Gmail)</CardTitle>
+                                    <CardDescription>Nilai yang dimasukkan ke kartu Email di atas.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <table className="w-full text-sm">
+                                        <tbody>
+                                            {emailFields.map((row) => (
+                                                <tr key={row.field} className="border-b last:border-0">
+                                                    <td className="text-muted-foreground py-2 pr-3 align-top whitespace-nowrap">{row.field}</td>
+                                                    <td className="py-2 font-medium">
+                                                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{row.value}</code>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    <div className="mt-3 rounded-lg border bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                                        Gmail gratis batas ~500 email/hari. Banyak siswa → pakai Google Workspace atau SMTP khusus (Brevo/Mailgun).
+                                    </div>
+                                </CardContent>
+                            </Card>
                             <Card className="h-fit">
                                 <CardHeader>
                                     <CardTitle className="text-base">Cara Orang Tua Hubungkan Telegram</CardTitle>
@@ -530,6 +554,24 @@ const telegramSteps = [
     'BotFather balas <strong>Bot Token</strong> — salin.',
     'Paste token di kartu Telegram, centang Aktifkan, lalu Simpan.',
     'Webhook & QR otomatis dibuat. Sebar QR ke orang tua.',
+];
+
+const emailSteps = [
+    'Buka <strong>myaccount.google.com/security</strong> → aktifkan <strong>Verifikasi 2 Langkah</strong> (wajib lebih dulu).',
+    'Buka <strong>myaccount.google.com/apppasswords</strong>, beri nama mis. <code>Absensi</code>, klik <strong>Create</strong>.',
+    'Google tampilkan <strong>16 huruf</strong> (mis. <code>abcd efgh ijkl mnop</code>) — salin, spasi boleh dibuang.',
+    'Isi field SMTP di kartu Email (lihat tabel di bawah), tempel 16 huruf itu di <strong>Password SMTP</strong>.',
+    '<strong>Email Pengirim</strong> harus sama dengan alamat Gmail (username), jika beda email gagal/masuk spam.',
+    'Centang <strong>Aktifkan Email</strong>, Simpan, lalu klik <strong>Test</strong> kirim ke email sendiri.',
+];
+
+const emailFields: { field: string; value: string }[] = [
+    { field: 'Host SMTP', value: 'smtp.gmail.com' },
+    { field: 'Port', value: '587' },
+    { field: 'Enkripsi', value: 'TLS (atau SSL → port 465)' },
+    { field: 'Username SMTP', value: 'emailkamu@gmail.com' },
+    { field: 'Password SMTP', value: '16 huruf App Password' },
+    { field: 'Email Pengirim', value: 'emailkamu@gmail.com (sama dgn username)' },
 ];
 
 function TelegramConnectQr({
