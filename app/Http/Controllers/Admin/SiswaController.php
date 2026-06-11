@@ -93,7 +93,7 @@ class SiswaController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, QrTokenGenerator $qrGenerator): RedirectResponse
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
@@ -123,11 +123,11 @@ class SiswaController extends Controller
             'parent_profile_id.exists' => 'Data orang tua tidak ditemukan.',
         ]);
 
-        $validated['qr_token'] = $validated['qr_token'] ?? Str::random(64);
-        $validated['qr_issued_at'] = now();
-
         // school_id diisi otomatis oleh trait BelongsToSchool
-        Student::create($validated);
+        $student = Student::create($validated);
+
+        // Token QR dibangun dari NISN + signature HMAC (lihat QrTokenGenerator)
+        $qrGenerator->generate($student);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data siswa berhasil ditambahkan.']);
 

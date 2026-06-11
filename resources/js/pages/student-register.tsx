@@ -79,6 +79,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         address: '',
         parent_name: '',
         parent_phone: '',
+        parent_email: '',
         parent_relation: 'WALI',
         photo_drive_filename: '',
         generate_cards: true,
@@ -486,6 +487,12 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                     <Input id="parent_phone" type="tel" value={data.parent_phone} onChange={(e) => setData('parent_phone', e.target.value)} placeholder="812xxxxxxxx" className="h-11 rounded-l-none" />
                                 </div>
                                 <p className="text-muted-foreground text-xs">Nomor ini akan menerima notifikasi absensi via WhatsApp.</p>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="parent_email" className="text-sm font-medium">Email Orang Tua/Wali</Label>
+                                <Input id="parent_email" type="email" value={data.parent_email} onChange={(e) => setData('parent_email', e.target.value)} placeholder="email@contoh.com" className="h-11" />
+                                <InputError message={errors.parent_email || formErrors.parent_email} />
+                                <p className="text-muted-foreground text-xs">Email ini akan menerima notifikasi kehadiran (absen) siswa. Opsional.</p>
                             </div>
                         </div>
                     </FormSection>

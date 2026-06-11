@@ -96,6 +96,7 @@ class OrangTuaController extends Controller
             $user->parentProfile()->create([
                 'whatsapp_number' => $validated['phone'],
                 'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
+                'email' => $validated['email'],
                 'relation' => $validated['relation'],
                 'nik' => $validated['nik'] ?? null,
                 'occupation' => $validated['occupation'] ?? null,
@@ -159,6 +160,7 @@ class OrangTuaController extends Controller
         $parentProfile->update([
             'whatsapp_number' => $validated['phone'],
             'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
+            'email' => $validated['email'],
             'relation' => $validated['relation'],
             'nik' => $validated['nik'] ?? null,
             'occupation' => $validated['occupation'] ?? null,

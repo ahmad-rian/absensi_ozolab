@@ -8,6 +8,7 @@ use App\Models\Classroom;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Models\Student;
+use App\Services\Attendance\QrTokenGenerator;
 use App\Services\CardGeneratorService;
 use App\Services\GoogleDriveService;
 use App\Services\ParentProfileService;
@@ -41,7 +42,7 @@ class StudentRegistrationController extends Controller
         ]);
     }
 
-    public function store(Request $request, ParentProfileService $parentProfileService): JsonResponse|RedirectResponse
+    public function store(Request $request, ParentProfileService $parentProfileService, QrTokenGenerator $qrGenerator): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'school_id' => ['required', 'exists:schools,id'],
@@ -57,6 +58,7 @@ class StudentRegistrationController extends Controller
             'address' => ['required', 'string', 'max:500'],
             'parent_name' => ['required', 'string', 'max:255'],
             'parent_phone' => ['required', 'string', 'max:20'],
+            'parent_email' => ['nullable', 'email', 'max:255'],
             'parent_relation' => ['required', 'string', 'in:AYAH,IBU,WALI'],
             'photo_drive_filename' => ['nullable', 'string', 'max:500'],
             'generate_cards' => ['nullable', 'boolean'],
@@ -78,6 +80,7 @@ class StudentRegistrationController extends Controller
             'address.required' => 'Alamat wajib diisi.',
             'parent_name.required' => 'Nama orang tua wajib diisi.',
             'parent_phone.required' => 'No. WhatsApp orang tua wajib diisi.',
+            'parent_email.email' => 'Format email orang tua tidak valid.',
             'parent_relation.required' => 'Pilih hubungan orang tua.',
         ]);
 
@@ -85,10 +88,9 @@ class StudentRegistrationController extends Controller
             $validated['nis'] = now()->format('Y').str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT);
         }
 
-        $qrToken = Str::random(64);
         $school = School::with('driveConfig')->findOrFail($validated['school_id']);
 
-        $student = DB::transaction(function () use ($validated, $qrToken, $parentProfileService) {
+        $student = DB::transaction(function () use ($validated, $parentProfileService, $qrGenerator) {
             $student = Student::create([
                 'school_id' => $validated['school_id'],
                 'full_name' => $validated['full_name'],
@@ -103,10 +105,11 @@ class StudentRegistrationController extends Controller
                 'address' => $validated['address'] ?? null,
                 'parent_name' => $validated['parent_name'] ?? null,
                 'parent_phone' => $validated['parent_phone'] ?? null,
-                'qr_token' => $qrToken,
-                'qr_issued_at' => now(),
                 'is_active' => true,
             ]);
+
+            // Token QR berbasis NISN + signature HMAC (lihat QrTokenGenerator).
+            $qrGenerator->generate($student);
 
             if (! empty($validated['parent_name']) && ! empty($validated['parent_phone'])) {
                 $parentProfile = $parentProfileService->findOrCreateFromRegistration(
@@ -114,6 +117,7 @@ class StudentRegistrationController extends Controller
                     $validated['parent_name'],
                     $validated['parent_phone'],
                     $validated['parent_relation'] ?? 'WALI',
+                    $validated['parent_email'] ?? null,
                 );
                 $student->update(['parent_profile_id' => $parentProfile->id]);
             }

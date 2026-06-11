@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ParentProfile;
 use App\Models\School;
 use App\Models\SchoolNotificationChannel;
+use App\Services\Notification\EmailGateway;
 use App\Services\Notification\TelegramConnect;
 use App\Services\Notification\TelegramGateway;
 use App\Services\Notification\WhatsAppGateway;
@@ -42,6 +43,14 @@ class NotificationGatewayController extends Controller
             'channels.FONNTE_WA.display_phone' => ['nullable', 'string', 'max:20'],
             'channels.TELEGRAM.is_active' => ['boolean'],
             'channels.TELEGRAM.bot_token' => ['nullable', 'string', 'min:20'],
+            'channels.EMAIL.is_active' => ['boolean'],
+            'channels.EMAIL.sender_email' => ['nullable', 'email', 'max:255'],
+            'channels.EMAIL.sender_name' => ['nullable', 'string', 'max:255'],
+            'channels.EMAIL.smtp_host' => ['nullable', 'string', 'max:255'],
+            'channels.EMAIL.smtp_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'channels.EMAIL.smtp_username' => ['nullable', 'string', 'max:255'],
+            'channels.EMAIL.smtp_password' => ['nullable', 'string', 'max:255'],
+            'channels.EMAIL.smtp_encryption' => ['nullable', 'in:tls,ssl,none'],
         ]);
 
         $input = $validated['channels'] ?? [];
@@ -69,6 +78,24 @@ class NotificationGatewayController extends Controller
                 'bot_token' => $input['TELEGRAM']['bot_token'] ?? null,
             ], fn ($v) => $v !== null),
         );
+
+        // Email — kredensial SMTP + pengirim per sekolah (password hanya
+        // di-update jika diisi, field lain ikut tersimpan walau dikosongkan).
+        $email = $input['EMAIL'] ?? [];
+        $emailSettings = [
+            'sender_email' => $email['sender_email'] ?? '',
+            'sender_name' => $email['sender_name'] ?? '',
+            'smtp_host' => $email['smtp_host'] ?? '',
+            'smtp_port' => $email['smtp_port'] ?? '',
+            'smtp_username' => $email['smtp_username'] ?? '',
+            'smtp_encryption' => $email['smtp_encryption'] ?? 'tls',
+        ];
+
+        if (! empty($email['smtp_password'])) {
+            $emailSettings['smtp_password'] = $email['smtp_password'];
+        }
+
+        $this->saveChannel($school, SchoolChannelType::Email, (bool) ($email['is_active'] ?? false), $emailSettings);
 
         // When Telegram is active with a token, resolve the bot username and
         // (re)register the webhook so parents can self-connect via QR.
@@ -143,19 +170,21 @@ class NotificationGatewayController extends Controller
         return to_route('admin.notification-gateways', ['school' => $school->id]);
     }
 
-    public function test(Request $request, School $school, WhatsAppGateway $whatsApp, TelegramGateway $telegram): JsonResponse
+    public function test(Request $request, School $school, WhatsAppGateway $whatsApp, TelegramGateway $telegram, EmailGateway $email): JsonResponse
     {
         $validated = $request->validate([
-            'channel' => ['required', 'in:OZOLAB_WA,FONNTE_WA,TELEGRAM'],
+            'channel' => ['required', 'in:OZOLAB_WA,FONNTE_WA,TELEGRAM,EMAIL'],
             'destination' => ['required', 'string', 'min:5'],
         ]);
 
         $message = 'Test notifikasi dari sistem absensi '.$school->name.'. Jika Anda menerima pesan ini, konfigurasi berhasil!';
         $type = SchoolChannelType::from($validated['channel']);
 
-        $success = $type === SchoolChannelType::Telegram
-            ? $telegram->sendText($validated['destination'], $message, $school->id)
-            : $whatsApp->sendText($validated['destination'], $message, $school->id);
+        $success = match ($type) {
+            SchoolChannelType::Telegram => $telegram->sendText($validated['destination'], $message, $school->id),
+            SchoolChannelType::Email => $email->sendText($validated['destination'], $message, $school->id),
+            default => $whatsApp->sendText($validated['destination'], $message, $school->id),
+        };
 
         return response()->json([
             'success' => $success,
@@ -193,6 +222,7 @@ class NotificationGatewayController extends Controller
 
         $fonnte = $channels->get(SchoolChannelType::FonnteWa->value);
         $telegram = $channels->get(SchoolChannelType::Telegram->value);
+        $emailChannel = $channels->get(SchoolChannelType::Email->value);
 
         $connect = app(TelegramConnect::class);
         $botUsername = $telegram?->setting('bot_username');
@@ -214,6 +244,18 @@ class NotificationGatewayController extends Controller
                 'deep_link' => $deepLink,
                 'qr_svg' => $deepLink ? $connect->qrSvg($deepLink) : null,
                 'connected_count' => ParentProfile::where('school_id', $school->id)->whereNotNull('telegram_chat_id')->count(),
+                'total_parents' => ParentProfile::where('school_id', $school->id)->count(),
+            ],
+            'EMAIL' => [
+                'is_active' => (bool) $emailChannel?->is_active,
+                'sender_email' => $emailChannel?->setting('sender_email') ?? '',
+                'sender_name' => $emailChannel?->setting('sender_name') ?? '',
+                'smtp_host' => $emailChannel?->setting('smtp_host') ?? '',
+                'smtp_port' => $emailChannel?->setting('smtp_port') ?? '',
+                'smtp_username' => $emailChannel?->setting('smtp_username') ?? '',
+                'smtp_encryption' => $emailChannel?->setting('smtp_encryption') ?? 'tls',
+                'has_smtp_password' => ! empty($emailChannel?->setting('smtp_password')),
+                'connected_count' => ParentProfile::where('school_id', $school->id)->whereNotNull('email')->where('email', '!=', '')->count(),
                 'total_parents' => ParentProfile::where('school_id', $school->id)->count(),
             ],
         ];

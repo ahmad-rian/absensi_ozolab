@@ -15,6 +15,7 @@ class NotificationDispatcher
     public function __construct(
         private readonly WhatsAppGateway $whatsApp,
         private readonly TelegramGateway $telegram,
+        private readonly EmailGateway $email,
     ) {}
 
     /**
@@ -65,6 +66,20 @@ class NotificationDispatcher
                 $variables,
                 $attempt,
                 fn () => $this->telegram->sendTemplate($parentProfile->telegram_chat_id, 'attendance_notify', $variables, $schoolId),
+            );
+            $allSucceeded = $allSucceeded && $sent;
+        }
+
+        // Email: channel aktif + ortu punya alamat email.
+        if ($activeTypes->contains(SchoolChannelType::Email) && ! empty($parentProfile->email)) {
+            $sent = $this->deliver(
+                $attendance,
+                $parentProfile,
+                NotificationChannel::Email,
+                $parentProfile->email,
+                $variables,
+                $attempt,
+                fn () => $this->email->sendTemplate($parentProfile->email, 'attendance_notify', $variables, $schoolId),
             );
             $allSucceeded = $allSucceeded && $sent;
         }
