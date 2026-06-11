@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { dashboard } from '@/routes';
 
-type ChannelKey = 'OZOLAB_WA' | 'FONNTE_WA' | 'TELEGRAM';
+type ChannelKey = 'OZOLAB_WA' | 'FONNTE_WA' | 'TELEGRAM' | 'EMAIL';
 
 type Channels = {
     OZOLAB_WA: { is_active: boolean };
@@ -20,6 +20,18 @@ type Channels = {
         bot_username: string | null;
         deep_link: string | null;
         qr_svg: string | null;
+        connected_count: number;
+        total_parents: number;
+    };
+    EMAIL: {
+        is_active: boolean;
+        sender_email: string;
+        sender_name: string;
+        smtp_host: string;
+        smtp_port: string | number;
+        smtp_username: string;
+        smtp_encryption: string;
+        has_smtp_password: boolean;
         connected_count: number;
         total_parents: number;
     };
@@ -41,6 +53,16 @@ export default function NotificationGatewaysIndex({ schools, selectedSchoolId, c
             OZOLAB_WA: { is_active: channels?.OZOLAB_WA.is_active ?? true },
             FONNTE_WA: { is_active: channels?.FONNTE_WA.is_active ?? false, fonnte_token: '', display_phone: channels?.FONNTE_WA.display_phone ?? '' },
             TELEGRAM: { is_active: channels?.TELEGRAM.is_active ?? false, bot_token: '' },
+            EMAIL: {
+                is_active: channels?.EMAIL.is_active ?? false,
+                sender_email: channels?.EMAIL.sender_email ?? '',
+                sender_name: channels?.EMAIL.sender_name ?? '',
+                smtp_host: channels?.EMAIL.smtp_host ?? '',
+                smtp_port: channels?.EMAIL.smtp_port ?? '587',
+                smtp_username: channels?.EMAIL.smtp_username ?? '',
+                smtp_password: '',
+                smtp_encryption: channels?.EMAIL.smtp_encryption ?? 'tls',
+            },
         },
     });
 
@@ -223,6 +245,128 @@ export default function NotificationGatewaysIndex({ schools, selectedSchoolId, c
                                     onTest={(v) => runTest('TELEGRAM', v)}
                                     busy={testing === 'TELEGRAM'}
                                     result={testResult.TELEGRAM}
+                                />
+                            </ChannelCard>
+
+                            {/* Email */}
+                            <ChannelCard
+                                title="Email (Pengirim Sekolah)"
+                                description="Kirim notifikasi kehadiran via email ke alamat email orang tua. 1 sekolah 1 email pengirim."
+                                active={form.data.channels.EMAIL.is_active}
+                                onToggle={(c) => setChannel('EMAIL', { is_active: c })}
+                                toggleLabel="Aktifkan Email"
+                            >
+                                <div className="grid gap-2">
+                                    <Label>Email Pengirim</Label>
+                                    <Input
+                                        type="email"
+                                        placeholder="absensi@sekolah.sch.id"
+                                        value={form.data.channels.EMAIL.sender_email}
+                                        onChange={(e) => setChannel('EMAIL', { sender_email: e.target.value })}
+                                    />
+                                    {form.errors['channels.EMAIL.sender_email' as keyof typeof form.errors] && (
+                                        <p className="text-destructive text-sm">{form.errors['channels.EMAIL.sender_email' as keyof typeof form.errors]}</p>
+                                    )}
+                                    <p className="text-muted-foreground text-xs">
+                                        Alamat pengirim (From) untuk semua email notifikasi sekolah ini. Kosongkan untuk memakai pengirim global default.
+                                    </p>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label>Nama Pengirim</Label>
+                                    <Input
+                                        placeholder="Nama sekolah (opsional)"
+                                        value={form.data.channels.EMAIL.sender_name}
+                                        onChange={(e) => setChannel('EMAIL', { sender_name: e.target.value })}
+                                    />
+                                    {form.errors['channels.EMAIL.sender_name' as keyof typeof form.errors] && (
+                                        <p className="text-destructive text-sm">{form.errors['channels.EMAIL.sender_name' as keyof typeof form.errors]}</p>
+                                    )}
+                                </div>
+
+                                <div className="rounded-lg border bg-muted/30 p-3">
+                                    <p className="mb-3 text-sm font-medium">Server SMTP Sekolah</p>
+                                    <div className="grid gap-3">
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                            <div className="grid gap-2">
+                                                <Label>Host SMTP</Label>
+                                                <Input
+                                                    placeholder="smtp.gmail.com"
+                                                    value={form.data.channels.EMAIL.smtp_host}
+                                                    onChange={(e) => setChannel('EMAIL', { smtp_host: e.target.value })}
+                                                />
+                                                {form.errors['channels.EMAIL.smtp_host' as keyof typeof form.errors] && (
+                                                    <p className="text-destructive text-sm">{form.errors['channels.EMAIL.smtp_host' as keyof typeof form.errors]}</p>
+                                                )}
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label>Port</Label>
+                                                <Input
+                                                    type="number"
+                                                    placeholder="587"
+                                                    value={form.data.channels.EMAIL.smtp_port}
+                                                    onChange={(e) => setChannel('EMAIL', { smtp_port: e.target.value })}
+                                                />
+                                                {form.errors['channels.EMAIL.smtp_port' as keyof typeof form.errors] && (
+                                                    <p className="text-destructive text-sm">{form.errors['channels.EMAIL.smtp_port' as keyof typeof form.errors]}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label>Username SMTP</Label>
+                                            <Input
+                                                placeholder="akun@gmail.com"
+                                                value={form.data.channels.EMAIL.smtp_username}
+                                                onChange={(e) => setChannel('EMAIL', { smtp_username: e.target.value })}
+                                            />
+                                            {form.errors['channels.EMAIL.smtp_username' as keyof typeof form.errors] && (
+                                                <p className="text-destructive text-sm">{form.errors['channels.EMAIL.smtp_username' as keyof typeof form.errors]}</p>
+                                            )}
+                                        </div>
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                            <div className="grid gap-2">
+                                                <Label>Password SMTP</Label>
+                                                <Input
+                                                    type="password"
+                                                    placeholder={channels.EMAIL.has_smtp_password ? '•••••••• (biarkan kosong jika tidak diubah)' : 'Password / App Password'}
+                                                    value={form.data.channels.EMAIL.smtp_password}
+                                                    onChange={(e) => setChannel('EMAIL', { smtp_password: e.target.value })}
+                                                />
+                                                {form.errors['channels.EMAIL.smtp_password' as keyof typeof form.errors] && (
+                                                    <p className="text-destructive text-sm">{form.errors['channels.EMAIL.smtp_password' as keyof typeof form.errors]}</p>
+                                                )}
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label>Enkripsi</Label>
+                                                <Select value={form.data.channels.EMAIL.smtp_encryption} onValueChange={(v) => setChannel('EMAIL', { smtp_encryption: v })}>
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="tls">TLS (port 587)</SelectItem>
+                                                        <SelectItem value="ssl">SSL (port 465)</SelectItem>
+                                                        <SelectItem value="none">Tanpa enkripsi</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="text-muted-foreground mt-3 text-xs">
+                                        Isi kredensial SMTP sekolah di sini — tidak perlu mengubah file server. Untuk Gmail, gunakan App Password (bukan password akun).
+                                    </p>
+                                </div>
+
+                                <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+                                    {channels.EMAIL.connected_count} dari {channels.EMAIL.total_parents} orang tua punya email terdaftar.
+                                </div>
+
+                                <TestRow
+                                    placeholder="email tujuan (mis. orangtua@email.com)"
+                                    value={test?.channel === 'EMAIL' ? test.destination : ''}
+                                    onChange={(v) => setTest({ channel: 'EMAIL', destination: v })}
+                                    onTest={(v) => runTest('EMAIL', v)}
+                                    busy={testing === 'EMAIL'}
+                                    result={testResult.EMAIL}
                                 />
                             </ChannelCard>
 

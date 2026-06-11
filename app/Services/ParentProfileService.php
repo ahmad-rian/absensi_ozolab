@@ -11,15 +11,21 @@ use Illuminate\Support\Str;
 
 class ParentProfileService
 {
-    public function findOrCreateFromRegistration(string $schoolId, string $parentName, string $parentPhone, string $relation = 'WALI'): ParentProfile
+    public function findOrCreateFromRegistration(string $schoolId, string $parentName, string $parentPhone, string $relation = 'WALI', ?string $email = null): ParentProfile
     {
         $phone = trim($parentPhone);
+        $email = $email ? trim($email) : null;
 
         $existing = ParentProfile::where('school_id', $schoolId)
             ->where('whatsapp_number', $phone)
             ->first();
 
         if ($existing) {
+            // Lengkapi email notifikasi jika sebelumnya kosong.
+            if ($email && empty($existing->email)) {
+                $existing->update(['email' => $email]);
+            }
+
             return $existing;
         }
 
@@ -36,6 +42,7 @@ class ParentProfileService
         return $user->parentProfile()->create([
             'school_id' => $schoolId,
             'whatsapp_number' => $phone,
+            'email' => $email,
             'relation' => ParentRelation::from($relation),
         ]);
     }

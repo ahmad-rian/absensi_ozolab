@@ -10,18 +10,26 @@ use BaconQrCode\Writer;
 
 class QrTokenGenerator
 {
+    /**
+     * Build the QR token as "<identity>.<signature>" where identity is the
+     * student's NISN (fallback to NIS) so the NISN is readable from the QR,
+     * and the signature is an HMAC keyed by a secret + random nonce. The NISN
+     * is visible but the token cannot be forged without the secret, and every
+     * call produces a fresh signature so rotation always invalidates old QRs.
+     */
     public function generate(Student $student): string
     {
+        $identity = $student->nisn ?: $student->nis;
+        $issuedAt = now();
         $secret = config('attendance.qr_token_secret');
-        $payload = $student->id.'|'.now()->timestamp.'|'.bin2hex(random_bytes(16));
-        $hmac = hash_hmac('sha256', $payload, $secret);
+        $nonce = bin2hex(random_bytes(8));
 
-        $token = substr(base64_encode($hmac.':'.$payload), 0, 64);
-        $token = str_replace(['+', '/', '='], ['-', '_', ''], $token);
+        $signature = substr(hash_hmac('sha256', $identity.'|'.$issuedAt->timestamp.'|'.$nonce, $secret), 0, 24);
+        $token = substr($identity.'.'.$signature, 0, 64);
 
         $student->update([
             'qr_token' => $token,
-            'qr_issued_at' => now(),
+            'qr_issued_at' => $issuedAt,
         ]);
 
         return $token;

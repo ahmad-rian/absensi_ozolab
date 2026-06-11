@@ -3,15 +3,27 @@
 use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
 
-test('generates a unique 64-char token', function () {
-    $student = Student::factory()->create(['qr_token' => null]);
+test('generates a token containing the student NISN', function () {
+    $student = Student::factory()->create(['nisn' => '1234567890', 'qr_token' => null]);
     $generator = new QrTokenGenerator;
 
     $token = $generator->generate($student);
 
-    expect($token)->toHaveLength(64);
+    [$identity, $signature] = explode('.', $token, 2);
+    expect($identity)->toBe('1234567890');
+    expect($signature)->toHaveLength(24);
+    expect(strlen($token))->toBeLessThanOrEqual(64);
     expect($student->fresh()->qr_token)->toBe($token);
     expect($student->fresh()->qr_issued_at)->not->toBeNull();
+});
+
+test('falls back to NIS when NISN is empty', function () {
+    $student = Student::factory()->create(['nisn' => null, 'nis' => 'NIS-99', 'qr_token' => null]);
+    $generator = new QrTokenGenerator;
+
+    $token = $generator->generate($student);
+
+    expect($token)->toStartWith('NIS-99.');
 });
 
 test('generates different tokens for different students', function () {

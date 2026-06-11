@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\NotificationChannel;
+use App\Enums\NotificationStatus;
 use App\Enums\SchoolChannelType;
+use App\Mail\AttendanceNotificationMail;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\NotificationLog;
@@ -9,10 +11,12 @@ use App\Models\ParentProfile;
 use App\Models\School;
 use App\Models\SchoolNotificationChannel;
 use App\Models\Student;
+use App\Services\Notification\DefaultEmailGateway;
 use App\Services\Notification\DefaultTelegramGateway;
 use App\Services\Notification\DefaultWhatsAppGateway;
 use App\Services\Notification\NotificationDispatcher;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 
 function activateChannel(School $school, SchoolChannelType $type, array $settings = []): SchoolNotificationChannel
 {
@@ -74,6 +78,72 @@ test('telegram gateway cleans a double encoded template', function () {
     (new DefaultTelegramGateway)->sendTemplate('999', 'attendance', ['nama_siswa' => 'Budi'], $school->id);
 
     Http::assertSent(fn ($r) => $r['text'] === 'Halo Bapak/Ibu Wali, ananda Budi.');
+});
+
+test('email gateway sends from the school sender address', function () {
+    $school = School::factory()->create();
+    activateChannel($school, SchoolChannelType::Email, ['sender_email' => 'absensi@sekolah.id', 'sender_name' => 'SD Contoh']);
+
+    Mail::fake();
+
+    expect((new DefaultEmailGateway)->sendTemplate('ortu@email.com', 'attendance', ['nama_siswa' => 'Budi', 'nama_sekolah' => 'SD Contoh'], $school->id))->toBeTrue();
+
+    Mail::assertSent(AttendanceNotificationMail::class, fn ($mail) => $mail->hasTo('ortu@email.com')
+        && $mail->hasFrom('absensi@sekolah.id'));
+});
+
+test('email gateway registers a per-school smtp mailer from channel settings', function () {
+    $school = School::factory()->create();
+    activateChannel($school, SchoolChannelType::Email, [
+        'sender_email' => 'absensi@sekolah.id',
+        'smtp_host' => 'smtp.sekolah.id',
+        'smtp_port' => '465',
+        'smtp_username' => 'akun@sekolah.id',
+        'smtp_password' => 'rahasia',
+        'smtp_encryption' => 'ssl',
+    ]);
+
+    Mail::fake();
+
+    (new DefaultEmailGateway)->sendTemplate('ortu@email.com', 'attendance', ['nama_siswa' => 'Budi'], $school->id);
+
+    expect(config('mail.mailers.school_smtp_'.$school->id.'.host'))->toBe('smtp.sekolah.id')
+        ->and(config('mail.mailers.school_smtp_'.$school->id.'.port'))->toBe(465)
+        ->and(config('mail.mailers.school_smtp_'.$school->id.'.encryption'))->toBe('ssl');
+});
+
+test('dispatcher sends email when channel active and parent has email', function () {
+    $school = School::factory()->create();
+    activateChannel($school, SchoolChannelType::Email, ['sender_email' => 'absensi@sekolah.id']);
+
+    $parent = ParentProfile::factory()->create(['school_id' => $school->id, 'whatsapp_number' => '08123', 'telegram_chat_id' => null, 'email' => 'ortu@email.com']);
+    $classroom = Classroom::factory()->create(['school_id' => $school->id]);
+    $student = Student::factory()->create(['school_id' => $school->id, 'parent_profile_id' => $parent->id, 'classroom_id' => $classroom->id]);
+    $attendance = Attendance::factory()->create(['school_id' => $school->id, 'student_id' => $student->id]);
+
+    Mail::fake();
+
+    app(NotificationDispatcher::class)->dispatchAttendance($attendance);
+
+    expect(NotificationLog::where('attendance_id', $attendance->id)->where('channel', NotificationChannel::Email)->where('status', NotificationStatus::Sent)->exists())->toBeTrue();
+    Mail::assertSentCount(1);
+});
+
+test('dispatcher skips email when parent has no email', function () {
+    $school = School::factory()->create();
+    activateChannel($school, SchoolChannelType::Email, ['sender_email' => 'absensi@sekolah.id']);
+
+    $parent = ParentProfile::factory()->create(['school_id' => $school->id, 'whatsapp_number' => '08123', 'telegram_chat_id' => null, 'email' => null]);
+    $classroom = Classroom::factory()->create(['school_id' => $school->id]);
+    $student = Student::factory()->create(['school_id' => $school->id, 'parent_profile_id' => $parent->id, 'classroom_id' => $classroom->id]);
+    $attendance = Attendance::factory()->create(['school_id' => $school->id, 'student_id' => $student->id]);
+
+    Mail::fake();
+
+    app(NotificationDispatcher::class)->dispatchAttendance($attendance);
+
+    expect(NotificationLog::where('attendance_id', $attendance->id)->where('channel', NotificationChannel::Email)->exists())->toBeFalse();
+    Mail::assertNothingSent();
 });
 
 test('dispatcher logs one notification per active channel', function () {
