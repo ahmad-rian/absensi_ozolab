@@ -14,7 +14,7 @@
                     {{-- Header --}}
                     <tr>
                         <td style="background-color:#1e3a8a; padding:28px 32px;">
-                            <p style="margin:0; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:#bfdbfe;">Notifikasi Kehadiran</p>
+                            <p style="margin:0; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:#bfdbfe;">Notifikasi {{ $vars['jenis'] ?? 'Kehadiran' }}</p>
                             <h1 style="margin:6px 0 0; font-size:22px; font-weight:700; color:#ffffff;">{{ $vars['nama_sekolah'] ?? 'Sekolah' }}</h1>
                         </td>
                     </tr>
@@ -24,7 +24,7 @@
                         <td style="padding:32px;">
                             <p style="margin:0 0 18px; font-size:15px; line-height:1.6; color:#334155;">
                                 Assalamu'alaikum Bapak/Ibu,<br>
-                                Berikut kami sampaikan informasi kehadiran putra/putri Anda.
+                                Berikut kami sampaikan informasi {{ $vars['aktivitas'] ?? 'kehadiran' }} putra/putri Anda.
                             </p>
 
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0; border-radius:10px; overflow:hidden;">
@@ -37,6 +37,13 @@
                                     <td style="padding:14px 18px; font-size:15px; color:#0f172a; border-top:1px solid #e2e8f0;">{{ $vars['kelas'] ?? '-' }}</td>
                                 </tr>
                                 <tr>
+                                    <td style="padding:14px 18px; background-color:#f8fafc; font-size:13px; color:#64748b; border-top:1px solid #e2e8f0;">Keterangan</td>
+                                    <td style="padding:14px 18px; border-top:1px solid #e2e8f0;">
+                                        @php($pulang = ($vars['jenis'] ?? '') === 'Pulang')
+                                        <span style="display:inline-block; padding:4px 12px; border-radius:9999px; background-color:{{ $pulang ? '#fef3c7' : '#dcfce7' }}; color:{{ $pulang ? '#92400e' : '#166534' }}; font-size:13px; font-weight:600;">{{ $pulang ? 'Pulang Sekolah' : 'Masuk Sekolah' }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td style="padding:14px 18px; background-color:#f8fafc; font-size:13px; color:#64748b; border-top:1px solid #e2e8f0;">Status</td>
                                     <td style="padding:14px 18px; border-top:1px solid #e2e8f0;">
                                         <span style="display:inline-block; padding:4px 12px; border-radius:9999px; background-color:#dbeafe; color:#1e40af; font-size:13px; font-weight:600;">{{ $vars['status'] ?? '-' }}</span>
@@ -47,7 +54,7 @@
                                     <td style="padding:14px 18px; font-size:15px; color:#0f172a; border-top:1px solid #e2e8f0;">{{ $vars['tanggal'] ?? '-' }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:14px 18px; background-color:#f8fafc; font-size:13px; color:#64748b; border-top:1px solid #e2e8f0;">Waktu</td>
+                                    <td style="padding:14px 18px; background-color:#f8fafc; font-size:13px; color:#64748b; border-top:1px solid #e2e8f0;">Waktu {{ $vars['jenis'] ?? '' }}</td>
                                     <td style="padding:14px 18px; font-size:15px; color:#0f172a; border-top:1px solid #e2e8f0;">{{ $vars['waktu'] ?? '-' }}</td>
                                 </tr>
                             </table>
