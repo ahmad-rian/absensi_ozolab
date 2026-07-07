@@ -51,24 +51,24 @@ class AdminUserSeeder extends Seeder
         ]);
         $adminSd->assignRole(UserRole::Admin->value);
 
-        // Guru SMP Nusantara
-        $teachers = [
-            ['name' => 'Budi Santoso', 'email' => 'budi@sekolah.test'],
-            ['name' => 'Siti Rahayu', 'email' => 'siti@sekolah.test'],
-            ['name' => 'Ahmad Hidayat', 'email' => 'ahmad@sekolah.test'],
-        ];
-
-        foreach ($teachers as $teacher) {
-            $user = User::create([
-                'name' => $teacher['name'],
-                'email' => $teacher['email'],
-                'email_verified_at' => now(),
-                'password' => Hash::make('password'),
-                'phone' => '+628'.str_pad((string) random_int(1000000000, 9999999999), 10, '0', STR_PAD_LEFT),
-                'is_active' => true,
-                'school_id' => $smpNusantara->id,
-            ]);
-            $user->assignRole(UserRole::Guru->value);
-        }
+        // Guru SMP Nusantara — disabled for production deploy (admin/superadmin only)
+        // $teachers = [
+        //     ['name' => 'Budi Santoso', 'email' => 'budi@sekolah.test'],
+        //     ['name' => 'Siti Rahayu', 'email' => 'siti@sekolah.test'],
+        //     ['name' => 'Ahmad Hidayat', 'email' => 'ahmad@sekolah.test'],
+        // ];
+        //
+        // foreach ($teachers as $teacher) {
+        //     $user = User::create([
+        //         'name' => $teacher['name'],
+        //         'email' => $teacher['email'],
+        //         'email_verified_at' => now(),
+        //         'password' => Hash::make('password'),
+        //         'phone' => '+628'.str_pad((string) random_int(1000000000, 9999999999), 10, '0', STR_PAD_LEFT),
+        //         'is_active' => true,
+        //         'school_id' => $smpNusantara->id,
+        //     ]);
+        //     $user->assignRole(UserRole::Guru->value);
+        // }
     }
 }

@@ -12,13 +12,14 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             SettingSeeder::class,
             SchoolSeeder::class,
-            AcademicYearSeeder::class,
             AdminUserSeeder::class,
-            ClassroomSeeder::class,
-            AttendanceScheduleSeeder::class,
-            ParentAndStudentSeeder::class,
-            AttendanceHistorySeeder::class,
-            NotificationLogSeeder::class,
+            // AcademicYearSeeder::class,
+            // ClassroomSeeder::class,
+            // AttendanceScheduleSeeder::class,
+            // ParentAndStudentSeeder::class,
+            // AttendanceHistorySeeder::class,
+            // NotificationLogSeeder::class,
+            // StudentPhotoSeeder::class,
         ]);
     }
 }
