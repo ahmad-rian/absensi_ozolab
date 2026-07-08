@@ -45,6 +45,7 @@ class SchoolController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
+        $validated['scanner_token'] = Str::random(40);
         $validated['is_active'] = true;
         $validated['settings'] = [
             'school_name' => $validated['name'],
@@ -98,6 +99,15 @@ class SchoolController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Sekolah berhasil diperbarui.']);
 
         return to_route('admin.schools.index');
+    }
+
+    public function regenerateScannerToken(School $school): RedirectResponse
+    {
+        $school->update(['scanner_token' => Str::random(40)]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Link scan berhasil diperbarui. Link lama tidak berlaku lagi.']);
+
+        return back();
     }
 
     public function destroy(School $school): RedirectResponse

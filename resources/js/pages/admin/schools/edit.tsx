@@ -1,5 +1,7 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, Check, Copy, ExternalLink, RefreshCw, ScanLine } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +12,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { dashboard } from '@/routes';
 
-type SchoolData = { id: string; name: string; address: string | null; city: string | null; phone: string | null; email: string | null; website: string | null; is_active: boolean };
+type SchoolData = { id: string; name: string; address: string | null; city: string | null; phone: string | null; email: string | null; website: string | null; is_active: boolean; scanner_token: string };
 
 export default function SchoolsEdit({ school }: { school: SchoolData }) {
     const { data, setData, put, processing, errors } = useForm({
@@ -19,9 +21,33 @@ export default function SchoolsEdit({ school }: { school: SchoolData }) {
         is_active: school.is_active,
     });
 
+    const [copied, setCopied] = useState(false);
+    const [regenerating, setRegenerating] = useState(false);
+    const scanUrl = typeof window !== 'undefined' ? `${window.location.origin}/scan/${school.scanner_token}` : `/scan/${school.scanner_token}`;
+
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         put(`/admin/schools/${school.id}`);
+    }
+
+    async function copyLink() {
+        try {
+            await navigator.clipboard.writeText(scanUrl);
+            setCopied(true);
+            toast.success('Link scan disalin.');
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast.error('Gagal menyalin link.');
+        }
+    }
+
+    function regenerateLink() {
+        if (!confirm('Buat ulang link scan? Link lama akan langsung tidak berlaku.')) return;
+        router.post(`/admin/schools/${school.id}/scanner-token`, {}, {
+            preserveScroll: true,
+            onStart: () => setRegenerating(true),
+            onFinish: () => setRegenerating(false),
+        });
     }
 
     return (
@@ -72,6 +98,30 @@ export default function SchoolsEdit({ school }: { school: SchoolData }) {
                             <div className="flex items-center gap-2.5">
                                 <Checkbox id="is_active" checked={data.is_active} onCheckedChange={(c) => setData('is_active', Boolean(c))} />
                                 <Label htmlFor="is_active" className="font-normal">Sekolah Aktif</Label>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><ScanLine className="size-5" /> Link Absensi Publik</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-4">
+                            <p className="text-muted-foreground text-sm">
+                                Bagikan link ini untuk halaman scan absensi siswa. Tidak perlu login — cukup buka & scan QR.
+                            </p>
+                            <div className="flex gap-2">
+                                <Input value={scanUrl} readOnly onFocus={(e) => e.target.select()} className="font-mono text-sm" />
+                                <Button type="button" variant="outline" size="icon" onClick={copyLink} title="Salin link">
+                                    {copied ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                                </Button>
+                                <Button type="button" variant="outline" size="icon" asChild title="Buka link">
+                                    <a href={scanUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" /></a>
+                                </Button>
+                            </div>
+                            <div>
+                                <Button type="button" variant="ghost" size="sm" onClick={regenerateLink} disabled={regenerating} className="text-destructive hover:text-destructive">
+                                    {regenerating ? <Spinner /> : <RefreshCw className="size-4" />} Buat Ulang Link
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>

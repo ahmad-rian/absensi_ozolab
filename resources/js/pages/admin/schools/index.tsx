@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Building2, Edit, Globe, Mail, MapPin, Phone, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Building2, Edit, Mail, MapPin, Phone, Plus, ScanLine, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -21,6 +22,7 @@ type School = {
     email: string | null;
     website: string | null;
     is_active: boolean;
+    scanner_token: string;
     users_count: number;
     students_count: number;
     classrooms_count: number;
@@ -35,6 +37,16 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
     function handleSearch(value: string) {
         setSearch(value);
         router.get('/admin/schools', { search: value || undefined }, { preserveState: true, replace: true });
+    }
+
+    async function copyScanLink(token: string) {
+        const url = `${window.location.origin}/scan/${token}`;
+        try {
+            await navigator.clipboard.writeText(url);
+            toast.success('Link scan disalin.');
+        } catch {
+            toast.error('Gagal menyalin link.');
+        }
     }
 
     return (
@@ -110,6 +122,9 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
                                 <CardFooter className="gap-2 pt-0">
                                     <Button variant="outline" size="sm" asChild>
                                         <Link href={`/admin/schools/${school.id}/edit`}><Edit className="mr-1 size-3.5" />Edit</Link>
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={() => copyScanLink(school.scanner_token)}>
+                                        <ScanLine className="mr-1 size-3.5" />Link Scan
                                     </Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>

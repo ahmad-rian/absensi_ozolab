@@ -48,6 +48,7 @@ class AttendanceRecorder
 
         try {
             $attendance = Attendance::create([
+                'school_id' => $student->school_id,
                 'student_id' => $student->id,
                 'attendance_date' => $date,
                 'type' => $type,
