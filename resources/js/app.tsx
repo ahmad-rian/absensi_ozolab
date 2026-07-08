@@ -14,7 +14,7 @@ createInertiaApp({
         switch (true) {
             case name === 'welcome':
             case name === 'student-register':
-            case name === 'scanner':
+            case name === 'scan/public':
             case name === 'parent-telegram':
                 return null;
             case name.startsWith('auth/'):

@@ -18,11 +18,12 @@ class SchoolFactory extends Factory
      */
     public function definition(): array
     {
-        $name = fake('id_ID')->company() . ' School';
+        $name = fake('id_ID')->company().' School';
 
         return [
             'name' => $name,
             'slug' => Str::slug($name),
+            'scanner_token' => Str::random(40),
             'is_active' => true,
         ];
     }

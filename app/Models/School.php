@@ -18,6 +18,7 @@ class School extends Model
     protected $fillable = [
         'name',
         'slug',
+        'scanner_token',
         'logo_path',
         'favicon_path',
         'address',
@@ -95,6 +96,14 @@ class School extends Model
     public function cardGenerationLogs(): HasMany
     {
         return $this->hasMany(CardGenerationLog::class);
+    }
+
+    /**
+     * URL publik halaman scan absensi untuk sekolah ini.
+     */
+    public function scannerUrl(): ?string
+    {
+        return $this->scanner_token ? route('public.scanner', $this->scanner_token) : null;
     }
 
     /**

@@ -29,8 +29,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
-Route::get('scan', [PublicScannerController::class, 'index'])->middleware('auth')->name('public.scanner');
-Route::post('scan', [PublicScannerController::class, 'scan'])->middleware(['auth', 'throttle:60,1'])->name('public.scanner.scan');
+Route::get('scan/{school:scanner_token}', [PublicScannerController::class, 'index'])->name('public.scanner');
+Route::post('scan/{school:scanner_token}', [PublicScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.scanner.scan');
 
 Route::get('daftar', [StudentRegistrationController::class, 'index'])->name('student.register');
 Route::post('daftar', [StudentRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('student.register.store');
@@ -117,6 +117,7 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN|ADMIN|GURU'])->prefix('
         Route::delete('notification-gateways/{school}', [NotificationGatewayController::class, 'destroy'])->name('admin.notification-gateways.destroy');
         Route::post('notification-gateways/{school}/test', [NotificationGatewayController::class, 'test'])->name('admin.notification-gateways.test');
         Route::resource('schools', SchoolController::class)->except(['show'])->names('admin.schools');
+        Route::post('schools/{school}/scanner-token', [SchoolController::class, 'regenerateScannerToken'])->name('admin.schools.regenerate-scanner');
         Route::get('roles', [RolePermissionController::class, 'index'])->name('admin.roles');
         Route::post('roles', [RolePermissionController::class, 'store'])->name('admin.roles.store');
         Route::put('roles/{role}', [RolePermissionController::class, 'update'])->name('admin.roles.update');
