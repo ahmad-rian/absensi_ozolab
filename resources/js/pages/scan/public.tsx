@@ -7,8 +7,9 @@ import {
     Loader2,
     LogIn,
     LogOut,
+    Maximize,
+    Minimize,
     RefreshCw,
-    ScanLine,
     School as SchoolIcon,
     User,
     XCircle,
@@ -55,6 +56,8 @@ type PageProps = {
 
 let logId = 0;
 
+const DATE_FMT: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+
 export default function PublicScanPage({ school, scanToken }: PageProps) {
     const [cameraStatus, setCameraStatus] = useState<'loading' | 'scanning' | 'error'>('loading');
     const [cameraError, setCameraError] = useState<string | null>(null);
@@ -64,6 +67,8 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
     const [scanLog, setScanLog] = useState<ScanLogItem[]>([]);
     const [cooldown, setCooldown] = useState(false);
     const [clock, setClock] = useState('');
+    const [today, setToday] = useState('');
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     const barcodeInputRef = useRef<HTMLInputElement>(null);
     const scannerRef = useRef<Html5Qrcode | null>(null);
@@ -80,10 +85,29 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
 
     // Live clock
     useEffect(() => {
-        const tick = () => setClock(new Date().toLocaleTimeString('id-ID'));
+        const tick = () => {
+            const now = new Date();
+            setClock(now.toLocaleTimeString('id-ID'));
+            setToday(now.toLocaleDateString('id-ID', DATE_FMT));
+        };
         tick();
         const id = setInterval(tick, 1000);
         return () => clearInterval(id);
+    }, []);
+
+    // Fullscreen state tracking
+    useEffect(() => {
+        const handler = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', handler);
+        return () => document.removeEventListener('fullscreenchange', handler);
+    }, []);
+
+    const toggleFullscreen = useCallback(() => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+        } else {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
     }, []);
 
     const submitScan = useCallback(
@@ -294,12 +318,12 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
         return (
             <>
                 <Head title={`Absensi — ${school.name}`} />
-                <div className="flex min-h-dvh flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 text-center">
-                    <div className="flex size-16 items-center justify-center rounded-2xl bg-white/10 text-white">
+                <div className="flex min-h-dvh flex-col items-center justify-center bg-slate-50 px-6 text-center">
+                    <div className="flex size-16 items-center justify-center rounded-2xl bg-slate-200 text-slate-500">
                         <SchoolIcon className="size-8" />
                     </div>
-                    <h1 className="mt-5 text-2xl font-bold text-white">{school.name}</h1>
-                    <p className="mt-2 max-w-md text-slate-300">Halaman absensi sekolah ini sedang tidak aktif.</p>
+                    <h1 className="mt-5 text-2xl font-bold text-slate-800">{school.name}</h1>
+                    <p className="mt-2 max-w-md text-slate-500">Halaman absensi sekolah ini sedang tidak aktif.</p>
                 </div>
             </>
         );
@@ -311,33 +335,46 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
     return (
         <>
             <Head title={`Scan Absensi — ${school.name}`} />
-            <div className="flex min-h-dvh flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
-                {/* Header */}
-                <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/60 backdrop-blur-xl">
-                    <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between px-5">
-                        <div className="flex items-center gap-3">
+            <div className="relative flex min-h-dvh flex-col bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-800">
+                {/* Fullscreen toggle — samar saat fullscreen */}
+                <button
+                    onClick={toggleFullscreen}
+                    title={isFullscreen ? 'Keluar layar penuh' : 'Layar penuh'}
+                    className={`fixed right-4 top-4 z-50 flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-sm backdrop-blur transition-all hover:bg-white hover:text-slate-900 ${
+                        isFullscreen ? 'opacity-15 hover:opacity-100' : 'opacity-100'
+                    }`}
+                >
+                    {isFullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
+                </button>
+
+                <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-6 px-5 py-8">
+                    {/* Brand + Clock (no navbar) */}
+                    <div className="flex flex-col items-center gap-4 text-center">
+                        <div className="flex items-center gap-2.5">
                             {school.logo_url ? (
-                                <img src={school.logo_url} alt={school.name} className="size-10 rounded-xl bg-white/90 object-contain p-0.5" />
+                                <img src={school.logo_url} alt={school.name} className="size-9 rounded-xl object-contain" />
                             ) : (
-                                <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600">
+                                <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                                     <SchoolIcon className="size-5" />
                                 </div>
                             )}
-                            <div className="leading-tight">
-                                <p className="text-sm font-bold">{school.name}</p>
+                            <div className="text-left leading-tight">
+                                <p className="text-sm font-bold text-slate-800">{school.name}</p>
                                 <p className="text-xs text-slate-400">Absensi Digital</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 rounded-full bg-white/5 px-3.5 py-1.5 font-mono text-sm font-semibold tabular-nums text-slate-200">
-                            <Clock className="size-4 text-slate-400" />
-                            {clock}
+
+                        <div className="flex flex-col items-center">
+                            <div className="flex items-center gap-2 font-mono text-5xl font-bold tabular-nums tracking-tight text-slate-900 sm:text-6xl">
+                                <Clock className="size-8 text-blue-500 sm:size-9" strokeWidth={2.2} />
+                                {clock}
+                            </div>
+                            <p className="mt-1 text-sm font-medium capitalize text-slate-500">{today}</p>
                         </div>
                     </div>
-                </header>
 
-                <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-5 py-6">
                     {/* Camera hero */}
-                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl">
+                    <div className="relative w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-xl">
                         <div className="relative aspect-square w-full sm:aspect-[4/3]">
                             <div id={readerId} className="size-full [&>video]:!size-full [&>video]:!object-cover" />
 
@@ -349,14 +386,13 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
                                         <span className="absolute right-0 top-0 size-8 rounded-tr-xl border-r-4 border-t-4 border-emerald-400" />
                                         <span className="absolute bottom-0 left-0 size-8 rounded-bl-xl border-b-4 border-l-4 border-emerald-400" />
                                         <span className="absolute bottom-0 right-0 size-8 rounded-br-xl border-b-4 border-r-4 border-emerald-400" />
-                                        <ScanLine className="absolute inset-x-0 top-1/2 mx-auto size-10 -translate-y-1/2 animate-pulse text-emerald-400/80" />
                                     </div>
                                 </div>
                             )}
 
                             {cameraStatus === 'scanning' && !lastResult && (
                                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent p-4 text-center">
-                                    <p className="text-sm font-medium text-slate-200">Arahkan QR Code siswa ke kamera</p>
+                                    <p className="text-sm font-medium text-slate-100">Arahkan QR Code siswa ke kamera</p>
                                     <p className="mt-0.5 text-xs text-slate-400">atau tembak dengan barcode gun — otomatis terdeteksi</p>
                                 </div>
                             )}
@@ -374,7 +410,7 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
                                     <p className="text-sm text-slate-300">{cameraError}</p>
                                     <button
                                         onClick={() => startWithCamera(selectedCamera)}
-                                        className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20"
+                                        className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/20"
                                     >
                                         <RefreshCw className="size-4" /> Coba Lagi
                                     </button>
@@ -457,7 +493,7 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
                     </div>
 
                     {/* Manual / gun input */}
-                    <form onSubmit={handleManualSubmit} className="flex gap-2">
+                    <form onSubmit={handleManualSubmit} className="w-full">
                         <input
                             ref={barcodeInputRef}
                             type="text"
@@ -466,17 +502,17 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
                             autoFocus
                             disabled={cooldown}
                             placeholder="Tembak barcode gun atau ketik NIS lalu Enter..."
-                            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center font-mono tracking-wide text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 disabled:opacity-50"
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono tracking-wide text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 disabled:opacity-50"
                         />
                     </form>
 
                     {/* Recent log */}
                     {scanLog.length > 0 && (
-                        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                            <div className="border-b border-white/10 px-5 py-3">
-                                <h3 className="text-sm font-bold text-slate-200">Riwayat Scan ({scanLog.length})</h3>
+                        <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div className="border-b border-slate-100 px-5 py-3">
+                                <h3 className="text-sm font-bold text-slate-600">Riwayat Scan ({scanLog.length})</h3>
                             </div>
-                            <div className="max-h-64 divide-y divide-white/5 overflow-y-auto">
+                            <div className="max-h-64 divide-y divide-slate-100 overflow-y-auto">
                                 {scanLog.map((entry) => (
                                     <div key={entry.id} className="flex items-center gap-3 px-5 py-3">
                                         {entry.success && entry.student?.photo_url ? (
@@ -484,14 +520,14 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
                                         ) : (
                                             <div
                                                 className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${
-                                                    entry.success ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                                                    entry.success ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'
                                                 }`}
                                             >
                                                 {entry.success ? <CheckCircle2 className="size-5" /> : <XCircle className="size-5" />}
                                             </div>
                                         )}
                                         <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-semibold text-slate-100">
+                                            <p className="truncate text-sm font-semibold text-slate-800">
                                                 {entry.student?.full_name || entry.message}
                                             </p>
                                             <p className="truncate text-xs text-slate-400">
@@ -500,7 +536,7 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
                                                 {entry.student?.status ? ` · ${entry.student.status}` : ''}
                                             </p>
                                         </div>
-                                        <span className="shrink-0 font-mono text-xs text-slate-500">{entry.time}</span>
+                                        <span className="shrink-0 font-mono text-xs text-slate-400">{entry.time}</span>
                                     </div>
                                 ))}
                             </div>
