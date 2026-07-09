@@ -7,7 +7,7 @@ return [
     'sender' => env('WA_SENDER', ''),
 
     'timeout' => env('WA_TIMEOUT', 10),
-    'queue' => env('WA_QUEUE', 'whatsapp'),
+    'queue' => env('WA_QUEUE', 'default'),
     'retry' => [
         'times' => 3,
         'backoff' => [30, 120, 600],
