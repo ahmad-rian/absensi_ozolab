@@ -80,7 +80,7 @@ export default function OrangTuaEdit({ parent }: { parent: ParentData }) {
                                 <Label>No. WhatsApp</Label>
                                 <div className="flex">
                                     <span className="border-input bg-muted text-muted-foreground inline-flex items-center rounded-l-md border border-r-0 px-3 text-sm">+62</span>
-                                    <Input value={data.phone} onChange={(e) => setData('phone', e.target.value)} className="rounded-l-none" />
+                                    <Input inputMode="numeric" value={data.phone} onChange={(e) => setData('phone', e.target.value.replace(/\D/g, ''))} className="rounded-l-none" />
                                 </div>
                                 <InputError message={errors.phone} />
                             </div>
@@ -104,7 +104,8 @@ export default function OrangTuaEdit({ parent }: { parent: ParentData }) {
                         <CardContent className="grid gap-4 sm:grid-cols-2">
                             <div className="grid gap-2">
                                 <Label>NIK</Label>
-                                <Input value={data.nik} onChange={(e) => setData('nik', e.target.value)} />
+                                <Input inputMode="numeric" value={data.nik} onChange={(e) => setData('nik', e.target.value.replace(/\D/g, ''))} />
+                                <InputError message={errors.nik} />
                             </div>
                             <div className="grid gap-2">
                                 <Label>Pekerjaan</Label>
@@ -116,7 +117,7 @@ export default function OrangTuaEdit({ parent }: { parent: ParentData }) {
                             </div>
                             <div className="grid gap-2">
                                 <Label>Telegram Chat ID</Label>
-                                <Input value={data.telegram_chat_id} onChange={(e) => setData('telegram_chat_id', e.target.value)} placeholder="mis. 123456789" />
+                                <Input inputMode="numeric" value={data.telegram_chat_id} onChange={(e) => setData('telegram_chat_id', e.target.value.replace(/\D/g, ''))} placeholder="mis. 123456789" />
                                 <p className="text-muted-foreground text-xs">Untuk notifikasi Telegram. Ortu /start bot lalu cek @userinfobot.</p>
                                 <InputError message={errors.telegram_chat_id} />
                             </div>

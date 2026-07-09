@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -56,15 +57,20 @@ class OrangTuaController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $schoolId = auth()->user()->school_id;
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'notification_email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => [
+                'required', 'string', 'max:20', 'regex:/^[0-9]+$/',
+                Rule::unique('parent_profiles', 'whatsapp_number')->where(fn ($q) => $q->where('school_id', $schoolId)),
+            ],
             'relation' => ['required', 'in:AYAH,IBU,WALI'],
             'password' => ['required', 'string', Password::min(8), 'confirmed'],
-            'telegram_chat_id' => ['nullable', 'string', 'max:50'],
-            'nik' => ['nullable', 'string', 'max:20'],
+            'telegram_chat_id' => ['nullable', 'string', 'max:50', 'regex:/^[0-9]+$/'],
+            'nik' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/'],
             'occupation' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:255'],
@@ -74,6 +80,10 @@ class OrangTuaController extends Controller
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email sudah digunakan.',
             'phone.required' => 'Nomor WhatsApp wajib diisi.',
+            'phone.regex' => 'Nomor WhatsApp hanya boleh angka.',
+            'phone.unique' => 'Nomor WhatsApp sudah dipakai orang tua lain.',
+            'telegram_chat_id.regex' => 'Telegram Chat ID hanya boleh angka.',
+            'nik.regex' => 'NIK hanya boleh angka.',
             'relation.required' => 'Hubungan wajib dipilih.',
             'relation.in' => 'Hubungan tidak valid.',
             'password.required' => 'Password wajib diisi.',
@@ -81,9 +91,7 @@ class OrangTuaController extends Controller
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
-        DB::transaction(function () use ($validated) {
-            $schoolId = auth()->user()->school_id;
-
+        DB::transaction(function () use ($validated, $schoolId) {
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
@@ -136,10 +144,15 @@ class OrangTuaController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$parentProfile->user_id],
             'notification_email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => [
+                'required', 'string', 'max:20', 'regex:/^[0-9]+$/',
+                Rule::unique('parent_profiles', 'whatsapp_number')
+                    ->where(fn ($q) => $q->where('school_id', $parentProfile->school_id))
+                    ->ignore($parentProfile->id),
+            ],
             'relation' => ['required', 'in:AYAH,IBU,WALI'],
-            'telegram_chat_id' => ['nullable', 'string', 'max:50'],
-            'nik' => ['nullable', 'string', 'max:20'],
+            'telegram_chat_id' => ['nullable', 'string', 'max:50', 'regex:/^[0-9]+$/'],
+            'nik' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/'],
             'occupation' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:255'],
@@ -149,26 +162,32 @@ class OrangTuaController extends Controller
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email sudah digunakan.',
             'phone.required' => 'Nomor WhatsApp wajib diisi.',
+            'phone.regex' => 'Nomor WhatsApp hanya boleh angka.',
+            'phone.unique' => 'Nomor WhatsApp sudah dipakai orang tua lain.',
+            'telegram_chat_id.regex' => 'Telegram Chat ID hanya boleh angka.',
+            'nik.regex' => 'NIK hanya boleh angka.',
             'relation.required' => 'Hubungan wajib dipilih.',
             'relation.in' => 'Hubungan tidak valid.',
         ]);
 
-        $parentProfile->user->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
-        ]);
+        DB::transaction(function () use ($validated, $parentProfile) {
+            $parentProfile->user?->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+            ]);
 
-        $parentProfile->update([
-            'whatsapp_number' => $validated['phone'],
-            'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
-            'email' => $validated['notification_email'] ?: (str_contains($validated['email'], '@internal.app') ? null : $validated['email']),
-            'relation' => $validated['relation'],
-            'nik' => $validated['nik'] ?? null,
-            'occupation' => $validated['occupation'] ?? null,
-            'address' => $validated['address'] ?? null,
-            'city' => $validated['city'] ?? null,
-        ]);
+            $parentProfile->update([
+                'whatsapp_number' => $validated['phone'],
+                'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
+                'email' => ($validated['notification_email'] ?? null) ?: (str_contains($validated['email'], '@internal.app') ? null : $validated['email']),
+                'relation' => $validated['relation'],
+                'nik' => $validated['nik'] ?? null,
+                'occupation' => $validated['occupation'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'city' => $validated['city'] ?? null,
+            ]);
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data orang tua berhasil diperbarui.']);
 
