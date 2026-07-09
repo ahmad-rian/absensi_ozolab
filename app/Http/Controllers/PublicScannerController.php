@@ -76,6 +76,10 @@ class PublicScannerController extends Controller
                 'no_absen' => $student->no_absen,
                 'classroom' => $student->classroom?->name,
                 'gender' => $student->gender?->label(),
+                'religion' => $student->religion?->label(),
+                'birth_place' => $student->birth_place,
+                'birth_date' => $student->birth_date?->translatedFormat('d F Y'),
+                'address' => $student->address,
                 'photo_url' => $student->photo_path
                     ? Storage::disk('public')->url($student->photo_path)
                     : null,

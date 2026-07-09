@@ -26,6 +26,10 @@ type StudentResult = {
     no_absen: string | null;
     classroom: string | null;
     gender: string | null;
+    religion: string | null;
+    birth_place: string | null;
+    birth_date: string | null;
+    address: string | null;
     photo_url: string | null;
     status: string;
     type: 'CHECK_IN' | 'CHECK_OUT';
@@ -159,7 +163,7 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
             if (resultTimeout.current) clearTimeout(resultTimeout.current);
             resultTimeout.current = setTimeout(() => {
                 if (mountedRef.current) setLastResult(null);
-            }, 5000);
+            }, 7000);
 
             setTimeout(() => {
                 cooldownRef.current = false;
@@ -422,17 +426,18 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
                             {lastResult && (
                                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/85 p-5 backdrop-blur-sm">
                                     {success && lastResult.student ? (
-                                        <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-slate-900 shadow-2xl">
+                                        <div className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-2xl">
+                                            {/* Header: foto + nama + badge */}
                                             <div className="flex gap-4">
                                                 {lastResult.student.photo_url ? (
                                                     <img
                                                         src={lastResult.student.photo_url}
                                                         alt={lastResult.student.full_name}
-                                                        className="size-24 shrink-0 rounded-2xl border-4 border-emerald-300 object-cover shadow"
+                                                        className="size-28 shrink-0 rounded-2xl border-4 border-emerald-300 object-cover shadow"
                                                     />
                                                 ) : (
-                                                    <div className="flex size-24 shrink-0 items-center justify-center rounded-2xl border-4 border-emerald-300 bg-emerald-50">
-                                                        <User className="size-10 text-emerald-400" />
+                                                    <div className="flex size-28 shrink-0 items-center justify-center rounded-2xl border-4 border-emerald-300 bg-emerald-50">
+                                                        <User className="size-12 text-emerald-400" />
                                                     </div>
                                                 )}
                                                 <div className="min-w-0 flex-1">
@@ -444,21 +449,37 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
                                                         {isCheckIn ? <LogIn className="size-3" /> : <LogOut className="size-3" />}
                                                         {lastResult.student.type_label}
                                                     </span>
-                                                    <h3 className="mt-1.5 truncate text-lg font-bold">{lastResult.student.full_name}</h3>
-                                                    <p className="truncate text-sm text-slate-500">
-                                                        {lastResult.student.classroom}
-                                                        {lastResult.student.nis ? ` · ${lastResult.student.nis}` : ''}
-                                                    </p>
+                                                    <h3 className="mt-1.5 text-xl font-bold leading-tight">{lastResult.student.full_name}</h3>
+                                                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                                                        <span className="flex items-center gap-1 font-bold text-emerald-700">
+                                                            <CheckCircle2 className="size-4" /> {lastResult.student.status}
+                                                        </span>
+                                                        <span className="flex items-center gap-1 font-mono font-semibold text-slate-500">
+                                                            <Clock className="size-4" /> {lastResult.student.time}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="mt-4 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-2.5">
-                                                <span className="flex items-center gap-1.5 font-bold text-emerald-700">
-                                                    <CheckCircle2 className="size-5" /> {lastResult.student.status}
-                                                </span>
-                                                <span className="flex items-center gap-1.5 font-mono text-sm font-semibold text-emerald-600">
-                                                    <Clock className="size-4" /> {lastResult.student.time}
-                                                </span>
-                                            </div>
+
+                                            {/* Grid detail siswa */}
+                                            <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-slate-100 pt-4 text-sm">
+                                                <DetailField label="NIS" value={lastResult.student.nis} />
+                                                <DetailField label="NISN" value={lastResult.student.nisn} />
+                                                <DetailField label="No. Absen" value={lastResult.student.no_absen} />
+                                                <DetailField label="Kelas" value={lastResult.student.classroom} />
+                                                <DetailField label="Jenis Kelamin" value={lastResult.student.gender} />
+                                                <DetailField label="Agama" value={lastResult.student.religion} />
+                                                <DetailField
+                                                    label="Tempat, Tgl Lahir"
+                                                    value={
+                                                        [lastResult.student.birth_place, lastResult.student.birth_date]
+                                                            .filter(Boolean)
+                                                            .join(', ') || null
+                                                    }
+                                                    full
+                                                />
+                                                <DetailField label="Alamat" value={lastResult.student.address} full />
+                                            </dl>
                                         </div>
                                     ) : (
                                         <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
@@ -545,5 +566,15 @@ export default function PublicScanPage({ school, scanToken }: PageProps) {
                 </main>
             </div>
         </>
+    );
+}
+
+function DetailField({ label, value, full = false }: { label: string; value: string | null; full?: boolean }) {
+    if (!value) return null;
+    return (
+        <div className={full ? 'col-span-2' : ''}>
+            <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
+            <dd className="font-semibold text-slate-700">{value}</dd>
+        </div>
     );
 }
