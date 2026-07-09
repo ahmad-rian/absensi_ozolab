@@ -55,7 +55,7 @@ class SchoolController extends Controller
             'timezone' => 'Asia/Jakarta',
             'whatsapp_enabled' => true,
             'notify_on_check_in' => true,
-            'notify_on_check_out' => false,
+            'notify_on_check_out' => true,
         ];
 
         // Ensure unique slug
