@@ -153,3 +153,39 @@ test('guests cannot store attendance', function () {
         'status' => 'HADIR',
     ])->assertRedirect(route('login'));
 });
+
+test('manual store without recorded_at defaults to jakarta wall clock', function () {
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
+
+    $this->actingAs($user)
+        ->post(route('admin.absensi.store'), [
+            'student_id' => $student->id,
+            'type' => 'CHECK_IN',
+            'status' => 'HADIR',
+        ])
+        ->assertSessionHasNoErrors();
+
+    $attendance = Attendance::where('student_id', $student->id)->firstOrFail();
+
+    expect($attendance->recorded_at->format('Y-m-d H'))
+        ->toBe(now('Asia/Jakarta')->format('Y-m-d H'));
+});
+
+test('manual store keeps the provided recorded_at wall clock time', function () {
+    $user = createAdminUser();
+    $student = Student::factory()->create(['school_id' => $user->school_id]);
+
+    $this->actingAs($user)
+        ->post(route('admin.absensi.store'), [
+            'student_id' => $student->id,
+            'type' => 'CHECK_IN',
+            'status' => 'HADIR',
+            'recorded_at' => '2026-07-09T15:15',
+        ])
+        ->assertSessionHasNoErrors();
+
+    $attendance = Attendance::where('student_id', $student->id)->firstOrFail();
+
+    expect($attendance->recorded_at->format('H:i'))->toBe('15:15');
+});

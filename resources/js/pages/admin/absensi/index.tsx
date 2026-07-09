@@ -85,12 +85,20 @@ const typeConfig: Record<string, { label: string; className: string }> = {
     CHECK_OUT: { label: 'Check Out', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
 };
 
+// recorded_at/attendance_date disimpan sebagai WIB wall-clock (bukan UTC murni),
+// jadi render dengan timeZone 'UTC' agar menampilkan digit tersimpan apa adanya
+// tanpa konversi ulang ke timezone browser (yang bikin +7 jam).
 function formatDate(dateStr: string): string {
-    return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(dateStr));
+    return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(dateStr));
 }
 
 function formatTime(dateStr: string): string {
-    return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(new Date(dateStr));
+    return new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).format(new Date(dateStr));
+}
+
+// Datetime-local (YYYY-MM-DDTHH:mm) untuk waktu sekarang dalam WIB.
+function nowWibLocal(): string {
+    return new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).slice(0, 16).replace(' ', 'T');
 }
 
 export default function AbsensiIndex() {
@@ -103,7 +111,7 @@ export default function AbsensiIndex() {
         type: 'CHECK_IN',
         status: 'HADIR',
         notes: '',
-        recorded_at: new Date().toISOString().slice(0, 16),
+        recorded_at: nowWibLocal(),
     });
 
     function applyFilter(key: string, value: string) {

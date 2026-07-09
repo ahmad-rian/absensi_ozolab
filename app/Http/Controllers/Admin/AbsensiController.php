@@ -10,6 +10,7 @@ use App\Models\Classroom;
 use App\Models\Student;
 use App\Services\Attendance\AttendanceRecorder;
 use Carbon\Carbon;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -82,7 +83,8 @@ class AbsensiController extends Controller
         }
 
         $type = AttendanceType::from($validated['type']);
-        $timestamp = isset($validated['recorded_at']) ? Carbon::parse($validated['recorded_at']) : Carbon::now();
+        // recorded_at disimpan sebagai WIB wall-clock (konsisten dgn AttendanceRecorder).
+        $timestamp = isset($validated['recorded_at']) ? Carbon::parse($validated['recorded_at']) : Carbon::now('Asia/Jakarta');
 
         $status = AttendanceStatus::from($validated['status']);
 
@@ -98,7 +100,7 @@ class AbsensiController extends Controller
                 'recorded_by' => $request->user()->id,
                 'notes' => $validated['notes'] ?? null,
             ]);
-        } catch (\Illuminate\Database\UniqueConstraintViolationException) {
+        } catch (UniqueConstraintViolationException) {
             return back()->with('error', 'Siswa sudah melakukan '.($type === AttendanceType::CheckIn ? 'check-in' : 'check-out').' pada tanggal tersebut.');
         }
 
