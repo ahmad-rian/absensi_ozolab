@@ -6,10 +6,10 @@ import {
     Building2,
     CalendarCheck,
     Clock,
-    CreditCard,
     Frame,
     GraduationCap,
     HardDrive,
+    History,
     MessageSquare,
     LayoutGrid,
     LayoutTemplate,
@@ -54,7 +54,7 @@ const academicItems: NavItem[] = [
 const cardItems: NavItem[] = [
     { title: 'Frame & Bingkai', href: '/admin/frames', icon: Frame },
     { title: 'Layout Kartu', href: '/admin/card-layouts', icon: LayoutTemplate },
-    { title: 'Generate Kartu', href: '/admin/card-generation', icon: CreditCard },
+    { title: 'Riwayat Kartu', href: '/admin/card-generation', icon: History },
     { title: 'Layout Album', href: '/admin/album-layouts', icon: BookOpen },
     { title: 'Generate Album', href: '/admin/album-generation', icon: Printer },
 ];

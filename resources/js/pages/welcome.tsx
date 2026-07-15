@@ -15,8 +15,11 @@ import { ScrollToTop } from '@/components/shared/scroll-to-top';
 import { StatsStrip } from '@/components/welcome/stats-strip';
 import { TestimonialSection } from '@/components/welcome/testimonial-section';
 import { WhatsappPreview } from '@/components/welcome/whatsapp-preview';
+import { useLenis } from '@/hooks/use-lenis';
 
 export default function Welcome() {
+    useLenis();
+
     return (
         <>
             <Head title="Platform Absensi Multi-Sekolah" />

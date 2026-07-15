@@ -1,17 +1,12 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { AlertTriangle, CreditCard, Download, ExternalLink, HardDrive, Loader2, Printer } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Head } from '@inertiajs/react';
+import { CheckCircle2, Download, HardDrive, History, Loader2, User, XCircle } from 'lucide-react';
+import { type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
-type Layout = { id: string; name: string; type: string };
-type Classroom = { id: string; name: string };
 type LogEntry = {
     id: string;
     student_name: string;
@@ -26,165 +21,121 @@ type LogEntry = {
 };
 
 type Props = {
-    layouts: Layout[];
-    classrooms: Classroom[];
     logs: LogEntry[];
-    driveConfigured: boolean;
 };
 
-export default function CardGenerationIndex({ layouts, classrooms, logs, driveConfigured }: Props) {
-    const [selectedStudents, setSelectedStudents] = useState<'all' | 'classroom'>('all');
+const statusConfig: Record<string, { label: string; className: string; icon: ReactNode }> = {
+    completed: {
+        label: 'Selesai',
+        className: 'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900 dark:text-green-300',
+        icon: <CheckCircle2 className="size-3.5" />,
+    },
+    failed: {
+        label: 'Gagal',
+        className: 'border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900 dark:text-red-300',
+        icon: <XCircle className="size-3.5" />,
+    },
+    processing: {
+        label: 'Proses',
+        className: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900 dark:text-amber-300',
+        icon: <Loader2 className="size-3.5 animate-spin" />,
+    },
+};
 
-    const form = useForm({
-        layout_id: '',
-        classroom_id: '',
-        student_ids: [] as string[],
-    });
-
-    function handleGenerate(e: FormEvent) {
-        e.preventDefault();
-        // For now, we generate for all students or by classroom
-        // The controller will handle fetching student IDs
-        const url = '/admin/card-generation/generate';
-        router.post(url, {
-            layout_id: form.data.layout_id,
-            student_ids: form.data.student_ids.length > 0 ? form.data.student_ids : ['all'],
-            classroom_id: form.data.classroom_id || undefined,
-        }, { preserveScroll: true });
-    }
-
+export default function CardGenerationIndex({ logs }: Props) {
     return (
         <>
-            <Head title="Generate Kartu" />
+            <Head title="Riwayat Generate Kartu" />
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Generate Kartu Siswa</h1>
-                    <p className="text-muted-foreground text-sm">
-                        Buat kartu siswa secara batch berdasarkan layout yang sudah dibuat.
-                    </p>
+                    <h1 className="text-2xl font-bold tracking-tight">Riwayat Generate Kartu</h1>
+                    <p className="text-muted-foreground text-sm">Log aktivitas generate kartu siswa.</p>
                 </div>
 
-                {!driveConfigured && (
-                    <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
-                        <AlertTriangle className="size-4 text-amber-600" />
-                        <AlertDescription className="flex items-center justify-between">
-                            <span className="text-amber-800 dark:text-amber-200">
-                                Google Drive belum dikonfigurasi. Kartu akan disimpan lokal saja, tidak otomatis upload ke Drive.
-                            </span>
-                            <Button variant="outline" size="sm" asChild className="ml-3 shrink-0">
-                                <Link href="/admin/drive-config">
-                                    <HardDrive className="mr-1.5 size-3.5" /> Setup Drive
-                                </Link>
-                            </Button>
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {/* Generate Form */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
-                            <Printer className="size-4" /> Batch Generate
+                            <History className="size-4" /> Riwayat Generate
                         </CardTitle>
-                        <CardDescription>
-                            Pilih layout dan target siswa, lalu klik generate.
-                        </CardDescription>
+                        <CardDescription>Log aktivitas generate kartu terakhir (maks. 50 entri).</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleGenerate} className="space-y-4">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="grid gap-2">
-                                    <Label>Layout Kartu</Label>
-                                    <Select value={form.data.layout_id} onValueChange={(v) => form.setData('layout_id', v)}>
-                                        <SelectTrigger><SelectValue placeholder="Pilih layout" /></SelectTrigger>
-                                        <SelectContent>
-                                            {layouts.map((l) => (
-                                                <SelectItem key={l.id} value={String(l.id)}>{l.name} ({l.type})</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>Filter Kelas (opsional)</Label>
-                                    <Select value={form.data.classroom_id || 'all'} onValueChange={(v) => form.setData('classroom_id', v === 'all' ? '' : v)}>
-                                        <SelectTrigger><SelectValue placeholder="Semua kelas" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Semua Kelas</SelectItem>
-                                            {classrooms.map((c) => (
-                                                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                        {logs.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-12 text-center">
+                                <History className="text-muted-foreground/60 size-8" />
+                                <p className="text-sm font-medium">Belum ada riwayat generate</p>
+                                <p className="text-muted-foreground text-xs">Kartu yang di-generate akan muncul di sini sebagai log.</p>
                             </div>
-                            <Button type="submit" disabled={!form.data.layout_id || form.processing} className="gap-2">
-                                {form.processing ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
-                                Generate Kartu
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
-
-                {/* Generation Logs */}
-                {logs.length > 0 && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-base">Riwayat Generate ({logs.length})</CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                        ) : (
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Siswa</TableHead>
-                                            <TableHead>NIS</TableHead>
                                             <TableHead>Layout</TableHead>
                                             <TableHead>Status</TableHead>
-                                            <TableHead>Tanggal</TableHead>
-                                            <TableHead>Aksi</TableHead>
+                                            <TableHead>Oleh</TableHead>
+                                            <TableHead>Waktu</TableHead>
+                                            <TableHead className="text-right">Berkas</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {logs.map((log) => (
-                                            <TableRow key={log.id}>
-                                                <TableCell className="font-medium">{log.student_name}</TableCell>
-                                                <TableCell>{log.student_nis}</TableCell>
-                                                <TableCell>{log.layout_name}</TableCell>
-                                                <TableCell>
-                                                    <Badge variant={log.status === 'completed' ? 'default' : log.status === 'failed' ? 'destructive' : 'secondary'}>
-                                                        {log.status === 'completed' ? 'Selesai' : log.status === 'failed' ? 'Gagal' : 'Proses'}
-                                                    </Badge>
-                                                    {log.error_message && (
-                                                        <p className="mt-1 max-w-xs truncate text-xs text-red-500" title={log.error_message}>{log.error_message}</p>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell className="text-xs">{log.created_at}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex gap-1">
-                                                        {log.file_url && (
-                                                            <a href={log.file_url} target="_blank" rel="noreferrer">
-                                                                <Button variant="ghost" size="icon" title="Download">
-                                                                    <Download className="size-4" />
-                                                                </Button>
-                                                            </a>
+                                        {logs.map((log) => {
+                                            const status = statusConfig[log.status] ?? { label: log.status, className: '', icon: null };
+
+                                            return (
+                                                <TableRow key={log.id}>
+                                                    <TableCell>
+                                                        <div className="font-medium">{log.student_name}</div>
+                                                        <div className="text-muted-foreground text-xs">NIS: {log.student_nis}</div>
+                                                    </TableCell>
+                                                    <TableCell className="text-sm">{log.layout_name}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className={`gap-1 ${status.className}`}>
+                                                            {status.icon}
+                                                            {status.label}
+                                                        </Badge>
+                                                        {log.status === 'failed' && log.error_message && (
+                                                            <p className="text-muted-foreground mt-1 max-w-[220px] truncate text-xs" title={log.error_message}>
+                                                                {log.error_message}
+                                                            </p>
                                                         )}
-                                                        {log.drive_url && (
-                                                            <a href={log.drive_url} target="_blank" rel="noreferrer">
-                                                                <Button variant="ghost" size="icon" title="Buka di Drive">
-                                                                    <ExternalLink className="size-4" />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className="text-muted-foreground inline-flex items-center gap-1 text-sm">
+                                                            <User className="size-3.5" />
+                                                            {log.generated_by || '-'}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground whitespace-nowrap text-xs">{log.created_at}</TableCell>
+                                                    <TableCell>
+                                                        <div className="flex justify-end gap-1">
+                                                            {log.drive_url && (
+                                                                <Button variant="ghost" size="icon" title="Buka di Google Drive" asChild>
+                                                                    <a href={log.drive_url} target="_blank" rel="noreferrer">
+                                                                        <HardDrive className="size-4" />
+                                                                    </a>
                                                                 </Button>
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                                            )}
+                                                            {log.file_url && (
+                                                                <Button variant="ghost" size="icon" title="Download berkas lokal" asChild>
+                                                                    <a href={log.file_url} target="_blank" rel="noreferrer">
+                                                                        <Download className="size-4" />
+                                                                    </a>
+                                                                </Button>
+                                                            )}
+                                                            {!log.drive_url && !log.file_url && <span className="text-muted-foreground text-xs">-</span>}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </div>
-                        </CardContent>
-                    </Card>
-                )}
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </>
     );
@@ -193,6 +144,6 @@ export default function CardGenerationIndex({ layouts, classrooms, logs, driveCo
 CardGenerationIndex.layout = {
     breadcrumbs: [
         { title: 'Dashboard', href: dashboard() },
-        { title: 'Generate Kartu', href: '/admin/card-generation' },
+        { title: 'Riwayat Generate', href: '/admin/card-generation' },
     ],
 };

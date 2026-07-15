@@ -41,6 +41,7 @@ class CardLayoutController extends Controller
 
         return Inertia::render('admin/card-layouts/editor', [
             'layout' => null,
+            'defaultElements' => SchoolCardLayout::defaultElements(),
             'frames' => $frames->map(fn (SchoolFrame $f) => [
                 'id' => $f->id,
                 'name' => $f->name,
@@ -90,8 +91,9 @@ class CardLayoutController extends Controller
                 'type' => $cardLayout->type,
                 'is_default' => $cardLayout->is_default,
                 'is_active' => $cardLayout->is_active,
-                'layout_config' => $cardLayout->layout_config,
+                'layout_config' => $cardLayout->normalizedConfig(),
             ],
+            'defaultElements' => SchoolCardLayout::defaultElements(),
             'frames' => $frames->map(fn (SchoolFrame $f) => [
                 'id' => $f->id,
                 'name' => $f->name,

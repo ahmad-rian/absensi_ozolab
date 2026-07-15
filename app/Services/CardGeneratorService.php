@@ -31,11 +31,14 @@ class CardGeneratorService
         // 400 DPI: 1mm = 400/25.4 ≈ 15.748px
         $exportMm = 15.748;
 
+        $config = $layout->normalizedConfig();
+
         $html = View::make('cards.student-card', [
             'student' => $student,
             'school' => $school,
             'layout' => $layout,
-            'config' => $layout->layout_config ?? [],
+            'config' => $config,
+            'orientation' => $config['orientation'] ?? 'landscape',
             'qrSvg' => $qrSvg,
             'logoUrl' => $this->toBase64DataUri($school->logo_path),
             'photoUrl' => $this->toBase64DataUri($student->photo_path),
@@ -57,7 +60,7 @@ class CardGeneratorService
             mkdir($dir, 0755, true);
         }
 
-        $this->renderHtmlToImage($html, $fullPath, $layout);
+        $this->renderHtmlToImage($html, $fullPath, ($config['orientation'] ?? 'landscape') === 'portrait');
 
         return [
             'path' => $filename,
@@ -102,12 +105,14 @@ class CardGeneratorService
     /**
      * Render HTML to PNG using Browsershot.
      */
-    private function renderHtmlToImage(string $html, string $outputPath, SchoolCardLayout $layout): void
+    private function renderHtmlToImage(string $html, string $outputPath, bool $isPortrait = false): void
     {
-        // 400 DPI native: 85.6mm × 54mm = 1349 × 850px
+        // 400 DPI native: 85.6mm × 54mm = 1349 × 850px (swapped for portrait)
         $exportMm = 15.748;
-        $width = (int) round(85.6 * $exportMm);
-        $height = (int) round(54 * $exportMm);
+        $longSide = (int) round(85.6 * $exportMm);
+        $shortSide = (int) round(54 * $exportMm);
+        $width = $isPortrait ? $shortSide : $longSide;
+        $height = $isPortrait ? $longSide : $shortSide;
 
         $browsershot = Browsershot::html($html)
             ->windowSize($width, $height)

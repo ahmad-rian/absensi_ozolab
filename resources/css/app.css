@@ -222,3 +222,36 @@
 .animate-slide-down { animation: slide-down 0.5s cubic-bezier(0.16,1,0.3,1) both; }
 .animate-spin-slow { animation: spin-slow 40s linear infinite; }
 .animate-message-reveal { animation: message-reveal 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Hero aurora / mesh gradient drift */
+@keyframes aurora-drift {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    33%  { transform: translate3d(4%, -3%, 0) scale(1.08); }
+    66%  { transform: translate3d(-3%, 4%, 0) scale(0.96); }
+    100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes aurora-drift-slow {
+    0%   { transform: translate3d(0, 0, 0) scale(1.05); }
+    50%  { transform: translate3d(-5%, 3%, 0) scale(0.95); }
+    100% { transform: translate3d(0, 0, 0) scale(1.05); }
+}
+@keyframes hero-shine {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(220%); }
+}
+
+.animate-aurora { animation: aurora-drift 18s ease-in-out infinite; }
+.animate-aurora-slow { animation: aurora-drift-slow 24s ease-in-out infinite; }
+.animate-hero-shine { animation: hero-shine 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-float,
+    .animate-float-delayed,
+    .animate-float-slow,
+    .animate-aurora,
+    .animate-aurora-slow,
+    .animate-hero-shine,
+    .animate-spin-slow {
+        animation: none !important;
+    }
+}

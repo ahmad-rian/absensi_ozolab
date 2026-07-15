@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CardGenerationLog;
-use App\Models\Classroom;
-use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use App\Services\CardGeneratorService;
@@ -19,14 +17,6 @@ class CardGenerationController extends Controller
 {
     public function index(Request $request): Response
     {
-        $layouts = SchoolCardLayout::forSchool()
-            ->where('is_active', true)
-            ->get(['id', 'name', 'type']);
-
-        $classrooms = Classroom::forSchool()
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
         $logs = CardGenerationLog::forSchool()
             ->with(['student:id,full_name,nis', 'cardLayout:id,name'])
             ->latest()
@@ -45,14 +35,8 @@ class CardGenerationController extends Controller
                 'created_at' => $log->created_at->format('d M Y H:i'),
             ]);
 
-        $school = School::with('driveConfig')->find(auth()->user()->school_id);
-        $driveConfig = $school?->driveConfig;
-
         return Inertia::render('admin/card-generation/index', [
-            'layouts' => $layouts,
-            'classrooms' => $classrooms,
             'logs' => $logs,
-            'driveConfigured' => $driveConfig && $driveConfig->is_active && $driveConfig->service_account_json,
         ]);
     }
 

@@ -75,6 +75,53 @@ test('card layout can be updated', function () {
     ]);
 });
 
+test('card layout persists element positions and orientation', function () {
+    $school = School::factory()->create();
+    $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ADMIN');
+
+    $elements = [
+        'field_nama' => ['type' => 'field', 'label' => 'NAMA', 'source' => 'full_name', 'x' => 10, 'y' => 12, 'width' => 50, 'fontSize' => 2.2, 'enabled' => true],
+        'photo' => ['type' => 'photo', 'x' => 5, 'y' => 30, 'w' => 18, 'h' => 22, 'enabled' => true],
+        'qr' => ['type' => 'qr', 'x' => 40, 'y' => 40, 'size' => 14, 'enabled' => false],
+    ];
+
+    $this->actingAs($user)->post(route('admin.card-layouts.store'), [
+        'name' => 'Dynamic Layout',
+        'type' => 'osis',
+        'layout_config' => ['orientation' => 'portrait', 'frame_id' => null, 'elements' => $elements],
+        'is_default' => false,
+    ])->assertRedirect(route('admin.card-layouts'));
+
+    $layout = SchoolCardLayout::where('name', 'Dynamic Layout')->firstOrFail();
+    $config = $layout->normalizedConfig();
+
+    expect($config['orientation'])->toBe('portrait');
+    expect($config['elements']['field_nama']['x'])->toBe(10);
+    expect($config['elements']['photo']['h'])->toBe(22);
+    expect($config['elements']['qr']['enabled'])->toBeFalse();
+});
+
+test('legacy layout config normalizes into elements', function () {
+    $school = School::factory()->create();
+
+    $layout = SchoolCardLayout::create([
+        'school_id' => $school->id,
+        'name' => 'Legacy',
+        'type' => 'osis',
+        'layout_config' => ['frame_body_top' => 16, 'frame_body_left' => 3, 'frame_body_font' => 2.0, 'frame_photo_left' => 2.5, 'frame_photo_top' => 30, 'frame_qr_size' => 15, 'show_qr' => true],
+    ]);
+
+    $config = $layout->normalizedConfig();
+
+    expect($config)->toHaveKey('elements');
+    expect($config['orientation'])->toBe('landscape');
+    expect($config['elements']['field_nama']['enabled'])->toBeTrue();
+    expect($config['elements']['field_nama']['x'])->toBe(3.0);
+    expect($config['elements']['field_nama']['labelWidth'])->toBe(12.0);
+    expect($config['elements']['photo']['y'])->toBe(30.0);
+});
+
 test('card layout can be deleted', function () {
     $school = School::factory()->create();
     $user = User::factory()->create(['school_id' => $school->id]);
