@@ -191,7 +191,6 @@ export function HeroSection() {
                             </span>
                             <Sparkles className="text-primary size-3.5" />
                             Dipercaya 200+ Sekolah di Indonesia
-                            <span className="animate-hero-shine pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 skew-x-[-20deg] bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/10" />
                         </span>
                     </div>
 
@@ -213,10 +212,7 @@ export function HeroSection() {
                         <span className="block overflow-hidden pb-2">
                             {HEADLINE_REST.map((word) => (
                                 <span key={word} className="relative mr-[0.28em] inline-block">
-                                    <span
-                                        data-hero-word
-                                        className="inline-block bg-gradient-to-br from-[var(--primary)] via-[var(--chart-1)] to-[var(--chart-2)] bg-clip-text text-transparent"
-                                    >
+                                    <span data-hero-word className="text-primary inline-block">
                                         {word}
                                     </span>
                                 </span>
@@ -262,7 +258,6 @@ export function HeroSection() {
                                 <Link href="/daftar">
                                     Daftarkan Siswa Gratis
                                     <ArrowRight className="ml-1 size-4 transition-transform group-hover:translate-x-0.5" />
-                                    <span className="animate-hero-shine pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 skew-x-[-20deg] bg-white/25" />
                                 </Link>
                             </Button>
                         </div>
