@@ -24,6 +24,7 @@ class CardGenerationController extends Controller
             ->get()
             ->map(fn (CardGenerationLog $log) => [
                 'id' => $log->id,
+                'type' => $log->type,
                 'student_name' => $log->student?->full_name ?? '-',
                 'student_nis' => $log->student?->nis ?? '-',
                 'layout_name' => $log->cardLayout?->name ?? '-',

@@ -1,8 +1,12 @@
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Download, Printer, User } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ArrowLeft, Download, HardDrive, Images, Loader2, Printer, User } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { dashboard } from '@/routes';
 
 type Classroom = {
@@ -43,9 +47,40 @@ type Student = {
     parent_profile: ParentProfile | null;
 };
 
+type PhotoSheet = {
+    id: string;
+    template?: string;
+    status: string;
+    file_url: string | null;
+    drive_url: string | null;
+    created_at: string;
+};
+
+type PhotoSheetTemplate = {
+    value: string;
+    label: string;
+};
+
 type PageProps = {
     student: Student;
     qrSvg: string;
+    photoSheets: PhotoSheet[];
+    photoSheetTemplates: PhotoSheetTemplate[];
+};
+
+const sheetStatusConfig: Record<string, { label: string; className: string }> = {
+    completed: {
+        label: 'Selesai',
+        className: 'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900 dark:text-green-300',
+    },
+    failed: {
+        label: 'Gagal',
+        className: 'border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900 dark:text-red-300',
+    },
+    processing: {
+        label: 'Proses',
+        className: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900 dark:text-amber-300',
+    },
 };
 
 function genderLabel(gender: string): string {
@@ -72,9 +107,28 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
-export default function SiswaShow({ student, qrSvg }: PageProps) {
+export default function SiswaShow({ student, qrSvg, photoSheets, photoSheetTemplates }: PageProps) {
+    const [template, setTemplate] = useState(photoSheetTemplates[0]?.value ?? '');
+    const [caption, setCaption] = useState('');
+    const [generating, setGenerating] = useState(false);
+
     function handlePrint() {
         window.print();
+    }
+
+    function handleGenerateSheet() {
+        if (!template) {
+            return;
+        }
+        router.post(
+            `/admin/siswa/${student.id}/photo-sheet`,
+            { template, caption },
+            {
+                preserveScroll: true,
+                onStart: () => setGenerating(true),
+                onFinish: () => setGenerating(false),
+            },
+        );
     }
 
     return (
@@ -180,7 +234,7 @@ export default function SiswaShow({ student, qrSvg }: PageProps) {
                     </div>
 
                     {/* Right: QR Code */}
-                    <div className="lg:col-span-1">
+                    <div className="lg:col-span-1 space-y-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle>QR Code Absensi</CardTitle>
@@ -212,6 +266,80 @@ export default function SiswaShow({ student, qrSvg }: PageProps) {
                                             Cetak Kartu
                                         </Button>
                                     </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Cetak Pas Foto */}
+                        <Card className="print:hidden">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <Images className="size-4" /> Cetak Pas Foto
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-2">
+                                        <Label htmlFor="sheet-template">Template</Label>
+                                        <Select value={template} onValueChange={setTemplate}>
+                                            <SelectTrigger id="sheet-template" className="w-full">
+                                                <SelectValue placeholder="Pilih template" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {photoSheetTemplates.map((t) => (
+                                                    <SelectItem key={t.value} value={t.value}>
+                                                        {t.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        <Label htmlFor="sheet-caption">Keterangan (opsional)</Label>
+                                        <Input
+                                            id="sheet-caption"
+                                            value={caption}
+                                            onChange={(e) => setCaption(e.target.value)}
+                                            placeholder="Contoh: Nama & Kelas"
+                                            maxLength={255}
+                                        />
+                                    </div>
+                                    <Button className="w-full" onClick={handleGenerateSheet} disabled={generating || !student.photo_url || !template}>
+                                        {generating ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Images className="mr-2 size-4" />}
+                                        Generate
+                                    </Button>
+                                    {!student.photo_url && (
+                                        <p className="text-muted-foreground text-xs">Siswa belum memiliki foto. Unggah foto terlebih dahulu.</p>
+                                    )}
+
+                                    {photoSheets.length > 0 && (
+                                        <div className="mt-2 flex flex-col gap-2 border-t pt-3">
+                                            <p className="text-muted-foreground text-xs font-medium">Riwayat</p>
+                                            {photoSheets.map((sheet) => {
+                                                const status = sheetStatusConfig[sheet.status] ?? { label: sheet.status, className: '' };
+                                                const url = sheet.drive_url ?? sheet.file_url;
+                                                return (
+                                                    <div key={sheet.id} className="flex items-center justify-between gap-2 text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline" className={`gap-1 ${status.className}`}>
+                                                                {status.label}
+                                                            </Badge>
+                                                            <span className="text-muted-foreground text-xs">{sheet.created_at}</span>
+                                                        </div>
+                                                        {url ? (
+                                                            <Button variant="ghost" size="icon" asChild title="Buka berkas">
+                                                                <a href={url} target="_blank" rel="noreferrer">
+                                                                    {sheet.drive_url ? <HardDrive className="size-4" /> : <Download className="size-4" />}
+                                                                </a>
+                                                            </Button>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-xs">-</span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

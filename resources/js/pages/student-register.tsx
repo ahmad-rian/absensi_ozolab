@@ -1,6 +1,7 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, CreditCard, Download, Eye, ExternalLink, Loader2, User, X } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { AlertTriangle, Check, CheckCircle2, CreditCard, Download, ExternalLink, Loader2, User, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Rnd } from 'react-rnd';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import { SimpleCaptcha } from '@/components/simple-captcha';
@@ -43,6 +44,10 @@ type RegistrationResult = {
     cards: GeneratedCard[];
 };
 
+/** Normalized crop rect (0..1) relative to the natural image. */
+type CropRect = { sx: number; sy: number; sw: number; sh: number };
+type AutoCrop = CropRect & { natW: number; natH: number; ratio: number };
+
 const religions = [
     { value: 'ISLAM', label: 'Islam' },
     { value: 'KRISTEN', label: 'Kristen Protestan' },
@@ -52,8 +57,88 @@ const religions = [
     { value: 'KONGHUCU', label: 'Konghucu' },
 ];
 
+const STORAGE_KEY = 'daftar_form_v1';
+
+const STEPS = [
+    { id: 1, title: 'Sekolah' },
+    { id: 2, title: 'Data Siswa' },
+    { id: 3, title: 'Kelahiran & Alamat' },
+    { id: 4, title: 'Orang Tua' },
+    { id: 5, title: 'Foto' },
+    { id: 6, title: 'Review & Kirim' },
+];
+
+const TOTAL_STEPS = STEPS.length;
+
+type FormData = {
+    school_id: string;
+    full_name: string;
+    nis: string;
+    no_absen: string;
+    nisn: string;
+    gender: string;
+    religion: string;
+    classroom_id: string;
+    birth_place: string;
+    birth_date: string;
+    address: string;
+    parent_name: string;
+    parent_phone: string;
+    parent_email: string;
+    parent_relation: string;
+    photo_drive_filename: string;
+    manual_crop: CropRect | null;
+    generate_cards: boolean;
+};
+
+const INITIAL_DATA: FormData = {
+    school_id: '',
+    full_name: '',
+    nis: '',
+    no_absen: '',
+    nisn: '',
+    gender: '',
+    religion: '',
+    classroom_id: '',
+    birth_place: '',
+    birth_date: '',
+    address: '',
+    parent_name: '',
+    parent_phone: '',
+    parent_email: '',
+    parent_relation: 'WALI',
+    photo_drive_filename: '',
+    manual_crop: null,
+    generate_cards: true,
+};
+
+/** Read the persisted wizard snapshot from localStorage (data minus transient preview state). */
+function readPersisted(): { data: FormData; step: number } {
+    if (typeof window === 'undefined') {
+        return { data: INITIAL_DATA, step: 1 };
+    }
+
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+
+        if (raw) {
+            const parsed = JSON.parse(raw) as { data?: Partial<FormData>; step?: number };
+            const step = parsed.step && parsed.step >= 1 && parsed.step <= TOTAL_STEPS ? parsed.step : 1;
+
+            return { data: { ...INITIAL_DATA, ...parsed.data }, step };
+        }
+    } catch {
+        // ignore corrupt storage
+    }
+
+    return { data: INITIAL_DATA, step: 1 };
+}
+
 export default function StudentRegister({ schools, classrooms }: Props) {
     const { flash } = usePage().props as unknown as { flash: { success?: string } };
+
+    // Restore persisted wizard state once, synchronously, via lazy initializers.
+    const persistedRef = useRef(readPersisted());
     const [submitted, setSubmitted] = useState(false);
     const [captchaVerified, setCaptchaVerified] = useState(false);
     const [generating, setGenerating] = useState(false);
@@ -61,39 +146,140 @@ export default function StudentRegister({ schools, classrooms }: Props) {
     const [result, setResult] = useState<RegistrationResult | null>(null);
     const [showConfirm, setShowConfirm] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-    const [photoPreview, setPhotoPreview] = useState<{ url: string; filename: string } | null>(null);
+    const [step, setStep] = useState(() => persistedRef.current.step);
+    const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
+
+    // Photo step state (transient — not persisted)
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState('');
+    const [photoPreview, setPhotoPreview] = useState<{ url: string; filename: string } | null>(null);
+    const [autoCrop, setAutoCrop] = useState<AutoCrop | null>(null);
 
-    const { data, setData, processing, errors, reset } = useForm({
-        school_id: '',
-        full_name: '',
-        nis: '',
-        no_absen: '',
-        nisn: '',
-        gender: '',
-        religion: '',
-        classroom_id: '',
-        birth_place: '',
-        birth_date: '',
-        address: '',
-        parent_name: '',
-        parent_phone: '',
-        parent_email: '',
-        parent_relation: 'WALI',
-        photo_drive_filename: '',
-        generate_cards: true,
-    });
+    const { data, setData, processing, errors } = useForm<FormData>(persistedRef.current.data);
+
+    // ---- localStorage persist (data + current step, minus transient preview state) ----
+    useEffect(() => {
+        if (submitted) {
+            return;
+        }
+
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, step }));
+        } catch {
+            // ignore quota errors
+        }
+    }, [data, step, submitted]);
 
     const selectedSchool = schools.find((s) => String(s.id) === data.school_id);
     const filteredClassrooms = classrooms.filter((c) => String(c.school_id) === data.school_id);
 
-    const csrfToken = typeof document !== 'undefined'
-        ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || ''
-        : '';
+    const csrfToken =
+        typeof document !== 'undefined' ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '' : '';
 
-    function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
+    // ---- Step validation ----
+    function validateStep(current: number): Record<string, string> {
+        const e: Record<string, string> = {};
+
+        if (current === 1) {
+            if (!data.school_id) {
+                e.school_id = 'Pilih sekolah terlebih dahulu.';
+            }
+        } else if (current === 2) {
+            if (!data.full_name.trim()) {
+                e.full_name = 'Nama lengkap wajib diisi.';
+            }
+
+            if (!data.no_absen.trim()) {
+                e.no_absen = 'No. absen wajib diisi.';
+            }
+
+            if (!data.nisn.trim()) {
+                e.nisn = 'NISN wajib diisi.';
+            }
+
+            if (!data.gender) {
+                e.gender = 'Pilih jenis kelamin.';
+            }
+
+            if (!data.religion) {
+                e.religion = 'Pilih agama.';
+            }
+
+            if (!data.classroom_id) {
+                e.classroom_id = 'Pilih kelas terlebih dahulu.';
+            }
+        } else if (current === 3) {
+            if (!data.birth_place.trim()) {
+                e.birth_place = 'Tempat lahir wajib diisi.';
+            }
+
+            if (!data.birth_date) {
+                e.birth_date = 'Tanggal lahir wajib diisi.';
+            }
+
+            if (!data.address.trim()) {
+                e.address = 'Alamat wajib diisi.';
+            }
+        } else if (current === 4) {
+            if (!data.parent_name.trim()) {
+                e.parent_name = 'Nama orang tua wajib diisi.';
+            }
+
+            if (!data.parent_phone.trim()) {
+                e.parent_phone = 'No. WhatsApp orang tua wajib diisi.';
+            }
+
+            if (!data.parent_relation) {
+                e.parent_relation = 'Pilih hubungan orang tua.';
+            }
+        }
+
+        return e;
+    }
+
+    function goNext() {
+        const e = validateStep(step);
+
+        if (Object.keys(e).length > 0) {
+            setStepErrors(e);
+
+            return;
+        }
+
+        setStepErrors({});
+        setStep((s) => Math.min(TOTAL_STEPS, s + 1));
+
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function goBack() {
+        setStepErrors({});
+        setStep((s) => Math.max(1, s - 1));
+
+        if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function err(key: string): string | undefined {
+        return stepErrors[key] || (errors as Record<string, string>)[key] || formErrors[key];
+    }
+
+    function handleFinalSubmit() {
+        // Validate all steps 1-4 defensively before submit.
+        for (let s = 1; s <= 4; s++) {
+            const e = validateStep(s);
+
+            if (Object.keys(e).length > 0) {
+                setStep(s);
+                setStepErrors(e);
+
+                return;
+            }
+        }
+
         if (data.generate_cards) {
             setShowConfirm(true);
         } else {
@@ -105,11 +291,13 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         setShowConfirm(false);
         setGenerating(true);
         setFormErrors({});
-        setLoadingStep(data.photo_drive_filename
-            ? 'Menyimpan data & mengunduh foto dari Drive...'
-            : data.generate_cards
-                ? 'Menyimpan data & generate kartu...'
-                : 'Menyimpan data siswa...');
+        setLoadingStep(
+            data.photo_drive_filename
+                ? 'Menyimpan data & mengunduh foto dari Drive...'
+                : data.generate_cards
+                  ? 'Menyimpan data & generate kartu...'
+                  : 'Menyimpan data siswa...',
+        );
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 120000); // 2 menit timeout
@@ -128,11 +316,10 @@ export default function StudentRegister({ schools, classrooms }: Props) {
 
             clearTimeout(timeout);
 
-            // Handle HTTP errors
             if (!res.ok) {
                 const errorJson = await res.json().catch(() => null);
+
                 if (res.status === 422 && errorJson?.errors) {
-                    // Validation errors
                     const errs: Record<string, string> = {};
                     Object.entries(errorJson.errors).forEach(([key, messages]) => {
                         errs[key] = Array.isArray(messages) ? messages[0] : String(messages);
@@ -140,8 +327,10 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                     setFormErrors(errs);
                     setGenerating(false);
                     setLoadingStep('');
+
                     return;
                 }
+
                 throw new Error(errorJson?.message || `Server error (${res.status})`);
             }
 
@@ -150,16 +339,25 @@ export default function StudentRegister({ schools, classrooms }: Props) {
             if (json.success) {
                 setResult(json);
                 setSubmitted(true);
-                reset();
+
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                } catch {
+                    // ignore
+                }
+
+                setData(INITIAL_DATA);
+                setStep(1);
             } else {
                 throw new Error(json.message || 'Pendaftaran gagal');
             }
         } catch (err: unknown) {
-            const message = err instanceof Error
-                ? err.name === 'AbortError'
-                    ? 'Proses terlalu lama (timeout 2 menit). Silakan coba lagi.'
-                    : err.message
-                : 'Gagal menghubungi server';
+            const message =
+                err instanceof Error
+                    ? err.name === 'AbortError'
+                        ? 'Proses terlalu lama (timeout 2 menit). Silakan coba lagi.'
+                        : err.message
+                    : 'Gagal menghubungi server';
             setFormErrors({ _general: message });
         } finally {
             clearTimeout(timeout);
@@ -168,15 +366,19 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         }
     }
 
-    const handlePreviewPhoto = useCallback(async () => {
-        if (!data.photo_drive_filename.trim() || !data.school_id) return;
+    const handleLoadPhoto = useCallback(async () => {
+        if (!data.photo_drive_filename.trim() || !data.school_id) {
+            return;
+        }
 
         setPreviewLoading(true);
         setPreviewError('');
         setPhotoPreview(null);
+        setAutoCrop(null);
+        setData('manual_crop', null);
 
         try {
-            const res = await fetch('/daftar/preview-photo', {
+            const res = await fetch('/daftar/crop-preview', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -193,6 +395,17 @@ export default function StudentRegister({ schools, classrooms }: Props) {
 
             if (json.found) {
                 setPhotoPreview({ url: json.preview_url, filename: json.filename });
+
+                if (json.crop) {
+                    setAutoCrop(json.crop);
+                    // Seed manual_crop with the auto rect so a non-dragging user still crops correctly.
+                    setData('manual_crop', {
+                        sx: json.crop.sx,
+                        sy: json.crop.sy,
+                        sw: json.crop.sw,
+                        sh: json.crop.sh,
+                    });
+                }
             } else {
                 setPreviewError(json.message || 'File tidak ditemukan.');
             }
@@ -201,12 +414,14 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         } finally {
             setPreviewLoading(false);
         }
-    }, [data.photo_drive_filename, data.school_id, csrfToken]);
+    }, [data.photo_drive_filename, data.school_id, csrfToken, setData]);
 
     function handleNewSubmission() {
         setSubmitted(false);
         setResult(null);
         setCaptchaVerified(false);
+        setPhotoPreview(null);
+        setAutoCrop(null);
     }
 
     // Success page with generated cards
@@ -216,17 +431,21 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                 <div className="mx-auto max-w-2xl px-4 py-8">
                     <div className="rounded-2xl border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-950">
                         <CheckCircle2 className="mx-auto mb-4 size-16 text-green-600 dark:text-green-400" />
-                        <h2 className="mb-2 text-center text-2xl font-bold text-green-800 dark:text-green-200">
-                            Pendaftaran Berhasil!
-                        </h2>
+                        <h2 className="mb-2 text-center text-2xl font-bold text-green-800 dark:text-green-200">Pendaftaran Berhasil!</h2>
                         <p className="mb-6 text-center text-green-700 dark:text-green-300">{result.message}</p>
 
                         {/* Student info */}
                         <div className="mb-6 flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-800">
                             {result.student.photo_url ? (
-                                <img src={result.student.photo_url} alt={result.student.full_name} className="h-24 w-[72px] rounded-xl border-2 border-green-300 object-cover" />
+                                <img
+                                    src={result.student.photo_url}
+                                    alt={result.student.full_name}
+                                    className="h-24 w-[72px] rounded-xl border-2 border-green-300 object-cover"
+                                />
                             ) : (
-                                <div className="flex h-24 w-[72px] items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 dark:bg-green-900"><User className="size-8 text-green-400" /></div>
+                                <div className="flex h-24 w-[72px] items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 dark:bg-green-900">
+                                    <User className="size-8 text-green-400" />
+                                </div>
                             )}
                             <div>
                                 <h3 className="text-lg font-bold">{result.student.full_name}</h3>
@@ -254,7 +473,12 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                         <div key={i} className="overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-zinc-800">
                                             {card.url && card.status === 'completed' ? (
                                                 <>
-                                                    <img src={card.url} alt={card.name} className="w-full border-b object-contain" style={{ maxHeight: 300 }} />
+                                                    <img
+                                                        src={card.url}
+                                                        alt={card.name}
+                                                        className="w-full border-b object-contain"
+                                                        style={{ maxHeight: 300 }}
+                                                    />
                                                     <div className="flex items-center justify-between p-3">
                                                         <span className="text-sm font-medium">{card.name}</span>
                                                         <div className="flex gap-1">
@@ -293,22 +517,28 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                 </p>
                                 <ul className="mt-1 list-inside list-disc text-xs text-blue-700 dark:text-blue-300">
                                     {result.photo_downloaded && <li>Foto siswa (crop 3:4 portrait, WebP)</li>}
-                                    {result.cards.filter((c) => c.status === 'completed').map((c, i) => (
-                                        <li key={i}>{c.name}</li>
-                                    ))}
+                                    {result.cards
+                                        .filter((c) => c.status === 'completed')
+                                        .map((c, i) => (
+                                            <li key={i}>{c.name}</li>
+                                        ))}
                                 </ul>
                                 <p className="text-muted-foreground mt-2 text-xs">
                                     Lokasi: Kartu Siswa / {result.student.classroom} / {result.student.nis} - {result.student.full_name}
                                 </p>
                             </div>
-                        ) : result.cards.length > 0 && (
-                            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
-                                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                    <AlertTriangle className="mr-1 inline size-4" />
-                                    Google Drive belum dikonfigurasi — kartu tersimpan lokal saja.
-                                </p>
-                                <p className="text-muted-foreground mt-1 text-xs">Hubungi admin untuk setup Google Drive agar kartu otomatis tersimpan ke cloud.</p>
-                            </div>
+                        ) : (
+                            result.cards.length > 0 && (
+                                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+                                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                        <AlertTriangle className="mr-1 inline size-4" />
+                                        Google Drive belum dikonfigurasi — kartu tersimpan lokal saja.
+                                    </p>
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        Hubungi admin untuk setup Google Drive agar kartu otomatis tersimpan ke cloud.
+                                    </p>
+                                </div>
+                            )
                         )}
 
                         <div className="mt-6 text-center">
@@ -335,7 +565,10 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         <CheckCircle2 className="mx-auto mb-4 size-16 text-green-600 dark:text-green-400" />
                         <h2 className="mb-2 text-2xl font-bold text-green-800 dark:text-green-200">Pendaftaran Berhasil!</h2>
                         <p className="mb-6 text-green-700 dark:text-green-300">{flash.success}</p>
-                        <Button onClick={handleNewSubmission} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
+                        <Button
+                            onClick={handleNewSubmission}
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                        >
                             Daftarkan Siswa Lain
                         </Button>
                     </div>
@@ -349,9 +582,13 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         <PageWrapper>
             <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
                 {/* Header */}
-                <div className="mb-8 text-center">
+                <div className="mb-6 text-center">
                     {selectedSchool?.logo_path ? (
-                        <img src={`/storage/${selectedSchool.logo_path}`} alt={selectedSchool.name} className="mx-auto mb-4 size-16 rounded-xl object-contain" />
+                        <img
+                            src={`/storage/${selectedSchool.logo_path}`}
+                            alt={selectedSchool.name}
+                            className="mx-auto mb-4 size-16 rounded-xl object-contain"
+                        />
                     ) : (
                         <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600">
                             <AppLogoIcon className="size-8 fill-current text-white" />
@@ -363,249 +600,443 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-8">
-                    {/* Section 1: Pilih Sekolah */}
-                    <FormSection number={1} title="Pilih Sekolah">
-                        <div className="grid gap-2">
-                            <Label htmlFor="school_id" className="text-sm font-medium">Sekolah <span className="text-red-500">*</span></Label>
-                            <Select value={data.school_id} onValueChange={(val) => { setData((prev) => ({ ...prev, school_id: val, classroom_id: '' })); }}>
-                                <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih sekolah" /></SelectTrigger>
-                                <SelectContent>
-                                    {schools.map((school) => (<SelectItem key={school.id} value={String(school.id)}>{school.name}</SelectItem>))}
-                                </SelectContent>
-                            </Select>
-                            <InputError message={errors.school_id || formErrors.school_id} />
-                        </div>
-                    </FormSection>
+                {/* Progress indicator */}
+                <StepProgress current={step} />
 
-                    {/* Section 2: Data Siswa */}
-                    <FormSection number={2} title="Data Siswa">
-                        <div className="grid gap-5">
+                <div className="mt-6">
+                    {step === 1 && (
+                        <FormSection number={1} title="Pilih Sekolah">
                             <div className="grid gap-2">
-                                <Label htmlFor="full_name" className="text-sm font-medium">Nama Lengkap <span className="text-red-500">*</span></Label>
-                                <Input id="full_name" value={data.full_name} onChange={(e) => setData('full_name', e.target.value)} placeholder="Nama lengkap siswa" className="h-11" />
-                                <InputError message={errors.full_name || formErrors.full_name} />
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="nis" className="text-sm font-medium">NIS</Label>
-                                    <Input id="nis" value={data.nis} onChange={(e) => setData('nis', e.target.value)} placeholder="Nomor Induk Siswa" className="h-11" />
-                                    <InputError message={errors.nis || formErrors.nis} />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="no_absen" className="text-sm font-medium">No. Absen</Label>
-                                    <Input id="no_absen" value={data.no_absen} onChange={(e) => setData('no_absen', e.target.value)} placeholder="Nomor absen" className="h-11" />
-                                    <InputError message={errors.no_absen || formErrors.no_absen} />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="nisn" className="text-sm font-medium">NISN</Label>
-                                    <Input id="nisn" value={data.nisn} onChange={(e) => setData('nisn', e.target.value)} placeholder="Nomor Induk Siswa Nasional" className="h-11" />
-                                    <InputError message={errors.nisn || formErrors.nisn} />
-                                </div>
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label className="text-sm font-medium">Jenis Kelamin <span className="text-red-500">*</span></Label>
-                                <RadioGroup value={data.gender} onValueChange={(v) => setData('gender', v)} className="flex gap-4">
-                                    <label htmlFor="gender-l" className={`flex flex-1 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm transition ${data.gender === 'LAKI_LAKI' ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-900'}`}>
-                                        <RadioGroupItem value="LAKI_LAKI" id="gender-l" /> Laki-laki
-                                    </label>
-                                    <label htmlFor="gender-p" className={`flex flex-1 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm transition ${data.gender === 'PEREMPUAN' ? 'border-pink-500 bg-pink-50 dark:bg-pink-950' : 'border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-900'}`}>
-                                        <RadioGroupItem value="PEREMPUAN" id="gender-p" /> Perempuan
-                                    </label>
-                                </RadioGroup>
-                                <InputError message={errors.gender || formErrors.gender} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="religion" className="text-sm font-medium">Agama</Label>
-                                <Select value={data.religion} onValueChange={(val) => setData('religion', val)}>
-                                    <SelectTrigger className="h-11 w-full"><SelectValue placeholder="Pilih agama" /></SelectTrigger>
+                                <Label htmlFor="school_id" className="text-sm font-medium">
+                                    Sekolah <span className="text-red-500">*</span>
+                                </Label>
+                                <Select
+                                    value={data.school_id}
+                                    onValueChange={(val) => {
+                                        setData((prev) => ({ ...prev, school_id: val, classroom_id: '' }));
+                                    }}
+                                >
+                                    <SelectTrigger className="h-11 w-full">
+                                        <SelectValue placeholder="Pilih sekolah" />
+                                    </SelectTrigger>
                                     <SelectContent>
-                                        {religions.map((r) => (<SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>))}
+                                        {schools.map((school) => (
+                                            <SelectItem key={school.id} value={String(school.id)}>
+                                                {school.name}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
-                                <InputError message={errors.religion} />
+                                <InputError message={err('school_id')} />
                             </div>
-
-                            <div className="grid gap-2">
-                                <Label htmlFor="classroom_id" className="text-sm font-medium">Kelas <span className="text-red-500">*</span></Label>
-                                <Select value={data.classroom_id} onValueChange={(val) => setData('classroom_id', val)} disabled={!data.school_id}>
-                                    <SelectTrigger className="h-11 w-full"><SelectValue placeholder={data.school_id ? 'Pilih kelas' : 'Pilih sekolah terlebih dahulu'} /></SelectTrigger>
-                                    <SelectContent>
-                                        {filteredClassrooms.map((c) => (<SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>))}
-                                    </SelectContent>
-                                </Select>
-                                <InputError message={errors.classroom_id || formErrors.classroom_id} />
-                            </div>
-                        </div>
-                    </FormSection>
-
-                    {/* Section 3: Data Kelahiran & Alamat */}
-                    <FormSection number={3} title="Data Kelahiran & Alamat">
-                        <div className="grid gap-5">
-                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="birth_place" className="text-sm font-medium">Tempat Lahir</Label>
-                                    <Input id="birth_place" value={data.birth_place} onChange={(e) => setData('birth_place', e.target.value)} placeholder="Kota kelahiran" className="h-11" />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="birth_date" className="text-sm font-medium">Tanggal Lahir</Label>
-                                    <Input id="birth_date" type="date" value={data.birth_date} onChange={(e) => setData('birth_date', e.target.value)} className="h-11" />
-                                </div>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="address" className="text-sm font-medium">Alamat</Label>
-                                <Textarea id="address" value={data.address} onChange={(e) => setData('address', e.target.value)} placeholder="Alamat lengkap siswa" rows={3} />
-                            </div>
-                        </div>
-                    </FormSection>
-
-                    {/* Section 4: Data Orang Tua/Wali */}
-                    <FormSection number={4} title="Data Orang Tua/Wali">
-                        <div className="grid gap-5">
-                            <div className="grid gap-2">
-                                <Label htmlFor="parent_name" className="text-sm font-medium">Nama Orang Tua/Wali</Label>
-                                <Input id="parent_name" value={data.parent_name} onChange={(e) => setData('parent_name', e.target.value)} placeholder="Nama lengkap orang tua atau wali" className="h-11" />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label className="text-sm font-medium">Hubungan</Label>
-                                <Select value={data.parent_relation} onValueChange={(v) => setData('parent_relation', v)}>
-                                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="AYAH">Ayah</SelectItem>
-                                        <SelectItem value="IBU">Ibu</SelectItem>
-                                        <SelectItem value="WALI">Wali</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="parent_phone" className="text-sm font-medium">No. WhatsApp</Label>
-                                <div className="flex">
-                                    <span className="border-input bg-muted/50 text-muted-foreground inline-flex items-center rounded-l-md border border-r-0 px-3.5 text-sm font-medium">+62</span>
-                                    <Input id="parent_phone" type="tel" value={data.parent_phone} onChange={(e) => setData('parent_phone', e.target.value)} placeholder="812xxxxxxxx" className="h-11 rounded-l-none" />
-                                </div>
-                                <p className="text-muted-foreground text-xs">Nomor ini akan menerima notifikasi absensi via WhatsApp.</p>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="parent_email" className="text-sm font-medium">Email Orang Tua/Wali</Label>
-                                <Input id="parent_email" type="email" value={data.parent_email} onChange={(e) => setData('parent_email', e.target.value)} placeholder="email@contoh.com" className="h-11" />
-                                <InputError message={errors.parent_email || formErrors.parent_email} />
-                                <p className="text-muted-foreground text-xs">Email ini akan menerima notifikasi kehadiran (absen) siswa. Opsional.</p>
-                            </div>
-                        </div>
-                    </FormSection>
-
-                    {/* Section 5: Foto & Kartu */}
-                    <FormSection number={5} title="Foto & Generate Kartu">
-                        <div className="grid gap-5">
-                            <div className="grid gap-2">
-                                <Label htmlFor="photo_drive_filename" className="text-sm font-medium">Nama File Foto di Google Drive</Label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        id="photo_drive_filename"
-                                        value={data.photo_drive_filename}
-                                        onChange={(e) => {
-                                            setData('photo_drive_filename', e.target.value);
-                                            setPhotoPreview(null);
-                                            setPreviewError('');
-                                        }}
-                                        placeholder="Contoh: FIC_0008.JPG atau IMG_0234.png"
-                                        className="h-11"
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        disabled={!data.photo_drive_filename.trim() || !data.school_id || previewLoading}
-                                        onClick={handlePreviewPhoto}
-                                        className="h-11 shrink-0 gap-1.5"
-                                    >
-                                        {previewLoading ? <Loader2 className="size-4 animate-spin" /> : <Eye className="size-4" />}
-                                        Cek Foto
-                                    </Button>
-                                </div>
-                                <p className="text-muted-foreground text-xs">
-                                    Masukkan nama file foto siswa yang sudah diupload ke folder Foto Siswa di Google Drive.
-                                    Klik "Cek Foto" untuk preview sebelum mendaftar.
-                                </p>
-
-                                {/* Preview Error */}
-                                {previewError && (
-                                    <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-                                        <AlertTriangle className="size-4 shrink-0" />
-                                        {previewError}
-                                    </div>
-                                )}
-
-                                {/* Photo Preview */}
-                                {photoPreview && (
-                                    <div className="relative overflow-hidden rounded-xl border-2 border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950">
-                                        <div className="flex items-center justify-between border-b border-green-200 px-3 py-2 dark:border-green-800">
-                                            <span className="flex items-center gap-1.5 text-sm font-medium text-green-800 dark:text-green-200">
-                                                <CheckCircle2 className="size-4" /> {photoPreview.filename}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setPhotoPreview(null)}
-                                                className="rounded-md p-1 text-green-600 hover:bg-green-200 dark:hover:bg-green-800"
-                                            >
-                                                <X className="size-4" />
-                                            </button>
-                                        </div>
-                                        <div className="flex justify-center p-4">
-                                            <img
-                                                src={photoPreview.url}
-                                                alt={photoPreview.filename}
-                                                className="max-h-64 rounded-lg object-contain shadow-md"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
-                                <input
-                                    type="checkbox"
-                                    id="generate_cards"
-                                    checked={data.generate_cards}
-                                    onChange={(e) => setData('generate_cards', e.target.checked)}
-                                    className="size-4 rounded border-zinc-300"
-                                />
-                                <label htmlFor="generate_cards" className="text-sm">
-                                    <span className="font-medium text-blue-800 dark:text-blue-200">Generate Kartu OSIS & Perpustakaan</span>
-                                    <span className="text-muted-foreground block text-xs">Kartu otomatis digenerate dan disimpan ke Google Drive setelah data tersimpan.</span>
-                                </label>
-                            </div>
-                        </div>
-                    </FormSection>
-
-                    {/* Captcha */}
-                    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                        <SimpleCaptcha onVerified={(token) => setCaptchaVerified(!!token)} />
-                    </div>
-
-                    {/* General Error */}
-                    {(formErrors._general || Object.keys(formErrors).length > 0) && (
-                        <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
-                            {formErrors._general && (
-                                <p className="mb-2 font-semibold text-red-700 dark:text-red-300">{formErrors._general}</p>
-                            )}
-                            {Object.entries(formErrors).filter(([k]) => k !== '_general').map(([key, msg]) => (
-                                <p key={key} className="text-sm text-red-600 dark:text-red-400">• {msg}</p>
-                            ))}
-                        </div>
+                        </FormSection>
                     )}
 
-                    {/* Submit */}
-                    <Button
-                        type="submit"
-                        disabled={processing || generating || !captchaVerified}
-                        className="h-12 w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-semibold text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
-                    >
-                        {generating ? <Spinner /> : 'Daftarkan Siswa'}
+                    {step === 2 && (
+                        <FormSection number={2} title="Data Siswa">
+                            <div className="grid gap-5">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="full_name" className="text-sm font-medium">
+                                        Nama Lengkap <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="full_name"
+                                        value={data.full_name}
+                                        onChange={(e) => setData('full_name', e.target.value)}
+                                        placeholder="Nama lengkap siswa"
+                                        className="h-11"
+                                    />
+                                    <InputError message={err('full_name')} />
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="nis" className="text-sm font-medium">
+                                            NIS
+                                        </Label>
+                                        <Input
+                                            id="nis"
+                                            value={data.nis}
+                                            onChange={(e) => setData('nis', e.target.value)}
+                                            placeholder="Nomor Induk Siswa"
+                                            className="h-11"
+                                        />
+                                        <InputError message={err('nis')} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="no_absen" className="text-sm font-medium">
+                                            No. Absen <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="no_absen"
+                                            value={data.no_absen}
+                                            onChange={(e) => setData('no_absen', e.target.value)}
+                                            placeholder="Nomor absen"
+                                            className="h-11"
+                                        />
+                                        <InputError message={err('no_absen')} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="nisn" className="text-sm font-medium">
+                                            NISN <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="nisn"
+                                            value={data.nisn}
+                                            onChange={(e) => setData('nisn', e.target.value)}
+                                            placeholder="Nomor Induk Siswa Nasional"
+                                            className="h-11"
+                                        />
+                                        <InputError message={err('nisn')} />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label className="text-sm font-medium">
+                                        Jenis Kelamin <span className="text-red-500">*</span>
+                                    </Label>
+                                    <RadioGroup value={data.gender} onValueChange={(v) => setData('gender', v)} className="flex gap-4">
+                                        <label
+                                            htmlFor="gender-l"
+                                            className={`flex flex-1 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm transition ${data.gender === 'LAKI_LAKI' ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-900'}`}
+                                        >
+                                            <RadioGroupItem value="LAKI_LAKI" id="gender-l" /> Laki-laki
+                                        </label>
+                                        <label
+                                            htmlFor="gender-p"
+                                            className={`flex flex-1 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm transition ${data.gender === 'PEREMPUAN' ? 'border-pink-500 bg-pink-50 dark:bg-pink-950' : 'border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-900'}`}
+                                        >
+                                            <RadioGroupItem value="PEREMPUAN" id="gender-p" /> Perempuan
+                                        </label>
+                                    </RadioGroup>
+                                    <InputError message={err('gender')} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="religion" className="text-sm font-medium">
+                                        Agama <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Select value={data.religion} onValueChange={(val) => setData('religion', val)}>
+                                        <SelectTrigger className="h-11 w-full">
+                                            <SelectValue placeholder="Pilih agama" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {religions.map((r) => (
+                                                <SelectItem key={r.value} value={r.value}>
+                                                    {r.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={err('religion')} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="classroom_id" className="text-sm font-medium">
+                                        Kelas <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Select
+                                        value={data.classroom_id}
+                                        onValueChange={(val) => setData('classroom_id', val)}
+                                        disabled={!data.school_id}
+                                    >
+                                        <SelectTrigger className="h-11 w-full">
+                                            <SelectValue placeholder={data.school_id ? 'Pilih kelas' : 'Pilih sekolah terlebih dahulu'} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {filteredClassrooms.map((c) => (
+                                                <SelectItem key={c.id} value={String(c.id)}>
+                                                    {c.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={err('classroom_id')} />
+                                </div>
+                            </div>
+                        </FormSection>
+                    )}
+
+                    {step === 3 && (
+                        <FormSection number={3} title="Data Kelahiran & Alamat">
+                            <div className="grid gap-5">
+                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="birth_place" className="text-sm font-medium">
+                                            Tempat Lahir <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="birth_place"
+                                            value={data.birth_place}
+                                            onChange={(e) => setData('birth_place', e.target.value)}
+                                            placeholder="Kota kelahiran"
+                                            className="h-11"
+                                        />
+                                        <InputError message={err('birth_place')} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="birth_date" className="text-sm font-medium">
+                                            Tanggal Lahir <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="birth_date"
+                                            type="date"
+                                            value={data.birth_date}
+                                            onChange={(e) => setData('birth_date', e.target.value)}
+                                            className="h-11"
+                                        />
+                                        <InputError message={err('birth_date')} />
+                                    </div>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="address" className="text-sm font-medium">
+                                        Alamat <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Textarea
+                                        id="address"
+                                        value={data.address}
+                                        onChange={(e) => setData('address', e.target.value)}
+                                        placeholder="Alamat lengkap siswa"
+                                        rows={3}
+                                    />
+                                    <InputError message={err('address')} />
+                                </div>
+                            </div>
+                        </FormSection>
+                    )}
+
+                    {step === 4 && (
+                        <FormSection number={4} title="Data Orang Tua/Wali">
+                            <div className="grid gap-5">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="parent_name" className="text-sm font-medium">
+                                        Nama Orang Tua/Wali <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="parent_name"
+                                        value={data.parent_name}
+                                        onChange={(e) => setData('parent_name', e.target.value)}
+                                        placeholder="Nama lengkap orang tua atau wali"
+                                        className="h-11"
+                                    />
+                                    <InputError message={err('parent_name')} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-sm font-medium">
+                                        Hubungan <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Select value={data.parent_relation} onValueChange={(v) => setData('parent_relation', v)}>
+                                        <SelectTrigger className="h-11">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="AYAH">Ayah</SelectItem>
+                                            <SelectItem value="IBU">Ibu</SelectItem>
+                                            <SelectItem value="WALI">Wali</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={err('parent_relation')} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="parent_phone" className="text-sm font-medium">
+                                        No. WhatsApp <span className="text-red-500">*</span>
+                                    </Label>
+                                    <div className="flex">
+                                        <span className="border-input bg-muted/50 text-muted-foreground inline-flex items-center rounded-l-md border border-r-0 px-3.5 text-sm font-medium">
+                                            +62
+                                        </span>
+                                        <Input
+                                            id="parent_phone"
+                                            type="tel"
+                                            value={data.parent_phone}
+                                            onChange={(e) => setData('parent_phone', e.target.value)}
+                                            placeholder="812xxxxxxxx"
+                                            className="h-11 rounded-l-none"
+                                        />
+                                    </div>
+                                    <InputError message={err('parent_phone')} />
+                                    <p className="text-muted-foreground text-xs">Nomor ini akan menerima notifikasi absensi via WhatsApp.</p>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="parent_email" className="text-sm font-medium">
+                                        Email Orang Tua/Wali
+                                    </Label>
+                                    <Input
+                                        id="parent_email"
+                                        type="email"
+                                        value={data.parent_email}
+                                        onChange={(e) => setData('parent_email', e.target.value)}
+                                        placeholder="email@contoh.com"
+                                        className="h-11"
+                                    />
+                                    <InputError message={err('parent_email')} />
+                                    <p className="text-muted-foreground text-xs">
+                                        Email ini akan menerima notifikasi kehadiran (absen) siswa. Opsional.
+                                    </p>
+                                </div>
+                            </div>
+                        </FormSection>
+                    )}
+
+                    {step === 5 && (
+                        <FormSection number={5} title="Foto Siswa">
+                            <div className="grid gap-5">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="photo_drive_filename" className="text-sm font-medium">
+                                        Nama File Foto di Google Drive
+                                    </Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="photo_drive_filename"
+                                            value={data.photo_drive_filename}
+                                            onChange={(e) => {
+                                                setData((prev) => ({ ...prev, photo_drive_filename: e.target.value, manual_crop: null }));
+                                                setPhotoPreview(null);
+                                                setAutoCrop(null);
+                                                setPreviewError('');
+                                            }}
+                                            placeholder="Contoh: FIC_0008.JPG atau IMG_0234.png"
+                                            className="h-11"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled={!data.photo_drive_filename.trim() || !data.school_id || previewLoading}
+                                            onClick={handleLoadPhoto}
+                                            className="h-11 shrink-0 gap-1.5"
+                                        >
+                                            {previewLoading ? <Loader2 className="size-4 animate-spin" /> : null}
+                                            Muat Foto
+                                        </Button>
+                                    </div>
+                                    <p className="text-muted-foreground text-xs">
+                                        Masukkan nama file foto siswa yang sudah diupload ke folder Foto Siswa di Google Drive. Klik "Muat
+                                        Foto" untuk mengatur posisi crop wajah.
+                                    </p>
+
+                                    {previewError && (
+                                        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+                                            <AlertTriangle className="size-4 shrink-0" />
+                                            {previewError}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Crop reposition */}
+                                {photoPreview && autoCrop && (
+                                    <CropReposition
+                                        imageUrl={photoPreview.url}
+                                        filename={photoPreview.filename}
+                                        auto={autoCrop}
+                                        onChange={(rect) => setData('manual_crop', rect)}
+                                        onClose={() => {
+                                            setPhotoPreview(null);
+                                            setAutoCrop(null);
+                                            setData('manual_crop', null);
+                                        }}
+                                    />
+                                )}
+
+                                <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
+                                    <input
+                                        type="checkbox"
+                                        id="generate_cards"
+                                        checked={data.generate_cards}
+                                        onChange={(e) => setData('generate_cards', e.target.checked)}
+                                        className="size-4 rounded border-zinc-300"
+                                    />
+                                    <label htmlFor="generate_cards" className="text-sm">
+                                        <span className="font-medium text-blue-800 dark:text-blue-200">Generate Kartu OSIS & Perpustakaan</span>
+                                        <span className="text-muted-foreground block text-xs">
+                                            Kartu otomatis digenerate dan disimpan ke Google Drive setelah data tersimpan.
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </FormSection>
+                    )}
+
+                    {step === 6 && (
+                        <FormSection number={6} title="Review & Kirim">
+                            <div className="grid gap-5">
+                                <ReviewGroup title="Sekolah">
+                                    <ReviewRow label="Sekolah" value={selectedSchool?.name} />
+                                </ReviewGroup>
+                                <ReviewGroup title="Data Siswa">
+                                    <ReviewRow label="Nama Lengkap" value={data.full_name} />
+                                    <ReviewRow label="NIS" value={data.nis || '(auto-generate)'} />
+                                    <ReviewRow label="No. Absen" value={data.no_absen} />
+                                    <ReviewRow label="NISN" value={data.nisn} />
+                                    <ReviewRow label="Jenis Kelamin" value={data.gender === 'LAKI_LAKI' ? 'Laki-laki' : data.gender === 'PEREMPUAN' ? 'Perempuan' : ''} />
+                                    <ReviewRow label="Agama" value={religions.find((r) => r.value === data.religion)?.label} />
+                                    <ReviewRow label="Kelas" value={filteredClassrooms.find((c) => String(c.id) === data.classroom_id)?.name} />
+                                </ReviewGroup>
+                                <ReviewGroup title="Kelahiran & Alamat">
+                                    <ReviewRow label="Tempat Lahir" value={data.birth_place} />
+                                    <ReviewRow label="Tanggal Lahir" value={data.birth_date} />
+                                    <ReviewRow label="Alamat" value={data.address} />
+                                </ReviewGroup>
+                                <ReviewGroup title="Orang Tua/Wali">
+                                    <ReviewRow label="Nama" value={data.parent_name} />
+                                    <ReviewRow label="Hubungan" value={data.parent_relation} />
+                                    <ReviewRow label="No. WhatsApp" value={data.parent_phone ? `+62${data.parent_phone}` : ''} />
+                                    <ReviewRow label="Email" value={data.parent_email || '—'} />
+                                </ReviewGroup>
+                                <ReviewGroup title="Foto & Kartu">
+                                    <ReviewRow label="File Foto" value={data.photo_drive_filename || '(tidak ada)'} />
+                                    <ReviewRow label="Crop Manual" value={data.manual_crop ? 'Ya (posisi diatur)' : data.photo_drive_filename ? 'Otomatis' : '—'} />
+                                    <ReviewRow label="Generate Kartu" value={data.generate_cards ? 'Ya (OSIS & Perpustakaan)' : 'Tidak'} />
+                                </ReviewGroup>
+
+                                {/* Captcha */}
+                                <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                                    <SimpleCaptcha onVerified={(token) => setCaptchaVerified(!!token)} />
+                                </div>
+
+                                {/* General / server errors */}
+                                {(formErrors._general || Object.keys(formErrors).length > 0) && (
+                                    <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+                                        {formErrors._general && (
+                                            <p className="mb-2 font-semibold text-red-700 dark:text-red-300">{formErrors._general}</p>
+                                        )}
+                                        {Object.entries(formErrors)
+                                            .filter(([k]) => k !== '_general')
+                                            .map(([key, msg]) => (
+                                                <p key={key} className="text-sm text-red-600 dark:text-red-400">
+                                                    • {msg}
+                                                </p>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+                        </FormSection>
+                    )}
+                </div>
+
+                {/* Navigation */}
+                <div className="mt-6 flex items-center justify-between gap-3">
+                    <Button type="button" variant="outline" onClick={goBack} disabled={step === 1 || generating} className="h-11">
+                        Kembali
                     </Button>
-                </form>
+                    {step < TOTAL_STEPS ? (
+                        <Button
+                            type="button"
+                            onClick={goNext}
+                            className="h-11 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                        >
+                            Lanjut
+                        </Button>
+                    ) : (
+                        <Button
+                            type="button"
+                            onClick={handleFinalSubmit}
+                            disabled={processing || generating || !captchaVerified}
+                            className="h-11 bg-gradient-to-r from-blue-600 to-indigo-600 font-semibold text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                        >
+                            {generating ? <Spinner /> : 'Daftarkan Siswa'}
+                        </Button>
+                    )}
+                </div>
 
                 {/* Confirmation Dialog */}
                 {showConfirm && (
@@ -623,7 +1054,11 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                             <ul className="mb-4 list-inside list-disc space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
                                 <li>Kartu OSIS</li>
                                 <li>Kartu Perpustakaan</li>
-                                {data.photo_drive_filename && <li>Foto diambil dari Drive: <b>{data.photo_drive_filename}</b></li>}
+                                {data.photo_drive_filename && (
+                                    <li>
+                                        Foto diambil dari Drive: <b>{data.photo_drive_filename}</b>
+                                    </li>
+                                )}
                                 <li>Hasil disimpan ke Google Drive</li>
                             </ul>
                             <p className="mb-6 text-xs text-amber-600 dark:text-amber-400">
@@ -643,7 +1078,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
 
                 {/* Loading Overlay */}
                 {generating && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
                         <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-2xl dark:bg-zinc-900">
                             <Loader2 className="mx-auto mb-4 size-12 animate-spin text-blue-600" />
                             <h3 className="mb-2 text-lg font-bold">Memproses Pendaftaran</h3>
@@ -651,9 +1086,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                             <div className="mx-auto h-1.5 w-48 overflow-hidden rounded-full bg-zinc-200">
                                 <div className="h-full animate-pulse rounded-full bg-blue-600" style={{ width: '60%' }} />
                             </div>
-                            <p className="text-muted-foreground mt-4 text-xs">
-                                Proses ini membutuhkan 10-30 detik. Jangan tutup halaman.
-                            </p>
+                            <p className="text-muted-foreground mt-4 text-xs">Proses ini membutuhkan 10-30 detik. Jangan tutup halaman.</p>
                         </div>
                     </div>
                 )}
@@ -661,6 +1094,186 @@ export default function StudentRegister({ schools, classrooms }: Props) {
 
             <Footer />
         </PageWrapper>
+    );
+}
+
+/** Draggable (drag-only) crop box overlay. Fixed size = auto sw×sh, aspect 16:21. */
+function CropReposition({
+    imageUrl,
+    filename,
+    auto,
+    onChange,
+    onClose,
+}: {
+    imageUrl: string;
+    filename: string;
+    auto: AutoCrop;
+    onChange: (rect: CropRect) => void;
+    onClose: () => void;
+}) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [box, setBox] = useState({ w: 0, h: 0 }); // rendered image size in px
+    const [pos, setPos] = useState({ x: 0, y: 0 }); // crop box top-left in px
+
+    // Fit the natural image into the available width, capped at a reasonable viewport height.
+    const measure = useCallback(() => {
+        const container = containerRef.current;
+
+        if (!container) {
+            return;
+        }
+
+        const availW = container.clientWidth;
+        const maxH = 420;
+        const imgRatio = auto.natW / auto.natH;
+        let renderW = availW;
+        let renderH = renderW / imgRatio;
+
+        if (renderH > maxH) {
+            renderH = maxH;
+            renderW = renderH * imgRatio;
+        }
+
+        setBox({ w: renderW, h: renderH });
+        setPos({ x: auto.sx * renderW, y: auto.sy * renderH });
+    }, [auto]);
+
+    useEffect(() => {
+        measure();
+        window.addEventListener('resize', measure);
+
+        return () => window.removeEventListener('resize', measure);
+    }, [measure]);
+
+    const cropW = auto.sw * box.w;
+    const cropH = auto.sh * box.h;
+
+    function handleDragStop(x: number, y: number) {
+        // Clamp inside the image (bounds="parent" already does this, but keep normalized safe).
+        const clampedX = Math.max(0, Math.min(box.w - cropW, x));
+        const clampedY = Math.max(0, Math.min(box.h - cropH, y));
+        setPos({ x: clampedX, y: clampedY });
+        onChange({
+            sx: box.w > 0 ? clampedX / box.w : auto.sx,
+            sy: box.h > 0 ? clampedY / box.h : auto.sy,
+            sw: auto.sw,
+            sh: auto.sh,
+        });
+    }
+
+    return (
+        <div className="overflow-hidden rounded-xl border-2 border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950">
+            <div className="flex items-center justify-between border-b border-green-200 px-3 py-2 dark:border-green-800">
+                <span className="flex items-center gap-1.5 text-sm font-medium text-green-800 dark:text-green-200">
+                    <CheckCircle2 className="size-4" /> {filename}
+                </span>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="rounded-md p-1 text-green-600 hover:bg-green-200 dark:hover:bg-green-800"
+                >
+                    <X className="size-4" />
+                </button>
+            </div>
+            <div className="p-4">
+                <p className="mb-3 text-center text-xs font-medium text-green-700 dark:text-green-300">Geser kotak untuk atur posisi wajah</p>
+                <div className="flex justify-center">
+                    <div ref={containerRef} className="relative w-full max-w-sm select-none">
+                        {box.w > 0 && (
+                            <div className="relative mx-auto" style={{ width: box.w, height: box.h }}>
+                                <img
+                                    src={imageUrl}
+                                    alt={filename}
+                                    className="pointer-events-none absolute inset-0 h-full w-full rounded-lg object-fill shadow-md"
+                                    draggable={false}
+                                />
+                                {/* Dark scrim */}
+                                <div className="pointer-events-none absolute inset-0 rounded-lg bg-black/40" />
+                                <Rnd
+                                    size={{ width: cropW, height: cropH }}
+                                    position={pos}
+                                    enableResizing={false}
+                                    bounds="parent"
+                                    onDragStop={(_e, d) => handleDragStop(d.x, d.y)}
+                                    className="z-10"
+                                >
+                                    <div
+                                        className="h-full w-full cursor-move rounded-sm border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.0)]"
+                                        style={{
+                                            backgroundImage: `url(${imageUrl})`,
+                                            backgroundSize: `${box.w}px ${box.h}px`,
+                                            backgroundPosition: `-${pos.x}px -${pos.y}px`,
+                                            backgroundRepeat: 'no-repeat',
+                                        }}
+                                    >
+                                        <span className="absolute -top-6 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-green-700 shadow">
+                                            <Check className="size-3" /> Area Foto
+                                        </span>
+                                    </div>
+                                </Rnd>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function StepProgress({ current }: { current: number }) {
+    return (
+        <div className="flex items-center">
+            {STEPS.map((s, i) => {
+                const done = s.id < current;
+                const active = s.id === current;
+
+                return (
+                    <div key={s.id} className="flex flex-1 items-center last:flex-none">
+                        <div className="flex flex-col items-center">
+                            <span
+                                className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition ${
+                                    done
+                                        ? 'bg-green-600 text-white'
+                                        : active
+                                          ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
+                                          : 'bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+                                }`}
+                            >
+                                {done ? <Check className="size-4" /> : s.id}
+                            </span>
+                            <span
+                                className={`mt-1 hidden max-w-[72px] text-center text-[10px] leading-tight sm:block ${
+                                    active ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
+                                }`}
+                            >
+                                {s.title}
+                            </span>
+                        </div>
+                        {i < STEPS.length - 1 && (
+                            <div className={`mx-1 h-0.5 flex-1 rounded ${done ? 'bg-green-600' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+function ReviewGroup({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+        <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+            <h4 className="mb-2 text-xs font-bold tracking-wide text-blue-600 uppercase dark:text-blue-400">{title}</h4>
+            <dl className="grid gap-1.5">{children}</dl>
+        </div>
+    );
+}
+
+function ReviewRow({ label, value }: { label: string; value?: string | null }) {
+    return (
+        <div className="flex items-start justify-between gap-4 text-sm">
+            <dt className="text-muted-foreground shrink-0">{label}</dt>
+            <dd className="text-right font-medium break-words">{value || '—'}</dd>
+        </div>
     );
 }
 
@@ -675,9 +1288,11 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
 
 function FormSection({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
     return (
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+        <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
             <div className="mb-5 flex items-center gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-sm font-bold text-white">{number}</span>
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-sm font-bold text-white">
+                    {number}
+                </span>
                 <h2 className="text-lg font-semibold">{title}</h2>
             </div>
             {children}
@@ -688,7 +1303,9 @@ function FormSection({ number, title, children }: { number: number; title: strin
 function Footer() {
     return (
         <footer className="border-t border-zinc-200 py-6 text-center dark:border-zinc-800">
-            <p className="text-muted-foreground text-sm">Powered by <span className="font-semibold">Tyas Photo</span></p>
+            <p className="text-muted-foreground text-sm">
+                Powered by <span className="font-semibold">Tyas Photo</span>
+            </p>
         </footer>
     );
 }

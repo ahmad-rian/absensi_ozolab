@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\NotificationGatewayController;
 use App\Http\Controllers\Admin\NotifikasiController;
 use App\Http\Controllers\Admin\OrangTuaController;
 use App\Http\Controllers\Admin\PengaturanController;
+use App\Http\Controllers\Admin\PhotoSheetController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\ScannerController;
 use App\Http\Controllers\Admin\SchoolController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ParentTelegramController;
+use App\Http\Controllers\Public\CardFormController;
 use App\Http\Controllers\PublicScannerController;
 use App\Http\Controllers\StudentRegistrationController;
 use Illuminate\Http\Request;
@@ -35,9 +37,14 @@ Route::post('scan/{school:scanner_token}', [PublicScannerController::class, 'sca
 Route::get('daftar', [StudentRegistrationController::class, 'index'])->name('student.register');
 Route::post('daftar', [StudentRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('student.register.store');
 Route::post('daftar/preview-photo', [StudentRegistrationController::class, 'previewPhoto'])->middleware('throttle:20,1')->name('student.register.preview-photo');
+Route::post('daftar/crop-preview', [StudentRegistrationController::class, 'cropPreview'])->middleware('throttle:20,1')->name('student.register.crop-preview');
 
 Route::get('daftar-telegram', [ParentTelegramController::class, 'index'])->name('parent.telegram');
 Route::post('daftar-telegram', [ParentTelegramController::class, 'store'])->middleware('throttle:10,1')->name('parent.telegram.store');
+
+// Public dynamic card form (encrypted link)
+Route::get('f/{token}', [CardFormController::class, 'show'])->name('public.card-forms.show');
+Route::post('f/{token}', [CardFormController::class, 'submit'])->middleware('throttle:10,1')->name('public.card-forms.submit');
 
 Route::middleware(['auth'])->post('admin/switch-school', function (Request $request) {
     $request->validate(['school_id' => ['required', 'exists:schools,id']]);
@@ -62,6 +69,7 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN|ADMIN|GURU'])->prefix('
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('siswa', SiswaController::class)->names('admin.siswa');
     Route::get('siswa/{siswa}/qr', [SiswaController::class, 'qrCode'])->name('admin.siswa.qr');
+    Route::post('siswa/{siswa}/photo-sheet', [PhotoSheetController::class, 'generate'])->name('admin.siswa.photo-sheet');
     Route::resource('orang-tua', OrangTuaController::class)->parameter('orang-tua', 'parentProfile')->names('admin.orang-tua');
     Route::resource('kelas', KelasController::class)->except(['show', 'create', 'edit'])->parameter('kelas', 'classroom');
     Route::resource('jadwal-absensi', AttendanceScheduleController::class)->except(['show', 'create', 'edit'])->parameter('jadwal-absensi', 'attendanceSchedule');
@@ -122,6 +130,14 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN|ADMIN|GURU'])->prefix('
         Route::post('roles', [RolePermissionController::class, 'store'])->name('admin.roles.store');
         Route::put('roles/{role}', [RolePermissionController::class, 'update'])->name('admin.roles.update');
         Route::delete('roles/{role}', [RolePermissionController::class, 'destroy'])->name('admin.roles.destroy');
+
+        // Kartu Bebas / Haji — dynamic card form builder
+        Route::get('card-forms', [App\Http\Controllers\Admin\CardFormController::class, 'index'])->name('admin.card-forms');
+        Route::get('card-forms/create', [App\Http\Controllers\Admin\CardFormController::class, 'create'])->name('admin.card-forms.create');
+        Route::post('card-forms', [App\Http\Controllers\Admin\CardFormController::class, 'store'])->name('admin.card-forms.store');
+        Route::get('card-forms/{cardForm}/edit', [App\Http\Controllers\Admin\CardFormController::class, 'edit'])->name('admin.card-forms.edit');
+        Route::put('card-forms/{cardForm}', [App\Http\Controllers\Admin\CardFormController::class, 'update'])->name('admin.card-forms.update');
+        Route::delete('card-forms/{cardForm}', [App\Http\Controllers\Admin\CardFormController::class, 'destroy'])->name('admin.card-forms.destroy');
     });
 });
 

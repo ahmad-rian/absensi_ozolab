@@ -17,6 +17,7 @@ class SchoolDriveConfig extends Model
         'cards_folder_id',
         'albums_folder_id',
         'parents_folder_id',
+        'sheets_folder_id',
         'is_active',
         'last_tested_at',
     ];

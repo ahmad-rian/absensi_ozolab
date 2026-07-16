@@ -61,6 +61,11 @@ class StudentRegistrationController extends Controller
             'parent_email' => ['nullable', 'email', 'max:255'],
             'parent_relation' => ['required', 'string', 'in:AYAH,IBU,WALI'],
             'photo_drive_filename' => ['nullable', 'string', 'max:500'],
+            'manual_crop' => ['nullable', 'array'],
+            'manual_crop.sx' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
+            'manual_crop.sy' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
+            'manual_crop.sw' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
+            'manual_crop.sh' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
             'generate_cards' => ['nullable', 'boolean'],
         ], [
             'school_id.required' => 'Pilih sekolah terlebih dahulu.',
@@ -128,7 +133,8 @@ class StudentRegistrationController extends Controller
         // Download photo from Drive if filename provided
         $photoDownloaded = false;
         if (! empty($validated['photo_drive_filename'])) {
-            $photoDownloaded = $this->downloadPhotoFromDrive($student, $school, $validated['photo_drive_filename']);
+            $manualCrop = $validated['manual_crop'] ?? null;
+            $photoDownloaded = $this->downloadPhotoFromDrive($student, $school, $validated['photo_drive_filename'], $manualCrop);
         }
 
         // Generate cards if requested
@@ -216,9 +222,68 @@ class StudentRegistrationController extends Controller
     }
 
     /**
-     * Download student photo from Google Drive, smart crop to 3:4 portrait, save as WebP.
+     * Download a Drive photo to a temp file + return the auto-crop rect for the
+     * drag-to-reposition UI. Keeps the temp file so the frontend can display it.
      */
-    private function downloadPhotoFromDrive(Student $student, School $school, string $filename): bool
+    public function cropPreview(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'school_id' => ['required', 'exists:schools,id'],
+            'filename' => ['required', 'string', 'max:500'],
+        ]);
+
+        $school = School::with('driveConfig')->findOrFail($validated['school_id']);
+        $driveConfig = $school->driveConfig;
+
+        if (! $driveConfig || ! $driveConfig->is_active) {
+            return response()->json(['found' => false, 'message' => 'Google Drive belum dikonfigurasi untuk sekolah ini.']);
+        }
+
+        if (! GoogleDriveService::hasGlobalCredentials() && ! $driveConfig->service_account_json) {
+            return response()->json(['found' => false, 'message' => 'Credentials Google Drive belum diset.']);
+        }
+
+        try {
+            $service = GoogleDriveService::forSchool($driveConfig);
+            $searchFolderId = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id ?: 'root';
+            $files = $service->findFileByName($validated['filename'], $searchFolderId);
+
+            if (empty($files)) {
+                return response()->json(['found' => false, 'message' => 'File "'.$validated['filename'].'" tidak ditemukan di folder Foto Siswa.']);
+            }
+
+            $driveFileId = $files[0]['id'];
+            $tempName = 'temp/preview-'.Str::random(16).'.jpg';
+            $fullPath = Storage::disk('public')->path($tempName);
+
+            $dir = dirname($fullPath);
+            if (! is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+
+            $service->downloadFile($driveFileId, $fullPath);
+
+            $cropService = new PhotoCropService;
+
+            return response()->json([
+                'found' => true,
+                'filename' => $files[0]['name'],
+                'preview_url' => Storage::disk('public')->url($tempName),
+                'crop' => $cropService->autoCropRect($fullPath),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Photo crop-preview failed', ['filename' => $validated['filename'], 'error' => $e->getMessage()]);
+
+            return response()->json(['found' => false, 'message' => 'Gagal mengambil foto: '.$e->getMessage()]);
+        }
+    }
+
+    /**
+     * Download student photo from Google Drive, smart crop to 3:4 portrait, save as WebP.
+     *
+     * @param  array{sx: float, sy: float, sw: float, sh: float}|null  $manualCrop  Normalized crop rect from the drag-to-reposition UI.
+     */
+    private function downloadPhotoFromDrive(Student $student, School $school, string $filename, ?array $manualCrop = null): bool
     {
         $driveConfig = $school->driveConfig;
         if (! $driveConfig || ! $driveConfig->is_active) {
@@ -248,7 +313,7 @@ class StudentRegistrationController extends Controller
             // Smart crop to 3:4 portrait + WebP
             $storagePath = sprintf('photos/students/%d/%d-%s.png', $school->id, $student->id, Str::slug($student->full_name));
             $cropService = new PhotoCropService;
-            $cropService->cropAndStore($tempPath, $storagePath);
+            $cropService->cropAndStore($tempPath, $storagePath, 9, $manualCrop);
 
             @unlink($tempPath);
 

@@ -36,7 +36,7 @@ class PhotoCropService
      * @param  string  $storagePath  Relative path for storage
      * @return string Storage path of the cropped photo
      */
-    public function cropAndStore(string $inputPath, string $storagePath, int $quality = 9): string
+    public function cropAndStore(string $inputPath, string $storagePath, int $quality = 9, ?array $manualCrop = null): string
     {
         // Large studio JPEGs (e.g. 6000px+) decode to ~100MB of truecolor before
         // we downscale — raise the limit so cropping never OOMs mid-request.
@@ -56,21 +56,14 @@ class PhotoCropService
         $h = imagesy($image);
 
         // Step 1: Resize to max 1600px (keep enough detail for analysis)
-        $maxDim = 1600;
-        if ($w > $maxDim || $h > $maxDim) {
-            $scale = min($maxDim / $w, $maxDim / $h);
-            $newW = (int) ($w * $scale);
-            $newH = (int) ($h * $scale);
-            $resized = imagecreatetruecolor($newW, $newH);
-            imagecopyresampled($resized, $image, 0, 0, 0, 0, $newW, $newH, $w, $h);
-            imagedestroy($image);
-            $image = $resized;
-            $w = $newW;
-            $h = $newH;
-        }
+        [$image, $w, $h] = $this->capTo($image, $w, $h, 1600);
 
-        // Step 2: Smart crop to card slot ratio (16:21) with subject-centered framing
-        $image = $this->smartCropForCard($image, $w, $h);
+        // Step 2: Crop to card slot ratio (16:21). Manual rect (drag-to-reposition) wins.
+        if ($manualCrop !== null) {
+            $image = $this->cropToNormalizedRect($image, $w, $h, $manualCrop);
+        } else {
+            $image = $this->smartCropForCard($image, $w, $h);
+        }
 
         // Step 3: Ensure minimum output resolution
         $finalW = imagesx($image);
@@ -639,6 +632,136 @@ class PhotoCropService
         imagedestroy($image);
 
         return $cropped;
+    }
+
+    /**
+     * Compute the auto-crop rect for a photo WITHOUT writing a file. Returns the rect
+     * normalized (0..1) against the EXIF-fixed (1600-capped) image plus its dimensions.
+     * Used by the drag-to-reposition UI so the frontend can show the suggested crop box.
+     *
+     * @return array{sx: float, sy: float, sw: float, sh: float, natW: int, natH: int, ratio: float}
+     */
+    public function autoCropRect(string $inputPath): array
+    {
+        $this->ensureMemoryLimit(512);
+
+        $info = getimagesize($inputPath);
+        if (! $info) {
+            throw new \RuntimeException('Cannot read image file.');
+        }
+
+        $image = $this->loadImage($inputPath, $info[2]);
+        $image = $this->fixExifOrientation($image, $inputPath, $info[2]);
+        $w = imagesx($image);
+        $h = imagesy($image);
+        [$image, $w, $h] = $this->capTo($image, $w, $h, 1600);
+
+        $subject = $this->detectSubject($image, $w, $h);
+        $rect = ($subject && $subject['ok'])
+            ? $this->rectAroundHead($w, $h, $subject)
+            : $this->rectFallback($w, $h);
+
+        imagedestroy($image);
+
+        return [
+            'sx' => $rect['x'] / $w,
+            'sy' => $rect['y'] / $h,
+            'sw' => $rect['w'] / $w,
+            'sh' => $rect['h'] / $h,
+            'natW' => $w,
+            'natH' => $h,
+            'ratio' => self::SLOT_RATIO,
+        ];
+    }
+
+    /**
+     * Downscale so the longest side is at most $maxDim (keeps ratio). No-op if smaller.
+     *
+     * @return array{0: \GdImage, 1: int, 2: int}
+     */
+    private function capTo(\GdImage $image, int $w, int $h, int $maxDim): array
+    {
+        if ($w <= $maxDim && $h <= $maxDim) {
+            return [$image, $w, $h];
+        }
+        $scale = min($maxDim / $w, $maxDim / $h);
+        $newW = (int) ($w * $scale);
+        $newH = (int) ($h * $scale);
+        $resized = imagecreatetruecolor($newW, $newH);
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newW, $newH, $w, $h);
+        imagedestroy($image);
+
+        return [$resized, $newW, $newH];
+    }
+
+    /**
+     * Crop a normalized rect (0..1) out of the image.
+     *
+     * @param  array{sx: float, sy: float, sw: float, sh: float}  $rect
+     */
+    private function cropToNormalizedRect(\GdImage $image, int $w, int $h, array $rect): \GdImage
+    {
+        $cw = (int) round(($rect['sw'] ?? self::SLOT_RATIO) * $w);
+        $ch = (int) round(($rect['sh'] ?? 1.0) * $h);
+        $cw = max(1, min($w, $cw));
+        $ch = max(1, min($h, $ch));
+        $cx = (int) round(($rect['sx'] ?? 0) * $w);
+        $cy = (int) round(($rect['sy'] ?? 0) * $h);
+        $cx = max(0, min($w - $cw, $cx));
+        $cy = max(0, min($h - $ch, $cy));
+
+        $cropped = imagecreatetruecolor($cw, $ch);
+        imagecopyresampled($cropped, $image, 0, 0, $cx, $cy, $cw, $ch, $cw, $ch);
+        imagedestroy($image);
+
+        return $cropped;
+    }
+
+    /**
+     * The crop rect (clamped, no padding) derived from detected head metrics.
+     *
+     * @param  array{centerX: float, headTopY: float, headHeight: float, eyeY: float}  $s
+     * @return array{x: int, y: int, w: int, h: int}
+     */
+    private function rectAroundHead(int $imgW, int $imgH, array $s): array
+    {
+        $cropH = (int) round($s['headHeight'] / self::HEAD_FRACTION);
+        $cropW = (int) round($cropH * self::SLOT_RATIO);
+        $cropW = min($cropW, $imgW);
+        $cropH = min($cropH, $imgH);
+        if ($cropW / $cropH > self::SLOT_RATIO) {
+            $cropW = (int) round($cropH * self::SLOT_RATIO);
+        } else {
+            $cropH = (int) round($cropW / self::SLOT_RATIO);
+        }
+        $cropY = (int) round($s['headTopY'] - self::HEADROOM_FRACTION * $cropH);
+        $cropX = (int) round($s['centerX'] - $cropW / 2);
+        $cropX = max(0, min($imgW - $cropW, $cropX));
+        $cropY = max(0, min($imgH - $cropH, $cropY));
+
+        return ['x' => $cropX, 'y' => $cropY, 'w' => $cropW, 'h' => $cropH];
+    }
+
+    /**
+     * Fallback crop rect (center-top, card ratio) when segmentation fails.
+     *
+     * @return array{x: int, y: int, w: int, h: int}
+     */
+    private function rectFallback(int $w, int $h): array
+    {
+        if ($w / $h > self::SLOT_RATIO) {
+            $cropW = (int) ($h * self::SLOT_RATIO);
+            $cropH = $h;
+            $cropX = (int) (($w - $cropW) / 2);
+            $cropY = 0;
+        } else {
+            $cropW = $w;
+            $cropH = (int) ($w / self::SLOT_RATIO);
+            $cropX = 0;
+            $cropY = (int) (($h - $cropH) * 0.08);
+        }
+
+        return ['x' => $cropX, 'y' => $cropY, 'w' => $cropW, 'h' => $cropH];
     }
 
     /**

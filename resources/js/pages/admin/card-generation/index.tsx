@@ -9,6 +9,7 @@ import { dashboard } from '@/routes';
 
 type LogEntry = {
     id: string;
+    type: string;
     student_name: string;
     student_nis: string;
     layout_name: string;
@@ -86,10 +87,20 @@ export default function CardGenerationIndex({ logs }: Props) {
                                             return (
                                                 <TableRow key={log.id}>
                                                     <TableCell>
-                                                        <div className="font-medium">{log.student_name}</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-medium">{log.student_name}</span>
+                                                            {log.type === 'photo_sheet' && (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-800 dark:bg-purple-900 dark:text-purple-300"
+                                                                >
+                                                                    Pas Foto
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                         <div className="text-muted-foreground text-xs">NIS: {log.student_nis}</div>
                                                     </TableCell>
-                                                    <TableCell className="text-sm">{log.layout_name}</TableCell>
+                                                    <TableCell className="text-sm">{log.type === 'photo_sheet' ? '-' : log.layout_name}</TableCell>
                                                     <TableCell>
                                                         <Badge variant="outline" className={`gap-1 ${status.className}`}>
                                                             {status.icon}

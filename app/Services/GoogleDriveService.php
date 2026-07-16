@@ -340,7 +340,7 @@ class GoogleDriveService
     /**
      * Ensure all subfolders exist. Auto-creates from root if individual IDs are missing.
      *
-     * @return array{cards_folder_id: string|null, albums_folder_id: string|null, parents_folder_id: string|null}
+     * @return array{cards_folder_id: string|null, albums_folder_id: string|null, parents_folder_id: string|null, sheets_folder_id: string|null}
      */
     public function ensureSubfolders(): array
     {
@@ -351,6 +351,7 @@ class GoogleDriveService
             'cards_folder_id' => 'Kartu Siswa',
             'albums_folder_id' => 'Album Foto',
             'parents_folder_id' => 'Orang Tua',
+            'sheets_folder_id' => 'Pas Foto',
         ];
 
         foreach ($folderMap as $field => $folderName) {
@@ -367,6 +368,7 @@ class GoogleDriveService
             'cards_folder_id' => $this->config->cards_folder_id,
             'albums_folder_id' => $this->config->albums_folder_id,
             'parents_folder_id' => $this->config->parents_folder_id,
+            'sheets_folder_id' => $this->config->sheets_folder_id,
         ];
     }
 }

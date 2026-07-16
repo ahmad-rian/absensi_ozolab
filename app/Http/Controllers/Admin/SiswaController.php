@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CardGenerationLog;
 use App\Models\Classroom;
 use App\Models\ParentProfile;
 use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
+use App\Services\PhotoSheetGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -58,6 +60,23 @@ class SiswaController extends Controller
             $studentData['parent_profile']['relation_label'] = $siswa->parentProfile?->relation?->label();
         }
 
+        $photoSheets = CardGenerationLog::where('student_id', $siswa->id)
+            ->where('type', 'photo_sheet')
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(fn (CardGenerationLog $log) => [
+                'id' => $log->id,
+                'status' => $log->status,
+                'file_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
+                'drive_url' => $log->drive_url,
+                'created_at' => $log->created_at->format('d M Y H:i'),
+            ]);
+
+        $photoSheetTemplates = collect(PhotoSheetGeneratorService::TEMPLATES)
+            ->map(fn (array $config, string $key) => ['value' => $key, 'label' => $config['label']])
+            ->values();
+
         return Inertia::render('admin/siswa/show', [
             'student' => array_merge($studentData, [
                 'religion_label' => $siswa->religion?->label(),
@@ -66,6 +85,8 @@ class SiswaController extends Controller
                     : null,
             ]),
             'qrSvg' => $qrSvg,
+            'photoSheets' => $photoSheets,
+            'photoSheetTemplates' => $photoSheetTemplates,
         ]);
     }
 
