@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\KartuBebas;
 
 use App\Http\Controllers\Controller;
 use App\Models\SchoolFrame;
@@ -13,15 +13,16 @@ use Inertia\Response;
 
 class FrameController extends Controller
 {
-    public function index(Request $request): Response
+    private const CATEGORY = 'kartu_bebas';
+
+    public function index(): Response
     {
-        $frames = SchoolFrame::forSchool()
-            ->when($request->category, fn ($q, $cat) => $q->where('category', $cat))
+        $frames = SchoolFrame::where('category', self::CATEGORY)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('admin/frames/index', [
+        return Inertia::render('kartu-bebas/frames/index', [
             'frames' => $frames->map(fn (SchoolFrame $f) => [
                 'id' => $f->id,
                 'name' => $f->name,
@@ -32,9 +33,6 @@ class FrameController extends Controller
                 'is_active' => $f->is_active,
                 'sort_order' => $f->sort_order,
             ]),
-            'filters' => [
-                'category' => $request->category ?? '',
-            ],
         ]);
     }
 
@@ -43,7 +41,6 @@ class FrameController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'image' => ['required', 'image', 'max:5120'],
-            'category' => ['required', 'string', 'in:osis,perpustakaan,album,kartu_bebas'],
         ]);
 
         $path = $converter->storeAsWebp(
@@ -54,7 +51,6 @@ class FrameController extends Controller
             2000,
         );
 
-        // Auto-crop white borders from frame image
         $fullPath = Storage::disk('public')->path($path);
         $this->autoCropWhiteBorders($fullPath);
 
@@ -65,21 +61,20 @@ class FrameController extends Controller
             'image_path' => $path,
             'width' => $width,
             'height' => $height,
-            'category' => $validated['category'],
+            'category' => self::CATEGORY,
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Frame berhasil ditambahkan.']);
 
-        return to_route('admin.frames');
+        return to_route('kartu-bebas.frames');
     }
 
     public function update(Request $request, SchoolFrame $frame): RedirectResponse
     {
-        abort_unless($frame->school_id === auth()->user()->school_id, 403);
+        abort_unless($frame->category === self::CATEGORY, 403);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', 'in:osis,perpustakaan,album,kartu_bebas'],
             'is_active' => ['boolean'],
             'sort_order' => ['integer', 'min:0'],
         ]);
@@ -88,7 +83,22 @@ class FrameController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Frame berhasil diupdate.']);
 
-        return to_route('admin.frames');
+        return to_route('kartu-bebas.frames');
+    }
+
+    public function destroy(SchoolFrame $frame): RedirectResponse
+    {
+        abort_unless($frame->category === self::CATEGORY, 403);
+
+        if ($frame->image_path && Storage::disk('public')->exists($frame->image_path)) {
+            Storage::disk('public')->delete($frame->image_path);
+        }
+
+        $frame->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Frame berhasil dihapus.']);
+
+        return to_route('kartu-bebas.frames');
     }
 
     /**
@@ -114,7 +124,7 @@ class FrameController extends Controller
 
         $w = imagesx($image);
         $h = imagesy($image);
-        $threshold = 245; // pixels with R,G,B all above this are "white"
+        $threshold = 245;
 
         $isWhite = function (int $x, int $y) use ($image, $threshold): bool {
             $rgb = imagecolorat($image, $x, $y);
@@ -125,14 +135,12 @@ class FrameController extends Controller
             return $r >= $threshold && $g >= $threshold && $b >= $threshold;
         };
 
-        // Scan from each edge to find first non-white row/column
-        $step = max(1, (int) ($w / 100)); // sample every few pixels for speed
+        $step = max(1, (int) ($w / 100));
         $top = 0;
         $bottom = $h - 1;
         $left = 0;
         $right = $w - 1;
 
-        // Top edge
         for ($y = 0; $y < $h / 2; $y++) {
             $allWhite = true;
             for ($x = 0; $x < $w; $x += $step) {
@@ -147,7 +155,6 @@ class FrameController extends Controller
             }
         }
 
-        // Bottom edge
         for ($y = $h - 1; $y > $h / 2; $y--) {
             $allWhite = true;
             for ($x = 0; $x < $w; $x += $step) {
@@ -162,7 +169,6 @@ class FrameController extends Controller
             }
         }
 
-        // Left edge
         for ($x = 0; $x < $w / 2; $x++) {
             $allWhite = true;
             for ($y = $top; $y <= $bottom; $y += $step) {
@@ -177,7 +183,6 @@ class FrameController extends Controller
             }
         }
 
-        // Right edge
         for ($x = $w - 1; $x > $w / 2; $x--) {
             $allWhite = true;
             for ($y = $top; $y <= $bottom; $y += $step) {
@@ -195,7 +200,6 @@ class FrameController extends Controller
         $cropW = $right - $left + 1;
         $cropH = $bottom - $top + 1;
 
-        // Only crop if we actually trimmed something significant (>2% per side)
         $minTrim = (int) ($w * 0.02);
         if ($top < $minTrim && $left < $minTrim && ($w - $right) < $minTrim && ($h - $bottom) < $minTrim) {
             imagedestroy($image);
@@ -211,20 +215,5 @@ class FrameController extends Controller
 
         imagewebp($cropped, $path, 90);
         imagedestroy($cropped);
-    }
-
-    public function destroy(SchoolFrame $frame): RedirectResponse
-    {
-        abort_unless($frame->school_id === auth()->user()->school_id, 403);
-
-        if ($frame->image_path && Storage::disk('public')->exists($frame->image_path)) {
-            Storage::disk('public')->delete($frame->image_path);
-        }
-
-        $frame->delete();
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Frame berhasil dihapus.']);
-
-        return to_route('admin.frames');
     }
 }

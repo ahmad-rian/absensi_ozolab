@@ -23,6 +23,9 @@ use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KartuBebas\LayoutController;
+use App\Http\Controllers\KartuBebas\RecordController;
+use App\Http\Controllers\KartuBebas\RiwayatController;
 use App\Http\Controllers\ParentTelegramController;
 use App\Http\Controllers\Public\CardFormController;
 use App\Http\Controllers\PublicScannerController;
@@ -139,6 +142,34 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN|ADMIN|GURU'])->prefix('
         Route::put('card-forms/{cardForm}', [App\Http\Controllers\Admin\CardFormController::class, 'update'])->name('admin.card-forms.update');
         Route::delete('card-forms/{cardForm}', [App\Http\Controllers\Admin\CardFormController::class, 'destroy'])->name('admin.card-forms.destroy');
     });
+});
+
+Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
+    Route::get('/', [App\Http\Controllers\KartuBebas\DashboardController::class, 'index'])->name('dashboard');
+
+    // Layout Kartu (= CardForm template: dynamic fields + card design)
+    Route::get('layouts', [LayoutController::class, 'index'])->name('layouts');
+    Route::get('layouts/create', [LayoutController::class, 'create'])->name('layouts.create');
+    Route::post('layouts', [LayoutController::class, 'store'])->name('layouts.store');
+    Route::get('layouts/{cardForm}/edit', [LayoutController::class, 'edit'])->name('layouts.edit');
+    Route::put('layouts/{cardForm}', [LayoutController::class, 'update'])->name('layouts.update');
+    Route::delete('layouts/{cardForm}', [LayoutController::class, 'destroy'])->name('layouts.destroy');
+
+    // Data (records = CardFormSubmission entered manually)
+    Route::get('data', [RecordController::class, 'index'])->name('data');
+    Route::post('data', [RecordController::class, 'store'])->name('data.store');
+    Route::put('data/{submission}', [RecordController::class, 'update'])->name('data.update');
+    Route::delete('data/{submission}', [RecordController::class, 'destroy'])->name('data.destroy');
+    Route::post('data/{submission}/generate', [RecordController::class, 'generate'])->name('data.generate');
+
+    // Frame & Bingkai (category = kartu_bebas)
+    Route::get('frames', [App\Http\Controllers\KartuBebas\FrameController::class, 'index'])->name('frames');
+    Route::post('frames', [App\Http\Controllers\KartuBebas\FrameController::class, 'store'])->name('frames.store');
+    Route::put('frames/{frame}', [App\Http\Controllers\KartuBebas\FrameController::class, 'update'])->name('frames.update');
+    Route::delete('frames/{frame}', [App\Http\Controllers\KartuBebas\FrameController::class, 'destroy'])->name('frames.destroy');
+
+    // Riwayat Kartu
+    Route::get('riwayat', [RiwayatController::class, 'index'])->name('riwayat');
 });
 
 require __DIR__.'/settings.php';

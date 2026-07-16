@@ -1015,7 +1015,13 @@ export default function StudentRegister({ schools, classrooms }: Props) {
 
                 {/* Navigation */}
                 <div className="mt-6 flex items-center justify-between gap-3">
-                    <Button type="button" variant="outline" onClick={goBack} disabled={step === 1 || generating} className="h-11">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={goBack}
+                        disabled={step === 1 || generating}
+                        className="h-11 border-zinc-300 bg-white text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+                    >
                         Kembali
                     </Button>
                     {step < TOTAL_STEPS ? (
@@ -1281,7 +1287,21 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
     return (
         <>
             <Head title="Pendaftaran Data Siswa Baru" />
-            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">{children}</div>
+            <div className="relative flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
+                {/* Grid pattern + gradient glow background */}
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+                    <div
+                        className="absolute inset-0 opacity-[0.05] dark:opacity-[0.08] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_0%,black,transparent)]"
+                        style={{
+                            backgroundImage:
+                                'linear-gradient(to right, var(--foreground) 1px, transparent 1px), linear-gradient(to bottom, var(--foreground) 1px, transparent 1px)',
+                            backgroundSize: '40px 40px',
+                        }}
+                    />
+                    <div className="absolute -top-32 left-1/2 size-[42rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[120px] dark:bg-blue-500/15" />
+                </div>
+                <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+            </div>
         </>
     );
 }
@@ -1302,7 +1322,7 @@ function FormSection({ number, title, children }: { number: number; title: strin
 
 function Footer() {
     return (
-        <footer className="border-t border-zinc-200 py-6 text-center dark:border-zinc-800">
+        <footer className="mt-auto border-t border-zinc-200 py-6 text-center dark:border-zinc-800">
             <p className="text-muted-foreground text-sm">
                 Powered by <span className="font-semibold">Tyas Photo</span>
             </p>

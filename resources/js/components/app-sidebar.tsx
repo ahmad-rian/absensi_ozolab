@@ -67,7 +67,7 @@ const reportItems: NavItem[] = [
 
 // Admin items — filtered by role
 const adminItemsSuperAdmin: NavItem[] = [
-    { title: 'Kartu Bebas / Haji', href: '/admin/card-forms', icon: FileText },
+    { title: 'Kartu Bebas / Haji', href: '/kartu-bebas', icon: FileText, newTab: true },
     { title: 'Pengguna', href: '/admin/users', icon: UserCog },
     { title: 'Sekolah', href: '/admin/schools', icon: Building2 },
     { title: 'Role & Izin', href: '/admin/roles', icon: ShieldCheck },

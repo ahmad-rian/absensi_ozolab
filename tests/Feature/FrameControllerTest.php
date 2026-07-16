@@ -33,7 +33,7 @@ test('frames can be uploaded', function () {
 
     $response = $this->actingAs($user)->post(route('admin.frames.store'), [
         'name' => 'Test Frame',
-        'category' => 'card',
+        'category' => 'osis',
         'image' => UploadedFile::fake()->image('frame.png', 638, 1011),
     ]);
 
@@ -41,7 +41,7 @@ test('frames can be uploaded', function () {
     $this->assertDatabaseHas('school_frames', [
         'school_id' => $user->school_id,
         'name' => 'Test Frame',
-        'category' => 'card',
+        'category' => 'osis',
     ]);
 });
 
@@ -53,7 +53,7 @@ test('frames can be deleted', function () {
         'school_id' => $user->school_id,
         'name' => 'Delete Me',
         'image_path' => 'frames/test.webp',
-        'category' => 'card',
+        'category' => 'osis',
     ]);
 
     $this->actingAs($user)->delete(route('admin.frames.destroy', $frame))
