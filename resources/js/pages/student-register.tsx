@@ -670,7 +670,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                     <InputError message={err('full_name')} />
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                                <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-3">
                                     <div className="grid gap-2">
                                         <Label htmlFor="nis" className="text-sm font-medium">
                                             NIS
@@ -781,7 +781,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                     {step === 3 && (
                         <FormSection number={3} title="Data Kelahiran & Alamat">
                             <div className="grid gap-5">
-                                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
                                     <div className="grid gap-2">
                                         <Label htmlFor="birth_place" className="text-sm font-medium">
                                             Tempat Lahir <span className="text-red-500">*</span>
@@ -1133,25 +1133,41 @@ function CropReposition({
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [resetKey, setResetKey] = useState(0);
+    // Actual natural size of the FULL-RES preview image (backend auto.natW/natH is
+    // 1600-capped, so it can't be used to seed the crop box — scale would mismatch).
+    const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
 
-    // Seed the crop box at the smart-detected face position (in original-image px).
-    const initialArea = {
-        x: auto.sx * auto.natW,
-        y: auto.sy * auto.natH,
-        width: auto.sw * auto.natW,
-        height: auto.sh * auto.natH,
-    };
+    useEffect(() => {
+        setNatural(null);
+        const img = new Image();
+        img.onload = () => setNatural({ w: img.naturalWidth, h: img.naturalHeight });
+        img.src = imageUrl;
+    }, [imageUrl]);
+
+    // Seed the crop box at the smart-detected face position, using the real image
+    // dimensions × the scale-independent normalized rect from the backend.
+    const initialArea = natural
+        ? {
+              x: auto.sx * natural.w,
+              y: auto.sy * natural.h,
+              width: auto.sw * natural.w,
+              height: auto.sh * natural.h,
+          }
+        : undefined;
 
     const handleComplete = useCallback(
         (_area: unknown, px: { x: number; y: number; width: number; height: number }) => {
+            if (!natural) {
+                return;
+            }
             onChange({
-                sx: Math.max(0, Math.min(1, px.x / auto.natW)),
-                sy: Math.max(0, Math.min(1, px.y / auto.natH)),
-                sw: Math.max(0, Math.min(1, px.width / auto.natW)),
-                sh: Math.max(0, Math.min(1, px.height / auto.natH)),
+                sx: Math.max(0, Math.min(1, px.x / natural.w)),
+                sy: Math.max(0, Math.min(1, px.y / natural.h)),
+                sw: Math.max(0, Math.min(1, px.width / natural.w)),
+                sh: Math.max(0, Math.min(1, px.height / natural.h)),
             });
         },
-        [auto, onChange],
+        [natural, onChange],
     );
 
     function reset() {
@@ -1179,29 +1195,35 @@ function CropReposition({
                     Geser & zoom foto untuk atur posisi wajah
                 </p>
                 <div className="relative mx-auto h-80 w-full max-w-sm overflow-hidden rounded-lg bg-zinc-900">
-                    <Cropper
-                        key={resetKey}
-                        image={imageUrl}
-                        crop={crop}
-                        zoom={zoom}
-                        aspect={16 / 21}
-                        minZoom={1}
-                        maxZoom={4}
-                        restrictPosition
-                        objectFit="contain"
-                        initialCroppedAreaPixels={resetKey === 0 ? initialArea : undefined}
-                        onCropChange={setCrop}
-                        onZoomChange={setZoom}
-                        onCropComplete={handleComplete}
-                        showGrid={false}
-                    />
+                    {natural && initialArea ? (
+                        <Cropper
+                            key={resetKey}
+                            image={imageUrl}
+                            crop={crop}
+                            zoom={zoom}
+                            aspect={16 / 21}
+                            minZoom={1}
+                            maxZoom={5}
+                            restrictPosition
+                            objectFit="contain"
+                            initialCroppedAreaPixels={initialArea}
+                            onCropChange={setCrop}
+                            onZoomChange={setZoom}
+                            onCropComplete={handleComplete}
+                            showGrid={false}
+                        />
+                    ) : (
+                        <div className="flex size-full items-center justify-center">
+                            <Loader2 className="size-6 animate-spin text-white/70" />
+                        </div>
+                    )}
                 </div>
                 <div className="mt-3 flex items-center gap-3">
                     <span className="text-muted-foreground text-xs">Zoom</span>
                     <input
                         type="range"
                         min={1}
-                        max={4}
+                        max={5}
                         step={0.05}
                         value={zoom}
                         onChange={(e) => setZoom(Number(e.target.value))}
