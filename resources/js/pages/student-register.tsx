@@ -40,6 +40,7 @@ type StatusItem = {
     name: string;
     status: 'processing' | 'completed' | 'failed';
     url: string | null;
+    thumb_url: string | null;
 };
 
 /** Normalized crop rect (0..1) relative to the natural image. */
@@ -1341,8 +1342,8 @@ function ResultTile({ item }: { item: StatusItem }) {
         <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
             {/* Thumbnail / placeholder */}
             <div className="flex items-center justify-center bg-zinc-50 p-3 dark:bg-zinc-900" style={{ minHeight: 140 }}>
-                {item.status === 'completed' && item.url ? (
-                    <img src={item.url} alt={item.name} className="max-h-[200px] w-full object-contain" />
+                {item.status === 'completed' && (item.thumb_url ?? item.url) ? (
+                    <img src={item.thumb_url ?? item.url ?? undefined} alt={item.name} className="max-h-[200px] w-full object-contain" />
                 ) : item.status === 'processing' ? (
                     <Loader2 className="size-8 animate-spin text-amber-500" />
                 ) : (
@@ -1389,7 +1390,7 @@ function ResultTile({ item }: { item: StatusItem }) {
                             )}
                         </button>
                         <a
-                            href={item.url}
+                            href={item.thumb_url ?? item.url}
                             download
                             className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
                         >

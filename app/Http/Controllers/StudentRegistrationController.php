@@ -182,6 +182,7 @@ class StudentRegistrationController extends Controller
                 'name' => $log->type === 'card' ? ($log->cardLayout?->name ?? 'Kartu') : ($labels[$log->type] ?? $log->type),
                 'status' => $log->status,
                 'url' => $log->drive_url ?: ($log->file_path ? Storage::disk('public')->url($log->file_path) : null),
+                'thumb_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
             ])
             ->values();
 
