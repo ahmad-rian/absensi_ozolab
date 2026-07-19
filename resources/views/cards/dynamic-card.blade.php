@@ -84,9 +84,9 @@ body {
                 val.style.fontSize = '';
                 var base = parseFloat(getComputedStyle(val).fontSize);
                 var lh = parseFloat(getComputedStyle(row).lineHeight) || base * 1.25;
-                var maxH = lh * 2 + 1;
+                var maxH = lh * 1 + 2; // keep to 1 line
                 var size = base, guard = 0;
-                while (val.scrollHeight > maxH && size > base * 0.62 && guard < 60) {
+                while (val.scrollHeight > maxH && size > base * 0.5 && guard < 80) {
                     size -= Math.max(0.5, base * 0.03);
                     val.style.fontSize = size + 'px';
                     guard++;

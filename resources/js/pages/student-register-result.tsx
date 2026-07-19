@@ -151,12 +151,20 @@ export default function StudentRegisterResult({ student, queued }: Props) {
 
                                 {statusItems.length === 0 ? (
                                     <div className="grid gap-4 sm:grid-cols-2">
-                                        {[0, 1, 2, 3].map((i) => (
+                                        {['Foto Siswa', 'Kartu OSIS', 'Kartu Perpustakaan', 'Lembar Pas Foto 4R'].map((name) => (
                                             <div
-                                                key={i}
-                                                className="flex h-48 animate-pulse items-center justify-center rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
+                                                key={name}
+                                                className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
                                             >
-                                                <Loader2 className="size-6 animate-spin text-zinc-400" />
+                                                <div className="flex items-center justify-center bg-zinc-50 p-3 dark:bg-zinc-900" style={{ minHeight: 140 }}>
+                                                    <Loader2 className="size-8 animate-spin text-amber-500" />
+                                                </div>
+                                                <div className="flex items-center justify-between gap-2 p-3">
+                                                    <span className="text-sm font-medium">{name}</span>
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                                                        <Loader2 className="size-3 animate-spin" /> Diproses
+                                                    </span>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

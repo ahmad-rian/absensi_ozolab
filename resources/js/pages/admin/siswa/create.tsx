@@ -262,10 +262,10 @@ export default function SiswaCreate({ classrooms, parentProfiles }: PageProps) {
                                 <Textarea
                                     id="address"
                                     value={data.address}
-                                    onChange={(e) => setData('address', e.target.value.slice(0, 120))}
+                                    onChange={(e) => setData('address', e.target.value.slice(0, 90))}
                                     placeholder="Alamat lengkap siswa"
                                     rows={3}
-                                    maxLength={120}
+                                    maxLength={90}
                                 />
                                 {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
                             </div>

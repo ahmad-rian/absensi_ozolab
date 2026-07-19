@@ -148,8 +148,8 @@ body {
     @endforeach
     <script>
     (function () {
-        // Auto-shrink long field values so they fit in at most 2 lines within the card,
-        // wrapping neatly under the value column (the ":" stays aligned across rows).
+        // Auto-shrink long field values so they stay on a SINGLE line (matching the
+        // fixed layout slots), never wrapping into the field below.
         function fit() {
             document.querySelectorAll('.el-field').forEach(function (row) {
                 var val = row.querySelector('.val');
@@ -157,9 +157,9 @@ body {
                 val.style.fontSize = '';
                 var base = parseFloat(getComputedStyle(val).fontSize);
                 var lh = parseFloat(getComputedStyle(row).lineHeight) || base * 1.25;
-                var maxH = lh * 2 + 1; // up to 2 lines
+                var maxH = lh * 1 + 2; // keep to 1 line
                 var size = base, guard = 0;
-                while (val.scrollHeight > maxH && size > base * 0.62 && guard < 60) {
+                while (val.scrollHeight > maxH && size > base * 0.5 && guard < 80) {
                     size -= Math.max(0.5, base * 0.03);
                     val.style.fontSize = size + 'px';
                     guard++;
