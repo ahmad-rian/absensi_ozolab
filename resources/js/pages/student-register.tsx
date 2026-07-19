@@ -416,6 +416,18 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         }
     }, [data.photo_drive_filename, data.school_id, csrfToken, setData]);
 
+    // Auto-search the Drive photo as the user types (debounced) — no button needed.
+    useEffect(() => {
+        const name = data.photo_drive_filename.trim();
+        if (!name || !data.school_id) {
+            return;
+        }
+        const t = setTimeout(() => {
+            handleLoadPhoto();
+        }, 650);
+        return () => clearTimeout(t);
+    }, [data.photo_drive_filename, data.school_id, handleLoadPhoto]);
+
     function handleNewSubmission() {
         setSubmitted(false);
         setResult(null);
@@ -885,7 +897,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                     <Label htmlFor="photo_drive_filename" className="text-sm font-medium">
                                         Nama File Foto di Google Drive
                                     </Label>
-                                    <div className="flex gap-2">
+                                    <div className="relative">
                                         <Input
                                             id="photo_drive_filename"
                                             value={data.photo_drive_filename}
@@ -896,22 +908,14 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                                 setPreviewError('');
                                             }}
                                             placeholder="Contoh: FIC_0008.JPG atau IMG_0234.png"
-                                            className="h-11"
+                                            className="h-11 pr-10"
                                         />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            disabled={!data.photo_drive_filename.trim() || !data.school_id || previewLoading}
-                                            onClick={handleLoadPhoto}
-                                            className="h-11 shrink-0 gap-1.5"
-                                        >
-                                            {previewLoading ? <Loader2 className="size-4 animate-spin" /> : null}
-                                            Muat Foto
-                                        </Button>
+                                        {previewLoading && (
+                                            <Loader2 className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin" />
+                                        )}
                                     </div>
                                     <p className="text-muted-foreground text-xs">
-                                        Masukkan nama file foto siswa yang sudah diupload ke folder Foto Siswa di Google Drive. Klik "Muat
-                                        Foto" untuk mengatur posisi crop wajah.
+                                        Ketik nama file foto yang sudah diupload ke folder Foto Siswa di Google Drive — foto muncul otomatis untuk atur posisi crop wajah.
                                     </p>
 
                                     {previewError && (

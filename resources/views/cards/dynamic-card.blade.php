@@ -37,14 +37,14 @@ body {
 }
 .el { position: absolute; z-index: 6; }
 .el-field {
-    display: flex; align-items: baseline;
+    display: flex; align-items: flex-start;
     font-family: 'Inter Tight', sans-serif; font-weight: 800;
     line-height: 1.25; letter-spacing: -0.01em; color: #0c1a12;
-    white-space: nowrap; overflow: hidden;
+    white-space: normal;
 }
 .el-field .lbl { flex-shrink: 0; }
 .el-field .sep { flex-shrink: 0; padding: 0 calc(0.6 * var(--mm)); }
-.el-field .val { font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+.el-field .val { flex: 1; min-width: 0; font-weight: 700; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
 .el-photo { border-radius: calc(0.4 * var(--mm)); overflow: hidden; background: transparent; }
 .el-photo img { width:100%; height:100%; object-fit:cover; object-position:center; display:block; }
 .el-photo .ph { width:100%; height:100%; display:flex; align-items:center; justify-content:center; color: rgba(0,0,0,0.3); background: rgba(255,255,255,0.35); border: 1.5px dashed rgba(0,0,0,0.3); }
@@ -58,7 +58,7 @@ body {
         @php $type = $el['type'] ?? 'field'; @endphp
 
         @if($type === 'field')
-            <div class="el el-field" style="left: calc({{ $el['x'] }} * var(--mm)); top: calc({{ $el['y'] }} * var(--mm)); width: calc({{ $el['width'] ?? 55 }} * var(--mm)); font-size: calc({{ $el['fontSize'] ?? 2.0 }} * var(--mm));">
+            <div class="el el-field" style="left: calc({{ $el['x'] }} * var(--mm)); top: calc({{ $el['y'] }} * var(--mm)); width: calc({{ $el['width'] ?? 55 }} * var(--mm)); max-width: calc({{ max(8, $cardW - $el['x'] - 1) }} * var(--mm)); font-size: calc({{ $el['fontSize'] ?? 2.0 }} * var(--mm));">
                 <span class="lbl" style="width: calc({{ $el['labelWidth'] ?? 12 }} * var(--mm));">{{ $el['label'] ?? '' }}</span>
                 <span class="sep">:</span>
                 <span class="val">{{ $resolveValue($el['source'] ?? '') }}</span>
@@ -75,5 +75,27 @@ body {
             <div class="el el-qr" style="left: calc({{ $el['x'] }} * var(--mm)); top: calc({{ $el['y'] }} * var(--mm)); width: calc({{ $el['size'] ?? 15 }} * var(--mm)); height: calc({{ $el['size'] ?? 15 }} * var(--mm));">{!! $qrSvg !!}</div>
         @endif
     @endforeach
+    <script>
+    (function () {
+        function fit() {
+            document.querySelectorAll('.el-field').forEach(function (row) {
+                var val = row.querySelector('.val');
+                if (!val) { return; }
+                val.style.fontSize = '';
+                var base = parseFloat(getComputedStyle(val).fontSize);
+                var lh = parseFloat(getComputedStyle(row).lineHeight) || base * 1.25;
+                var maxH = lh * 2 + 1;
+                var size = base, guard = 0;
+                while (val.scrollHeight > maxH && size > base * 0.62 && guard < 60) {
+                    size -= Math.max(0.5, base * 0.03);
+                    val.style.fontSize = size + 'px';
+                    guard++;
+                }
+            });
+        }
+        fit();
+        if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fit); }
+    })();
+    </script>
 </body>
 </html>

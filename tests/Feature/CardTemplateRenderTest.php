@@ -41,6 +41,27 @@ test('card template renders enabled elements for landscape', function () {
     expect($html)->toContain('85.6 * var(--mm)'); // landscape width
 });
 
+test('card template auto-fits long field values (wrap + shrink script)', function () {
+    $school = School::factory()->create();
+    $longAddress = 'Jalan Raya Sidabowa RT 02 / RW 07 No 7 Kecamatan Patikraja Kabupaten Banyumas Jawa Tengah 53171';
+    $student = Student::factory()->create(['school_id' => $school->id, 'address' => $longAddress]);
+
+    $layout = SchoolCardLayout::create([
+        'school_id' => $school->id,
+        'name' => 'L',
+        'type' => 'osis',
+        'layout_config' => ['orientation' => 'landscape', 'elements' => SchoolCardLayout::defaultElements()],
+    ]);
+
+    $html = renderCard($layout, $student);
+
+    // Long value present in full (not clipped), wraps, bounded, and the auto-fit script is injected.
+    expect($html)->toContain($longAddress);
+    expect($html)->toContain('overflow-wrap: anywhere');
+    expect($html)->toContain('max-width: calc(');
+    expect($html)->toContain('document.fonts.ready');
+});
+
 test('card template swaps dimensions for portrait and hides disabled elements', function () {
     $school = School::factory()->create();
     $student = Student::factory()->create(['school_id' => $school->id]);

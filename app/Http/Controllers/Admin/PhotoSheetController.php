@@ -47,17 +47,21 @@ class PhotoSheetController extends Controller
                 $drive->ensureSubfolders();
 
                 $fullPath = Storage::disk('public')->path($path);
-                $driveFile = $drive->uploadFile($fullPath, basename($path), $driveConfig->sheets_folder_id, 'image/png');
+                $folderId = $driveConfig->sheets_folder_id ?: $driveConfig->root_folder_id;
+                $driveFile = $drive->uploadFile($fullPath, basename($path), $folderId, 'image/png');
                 $driveUrl = $drive->makePublic($driveFile->getId());
 
-                // Drive-only storage: remove local file after upload
-                Storage::disk('public')->delete($path);
+                // Drive-only storage: only drop the local file once the public URL is confirmed.
+                $uploaded = ! empty($driveUrl);
+                if ($uploaded) {
+                    Storage::disk('public')->delete($path);
+                }
 
                 $log->update([
                     'status' => 'completed',
-                    'file_path' => null,
+                    'file_path' => $uploaded ? null : $path,
                     'drive_file_id' => $driveFile->getId(),
-                    'drive_url' => $driveUrl,
+                    'drive_url' => $driveUrl ?: null,
                 ]);
             } else {
                 // Fallback: keep local file so the sheet isn't lost
