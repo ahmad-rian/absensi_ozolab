@@ -14,6 +14,7 @@ createInertiaApp({
         switch (true) {
             case name === 'welcome':
             case name === 'student-register':
+            case name === 'student-register-result':
             case name === 'scan/public':
             case name === 'parent-telegram':
             case name === 'public/card-form':
