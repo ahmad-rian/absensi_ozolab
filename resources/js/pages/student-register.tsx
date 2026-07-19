@@ -1,7 +1,7 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, Check, CheckCircle2, CreditCard, Download, ExternalLink, Loader2, User, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Rnd } from 'react-rnd';
+import Cropper from 'react-easy-crop';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import { SimpleCaptcha } from '@/components/simple-captcha';
@@ -1116,7 +1116,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
     );
 }
 
-/** Draggable (drag-only) crop box overlay. Fixed size = auto sw×sh, aspect 16:21. */
+/** Canva-style crop: fixed 16:21 frame, image pans + zooms behind it. */
 function CropReposition({
     imageUrl,
     filename,
@@ -1130,54 +1130,34 @@ function CropReposition({
     onChange: (rect: CropRect) => void;
     onClose: () => void;
 }) {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [box, setBox] = useState({ w: 0, h: 0 }); // rendered image size in px
-    const [pos, setPos] = useState({ x: 0, y: 0 }); // crop box top-left in px
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [resetKey, setResetKey] = useState(0);
 
-    // Fit the natural image into the available width, capped at a reasonable viewport height.
-    const measure = useCallback(() => {
-        const container = containerRef.current;
+    // Seed the crop box at the smart-detected face position (in original-image px).
+    const initialArea = {
+        x: auto.sx * auto.natW,
+        y: auto.sy * auto.natH,
+        width: auto.sw * auto.natW,
+        height: auto.sh * auto.natH,
+    };
 
-        if (!container) {
-            return;
-        }
+    const handleComplete = useCallback(
+        (_area: unknown, px: { x: number; y: number; width: number; height: number }) => {
+            onChange({
+                sx: Math.max(0, Math.min(1, px.x / auto.natW)),
+                sy: Math.max(0, Math.min(1, px.y / auto.natH)),
+                sw: Math.max(0, Math.min(1, px.width / auto.natW)),
+                sh: Math.max(0, Math.min(1, px.height / auto.natH)),
+            });
+        },
+        [auto, onChange],
+    );
 
-        const availW = container.clientWidth;
-        const maxH = 420;
-        const imgRatio = auto.natW / auto.natH;
-        let renderW = availW;
-        let renderH = renderW / imgRatio;
-
-        if (renderH > maxH) {
-            renderH = maxH;
-            renderW = renderH * imgRatio;
-        }
-
-        setBox({ w: renderW, h: renderH });
-        setPos({ x: auto.sx * renderW, y: auto.sy * renderH });
-    }, [auto]);
-
-    useEffect(() => {
-        measure();
-        window.addEventListener('resize', measure);
-
-        return () => window.removeEventListener('resize', measure);
-    }, [measure]);
-
-    const cropW = auto.sw * box.w;
-    const cropH = auto.sh * box.h;
-
-    function handleDragStop(x: number, y: number) {
-        // Clamp inside the image (bounds="parent" already does this, but keep normalized safe).
-        const clampedX = Math.max(0, Math.min(box.w - cropW, x));
-        const clampedY = Math.max(0, Math.min(box.h - cropH, y));
-        setPos({ x: clampedX, y: clampedY });
-        onChange({
-            sx: box.w > 0 ? clampedX / box.w : auto.sx,
-            sy: box.h > 0 ? clampedY / box.h : auto.sy,
-            sw: auto.sw,
-            sh: auto.sh,
-        });
+    function reset() {
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        setResetKey((k) => k + 1);
     }
 
     return (
@@ -1195,44 +1175,45 @@ function CropReposition({
                 </button>
             </div>
             <div className="p-4">
-                <p className="mb-3 text-center text-xs font-medium text-green-700 dark:text-green-300">Geser kotak untuk atur posisi wajah</p>
-                <div className="flex justify-center">
-                    <div ref={containerRef} className="relative w-full max-w-sm select-none">
-                        {box.w > 0 && (
-                            <div className="relative mx-auto" style={{ width: box.w, height: box.h }}>
-                                <img
-                                    src={imageUrl}
-                                    alt={filename}
-                                    className="pointer-events-none absolute inset-0 h-full w-full rounded-lg object-fill shadow-md"
-                                    draggable={false}
-                                />
-                                {/* Dark scrim */}
-                                <div className="pointer-events-none absolute inset-0 rounded-lg bg-black/40" />
-                                <Rnd
-                                    size={{ width: cropW, height: cropH }}
-                                    position={pos}
-                                    enableResizing={false}
-                                    bounds="parent"
-                                    onDragStop={(_e, d) => handleDragStop(d.x, d.y)}
-                                    className="z-10"
-                                >
-                                    <div
-                                        className="h-full w-full cursor-move rounded-sm border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.0)]"
-                                        style={{
-                                            backgroundImage: `url(${imageUrl})`,
-                                            backgroundSize: `${box.w}px ${box.h}px`,
-                                            backgroundPosition: `-${pos.x}px -${pos.y}px`,
-                                            backgroundRepeat: 'no-repeat',
-                                        }}
-                                    >
-                                        <span className="absolute -top-6 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-medium text-green-700 shadow">
-                                            <Check className="size-3" /> Area Foto
-                                        </span>
-                                    </div>
-                                </Rnd>
-                            </div>
-                        )}
-                    </div>
+                <p className="mb-3 text-center text-xs font-medium text-green-700 dark:text-green-300">
+                    Geser & zoom foto untuk atur posisi wajah
+                </p>
+                <div className="relative mx-auto h-80 w-full max-w-sm overflow-hidden rounded-lg bg-zinc-900">
+                    <Cropper
+                        key={resetKey}
+                        image={imageUrl}
+                        crop={crop}
+                        zoom={zoom}
+                        aspect={16 / 21}
+                        minZoom={1}
+                        maxZoom={4}
+                        restrictPosition
+                        objectFit="contain"
+                        initialCroppedAreaPixels={resetKey === 0 ? initialArea : undefined}
+                        onCropChange={setCrop}
+                        onZoomChange={setZoom}
+                        onCropComplete={handleComplete}
+                        showGrid={false}
+                    />
+                </div>
+                <div className="mt-3 flex items-center gap-3">
+                    <span className="text-muted-foreground text-xs">Zoom</span>
+                    <input
+                        type="range"
+                        min={1}
+                        max={4}
+                        step={0.05}
+                        value={zoom}
+                        onChange={(e) => setZoom(Number(e.target.value))}
+                        className="h-1.5 flex-1 cursor-pointer accent-green-600"
+                    />
+                    <button
+                        type="button"
+                        onClick={reset}
+                        className="rounded-md border border-green-300 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900"
+                    >
+                        Reset
+                    </button>
                 </div>
             </div>
         </div>
