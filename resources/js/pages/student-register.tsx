@@ -1056,9 +1056,15 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         <Button
                             type="button"
                             onClick={goNext}
-                            className="h-11 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                            disabled={
+                                step === 2 &&
+                                (previewLoading ||
+                                    (data.photo_drive_filename.trim() !== '' && !photoPreview && !previewError))
+                            }
+                            className="h-11 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
                         >
-                            Lanjut
+                            {step === 2 && previewLoading && <Loader2 className="size-4 animate-spin" />}
+                            {step === 2 && previewLoading ? 'Memuat foto…' : 'Lanjut'}
                         </Button>
                     ) : (
                         <Button
