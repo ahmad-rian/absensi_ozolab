@@ -32,6 +32,7 @@ type GeneratedCard = {
 type RegistrationResult = {
     success: boolean;
     message: string;
+    queued?: boolean;
     student: {
         id: string;
         full_name: string;
@@ -40,8 +41,8 @@ type RegistrationResult = {
         classroom: string | null;
         photo_url: string | null;
     };
-    photo_downloaded: boolean;
-    cards: GeneratedCard[];
+    photo_downloaded?: boolean;
+    cards?: GeneratedCard[];
 };
 
 /** Normalized crop rect (0..1) relative to the natural image. */
@@ -466,22 +467,30 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                     {result.student.nisn && ` · NISN: ${result.student.nisn}`}
                                 </p>
                                 <p className="text-muted-foreground text-sm">Kelas: {result.student.classroom}</p>
-                                {result.photo_downloaded && (
-                                    <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                                        <CheckCircle2 className="size-3" /> Foto berhasil diambil dari Drive
-                                    </span>
-                                )}
                             </div>
                         </div>
 
-                        {/* Generated cards */}
-                        {result.cards.length > 0 && (
+                        {/* Async processing note */}
+                        {result.queued && (
+                            <div className="mb-4 flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+                                <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-blue-600" />
+                                <div>
+                                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Foto & kartu sedang diproses</p>
+                                    <p className="text-muted-foreground mt-0.5 text-xs">
+                                        Kartu OSIS & Perpustakaan otomatis dibuat dan tersimpan ke Google Drive dalam beberapa saat. Anda tidak perlu menunggu di halaman ini.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Generated cards (legacy sync path) */}
+                        {(result.cards?.length ?? 0) > 0 && (
                             <div className="space-y-4">
                                 <h3 className="flex items-center gap-2 text-lg font-semibold text-green-800 dark:text-green-200">
                                     <CreditCard className="size-5" /> Kartu yang Digenerate
                                 </h3>
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    {result.cards.map((card, i) => (
+                                    {result.cards?.map((card, i) => (
                                         <div key={i} className="overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-zinc-800">
                                             {card.url && card.status === 'completed' ? (
                                                 <>
@@ -522,14 +531,14 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         )}
 
                         {/* Drive summary */}
-                        {result.cards.some((c) => c.drive_url) ? (
+                        {result.cards?.some((c) => c.drive_url) ? (
                             <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
                                 <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
                                     {result.photo_downloaded ? '3' : '2'} file tersimpan di Google Drive:
                                 </p>
                                 <ul className="mt-1 list-inside list-disc text-xs text-blue-700 dark:text-blue-300">
                                     {result.photo_downloaded && <li>Foto siswa (crop 3:4 portrait, WebP)</li>}
-                                    {result.cards
+                                    {(result.cards ?? [])
                                         .filter((c) => c.status === 'completed')
                                         .map((c, i) => (
                                             <li key={i}>{c.name}</li>
@@ -540,7 +549,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                 </p>
                             </div>
                         ) : (
-                            result.cards.length > 0 && (
+                            (result.cards?.length ?? 0) > 0 && (
                                 <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
                                     <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
                                         <AlertTriangle className="mr-1 inline size-4" />

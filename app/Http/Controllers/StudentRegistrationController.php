@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Enums\Gender;
 use App\Enums\Religion;
+use App\Jobs\RegisterStudentCardsJob;
 use App\Models\Classroom;
 use App\Models\School;
-use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
-use App\Services\CardGeneratorService;
 use App\Services\GoogleDriveService;
 use App\Services\ParentProfileService;
 use App\Services\PhotoCropService;
@@ -130,40 +129,36 @@ class StudentRegistrationController extends Controller
             return $student;
         });
 
-        // Download photo from Drive if filename provided
-        $photoDownloaded = false;
-        if (! empty($validated['photo_drive_filename'])) {
-            $manualCrop = $validated['manual_crop'] ?? null;
-            $photoDownloaded = $this->downloadPhotoFromDrive($student, $school, $validated['photo_drive_filename'], $manualCrop);
-        }
+        // Offload the slow work (Drive photo download + crop + card render) to the
+        // queue so the request returns instantly and never hits a gateway timeout.
+        $hasPhoto = ! empty($validated['photo_drive_filename']);
+        $generateCards = (bool) ($validated['generate_cards'] ?? false);
 
-        // Generate cards if requested
-        $generatedCards = [];
-        if ($validated['generate_cards'] ?? false) {
-            $generatedCards = $this->generateStudentCards($student, $school);
+        if ($hasPhoto || $generateCards) {
+            RegisterStudentCardsJob::dispatch(
+                $student->id,
+                $hasPhoto ? $validated['photo_drive_filename'] : null,
+                $validated['manual_crop'] ?? null,
+                $generateCards,
+            );
         }
 
         $student->load('classroom');
 
-        $cardsFailed = collect($generatedCards)->where('status', 'failed')->count();
-
         return response()->json([
             'success' => true,
-            'message' => $cardsFailed > 0
-                ? "Data siswa berhasil didaftarkan! ({$cardsFailed} kartu gagal digenerate)"
+            'message' => ($hasPhoto || $generateCards)
+                ? 'Data siswa berhasil didaftarkan! Foto & kartu sedang diproses dan akan tersimpan ke Google Drive.'
                 : 'Data siswa berhasil didaftarkan!',
+            'queued' => $hasPhoto || $generateCards,
             'student' => [
                 'id' => $student->id,
                 'full_name' => $student->full_name,
                 'nis' => $student->nis,
                 'nisn' => $student->nisn,
                 'classroom' => $student->classroom?->name,
-                'photo_url' => $student->photo_path
-                    ? Storage::disk('public')->url($student->photo_path)
-                    : null,
+                'photo_url' => null,
             ],
-            'photo_downloaded' => $photoDownloaded,
-            'cards' => $generatedCards,
         ]);
     }
 
@@ -275,229 +270,6 @@ class StudentRegistrationController extends Controller
             Log::warning('Photo crop-preview failed', ['filename' => $validated['filename'], 'error' => $e->getMessage()]);
 
             return response()->json(['found' => false, 'message' => 'Gagal mengambil foto: '.$e->getMessage()]);
-        }
-    }
-
-    /**
-     * Download student photo from Google Drive, smart crop to 3:4 portrait, save as WebP.
-     *
-     * @param  array{sx: float, sy: float, sw: float, sh: float}|null  $manualCrop  Normalized crop rect from the drag-to-reposition UI.
-     */
-    private function downloadPhotoFromDrive(Student $student, School $school, string $filename, ?array $manualCrop = null): bool
-    {
-        $driveConfig = $school->driveConfig;
-        if (! $driveConfig || ! $driveConfig->is_active) {
-            return false;
-        }
-
-        if (! GoogleDriveService::hasGlobalCredentials() && ! $driveConfig->service_account_json) {
-            return false;
-        }
-
-        try {
-            $service = GoogleDriveService::forSchool($driveConfig);
-
-            $searchFolderId = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id ?: 'root';
-            $files = $service->findFileByName($filename, $searchFolderId);
-
-            if (empty($files)) {
-                Log::info('Photo not found in Drive', ['filename' => $filename, 'school_id' => $school->id]);
-
-                return false;
-            }
-
-            $driveFileId = $files[0]['id'];
-            $tempPath = tempnam(sys_get_temp_dir(), 'student_photo_');
-            $service->downloadFile($driveFileId, $tempPath);
-
-            // Smart crop to 3:4 portrait + WebP
-            $storagePath = sprintf('photos/students/%d/%d-%s.png', $school->id, $student->id, Str::slug($student->full_name));
-            $cropService = new PhotoCropService;
-            $cropService->cropAndStore($tempPath, $storagePath, 9, $manualCrop);
-
-            @unlink($tempPath);
-
-            $student->update(['photo_path' => $storagePath]);
-
-            return true;
-        } catch (\Throwable $e) {
-            Log::warning('Failed to download photo from Drive', [
-                'student_id' => $student->id,
-                'filename' => $filename,
-                'error' => $e->getMessage(),
-            ]);
-
-            return false;
-        }
-    }
-
-    /**
-     * Generate OSIS + Perpustakaan cards for a student.
-     *
-     * @return array<int, array{type: string, url: string|null, drive_url: string|null}>
-     */
-    private function generateStudentCards(Student $student, School $school): array
-    {
-        $cards = [];
-        $service = new CardGeneratorService;
-
-        $layouts = SchoolCardLayout::where('school_id', $school->id)
-            ->where('is_active', true)
-            ->whereIn('type', ['osis', 'perpustakaan'])
-            ->get();
-
-        // If no layouts exist, create ATM-sized defaults (85.6x54mm)
-        if ($layouts->isEmpty()) {
-            $layouts = collect();
-            $defaults = [
-                'osis' => [
-                    'name' => 'Kartu OSIS',
-                    'config' => [
-                        'card_width' => 813, 'card_height' => 513,
-                        'header_gradient_start' => '#5dc4f5', 'header_gradient_end' => '#3aa8df',
-                        'header_text_color' => '#06243a',
-                        'watermark_text' => 'ORGANISASI SISWA INTRA SEKOLAH',
-                        'show_emblem' => true, 'show_validity' => true,
-                        'validity_text' => 'BERLAKU S/D TAMAT BELAJAR',
-                        'show_qr' => true, 'show_signature' => true,
-                    ],
-                ],
-                'perpustakaan' => [
-                    'name' => 'Kartu Perpustakaan',
-                    'config' => [
-                        'card_width' => 813, 'card_height' => 513,
-                        'header_gradient_start' => '#c9986a', 'header_gradient_end' => '#b07b4a',
-                        'header_text_color' => '#1a1208',
-                        'watermark_text' => 'PERPUSTAKAAN WIDYA SASTRA',
-                        'show_emblem' => false, 'show_validity' => false,
-                        'show_qr' => true, 'show_signature' => true,
-                    ],
-                ],
-            ];
-            foreach ($defaults as $type => $def) {
-                $layouts->push(SchoolCardLayout::create([
-                    'school_id' => $school->id,
-                    'name' => $def['name'],
-                    'type' => $type,
-                    'layout_config' => $def['config'],
-                    'is_default' => true,
-                ]));
-            }
-        }
-
-        // Resolve Drive folder for this student (shared across cards + photo)
-        $studentFolderId = $this->resolveStudentDriveFolder($student, $school);
-
-        // Upload cropped photo to Drive first
-        if ($student->photo_path && $studentFolderId) {
-            $this->uploadPhotoToDrive($student, $school, $studentFolderId);
-        }
-
-        foreach ($layouts as $layout) {
-            try {
-                $log = $service->generateAndLog($student, $layout, 'registration');
-
-                // Upload card to student's Drive folder
-                $driveUrl = null;
-                if ($studentFolderId && $log->file_path) {
-                    $driveUrl = $this->uploadFileToDriveFolder($log->file_path, $studentFolderId, $school, 'image/png');
-                    if ($driveUrl) {
-                        $log->update(['drive_url' => $driveUrl]);
-                    }
-                }
-
-                $cards[] = [
-                    'type' => $layout->type,
-                    'name' => $layout->name,
-                    'url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
-                    'drive_url' => $driveUrl ?? $log->drive_url,
-                    'status' => $log->status,
-                ];
-            } catch (\Throwable $e) {
-                Log::warning('Card generation failed during registration', [
-                    'student_id' => $student->id,
-                    'layout_type' => $layout->type,
-                    'error' => $e->getMessage(),
-                ]);
-
-                $cards[] = [
-                    'type' => $layout->type,
-                    'name' => $layout->name,
-                    'url' => null,
-                    'drive_url' => null,
-                    'status' => 'failed',
-                ];
-            }
-        }
-
-        return $cards;
-    }
-
-    /**
-     * Resolve or create the student's Drive folder: cards_folder / ClassName / NIS - Name
-     */
-    private function resolveStudentDriveFolder(Student $student, School $school): ?string
-    {
-        $driveConfig = $school->driveConfig;
-        if (! $driveConfig || ! $driveConfig->is_active || ! $driveConfig->cards_folder_id) {
-            return null;
-        }
-
-        if (! GoogleDriveService::hasGlobalCredentials() && ! $driveConfig->service_account_json) {
-            return null;
-        }
-
-        try {
-            $service = GoogleDriveService::forSchool($driveConfig);
-            $student->loadMissing('classroom');
-
-            $classroomName = $student->classroom?->name ?? 'Tanpa Kelas';
-            $classFolderId = $service->findOrCreateFolder($classroomName, $driveConfig->cards_folder_id);
-
-            $studentFolderName = sprintf('%s - %s', $student->nis ?? $student->id, $student->full_name);
-
-            return $service->findOrCreateFolder($studentFolderName, $classFolderId);
-        } catch (\Throwable $e) {
-            Log::warning('Failed to create student Drive folder', ['error' => $e->getMessage()]);
-
-            return null;
-        }
-    }
-
-    /**
-     * Upload cropped photo to student's Drive folder.
-     */
-    private function uploadPhotoToDrive(Student $student, School $school, string $folderId): void
-    {
-        try {
-            $service = GoogleDriveService::forSchool($school->driveConfig);
-            $fullPath = Storage::disk('public')->path($student->photo_path);
-            $fileName = sprintf('foto-%s.png', Str::slug($student->full_name));
-
-            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, 'image/png');
-            $service->makePublic($driveFile->getId());
-        } catch (\Throwable $e) {
-            Log::warning('Photo Drive upload failed', ['student_id' => $student->id, 'error' => $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Upload a file from storage to a specific Drive folder.
-     */
-    private function uploadFileToDriveFolder(string $storagePath, string $folderId, School $school, string $mimeType): ?string
-    {
-        try {
-            $service = GoogleDriveService::forSchool($school->driveConfig);
-            $fullPath = Storage::disk('public')->path($storagePath);
-            $fileName = basename($storagePath);
-
-            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, $mimeType);
-
-            return $service->makePublic($driveFile->getId());
-        } catch (\Throwable $e) {
-            Log::warning('File Drive upload failed', ['error' => $e->getMessage()]);
-
-            return null;
         }
     }
 }
