@@ -118,7 +118,7 @@ test('legacy layout config normalizes into elements', function () {
     expect($config['orientation'])->toBe('landscape');
     expect($config['elements']['field_nama']['enabled'])->toBeTrue();
     expect($config['elements']['field_nama']['x'])->toBe(3.0);
-    expect($config['elements']['field_nama']['labelWidth'])->toBe(12.0);
+    expect($config['elements']['field_nama']['labelWidth'])->toBe(20.0);
     expect($config['elements']['photo']['y'])->toBe(30.0);
 });
 

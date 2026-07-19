@@ -346,7 +346,7 @@ function CardPreview({
                                 }}
                             >
                                 <span className="shrink-0" style={{ width: mm(el.labelWidth) }}>{el.label}</span>
-                                <span className="shrink-0 px-[2px]">:</span>
+                                <span className="shrink-0" style={{ paddingLeft: mm(0.6), paddingRight: mm(0.6) }}>:</span>
                                 <span className="overflow-hidden font-bold text-ellipsis">XXXXXXX</span>
                                 {selected && !isMulti && (
                                     <div
