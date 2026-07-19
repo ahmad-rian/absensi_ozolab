@@ -55,7 +55,7 @@ class StudentRegistrationController extends Controller
             'classroom_id' => ['required', Rule::exists('classrooms', 'id')->where('school_id', $request->school_id)],
             'birth_place' => ['required', 'string', 'max:100'],
             'birth_date' => ['required', 'date'],
-            'address' => ['required', 'string', 'max:500'],
+            'address' => ['required', 'string', 'max:120'],
             'parent_name' => ['required', 'string', 'max:255'],
             'parent_phone' => ['required', 'string', 'max:20'],
             'parent_email' => ['nullable', 'email', 'max:255'],

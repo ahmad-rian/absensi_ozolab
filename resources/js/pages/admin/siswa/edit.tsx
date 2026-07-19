@@ -285,9 +285,10 @@ export default function SiswaEdit({ student, classrooms, parentProfiles }: PageP
                                 <Textarea
                                     id="address"
                                     value={data.address}
-                                    onChange={(e) => setData('address', e.target.value)}
+                                    onChange={(e) => setData('address', e.target.value.slice(0, 120))}
                                     placeholder="Alamat lengkap siswa"
                                     rows={3}
+                                    maxLength={120}
                                 />
                                 {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
                             </div>

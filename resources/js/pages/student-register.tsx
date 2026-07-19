@@ -833,11 +833,15 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                     <Textarea
                                         id="address"
                                         value={data.address}
-                                        onChange={(e) => setData('address', e.target.value)}
+                                        onChange={(e) => setData('address', e.target.value.slice(0, 120))}
                                         placeholder="Alamat lengkap siswa"
                                         rows={3}
+                                        maxLength={120}
                                     />
-                                    <InputError message={err('address')} />
+                                    <div className="flex items-center justify-between">
+                                        <InputError message={err('address')} />
+                                        <span className="text-muted-foreground ml-auto text-xs">{data.address.length}/120</span>
+                                    </div>
                                 </div>
                             </div>
                         </FormSection>

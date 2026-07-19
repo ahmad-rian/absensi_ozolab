@@ -126,7 +126,7 @@ class SiswaController extends Controller
             'classroom_id' => ['required', 'exists:classrooms,id'],
             'birth_place' => ['nullable', 'string', 'max:255'],
             'birth_date' => ['nullable', 'date'],
-            'address' => ['nullable', 'string'],
+            'address' => ['nullable', 'string', 'max:120'],
             'parent_profile_id' => ['nullable', 'exists:parent_profiles,id'],
         ], [
             'full_name.required' => 'Nama lengkap wajib diisi.',
@@ -181,7 +181,7 @@ class SiswaController extends Controller
             'classroom_id' => ['required', 'exists:classrooms,id'],
             'birth_place' => ['nullable', 'string', 'max:255'],
             'birth_date' => ['nullable', 'date'],
-            'address' => ['nullable', 'string'],
+            'address' => ['nullable', 'string', 'max:120'],
             'parent_profile_id' => ['nullable', 'exists:parent_profiles,id'],
             'is_active' => ['sometimes', 'boolean'],
         ], [

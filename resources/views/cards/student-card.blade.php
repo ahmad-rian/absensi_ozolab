@@ -148,53 +148,26 @@ body {
     @endforeach
     <script>
     (function () {
-        // Reflow the field stack so a long value (e.g. ALAMAT) pushes the fields
-        // below it down instead of overlapping them, then shrink the value font if
-        // the whole stack would spill into the photo/QR band. The ":" stays aligned.
-        var fields = Array.prototype.slice.call(document.querySelectorAll('.el-field'));
-        if (fields.length) {
-            var mmpx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mm')) || 1;
-            var gap = 0.8 * mmpx;
-
-            // Snapshot original slot + base font once (before any repositioning).
-            fields.forEach(function (row) {
-                row._top = row.offsetTop;
+        // Auto-shrink long field values so they fit in at most 2 lines within the card,
+        // wrapping neatly under the value column (the ":" stays aligned across rows).
+        function fit() {
+            document.querySelectorAll('.el-field').forEach(function (row) {
                 var val = row.querySelector('.val');
-                row._base = val ? parseFloat(getComputedStyle(val).fontSize) : 0;
-            });
-            fields.sort(function (a, b) { return a._top - b._top; });
-            var firstTop = fields[0]._top;
-
-            function layout() {
-                // Bottom limit = top of the nearest photo/QR obstacle below the first field.
-                var limit = document.body.clientHeight;
-                document.querySelectorAll('.el-photo, .el-qr').forEach(function (o) {
-                    if (o.offsetTop + 2 > firstTop) { limit = Math.min(limit, o.offsetTop); }
-                });
-                limit -= 2;
-
-                for (var scale = 1.0; scale >= 0.5 - 0.001; scale -= 0.05) {
-                    fields.forEach(function (row) {
-                        var val = row.querySelector('.val');
-                        if (val && row._base) { val.style.fontSize = (row._base * scale) + 'px'; }
-                    });
-
-                    var cursor = firstTop, bottom = firstTop;
-                    fields.forEach(function (row) {
-                        var top = Math.max(row._top, cursor);
-                        row.style.top = top + 'px';
-                        var h = row.offsetHeight;
-                        cursor = top + h + gap;
-                        bottom = top + h;
-                    });
-
-                    if (bottom <= limit) { break; }
+                if (!val) { return; }
+                val.style.fontSize = '';
+                var base = parseFloat(getComputedStyle(val).fontSize);
+                var lh = parseFloat(getComputedStyle(row).lineHeight) || base * 1.25;
+                var maxH = lh * 2 + 1; // up to 2 lines
+                var size = base, guard = 0;
+                while (val.scrollHeight > maxH && size > base * 0.62 && guard < 60) {
+                    size -= Math.max(0.5, base * 0.03);
+                    val.style.fontSize = size + 'px';
+                    guard++;
                 }
-            }
-
-            layout();
-            if (document.fonts && document.fonts.ready) { document.fonts.ready.then(layout); }
+            });
         }
+        fit();
+        if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fit); }
     })();
     </script>
 </body>
