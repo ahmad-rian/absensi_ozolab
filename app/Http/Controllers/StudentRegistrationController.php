@@ -195,6 +195,26 @@ class StudentRegistrationController extends Controller
     }
 
     /**
+     * Bookmarkable per-student result page (photo + generated cards).
+     */
+    public function result(Student $student): Response
+    {
+        $student->loadMissing('classroom');
+
+        return Inertia::render('student-register-result', [
+            'student' => [
+                'id' => $student->id,
+                'full_name' => $student->full_name,
+                'nis' => $student->nis,
+                'nisn' => $student->nisn,
+                'classroom' => $student->classroom?->name,
+                'photo_url' => $student->photo_path ? Storage::disk('public')->url($student->photo_path) : null,
+            ],
+            'queued' => true,
+        ]);
+    }
+
+    /**
      * Preview a photo from Google Drive before registration.
      */
     public function previewPhoto(Request $request): JsonResponse

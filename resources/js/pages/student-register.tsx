@@ -1,4 +1,4 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Download, Loader2, User, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Cropper from 'react-easy-crop';
@@ -341,15 +341,21 @@ export default function StudentRegister({ schools, classrooms }: Props) {
             const json = await res.json();
 
             if (json.success) {
-                setResult(json);
-                setSubmitted(true);
-
                 try {
                     localStorage.removeItem(STORAGE_KEY);
                 } catch {
                     // ignore
                 }
 
+                // Queued flow → bookmarkable result page (parent can reopen later).
+                if (json.queued && json.student?.id) {
+                    router.visit(`/daftar/${json.student.id}/hasil`);
+
+                    return;
+                }
+
+                setResult(json);
+                setSubmitted(true);
                 setData(INITIAL_DATA);
                 setStep(1);
             } else {
