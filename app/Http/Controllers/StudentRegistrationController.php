@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Gender;
 use App\Enums\Religion;
 use App\Jobs\RegisterStudentCardsJob;
+use App\Models\CardGenerationLog;
 use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Student;
@@ -60,6 +61,7 @@ class StudentRegistrationController extends Controller
             'parent_email' => ['nullable', 'email', 'max:255'],
             'parent_relation' => ['required', 'string', 'in:AYAH,IBU,WALI'],
             'photo_drive_filename' => ['nullable', 'string', 'max:500'],
+            'photo_temp' => ['nullable', 'string', 'max:255'],
             'manual_crop' => ['nullable', 'array'],
             'manual_crop.sx' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
             'manual_crop.sy' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
@@ -138,6 +140,7 @@ class StudentRegistrationController extends Controller
             RegisterStudentCardsJob::dispatch(
                 $student->id,
                 $hasPhoto ? $validated['photo_drive_filename'] : null,
+                $validated['photo_temp'] ?? null,
                 $validated['manual_crop'] ?? null,
                 $generateCards,
             );
@@ -159,6 +162,34 @@ class StudentRegistrationController extends Controller
                 'classroom' => $student->classroom?->name,
                 'photo_url' => null,
             ],
+        ]);
+    }
+
+    /**
+     * Poll the async registration outputs (photo, cards, pas-foto sheet).
+     */
+    public function status(Student $student): JsonResponse
+    {
+        $labels = ['photo' => 'Foto Siswa', 'photo_sheet' => 'Lembar Pas Foto (4R)', 'card' => 'Kartu'];
+
+        $items = CardGenerationLog::where('student_id', $student->id)
+            ->where('generated_by', 'registration')
+            ->with('cardLayout:id,name')
+            ->latest()
+            ->get()
+            ->map(fn (CardGenerationLog $log) => [
+                'type' => $log->type,
+                'name' => $log->type === 'card' ? ($log->cardLayout?->name ?? 'Kartu') : ($labels[$log->type] ?? $log->type),
+                'status' => $log->status,
+                'url' => $log->drive_url ?: ($log->file_path ? Storage::disk('public')->url($log->file_path) : null),
+            ])
+            ->values();
+
+        $pending = $items->contains(fn ($i) => in_array($i['status'], ['processing', 'pending'], true));
+
+        return response()->json([
+            'done' => $items->isNotEmpty() && ! $pending,
+            'items' => $items,
         ]);
     }
 
@@ -264,6 +295,7 @@ class StudentRegistrationController extends Controller
                 'found' => true,
                 'filename' => $files[0]['name'],
                 'preview_url' => Storage::disk('public')->url($tempName),
+                'photo_temp' => $tempName, // reuse on submit → no second Drive download
                 'crop' => $cropService->autoCropRect($fullPath),
             ]);
         } catch (\Throwable $e) {

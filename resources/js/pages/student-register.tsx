@@ -1,5 +1,5 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import { AlertTriangle, Check, CheckCircle2, CreditCard, Download, ExternalLink, Loader2, User, X } from 'lucide-react';
+import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Download, Loader2, User, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Cropper from 'react-easy-crop';
 import AppLogoIcon from '@/components/app-logo-icon';
@@ -21,14 +21,6 @@ type Props = {
     classrooms: Classroom[];
 };
 
-type GeneratedCard = {
-    type: string;
-    name: string;
-    url: string | null;
-    drive_url: string | null;
-    status: string;
-};
-
 type RegistrationResult = {
     success: boolean;
     message: string;
@@ -41,8 +33,13 @@ type RegistrationResult = {
         classroom: string | null;
         photo_url: string | null;
     };
-    photo_downloaded?: boolean;
-    cards?: GeneratedCard[];
+};
+
+type StatusItem = {
+    type: 'photo' | 'card' | 'photo_sheet';
+    name: string;
+    status: 'processing' | 'completed' | 'failed';
+    url: string | null;
 };
 
 /** Normalized crop rect (0..1) relative to the natural image. */
@@ -62,10 +59,10 @@ const STORAGE_KEY = 'daftar_form_v1';
 
 const STEPS = [
     { id: 1, title: 'Sekolah' },
-    { id: 2, title: 'Data Siswa' },
-    { id: 3, title: 'Kelahiran & Alamat' },
-    { id: 4, title: 'Orang Tua' },
-    { id: 5, title: 'Foto' },
+    { id: 2, title: 'Foto' },
+    { id: 3, title: 'Data Siswa' },
+    { id: 4, title: 'Kelahiran & Alamat' },
+    { id: 5, title: 'Orang Tua' },
     { id: 6, title: 'Review & Kirim' },
 ];
 
@@ -88,6 +85,7 @@ type FormData = {
     parent_email: string;
     parent_relation: string;
     photo_drive_filename: string;
+    photo_temp: string;
     manual_crop: CropRect | null;
     generate_cards: boolean;
 };
@@ -109,6 +107,7 @@ const INITIAL_DATA: FormData = {
     parent_email: '',
     parent_relation: 'WALI',
     photo_drive_filename: '',
+    photo_temp: '',
     manual_crop: null,
     generate_cards: true,
 };
@@ -145,6 +144,8 @@ export default function StudentRegister({ schools, classrooms }: Props) {
     const [generating, setGenerating] = useState(false);
     const [loadingStep, setLoadingStep] = useState('');
     const [result, setResult] = useState<RegistrationResult | null>(null);
+    const [statusItems, setStatusItems] = useState<StatusItem[]>([]);
+    const [statusDone, setStatusDone] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [step, setStep] = useState(() => persistedRef.current.step);
@@ -185,7 +186,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
             if (!data.school_id) {
                 e.school_id = 'Pilih sekolah terlebih dahulu.';
             }
-        } else if (current === 2) {
+        } else if (current === 3) {
             if (!data.full_name.trim()) {
                 e.full_name = 'Nama lengkap wajib diisi.';
             }
@@ -209,7 +210,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
             if (!data.classroom_id) {
                 e.classroom_id = 'Pilih kelas terlebih dahulu.';
             }
-        } else if (current === 3) {
+        } else if (current === 4) {
             if (!data.birth_place.trim()) {
                 e.birth_place = 'Tempat lahir wajib diisi.';
             }
@@ -221,7 +222,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
             if (!data.address.trim()) {
                 e.address = 'Alamat wajib diisi.';
             }
-        } else if (current === 4) {
+        } else if (current === 5) {
             if (!data.parent_name.trim()) {
                 e.parent_name = 'Nama orang tua wajib diisi.';
             }
@@ -234,6 +235,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                 e.parent_relation = 'Pilih hubungan orang tua.';
             }
         }
+        // step 2 (Foto) has no required fields — optional
 
         return e;
     }
@@ -269,8 +271,8 @@ export default function StudentRegister({ schools, classrooms }: Props) {
     }
 
     function handleFinalSubmit() {
-        // Validate all steps 1-4 defensively before submit.
-        for (let s = 1; s <= 4; s++) {
+        // Validate all input steps defensively before submit.
+        for (let s = 1; s <= 5; s++) {
             const e = validateStep(s);
 
             if (Object.keys(e).length > 0) {
@@ -376,7 +378,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         setPreviewError('');
         setPhotoPreview(null);
         setAutoCrop(null);
-        setData('manual_crop', null);
+        setData((prev) => ({ ...prev, manual_crop: null, photo_temp: '' }));
 
         try {
             const res = await fetch('/daftar/crop-preview', {
@@ -396,6 +398,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
 
             if (json.found) {
                 setPhotoPreview({ url: json.preview_url, filename: json.filename });
+                setData('photo_temp', json.photo_temp ?? '');
 
                 if (json.crop) {
                     setAutoCrop(json.crop);
@@ -429,15 +432,69 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         return () => clearTimeout(t);
     }, [data.photo_drive_filename, data.school_id, handleLoadPhoto]);
 
+    // ---- Poll the async generation status (photo, cards, photo sheet) ----
+    const shouldPoll = submitted && result?.queued === true && !!result?.student.id && !statusDone;
+
+    useEffect(() => {
+        if (!shouldPoll) {
+            return;
+        }
+
+        const studentId = result!.student.id;
+        let cancelled = false;
+        let inFlight = false;
+
+        async function poll() {
+            if (inFlight) {
+                return;
+            }
+            inFlight = true;
+
+            try {
+                const res = await fetch(`/daftar/status/${studentId}`, {
+                    headers: { Accept: 'application/json' },
+                });
+
+                if (!res.ok) {
+                    return;
+                }
+
+                const json = (await res.json()) as { done: boolean; items: StatusItem[] };
+
+                if (!cancelled) {
+                    setStatusItems(Array.isArray(json.items) ? json.items : []);
+
+                    if (json.done) {
+                        setStatusDone(true);
+                    }
+                }
+            } catch {
+                // transient network error — keep polling
+            } finally {
+                inFlight = false;
+            }
+        }
+
+        poll();
+        const interval = setInterval(poll, 3000);
+
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, [shouldPoll, result]);
+
     function handleNewSubmission() {
         setSubmitted(false);
         setResult(null);
+        setStatusItems([]);
+        setStatusDone(false);
         setCaptchaVerified(false);
         setPhotoPreview(null);
         setAutoCrop(null);
     }
 
-    // Success page with generated cards
+    // Success page with async generation results
     if (submitted && result) {
         return (
             <PageWrapper>
@@ -470,96 +527,49 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                             </div>
                         </div>
 
-                        {/* Async processing note */}
+                        {/* Async generation results */}
                         {result.queued && (
-                            <div className="mb-4 flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
-                                <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-blue-600" />
-                                <div>
-                                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Foto & kartu sedang diproses</p>
-                                    <p className="text-muted-foreground mt-0.5 text-xs">
-                                        Kartu OSIS & Perpustakaan otomatis dibuat dan tersimpan ke Google Drive dalam beberapa saat. Anda tidak perlu menunggu di halaman ini.
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Generated cards (legacy sync path) */}
-                        {(result.cards?.length ?? 0) > 0 && (
                             <div className="space-y-4">
-                                <h3 className="flex items-center gap-2 text-lg font-semibold text-green-800 dark:text-green-200">
-                                    <CreditCard className="size-5" /> Kartu yang Digenerate
-                                </h3>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    {result.cards?.map((card, i) => (
-                                        <div key={i} className="overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-zinc-800">
-                                            {card.url && card.status === 'completed' ? (
-                                                <>
-                                                    <img
-                                                        src={card.url}
-                                                        alt={card.name}
-                                                        className="w-full border-b object-contain"
-                                                        style={{ maxHeight: 300 }}
-                                                    />
-                                                    <div className="flex items-center justify-between p-3">
-                                                        <span className="text-sm font-medium">{card.name}</span>
-                                                        <div className="flex gap-1">
-                                                            <a href={card.url} target="_blank" rel="noreferrer" download>
-                                                                <button className="rounded-lg bg-blue-600 p-1.5 text-white hover:bg-blue-700">
-                                                                    <Download className="size-4" />
-                                                                </button>
-                                                            </a>
-                                                            {card.drive_url && (
-                                                                <a href={card.drive_url} target="_blank" rel="noreferrer">
-                                                                    <button className="rounded-lg bg-green-600 p-1.5 text-white hover:bg-green-700">
-                                                                        <ExternalLink className="size-4" />
-                                                                    </button>
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="flex items-center gap-2 p-4 text-sm text-red-600">
-                                                    <AlertTriangle className="size-4" />
-                                                    {card.name} — Gagal digenerate
-                                                </div>
-                                            )}
+                                {/* Header */}
+                                {statusDone ? (
+                                    <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-100/60 p-4 dark:border-green-800 dark:bg-green-900/40">
+                                        <CheckCircle2 className="size-5 shrink-0 text-green-600 dark:text-green-400" />
+                                        <p className="text-sm font-semibold text-green-800 dark:text-green-200">Semua Selesai!</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+                                        <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-blue-600" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                                                Foto & kartu sedang diproses…
+                                            </p>
+                                            <p className="text-muted-foreground mt-0.5 text-xs">
+                                                Foto siswa, kartu, dan lembar pas foto otomatis dibuat dan tersimpan ke Google Drive.
+                                            </p>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                                    </div>
+                                )}
 
-                        {/* Drive summary */}
-                        {result.cards?.some((c) => c.drive_url) ? (
-                            <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
-                                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                                    {result.photo_downloaded ? '3' : '2'} file tersimpan di Google Drive:
-                                </p>
-                                <ul className="mt-1 list-inside list-disc text-xs text-blue-700 dark:text-blue-300">
-                                    {result.photo_downloaded && <li>Foto siswa (crop 3:4 portrait, WebP)</li>}
-                                    {(result.cards ?? [])
-                                        .filter((c) => c.status === 'completed')
-                                        .map((c, i) => (
-                                            <li key={i}>{c.name}</li>
+                                {/* Result tiles */}
+                                {statusItems.length === 0 ? (
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        {[0, 1, 2, 3].map((i) => (
+                                            <div
+                                                key={i}
+                                                className="flex h-48 animate-pulse items-center justify-center rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
+                                            >
+                                                <Loader2 className="size-6 animate-spin text-zinc-400" />
+                                            </div>
                                         ))}
-                                </ul>
-                                <p className="text-muted-foreground mt-2 text-xs">
-                                    Lokasi: Kartu Siswa / {result.student.classroom} / {result.student.nis} - {result.student.full_name}
-                                </p>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        {statusItems.map((item, i) => (
+                                            <ResultTile key={`${item.type}-${i}`} item={item} />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            (result.cards?.length ?? 0) > 0 && (
-                                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
-                                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                                        <AlertTriangle className="mr-1 inline size-4" />
-                                        Google Drive belum dikonfigurasi — kartu tersimpan lokal saja.
-                                    </p>
-                                    <p className="text-muted-foreground mt-1 text-xs">
-                                        Hubungi admin untuk setup Google Drive agar kartu otomatis tersimpan ke cloud.
-                                    </p>
-                                </div>
-                            )
                         )}
 
                         <div className="mt-6 text-center">
@@ -653,8 +663,8 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         </FormSection>
                     )}
 
-                    {step === 2 && (
-                        <FormSection number={2} title="Data Siswa">
+                    {step === 3 && (
+                        <FormSection number={3} title="Data Siswa">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
                                     <Label htmlFor="full_name" className="text-sm font-medium">
@@ -778,8 +788,8 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         </FormSection>
                     )}
 
-                    {step === 3 && (
-                        <FormSection number={3} title="Data Kelahiran & Alamat">
+                    {step === 4 && (
+                        <FormSection number={4} title="Data Kelahiran & Alamat">
                             <div className="grid gap-5">
                                 <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
                                     <div className="grid gap-2">
@@ -826,8 +836,8 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         </FormSection>
                     )}
 
-                    {step === 4 && (
-                        <FormSection number={4} title="Data Orang Tua/Wali">
+                    {step === 5 && (
+                        <FormSection number={5} title="Data Orang Tua/Wali">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
                                     <Label htmlFor="parent_name" className="text-sm font-medium">
@@ -899,8 +909,8 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                         </FormSection>
                     )}
 
-                    {step === 5 && (
-                        <FormSection number={5} title="Foto Siswa">
+                    {step === 2 && (
+                        <FormSection number={2} title="Foto Siswa">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
                                     <Label htmlFor="photo_drive_filename" className="text-sm font-medium">
@@ -911,7 +921,12 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                             id="photo_drive_filename"
                                             value={data.photo_drive_filename}
                                             onChange={(e) => {
-                                                setData((prev) => ({ ...prev, photo_drive_filename: e.target.value, manual_crop: null }));
+                                                setData((prev) => ({
+                                                    ...prev,
+                                                    photo_drive_filename: e.target.value,
+                                                    manual_crop: null,
+                                                    photo_temp: '',
+                                                }));
                                                 setPhotoPreview(null);
                                                 setAutoCrop(null);
                                                 setPreviewError('');
@@ -945,7 +960,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                         onClose={() => {
                                             setPhotoPreview(null);
                                             setAutoCrop(null);
-                                            setData('manual_crop', null);
+                                            setData((prev) => ({ ...prev, manual_crop: null, photo_temp: '' }));
                                         }}
                                     />
                                 )}
@@ -1295,6 +1310,88 @@ function ReviewRow({ label, value }: { label: string; value?: string | null }) {
         <div className="flex items-start justify-between gap-4 text-sm">
             <dt className="text-muted-foreground shrink-0">{label}</dt>
             <dd className="text-right font-medium break-words">{value || '—'}</dd>
+        </div>
+    );
+}
+
+function ResultTile({ item }: { item: StatusItem }) {
+    const [copied, setCopied] = useState(false);
+
+    async function copyLink() {
+        if (!item.url) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(item.url);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            // clipboard unavailable — ignore
+        }
+    }
+
+    return (
+        <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+            {/* Thumbnail / placeholder */}
+            <div className="flex items-center justify-center bg-zinc-50 p-3 dark:bg-zinc-900" style={{ minHeight: 140 }}>
+                {item.status === 'completed' && item.url ? (
+                    <img src={item.url} alt={item.name} className="max-h-[200px] w-full object-contain" />
+                ) : item.status === 'processing' ? (
+                    <Loader2 className="size-8 animate-spin text-amber-500" />
+                ) : (
+                    <AlertTriangle className="size-8 text-red-500" />
+                )}
+            </div>
+
+            {/* Meta + actions */}
+            <div className="flex flex-1 flex-col gap-2 p-3">
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{item.name}</span>
+                    {item.status === 'processing' && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                            <Loader2 className="size-3 animate-spin" /> Diproses
+                        </span>
+                    )}
+                    {item.status === 'completed' && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                            <Check className="size-3" /> Selesai
+                        </span>
+                    )}
+                    {item.status === 'failed' && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                            <X className="size-3" /> Gagal
+                        </span>
+                    )}
+                </div>
+
+                {item.status === 'completed' && item.url && (
+                    <div className="mt-auto flex gap-2">
+                        <button
+                            type="button"
+                            onClick={copyLink}
+                            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-zinc-300 px-2 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                        >
+                            {copied ? (
+                                <>
+                                    <Check className="size-3.5 text-green-600" /> Tersalin!
+                                </>
+                            ) : (
+                                <>
+                                    <Copy className="size-3.5" /> Salin Link
+                                </>
+                            )}
+                        </button>
+                        <a
+                            href={item.url}
+                            download
+                            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                        >
+                            <Download className="size-3.5" /> Unduh
+                        </a>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
