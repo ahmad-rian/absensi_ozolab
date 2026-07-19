@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Database, ExternalLink, Image as ImageIcon, Loader2, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react';
-import { type FormEvent, useMemo, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,6 +66,30 @@ export default function KartuBebasDataIndex({ layouts, layout, records }: Props)
 
     const addForm = useForm<FormValues>(buildInitialValues(fields));
     const editForm = useForm<FormValues>(buildInitialValues(fields));
+
+    const hasProcessing = records.some((record) => record.status === 'processing');
+
+    useEffect(() => {
+        if (!hasProcessing) {
+            return;
+        }
+
+        let reloading = false;
+        const interval = window.setInterval(() => {
+            if (reloading) {
+                return;
+            }
+            reloading = true;
+            router.reload({
+                only: ['records'],
+                onFinish: () => {
+                    reloading = false;
+                },
+            });
+        }, 3000);
+
+        return () => window.clearInterval(interval);
+    }, [hasProcessing]);
 
     function onLayoutChange(id: string) {
         router.get('/kartu-bebas/data', { layout_id: id }, { preserveState: false, preserveScroll: true });
@@ -193,6 +217,11 @@ export default function KartuBebasDataIndex({ layouts, layout, records }: Props)
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">Data Kartu</h1>
                         <p className="text-muted-foreground text-sm">Masukkan data isian per layout, lalu generate kartunya.</p>
+                        {hasProcessing && (
+                            <span className="text-muted-foreground mt-1 inline-flex items-center gap-1 text-xs">
+                                <Loader2 className="size-3 animate-spin" /> memperbarui…
+                            </span>
+                        )}
                     </div>
                     <Button onClick={openAdd} disabled={!layout} className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
                         <Plus className="size-4" /> Tambah Data
@@ -264,6 +293,20 @@ export default function KartuBebasDataIndex({ layouts, layout, records }: Props)
                                             <TableCell>
                                                 {record.status === 'completed' ? (
                                                     <Badge className="bg-emerald-600 text-white">Selesai</Badge>
+                                                ) : record.status === 'processing' ? (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="gap-1 border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900 dark:text-amber-300"
+                                                    >
+                                                        <Loader2 className="size-3 animate-spin" /> Proses
+                                                    </Badge>
+                                                ) : record.status === 'failed' ? (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900 dark:text-red-300"
+                                                    >
+                                                        Gagal
+                                                    </Badge>
                                                 ) : (
                                                     <Badge variant="secondary">Draft</Badge>
                                                 )}

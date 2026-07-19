@@ -57,6 +57,7 @@ class DynamicCardGenerator
         $browsershot = Browsershot::html($html)
             ->windowSize($width, $height)
             ->deviceScaleFactor(1)
+            ->timeout(120)
             ->waitUntilNetworkIdle()
             ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
 

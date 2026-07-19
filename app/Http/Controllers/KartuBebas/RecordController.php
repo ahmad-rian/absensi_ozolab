@@ -3,16 +3,12 @@
 namespace App\Http\Controllers\KartuBebas;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateDynamicCardJob;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
-use App\Models\School;
-use App\Models\User;
-use App\Services\DynamicCardGenerator;
-use App\Services\GoogleDriveService;
 use App\Services\PhotoCropService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -127,31 +123,15 @@ class RecordController extends Controller
         return to_route('kartu-bebas.data', ['layout_id' => $formId]);
     }
 
-    public function generate(CardFormSubmission $submission, DynamicCardGenerator $generator): RedirectResponse
+    public function generate(CardFormSubmission $submission): RedirectResponse
     {
-        $form = $submission->cardForm;
+        $submission->update(['status' => 'processing']);
 
-        $generated = $generator->generate($form, $submission);
-        $localPath = $generated['path'];
+        GenerateDynamicCardJob::dispatch($submission->id);
 
-        $driveUrl = $this->tryUploadToDrive($form, $submission, $localPath);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Kartu sedang dibuat. Status diperbarui otomatis.']);
 
-        if ($driveUrl) {
-            $submission->drive_url = $driveUrl;
-            $submission->file_path = null;
-            Storage::disk('public')->delete($localPath);
-        } else {
-            $submission->file_path = $localPath;
-        }
-
-        $submission->status = 'completed';
-        $submission->save();
-
-        $cardUrl = $submission->drive_url ?? ($submission->file_path ? Storage::disk('public')->url($submission->file_path) : null);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Kartu berhasil dibuat.', 'link' => $cardUrl]);
-
-        return to_route('kartu-bebas.data', ['layout_id' => $form->id]);
+        return to_route('kartu-bebas.data', ['layout_id' => $submission->card_form_id]);
     }
 
     /**
@@ -241,43 +221,5 @@ class RecordController extends Controller
         );
 
         return $storagePath;
-    }
-
-    /**
-     * Attempt to upload the generated card to the creator's school Drive.
-     */
-    private function tryUploadToDrive(CardForm $form, CardFormSubmission $submission, string $localPath): ?string
-    {
-        $creator = $form->created_by ? User::find($form->created_by) : null;
-        $school = $creator?->school_id ? School::with('driveConfig')->find($creator->school_id) : null;
-        $config = $school?->driveConfig;
-
-        if (! $config || ! $config->is_active) {
-            return null;
-        }
-
-        if (! GoogleDriveService::hasGlobalCredentials() && ! $config->service_account_json) {
-            return null;
-        }
-
-        try {
-            $service = GoogleDriveService::forSchool($config);
-            $fullPath = Storage::disk('public')->path($localPath);
-            $fileName = sprintf('%s-%s.png', Str::slug($form->name), $submission->id);
-            $folderId = $config->cards_folder_id ?: $config->root_folder_id ?: null;
-
-            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, 'image/png');
-            $submission->drive_file_id = $driveFile->getId();
-
-            return $service->makePublic($driveFile->getId());
-        } catch (\Throwable $e) {
-            Log::warning('Kartu bebas Drive upload failed', [
-                'form_id' => $form->id,
-                'submission_id' => $submission->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
     }
 }

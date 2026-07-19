@@ -3,18 +3,14 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateDynamicCardJob;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
-use App\Models\School;
-use App\Models\User;
-use App\Services\DynamicCardGenerator;
-use App\Services\GoogleDriveService;
 use App\Services\PhotoCropService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -37,7 +33,7 @@ class CardFormController extends Controller
         ]);
     }
 
-    public function submit(string $token, Request $request, DynamicCardGenerator $generator): RedirectResponse|Response
+    public function submit(string $token, Request $request): RedirectResponse|Response
     {
         $form = CardForm::where('token', $token)
             ->where('is_active', true)
@@ -76,7 +72,7 @@ class CardFormController extends Controller
                     break;
                 case 'photo':
                     $photoFieldKey = $key;
-                    $rule = [$required ? 'required' : 'nullable', 'image', 'max:8192'];
+                    $rule = [$required ? 'required' : 'nullable', 'image', 'max:5120'];
                     $rules["data.{$key}"] = $rule;
 
                     continue 2;
@@ -123,27 +119,11 @@ class CardFormController extends Controller
             $submission->photo_path = $storagePath;
         }
 
+        // Queue the heavy render + Drive upload; the page polls for the result.
+        $submission->status = 'processing';
         $submission->save();
 
-        // Render the card image locally.
-        $generated = $generator->generate($form, $submission);
-        $localPath = $generated['path'];
-
-        $driveUrl = $this->tryUploadToDrive($form, $submission, $localPath);
-
-        if ($driveUrl) {
-            $submission->drive_url = $driveUrl;
-            $submission->file_path = null;
-            Storage::disk('public')->delete($localPath);
-        } else {
-            $submission->file_path = $localPath;
-        }
-
-        $submission->status = 'completed';
-        $submission->save();
-
-        $cardUrl = $driveUrl ?: Storage::disk('public')->url($localPath);
-        $downloadUrl = $submission->file_path ? Storage::disk('public')->url($submission->file_path) : $driveUrl;
+        GenerateDynamicCardJob::dispatch($submission->id);
 
         return Inertia::render('public/card-form', [
             'form' => [
@@ -152,48 +132,28 @@ class CardFormController extends Controller
                 'fields' => array_values($form->fields ?? []),
             ],
             'result' => [
-                'card_url' => $cardUrl,
-                'download_url' => $downloadUrl,
+                'submission_id' => $submission->id,
+                'status' => 'processing',
+                'card_url' => null,
+                'download_url' => null,
             ],
         ]);
     }
 
     /**
-     * Attempt to upload the generated card to a Google Drive. Global superadmin
-     * forms have no school Drive binding — in that case keep the local file.
+     * Poll endpoint: returns the generation status + card link once ready.
      */
-    private function tryUploadToDrive(CardForm $form, CardFormSubmission $submission, string $localPath): ?string
+    public function status(string $token, CardFormSubmission $submission): JsonResponse
     {
-        $creator = $form->created_by ? User::find($form->created_by) : null;
-        $school = $creator?->school_id ? School::with('driveConfig')->find($creator->school_id) : null;
-        $config = $school?->driveConfig;
+        $form = CardForm::where('token', $token)->firstOrFail();
+        abort_unless($submission->card_form_id === $form->id, 404);
 
-        if (! $config || ! $config->is_active) {
-            return null;
-        }
+        $cardUrl = $submission->drive_url ?: ($submission->file_path ? Storage::disk('public')->url($submission->file_path) : null);
 
-        if (! GoogleDriveService::hasGlobalCredentials() && ! $config->service_account_json) {
-            return null;
-        }
-
-        try {
-            $service = GoogleDriveService::forSchool($config);
-            $fullPath = Storage::disk('public')->path($localPath);
-            $fileName = sprintf('%s-%s.png', Str::slug($form->name), $submission->id);
-            $folderId = $config->cards_folder_id ?: $config->root_folder_id ?: null;
-
-            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, 'image/png');
-            $submission->drive_file_id = $driveFile->getId();
-
-            return $service->makePublic($driveFile->getId());
-        } catch (\Throwable $e) {
-            Log::warning('Card form Drive upload failed', [
-                'form_id' => $form->id,
-                'submission_id' => $submission->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
+        return response()->json([
+            'status' => $submission->status,
+            'card_url' => $cardUrl,
+            'download_url' => $cardUrl,
+        ]);
     }
 }

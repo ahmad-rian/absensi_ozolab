@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateStudentCardJob;
 use App\Models\CardGenerationLog;
 use App\Models\SchoolCardLayout;
 use App\Models\Student;
@@ -96,27 +97,24 @@ class CardGenerationController extends Controller
             return to_route('admin.card-generation');
         }
 
-        $service = new CardGeneratorService;
-        $successCount = 0;
-        $failCount = 0;
-
+        // Queue one render job per student so the request returns immediately and
+        // heavy Browsershot work runs on the `cards` worker.
         foreach ($students as $student) {
-            $log = $service->generateAndLog($student, $layout, 'admin');
-            if ($log->status === 'completed') {
-                $successCount++;
-            } else {
-                $failCount++;
-            }
-        }
+            $log = CardGenerationLog::create([
+                'school_id' => $student->school_id,
+                'student_id' => $student->id,
+                'school_card_layout_id' => $layout->id,
+                'type' => 'card',
+                'status' => 'processing',
+                'generated_by' => 'admin',
+            ]);
 
-        $message = "Berhasil generate {$successCount} kartu.";
-        if ($failCount > 0) {
-            $message .= " {$failCount} gagal.";
+            GenerateStudentCardJob::dispatch($log->id);
         }
 
         Inertia::flash('toast', [
-            'type' => $failCount > 0 ? 'warning' : 'success',
-            'message' => $message,
+            'type' => 'success',
+            'message' => "{$students->count()} kartu sedang diproses. Status akan diperbarui otomatis.",
         ]);
 
         return to_route('admin.card-generation');

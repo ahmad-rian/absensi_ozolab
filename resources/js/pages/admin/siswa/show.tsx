@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Download, HardDrive, Images, Loader2, Printer, User } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -111,6 +111,30 @@ export default function SiswaShow({ student, qrSvg, photoSheets, photoSheetTempl
     const [template, setTemplate] = useState(photoSheetTemplates[0]?.value ?? '');
     const [caption, setCaption] = useState('');
     const [generating, setGenerating] = useState(false);
+
+    const hasProcessingSheet = photoSheets.some((sheet) => sheet.status === 'processing');
+
+    useEffect(() => {
+        if (!hasProcessingSheet) {
+            return;
+        }
+
+        let reloading = false;
+        const interval = window.setInterval(() => {
+            if (reloading) {
+                return;
+            }
+            reloading = true;
+            router.reload({
+                only: ['photoSheets'],
+                onFinish: () => {
+                    reloading = false;
+                },
+            });
+        }, 3000);
+
+        return () => window.clearInterval(interval);
+    }, [hasProcessingSheet]);
 
     function handlePrint() {
         window.print();
@@ -314,7 +338,14 @@ export default function SiswaShow({ student, qrSvg, photoSheets, photoSheetTempl
 
                                     {photoSheets.length > 0 && (
                                         <div className="mt-2 flex flex-col gap-2 border-t pt-3">
-                                            <p className="text-muted-foreground text-xs font-medium">Riwayat</p>
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-muted-foreground text-xs font-medium">Riwayat</p>
+                                                {hasProcessingSheet && (
+                                                    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                                                        <Loader2 className="size-3 animate-spin" /> memperbarui…
+                                                    </span>
+                                                )}
+                                            </div>
                                             {photoSheets.map((sheet) => {
                                                 const status = sheetStatusConfig[sheet.status] ?? { label: sheet.status, className: '' };
                                                 const url = sheet.drive_url ?? sheet.file_url;
@@ -322,6 +353,7 @@ export default function SiswaShow({ student, qrSvg, photoSheets, photoSheetTempl
                                                     <div key={sheet.id} className="flex items-center justify-between gap-2 text-sm">
                                                         <div className="flex items-center gap-2">
                                                             <Badge variant="outline" className={`gap-1 ${status.className}`}>
+                                                                {sheet.status === 'processing' && <Loader2 className="size-3 animate-spin" />}
                                                                 {status.label}
                                                             </Badge>
                                                             <span className="text-muted-foreground text-xs">{sheet.created_at}</span>

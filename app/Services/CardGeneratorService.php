@@ -82,6 +82,24 @@ class CardGeneratorService
             'generated_by' => $generatedBy,
         ]);
 
+        return $this->runLog($log);
+    }
+
+    /**
+     * Render + upload for an existing (processing) log. Shared by the sync path
+     * and the queued GenerateStudentCardJob so both behave identically.
+     */
+    public function runLog(CardGenerationLog $log): CardGenerationLog
+    {
+        $student = $log->student;
+        $layout = $log->cardLayout;
+
+        if (! $student || ! $layout) {
+            $log->update(['status' => 'failed', 'error_message' => 'Siswa atau layout tidak ditemukan.']);
+
+            return $log->fresh();
+        }
+
         try {
             $result = $this->generateCard($student, $layout);
 
@@ -117,6 +135,7 @@ class CardGeneratorService
         $browsershot = Browsershot::html($html)
             ->windowSize($width, $height)
             ->deviceScaleFactor(1)
+            ->timeout(120)
             ->waitUntilNetworkIdle()
             ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
 

@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
-import { CheckCircle2, Download, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react';
-import { type FormEvent, useRef, useState } from 'react';
+import { CheckCircle2, Download, Image as ImageIcon, Loader2, Sparkles, XCircle } from 'lucide-react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,9 +17,16 @@ type FormField = {
     options?: string[];
 };
 
+type SubmissionResult = {
+    submission_id: string;
+    status: 'processing' | 'completed' | 'failed';
+    card_url: string | null;
+    download_url: string | null;
+};
+
 type Props = {
     form: { name: string; token: string; fields: FormField[] };
-    result: { card_url: string; download_url: string | null } | null;
+    result: SubmissionResult | null;
 };
 
 export default function PublicCardForm({ form, result }: Props) {
@@ -52,31 +59,7 @@ export default function PublicCardForm({ form, result }: Props) {
     const errorFor = (key: string) => (errors as Record<string, string>)[`data.${key}`];
 
     if (result) {
-        return (
-            <>
-                <Head title={`${form.name} — Selesai`} />
-                <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
-                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ring-1 ring-emerald-100">
-                        <div className="mb-4 flex flex-col items-center text-center">
-                            <CheckCircle2 className="mb-2 size-12 text-emerald-500" />
-                            <h1 className="text-xl font-bold text-emerald-700">Kartu Berhasil Dibuat!</h1>
-                            <p className="text-muted-foreground mt-1 text-sm">Berikut kartu Anda. Silakan unduh.</p>
-                        </div>
-                        <div className="mb-4 overflow-hidden rounded-xl border bg-zinc-50 p-3">
-                            <img src={result.card_url} alt="Kartu" className="mx-auto max-h-80 w-auto rounded-md shadow" />
-                        </div>
-                        <a href={result.download_url ?? result.card_url} target="_blank" rel="noopener noreferrer" download>
-                            <Button className="w-full gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
-                                <Download className="size-4" /> Unduh Kartu
-                            </Button>
-                        </a>
-                        <Button variant="ghost" className="mt-2 w-full" onClick={() => (window.location.href = `/f/${form.token}`)}>
-                            Isi Lagi
-                        </Button>
-                    </div>
-                </div>
-            </>
-        );
+        return <CardResult token={form.token} formName={form.name} initial={result} />;
     }
 
     return (
@@ -181,6 +164,117 @@ export default function PublicCardForm({ form, result }: Props) {
                     </form>
 
                     <p className="text-muted-foreground mt-4 text-center text-xs">Ditenagai oleh sistem kartu dinamis.</p>
+                </div>
+            </div>
+        </>
+    );
+}
+
+function CardResult({ token, formName, initial }: { token: string; formName: string; initial: SubmissionResult }) {
+    const [state, setState] = useState<SubmissionResult>(initial);
+
+    useEffect(() => {
+        if (state.status !== 'processing') {
+            return;
+        }
+
+        let cancelled = false;
+        let inFlight = false;
+
+        const poll = async () => {
+            if (inFlight) {
+                return;
+            }
+            inFlight = true;
+            try {
+                const res = await fetch(`/f/${token}/status/${state.submission_id}`, {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!res.ok) {
+                    return;
+                }
+                const json = (await res.json()) as Pick<SubmissionResult, 'status' | 'card_url' | 'download_url'>;
+                if (!cancelled && json.status !== 'processing') {
+                    setState((prev) => ({ ...prev, ...json }));
+                }
+            } catch {
+                // ignore transient network errors; keep polling
+            } finally {
+                inFlight = false;
+            }
+        };
+
+        const interval = window.setInterval(poll, 2500);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(interval);
+        };
+    }, [state.status, state.submission_id, token]);
+
+    if (state.status === 'processing') {
+        return (
+            <>
+                <Head title={`${formName} — Memproses`} />
+                <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ring-1 ring-emerald-100">
+                        <div className="flex flex-col items-center text-center">
+                            <Loader2 className="mb-3 size-12 animate-spin text-emerald-500" />
+                            <h1 className="text-xl font-bold text-emerald-700">Kartu sedang dibuat…</h1>
+                            <p className="text-muted-foreground mt-1 text-sm">Mohon tunggu sebentar, halaman ini akan diperbarui otomatis.</p>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    if (state.status === 'failed') {
+        return (
+            <>
+                <Head title={`${formName} — Gagal`} />
+                <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 via-white to-red-50 p-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ring-1 ring-rose-100">
+                        <div className="mb-4 flex flex-col items-center text-center">
+                            <XCircle className="mb-2 size-12 text-rose-500" />
+                            <h1 className="text-xl font-bold text-rose-700">Gagal Membuat Kartu</h1>
+                            <p className="text-muted-foreground mt-1 text-sm">Terjadi kesalahan saat membuat kartu Anda. Silakan coba lagi.</p>
+                        </div>
+                        <Button
+                            className="w-full gap-2 bg-emerald-600 text-white hover:bg-emerald-700"
+                            onClick={() => (window.location.href = `/f/${token}`)}
+                        >
+                            Coba Lagi
+                        </Button>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    return (
+        <>
+            <Head title={`${formName} — Selesai`} />
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
+                <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ring-1 ring-emerald-100">
+                    <div className="mb-4 flex flex-col items-center text-center">
+                        <CheckCircle2 className="mb-2 size-12 text-emerald-500" />
+                        <h1 className="text-xl font-bold text-emerald-700">Kartu Berhasil Dibuat!</h1>
+                        <p className="text-muted-foreground mt-1 text-sm">Berikut kartu Anda. Silakan unduh.</p>
+                    </div>
+                    {state.card_url && (
+                        <div className="mb-4 overflow-hidden rounded-xl border bg-zinc-50 p-3">
+                            <img src={state.card_url} alt="Kartu" className="mx-auto max-h-80 w-auto rounded-md shadow" />
+                        </div>
+                    )}
+                    <a href={state.download_url ?? state.card_url ?? '#'} target="_blank" rel="noopener noreferrer" download>
+                        <Button className="w-full gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                            <Download className="size-4" /> Unduh Kartu
+                        </Button>
+                    </a>
+                    <Button variant="ghost" className="mt-2 w-full" onClick={() => (window.location.href = `/f/${token}`)}>
+                        Isi Lagi
+                    </Button>
                 </div>
             </div>
         </>

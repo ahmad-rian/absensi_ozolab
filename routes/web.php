@@ -48,6 +48,7 @@ Route::post('daftar-telegram', [ParentTelegramController::class, 'store'])->midd
 // Public dynamic card form (encrypted link)
 Route::get('f/{token}', [CardFormController::class, 'show'])->name('public.card-forms.show');
 Route::post('f/{token}', [CardFormController::class, 'submit'])->middleware('throttle:10,1')->name('public.card-forms.submit');
+Route::get('f/{token}/status/{submission}', [CardFormController::class, 'status'])->middleware('throttle:120,1')->name('public.card-forms.status');
 
 Route::middleware(['auth'])->post('admin/switch-school', function (Request $request) {
     $request->validate(['school_id' => ['required', 'exists:schools,id']]);

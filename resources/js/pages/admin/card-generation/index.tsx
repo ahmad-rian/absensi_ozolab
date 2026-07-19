@@ -1,6 +1,6 @@
-import { Head } from '@inertiajs/react';
-import { CheckCircle2, Download, HardDrive, History, Loader2, User, XCircle } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { CheckCircle2, Download, HardDrive, History, Loader2, RefreshCw, User, XCircle } from 'lucide-react';
+import { type ReactNode, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +44,30 @@ const statusConfig: Record<string, { label: string; className: string; icon: Rea
 };
 
 export default function CardGenerationIndex({ logs }: Props) {
+    const hasProcessing = logs.some((log) => log.status === 'processing');
+
+    useEffect(() => {
+        if (!hasProcessing) {
+            return;
+        }
+
+        let reloading = false;
+        const interval = window.setInterval(() => {
+            if (reloading) {
+                return;
+            }
+            reloading = true;
+            router.reload({
+                only: ['logs'],
+                onFinish: () => {
+                    reloading = false;
+                },
+            });
+        }, 3000);
+
+        return () => window.clearInterval(interval);
+    }, [hasProcessing]);
+
     return (
         <>
             <Head title="Riwayat Generate Kartu" />
@@ -57,6 +81,11 @@ export default function CardGenerationIndex({ logs }: Props) {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-base">
                             <History className="size-4" /> Riwayat Generate
+                            {hasProcessing && (
+                                <span className="text-muted-foreground ml-auto inline-flex items-center gap-1 text-xs font-normal">
+                                    <RefreshCw className="size-3 animate-spin" /> memperbarui…
+                                </span>
+                            )}
                         </CardTitle>
                         <CardDescription>Log aktivitas generate kartu terakhir (maks. 50 entri).</CardDescription>
                     </CardHeader>

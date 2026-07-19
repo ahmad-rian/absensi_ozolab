@@ -1,5 +1,6 @@
-import { Head } from '@inertiajs/react';
-import { ExternalLink, History } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { ExternalLink, History, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,6 +22,30 @@ function formatDate(iso: string | null): string {
 }
 
 export default function KartuBebasRiwayatIndex({ submissions }: Props) {
+    const hasProcessing = submissions.some((s) => s.status === 'processing');
+
+    useEffect(() => {
+        if (!hasProcessing) {
+            return;
+        }
+
+        let reloading = false;
+        const interval = window.setInterval(() => {
+            if (reloading) {
+                return;
+            }
+            reloading = true;
+            router.reload({
+                only: ['submissions'],
+                onFinish: () => {
+                    reloading = false;
+                },
+            });
+        }, 3000);
+
+        return () => window.clearInterval(interval);
+    }, [hasProcessing]);
+
     return (
         <>
             <Head title="Riwayat Kartu" />
@@ -28,6 +53,11 @@ export default function KartuBebasRiwayatIndex({ submissions }: Props) {
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">Riwayat Kartu</h1>
                     <p className="text-muted-foreground text-sm">Daftar kartu yang telah berhasil dibuat (100 terbaru).</p>
+                    {hasProcessing && (
+                        <span className="text-muted-foreground mt-1 inline-flex items-center gap-1 text-xs">
+                            <Loader2 className="size-3 animate-spin" /> memperbarui…
+                        </span>
+                    )}
                 </div>
 
                 {submissions.length === 0 ? (
@@ -54,7 +84,23 @@ export default function KartuBebasRiwayatIndex({ submissions }: Props) {
                                         <TableRow key={s.id}>
                                             <TableCell className="font-medium">{s.layout_name}</TableCell>
                                             <TableCell>
-                                                <Badge className="bg-emerald-600 text-white">Selesai</Badge>
+                                                {s.status === 'processing' ? (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="gap-1 border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900 dark:text-amber-300"
+                                                    >
+                                                        <Loader2 className="size-3 animate-spin" /> Proses
+                                                    </Badge>
+                                                ) : s.status === 'failed' ? (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900 dark:text-red-300"
+                                                    >
+                                                        Gagal
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge className="bg-emerald-600 text-white">Selesai</Badge>
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 {s.card_url ? (
