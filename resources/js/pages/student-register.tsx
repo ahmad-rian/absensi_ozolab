@@ -1,5 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Download, Loader2, User, X } from 'lucide-react';
+import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Crop, Download, Loader2, Move, RotateCcw, User, X, ZoomIn } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Cropper from 'react-easy-crop';
 import AppLogoIcon from '@/components/app-logo-icon';
@@ -1249,6 +1249,36 @@ function CropReposition({
                             <Loader2 className="size-6 animate-spin text-white/70" />
                         </div>
                     )}
+                </div>
+                {/* Panduan crop */}
+                <div className="mt-3 rounded-lg border border-green-200 bg-white/70 p-3 dark:border-green-800 dark:bg-zinc-900/40">
+                    <p className="mb-2 text-xs font-semibold text-green-800 dark:text-green-200">Cara mengatur foto:</p>
+                    <ul className="space-y-1.5 text-xs text-green-700 dark:text-green-300">
+                        <li className="flex items-start gap-2">
+                            <Move className="mt-0.5 size-3.5 shrink-0" />
+                            <span>
+                                <b>Geser foto:</b> tahan lalu tarik foto untuk atur posisi wajah.
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <ZoomIn className="mt-0.5 size-3.5 shrink-0" />
+                            <span>
+                                <b>Perbesar/perkecil:</b> pakai slider <b>Zoom</b> di bawah.
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <Crop className="mt-0.5 size-3.5 shrink-0" />
+                            <span>
+                                <b>Pastikan wajah penuh</b> di dalam kotak (rasio pas foto 3×4).
+                            </span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <RotateCcw className="mt-0.5 size-3.5 shrink-0" />
+                            <span>
+                                <b>Reset:</b> kembalikan ke posisi otomatis.
+                            </span>
+                        </li>
+                    </ul>
                 </div>
                 <div className="mt-3 flex items-center gap-3">
                     <span className="text-muted-foreground text-xs">Zoom</span>
