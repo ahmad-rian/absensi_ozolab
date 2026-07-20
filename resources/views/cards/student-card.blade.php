@@ -148,26 +148,51 @@ body {
     @endforeach
     <script>
     (function () {
-        // Auto-shrink long field values so they stay on a SINGLE line (matching the
-        // fixed layout slots), never wrapping into the field below.
-        function fit() {
-            document.querySelectorAll('.el-field').forEach(function (row) {
-                var val = row.querySelector('.val');
-                if (!val) { return; }
-                val.style.fontSize = '';
-                var base = parseFloat(getComputedStyle(val).fontSize);
-                var lh = parseFloat(getComputedStyle(row).lineHeight) || base * 1.25;
-                var maxH = lh * 1 + 2; // keep to 1 line
-                var size = base, guard = 0;
-                while (val.scrollHeight > maxH && size > base * 0.5 && guard < 80) {
-                    size -= Math.max(0.5, base * 0.03);
-                    val.style.fontSize = size + 'px';
-                    guard++;
-                }
+        // Band-aware fit: shrink each field's value only enough to fit the vertical
+        // space up to the nearest element below it (field/photo/QR). No reflow, so a
+        // field never overlaps another element in any layout/orientation. Values keep
+        // their base font when they fit; wrap to 2+ lines only if the band allows.
+        var fields = Array.prototype.slice.call(document.querySelectorAll('.el-field'));
+        if (fields.length) {
+            var obstacles = Array.prototype.slice.call(document.querySelectorAll('.el-field, .el-photo, .el-qr'));
+            fields.forEach(function (f) {
+                var val = f.querySelector('.val');
+                if (val) { f._base = parseFloat(getComputedStyle(val).fontSize); }
             });
+
+            function box(el) {
+                return { top: el.offsetTop, left: el.offsetLeft, right: el.offsetLeft + el.offsetWidth };
+            }
+
+            function run() {
+                fields.forEach(function (f) {
+                    var val = f.querySelector('.val');
+                    if (!val || !f._base) { return; }
+                    val.style.fontSize = f._base + 'px';
+
+                    var fb = box(f);
+                    var limit = document.body.clientHeight;
+                    obstacles.forEach(function (o) {
+                        if (o === f) { return; }
+                        var ob = box(o);
+                        if (ob.top > fb.top + 1 && ob.left < fb.right && ob.right > fb.left) {
+                            if (ob.top < limit) { limit = ob.top; }
+                        }
+                    });
+                    var maxH = limit - fb.top - 2;
+
+                    var size = f._base, guard = 0;
+                    while (f.scrollHeight > maxH && size > f._base * 0.45 && guard < 80) {
+                        size -= Math.max(0.5, f._base * 0.03);
+                        val.style.fontSize = size + 'px';
+                        guard++;
+                    }
+                });
+            }
+
+            run();
+            if (document.fonts && document.fonts.ready) { document.fonts.ready.then(run); }
         }
-        fit();
-        if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fit); }
     })();
     </script>
 </body>
