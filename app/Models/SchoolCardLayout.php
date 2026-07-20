@@ -44,15 +44,15 @@ class SchoolCardLayout extends Model
     public static function defaultElements(): array
     {
         return [
-            'field_nama' => ['type' => 'field', 'label' => 'NAMA', 'source' => 'full_name', 'x' => 3.0, 'y' => 16.0, 'width' => 55.0, 'labelWidth' => 20.0, 'fontSize' => 2.0, 'enabled' => true],
-            'field_alamat' => ['type' => 'field', 'label' => 'ALAMAT', 'source' => 'address', 'x' => 3.0, 'y' => 19.2, 'width' => 55.0, 'labelWidth' => 20.0, 'fontSize' => 2.0, 'enabled' => true],
-            'field_ttl' => ['type' => 'field', 'label' => 'TTL', 'source' => 'ttl', 'x' => 3.0, 'y' => 22.4, 'width' => 55.0, 'labelWidth' => 20.0, 'fontSize' => 2.0, 'enabled' => true],
-            'field_agama' => ['type' => 'field', 'label' => 'AGAMA', 'source' => 'religion', 'x' => 3.0, 'y' => 25.6, 'width' => 55.0, 'labelWidth' => 20.0, 'fontSize' => 2.0, 'enabled' => true],
-            'field_noinduk' => ['type' => 'field', 'label' => 'NO.INDUK', 'source' => 'nis', 'x' => 3.0, 'y' => 28.8, 'width' => 55.0, 'labelWidth' => 20.0, 'fontSize' => 2.0, 'enabled' => true],
-            'field_nisn' => ['type' => 'field', 'label' => 'NISN', 'source' => 'nisn', 'x' => 3.0, 'y' => 32.0, 'width' => 55.0, 'labelWidth' => 20.0, 'fontSize' => 2.0, 'enabled' => false],
-            'field_kelas' => ['type' => 'field', 'label' => 'KELAS', 'source' => 'classroom', 'x' => 3.0, 'y' => 35.2, 'width' => 55.0, 'labelWidth' => 20.0, 'fontSize' => 2.0, 'enabled' => false],
-            'field_jk' => ['type' => 'field', 'label' => 'JENIS KELAMIN', 'source' => 'gender', 'x' => 3.0, 'y' => 38.4, 'width' => 55.0, 'labelWidth' => 20.0, 'fontSize' => 2.0, 'enabled' => false],
-            'field_telp' => ['type' => 'field', 'label' => 'NO. HP', 'source' => 'parent_phone', 'x' => 3.0, 'y' => 41.6, 'width' => 55.0, 'labelWidth' => 20.0, 'fontSize' => 2.0, 'enabled' => false],
+            'field_nama' => ['type' => 'field', 'label' => 'NAMA', 'source' => 'full_name', 'x' => 3.0, 'y' => 16.0, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => true],
+            'field_alamat' => ['type' => 'field', 'label' => 'ALAMAT', 'source' => 'address', 'x' => 3.0, 'y' => 19.2, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => true],
+            'field_ttl' => ['type' => 'field', 'label' => 'TTL', 'source' => 'ttl', 'x' => 3.0, 'y' => 22.4, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => true],
+            'field_agama' => ['type' => 'field', 'label' => 'AGAMA', 'source' => 'religion', 'x' => 3.0, 'y' => 25.6, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => true],
+            'field_noinduk' => ['type' => 'field', 'label' => 'NO.INDUK', 'source' => 'nis', 'x' => 3.0, 'y' => 28.8, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => true],
+            'field_nisn' => ['type' => 'field', 'label' => 'NISN', 'source' => 'nisn', 'x' => 3.0, 'y' => 32.0, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => false],
+            'field_kelas' => ['type' => 'field', 'label' => 'KELAS', 'source' => 'classroom', 'x' => 3.0, 'y' => 35.2, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => false],
+            'field_jk' => ['type' => 'field', 'label' => 'JENIS KELAMIN', 'source' => 'gender', 'x' => 3.0, 'y' => 38.4, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => false],
+            'field_telp' => ['type' => 'field', 'label' => 'NO. HP', 'source' => 'parent_phone', 'x' => 3.0, 'y' => 41.6, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => false],
             'photo' => ['type' => 'photo', 'x' => 2.5, 'y' => 32.0, 'w' => 16.0, 'h' => 21.0, 'enabled' => true],
             'qr' => ['type' => 'qr', 'x' => 22.0, 'y' => 32.0, 'size' => 15.0, 'enabled' => true],
         ];

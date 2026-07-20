@@ -37,7 +37,7 @@ body {
 }
 .el { position: absolute; z-index: 6; }
 .el-field {
-    display: flex; align-items: flex-start;
+    display: flex; align-items: baseline;
     font-family: 'Inter Tight', sans-serif; font-weight: 800;
     line-height: 1.25; letter-spacing: -0.01em; color: #0c1a12;
     white-space: normal;
