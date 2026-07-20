@@ -162,7 +162,10 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN'])->prefix('kartu-bebas
 
     // Data = "Format Data" (reusable dynamic field schema)
     Route::get('data', [DatasetController::class, 'index'])->name('data');
+    Route::get('data/create', [DatasetController::class, 'create'])->name('data.create');
     Route::post('data', [DatasetController::class, 'store'])->name('data.store');
+    Route::get('data/{dataset}', [DatasetController::class, 'show'])->name('data.show');
+    Route::get('data/{dataset}/edit', [DatasetController::class, 'edit'])->name('data.edit');
     Route::put('data/{dataset}', [DatasetController::class, 'update'])->name('data.update');
     Route::delete('data/{dataset}', [DatasetController::class, 'destroy'])->name('data.destroy');
 

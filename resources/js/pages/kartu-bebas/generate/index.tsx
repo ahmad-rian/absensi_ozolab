@@ -29,10 +29,12 @@ export default function KartuBebasGenerateIndex({ layouts }: Props) {
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                             <LayoutTemplate className="mb-4 size-12 text-emerald-500/70" />
-                            <p className="text-muted-foreground mb-4 text-sm">Belum ada layout kartu. Buat layout terlebih dahulu.</p>
-                            <Button asChild className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                            <p className="text-muted-foreground mb-4 text-sm">
+                                Belum ada layout kartu. Generate butuh layout dulu — buat di menu <b>Layout Kartu</b>.
+                            </p>
+                            <Button asChild variant="outline" className="gap-2">
                                 <Link href="/kartu-bebas/layouts/create">
-                                    <Plus className="size-4" /> Buat Layout
+                                    <Plus className="size-4" /> Buat Layout Kartu
                                 </Link>
                             </Button>
                         </CardContent>

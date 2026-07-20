@@ -34,6 +34,39 @@ class DatasetController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('kartu-bebas/data/create');
+    }
+
+    public function show(CardDataset $dataset): Response
+    {
+        $dataset->loadCount('forms');
+
+        return Inertia::render('kartu-bebas/data/show', [
+            'dataset' => [
+                'id' => $dataset->id,
+                'name' => $dataset->name,
+                'fields' => array_values($dataset->fields ?? []),
+                'layouts_count' => $dataset->forms_count,
+                'created_at' => $dataset->created_at?->toDateTimeString(),
+            ],
+            'layouts' => $dataset->forms()->orderBy('name')->get(['id', 'name', 'orientation'])
+                ->map(fn ($f) => ['id' => $f->id, 'name' => $f->name, 'orientation' => $f->orientation]),
+        ]);
+    }
+
+    public function edit(CardDataset $dataset): Response
+    {
+        return Inertia::render('kartu-bebas/data/edit', [
+            'dataset' => [
+                'id' => $dataset->id,
+                'name' => $dataset->name,
+                'fields' => array_values($dataset->fields ?? []),
+            ],
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validateDataset($request);
