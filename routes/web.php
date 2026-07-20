@@ -23,6 +23,8 @@ use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KartuBebas\DatasetController;
+use App\Http\Controllers\KartuBebas\GenerateController;
 use App\Http\Controllers\KartuBebas\LayoutController;
 use App\Http\Controllers\KartuBebas\RecordController;
 use App\Http\Controllers\KartuBebas\RiwayatController;
@@ -158,12 +160,20 @@ Route::middleware(['auth', 'verified', 'role:SUPER_ADMIN'])->prefix('kartu-bebas
     Route::put('layouts/{cardForm}', [LayoutController::class, 'update'])->name('layouts.update');
     Route::delete('layouts/{cardForm}', [LayoutController::class, 'destroy'])->name('layouts.destroy');
 
-    // Data (records = CardFormSubmission entered manually)
-    Route::get('data', [RecordController::class, 'index'])->name('data');
-    Route::post('data', [RecordController::class, 'store'])->name('data.store');
-    Route::put('data/{submission}', [RecordController::class, 'update'])->name('data.update');
-    Route::delete('data/{submission}', [RecordController::class, 'destroy'])->name('data.destroy');
-    Route::post('data/{submission}/generate', [RecordController::class, 'generate'])->name('data.generate');
+    // Data = "Format Data" (reusable dynamic field schema)
+    Route::get('data', [DatasetController::class, 'index'])->name('data');
+    Route::post('data', [DatasetController::class, 'store'])->name('data.store');
+    Route::put('data/{dataset}', [DatasetController::class, 'update'])->name('data.update');
+    Route::delete('data/{dataset}', [DatasetController::class, 'destroy'])->name('data.destroy');
+
+    // Generate = pick a layout, fill data via wizard, produce a card
+    Route::get('generate', [GenerateController::class, 'index'])->name('generate');
+    Route::get('generate/{cardForm}', [GenerateController::class, 'create'])->name('generate.create');
+    Route::post('generate/{cardForm}', [GenerateController::class, 'store'])->middleware('throttle:30,1')->name('generate.store');
+    Route::get('generate/status/{submission}', [GenerateController::class, 'status'])->middleware('throttle:120,1')->name('generate.status');
+
+    // Delete a generated card (from Riwayat)
+    Route::delete('data-card/{submission}', [RecordController::class, 'destroy'])->name('card.destroy');
 
     // Frame & Bingkai (category = kartu_bebas)
     Route::get('frames', [App\Http\Controllers\KartuBebas\FrameController::class, 'index'])->name('frames');

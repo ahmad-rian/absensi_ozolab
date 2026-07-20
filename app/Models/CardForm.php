@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CardForm extends Model
@@ -13,6 +14,7 @@ class CardForm extends Model
     protected $fillable = [
         'created_by',
         'name',
+        'card_dataset_id',
         'token',
         'fields',
         'orientation',
@@ -33,6 +35,11 @@ class CardForm extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(CardFormSubmission::class);
+    }
+
+    public function cardDataset(): BelongsTo
+    {
+        return $this->belongsTo(CardDataset::class);
     }
 
     /**

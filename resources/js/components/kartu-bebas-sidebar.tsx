@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { Database, FileText, Frame, History, LayoutGrid, LayoutTemplate } from 'lucide-react';
+import { Database, FileText, Frame, History, LayoutGrid, LayoutTemplate, Wand2 } from 'lucide-react';
 import { NavGroup } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
@@ -8,6 +8,7 @@ import type { NavItem } from '@/types';
 const mainItems: NavItem[] = [
     { title: 'Dashboard', href: '/kartu-bebas', icon: LayoutGrid },
     { title: 'Data', href: '/kartu-bebas/data', icon: Database },
+    { title: 'Generate', href: '/kartu-bebas/generate', icon: Wand2 },
 ];
 
 const cardItems: NavItem[] = [

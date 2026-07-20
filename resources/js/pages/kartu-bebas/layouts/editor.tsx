@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { ArrowDown, ArrowUp, Eye, GripVertical, Loader2, Plus, RectangleHorizontal, RectangleVertical, Save, Trash2, User, X } from 'lucide-react';
+import { Eye, Loader2, RectangleHorizontal, RectangleVertical, Save, User } from 'lucide-react';
 import { type FormEvent, useMemo, useState } from 'react';
 import { Rnd } from 'react-rnd';
 import InputError from '@/components/input-error';
@@ -18,7 +18,7 @@ type FormField = {
     key: string;
     label: string;
     type: FieldType;
-    required: boolean;
+    required?: boolean;
     options?: string[];
 };
 
@@ -35,11 +35,13 @@ type LayoutConfig = {
 
 type FrameItem = { id: string; name: string; image_url: string; width: number; height: number; category: string };
 
+type Dataset = { id: string; name: string; fields: FormField[] };
+
 type FormData = {
     id?: string;
     name: string;
     token?: string;
-    fields: FormField[];
+    card_dataset_id: string | null;
     orientation: 'landscape' | 'portrait';
     frame_id: string | null;
     is_active: boolean;
@@ -47,11 +49,11 @@ type FormData = {
     public_url?: string;
 } | null;
 
-type Props = { form: FormData; frames: FrameItem[] };
+type Props = { form: FormData; frames: FrameItem[]; datasets: Dataset[] };
 
 type EditorFormData = {
     name: string;
-    fields: FormField[];
+    card_dataset_id: string | null;
     orientation: 'landscape' | 'portrait';
     frame_id: string | null;
     is_active: boolean;
@@ -61,24 +63,6 @@ type EditorFormData = {
 const S = 5.607;
 const mm = (v: number) => v * S;
 const toMm = (px: number) => Math.round((px / S) * 10) / 10;
-
-function slugifyKey(label: string): string {
-    return label
-        .toLowerCase()
-        .normalize('NFKD')
-        .replace(/[^a-z0-9\s_]/g, '')
-        .trim()
-        .replace(/\s+/g, '_')
-        .slice(0, 64);
-}
-
-const FIELD_TYPE_LABELS: Record<FieldType, string> = {
-    text: 'Teks',
-    date: 'Tanggal',
-    number: 'Angka',
-    select: 'Pilihan',
-    photo: 'Foto',
-};
 
 // Build the element for a field with sensible defaults, keeping any existing element data.
 function elementForField(field: FormField, index: number, existing?: AnyElement): AnyElement {
@@ -113,9 +97,9 @@ function syncElements(fields: FormField[], prev: Elements): Elements {
     return next;
 }
 
-function buildInitialConfig(form: FormData): LayoutConfig {
+function buildInitialConfig(form: FormData, datasets: Dataset[]): LayoutConfig {
     const cfg = (form?.layout_config ?? {}) as Partial<LayoutConfig>;
-    const fields = form?.fields ?? [];
+    const fields = datasets.find((d) => d.id === form?.card_dataset_id)?.fields ?? [];
     const elements = syncElements(fields, (cfg.elements ?? {}) as Elements);
     return {
         ...cfg,
@@ -224,17 +208,17 @@ function CardPreview({
     );
 }
 
-export default function KartuBebasLayoutEditor({ form, frames }: Props) {
+export default function KartuBebasLayoutEditor({ form, frames, datasets }: Props) {
     const isEditing = !!form?.id;
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
     const inertiaForm = useForm<EditorFormData>({
         name: form?.name ?? '',
-        fields: form?.fields ?? [],
+        card_dataset_id: form?.card_dataset_id ?? null,
         orientation: form?.orientation ?? 'landscape',
         frame_id: form?.frame_id ?? null,
         is_active: form?.is_active ?? true,
-        layout_config: buildInitialConfig(form),
+        layout_config: buildInitialConfig(form, datasets),
     });
 
     const { data, setData, errors, processing } = inertiaForm;
@@ -250,62 +234,15 @@ export default function KartuBebasLayoutEditor({ form, frames }: Props) {
         setConfig({ elements: { ...config.elements, [id]: { ...el, ...patch } as AnyElement } });
     }
 
-    // --- Field builder operations ---
-    function commitFields(fields: FormField[]) {
+    // Re-sync designer elements when a different dataset is selected.
+    function selectDataset(id: string | null) {
+        const fields = datasets.find((d) => d.id === id)?.fields ?? [];
+        setSelectedId(null);
         setData((prev) => ({
             ...prev,
-            fields,
+            card_dataset_id: id,
             layout_config: { ...prev.layout_config, elements: syncElements(fields, prev.layout_config.elements) },
         }));
-    }
-
-    function addField() {
-        const base = 'field';
-        let n = data.fields.length + 1;
-        let key = `${base}_${n}`;
-        const existing = new Set(data.fields.map((f) => f.key));
-        while (existing.has(key)) {
-            n += 1;
-            key = `${base}_${n}`;
-        }
-        commitFields([...data.fields, { key, label: `Field ${n}`, type: 'text', required: false }]);
-    }
-
-    function updateField(index: number, patch: Partial<FormField>) {
-        const fields = data.fields.map((f, i) => {
-            if (i !== index) return f;
-            const merged = { ...f, ...patch };
-            // Re-slug the key from the label unless the user is editing the key elsewhere.
-            if (patch.label !== undefined) {
-                const newKey = slugifyKey(patch.label) || f.key;
-                const clash = data.fields.some((o, oi) => oi !== index && o.key === newKey);
-                merged.key = clash ? f.key : newKey || f.key;
-            }
-            if (patch.type && patch.type !== 'select') {
-                delete merged.options;
-            }
-            if (patch.type === 'select' && !merged.options) {
-                merged.options = ['Opsi 1'];
-            }
-            return merged;
-        });
-        commitFields(fields);
-    }
-
-    function removeField(index: number) {
-        commitFields(data.fields.filter((_, i) => i !== index));
-    }
-
-    function moveField(index: number, dir: -1 | 1) {
-        const target = index + dir;
-        if (target < 0 || target >= data.fields.length) return;
-        const fields = [...data.fields];
-        [fields[index], fields[target]] = [fields[target], fields[index]];
-        commitFields(fields);
-    }
-
-    function updateOptions(index: number, options: string[]) {
-        updateField(index, { options });
     }
 
     function handleSubmit(e: FormEvent) {
@@ -325,6 +262,7 @@ export default function KartuBebasLayoutEditor({ form, frames }: Props) {
 
     const frameOptions = useMemo(() => frames, [frames]);
     const selected = selectedId ? config.elements[selectedId] : null;
+    const hasDataset = !!data.card_dataset_id;
 
     return (
         <>
@@ -352,8 +290,8 @@ export default function KartuBebasLayoutEditor({ form, frames }: Props) {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex justify-center py-4">
-                                    {data.fields.length === 0 ? (
-                                        <p className="text-muted-foreground py-16 text-center text-sm">Tambahkan field terlebih dahulu di panel kanan.</p>
+                                    {!hasDataset ? (
+                                        <p className="text-muted-foreground py-16 text-center text-sm">Pilih Format Data terlebih dahulu di panel kanan.</p>
                                     ) : (
                                         <CardPreview config={config} frames={frames} selectedId={selectedId} onSelect={setSelectedId} onUpdate={updateElement} />
                                     )}
@@ -390,7 +328,7 @@ export default function KartuBebasLayoutEditor({ form, frames }: Props) {
                         )}
                     </div>
 
-                    {/* RIGHT: settings + field builder */}
+                    {/* RIGHT: settings */}
                     <div className="space-y-4">
                         <Card>
                             <CardHeader>
@@ -420,6 +358,23 @@ export default function KartuBebasLayoutEditor({ form, frames }: Props) {
                                 <CardTitle className="text-base">Orientasi & Frame</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3">
+                                <div className="grid gap-1.5">
+                                    <Label>Format Data</Label>
+                                    <Select value={data.card_dataset_id ?? ''} onValueChange={(v) => selectDataset(v || null)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Pilih format data" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {datasets.map((d) => (
+                                                <SelectItem key={d.id} value={d.id}>
+                                                    {d.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.card_dataset_id} />
+                                    {!hasDataset && <p className="text-[11px] text-red-500">Format data wajib dipilih.</p>}
+                                </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     {(
                                         [
@@ -470,100 +425,10 @@ export default function KartuBebasLayoutEditor({ form, frames }: Props) {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between gap-2">
-                                <CardTitle className="text-base">Field Form</CardTitle>
-                                <Button type="button" size="sm" onClick={addField} className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700">
-                                    <Plus className="size-3.5" /> Tambah
-                                </Button>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {data.fields.length === 0 && <p className="text-muted-foreground text-sm">Belum ada field. Klik “Tambah”.</p>}
-                                {typeof errors.fields === 'string' && <InputError message={errors.fields} />}
-                                {data.fields.map((field, i) => (
-                                    <div
-                                        key={i}
-                                        className={cn(
-                                            'space-y-2 rounded-lg border p-3',
-                                            selectedId === field.key ? 'border-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20' : 'border-border',
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <GripVertical className="text-muted-foreground size-4 shrink-0" />
-                                            <Input
-                                                value={field.label}
-                                                onChange={(e) => updateField(i, { label: e.target.value })}
-                                                placeholder="Label field"
-                                                className="h-8 flex-1"
-                                                onFocus={() => setSelectedId(field.key)}
-                                            />
-                                            <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => moveField(i, -1)} disabled={i === 0}>
-                                                <ArrowUp className="size-3.5" />
-                                            </Button>
-                                            <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => moveField(i, 1)} disabled={i === data.fields.length - 1}>
-                                                <ArrowDown className="size-3.5" />
-                                            </Button>
-                                            <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => removeField(i)}>
-                                                <Trash2 className="size-3.5 text-red-500" />
-                                            </Button>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <Select value={field.type} onValueChange={(v) => updateField(i, { type: v as FieldType })}>
-                                                <SelectTrigger className="h-8">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {(Object.keys(FIELD_TYPE_LABELS) as FieldType[]).map((t) => (
-                                                        <SelectItem key={t} value={t}>
-                                                            {FIELD_TYPE_LABELS[t]}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <label className="flex items-center gap-2 text-xs">
-                                                <Checkbox checked={field.required} onCheckedChange={(c) => updateField(i, { required: c === true })} />
-                                                Wajib diisi
-                                            </label>
-                                        </div>
-                                        <p className="text-muted-foreground text-[10px]">
-                                            key: <code>{field.key}</code>
-                                        </p>
-                                        {field.type === 'select' && (
-                                            <OptionEditor options={field.options ?? []} onChange={(opts) => updateOptions(i, opts)} />
-                                        )}
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
                     </div>
                 </div>
             </form>
         </>
-    );
-}
-
-function OptionEditor({ options, onChange }: { options: string[]; onChange: (opts: string[]) => void }) {
-    return (
-        <div className="space-y-1.5 rounded-md bg-muted/40 p-2">
-            <Label className="text-muted-foreground text-[10px]">Opsi Pilihan</Label>
-            {options.map((opt, i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                    <Input
-                        value={opt}
-                        onChange={(e) => onChange(options.map((o, oi) => (oi === i ? e.target.value : o)))}
-                        className="h-7 text-xs"
-                        placeholder={`Opsi ${i + 1}`}
-                    />
-                    <Button type="button" variant="ghost" size="icon" className="size-7 shrink-0" onClick={() => onChange(options.filter((_, oi) => oi !== i))}>
-                        <X className="size-3" />
-                    </Button>
-                </div>
-            ))}
-            <Button type="button" variant="outline" size="sm" className="h-7 w-full gap-1 text-xs" onClick={() => onChange([...options, `Opsi ${options.length + 1}`])}>
-                <Plus className="size-3" /> Tambah Opsi
-            </Button>
-        </div>
     );
 }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\KartuBebas;
 
 use App\Http\Controllers\Controller;
+use App\Models\CardDataset;
 use App\Models\CardForm;
 use App\Models\SchoolFrame;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +20,7 @@ class LayoutController extends Controller
     public function index(): Response
     {
         $forms = CardForm::query()
+            ->with('cardDataset:id,name')
             ->withCount('submissions')
             ->orderByDesc('created_at')
             ->get();
@@ -30,6 +32,7 @@ class LayoutController extends Controller
                 'token' => $form->token,
                 'orientation' => $form->orientation,
                 'is_active' => $form->is_active,
+                'dataset_name' => $form->cardDataset?->name,
                 'fields_count' => is_array($form->fields) ? count($form->fields) : 0,
                 'submissions_count' => $form->submissions_count,
                 'public_url' => url('/f/'.$form->token),
@@ -43,18 +46,21 @@ class LayoutController extends Controller
         return Inertia::render('kartu-bebas/layouts/editor', [
             'form' => null,
             'frames' => $this->frames(),
+            'datasets' => $this->datasets(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validateForm($request);
+        $dataset = CardDataset::findOrFail($validated['card_dataset_id']);
 
         CardForm::create([
             'created_by' => auth()->id(),
-            'token' => Str::random(40),
+            'token' => Str::random(10),
             'name' => $validated['name'],
-            'fields' => $validated['fields'],
+            'card_dataset_id' => $dataset->id,
+            'fields' => $dataset->fields,   // synced mirror for downstream readers
             'orientation' => $validated['orientation'],
             'frame_id' => $validated['frame_id'] ?? null,
             'layout_config' => $validated['layout_config'],
@@ -73,7 +79,7 @@ class LayoutController extends Controller
                 'id' => $cardForm->id,
                 'name' => $cardForm->name,
                 'token' => $cardForm->token,
-                'fields' => $cardForm->fields ?? [],
+                'card_dataset_id' => $cardForm->card_dataset_id,
                 'orientation' => $cardForm->orientation,
                 'frame_id' => $cardForm->frame_id,
                 'is_active' => $cardForm->is_active,
@@ -81,16 +87,19 @@ class LayoutController extends Controller
                 'public_url' => url('/f/'.$cardForm->token),
             ],
             'frames' => $this->frames(),
+            'datasets' => $this->datasets(),
         ]);
     }
 
     public function update(Request $request, CardForm $cardForm): RedirectResponse
     {
         $validated = $this->validateForm($request);
+        $dataset = CardDataset::findOrFail($validated['card_dataset_id']);
 
         $cardForm->update([
             'name' => $validated['name'],
-            'fields' => $validated['fields'],
+            'card_dataset_id' => $dataset->id,
+            'fields' => $dataset->fields,   // keep mirror in sync
             'orientation' => $validated['orientation'],
             'frame_id' => $validated['frame_id'] ?? null,
             'layout_config' => $validated['layout_config'],
@@ -118,18 +127,27 @@ class LayoutController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'fields' => ['required', 'array', 'min:1'],
-            'fields.*.key' => ['required', 'string', 'max:64', 'regex:/^[a-z0-9_]+$/'],
-            'fields.*.label' => ['required', 'string', 'max:255'],
-            'fields.*.type' => ['required', Rule::in(['text', 'date', 'number', 'select', 'photo'])],
-            'fields.*.required' => ['boolean'],
-            'fields.*.options' => ['nullable', 'array'],
-            'fields.*.options.*' => ['string', 'max:255'],
+            'card_dataset_id' => ['required', 'string', 'exists:card_datasets,id'],
             'orientation' => ['required', Rule::in(['landscape', 'portrait'])],
             'frame_id' => ['nullable', 'string', 'exists:school_frames,id'],
             'layout_config' => ['required', 'array'],
             'is_active' => ['boolean'],
         ]);
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function datasets(): Collection
+    {
+        return CardDataset::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'fields'])
+            ->map(fn (CardDataset $d) => [
+                'id' => $d->id,
+                'name' => $d->name,
+                'fields' => array_values($d->fields ?? []),
+            ]);
     }
 
     /**
