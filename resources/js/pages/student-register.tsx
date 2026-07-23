@@ -1165,6 +1165,7 @@ function CropReposition({
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [resetKey, setResetKey] = useState(0);
+    const [showGuide, setShowGuide] = useState(false);
     // Actual natural size of the FULL-RES preview image (backend auto.natW/natH is
     // 1600-capped, so it can't be used to seed the crop box — scale would mismatch).
     const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
@@ -1253,6 +1254,18 @@ function CropReposition({
                 {/* Panduan crop */}
                 <div className="mt-3 rounded-lg border border-green-200 bg-white/70 p-3 dark:border-green-800 dark:bg-zinc-900/40">
                     <p className="mb-2 text-xs font-semibold text-green-800 dark:text-green-200">Cara mengatur foto:</p>
+
+                    {/* Poster panduan */}
+                    <button type="button" onClick={() => setShowGuide(true)} className="mb-3 block w-full" title="Ketuk untuk perbesar">
+                        <img
+                            src="/images/panduan-foto.webp"
+                            alt="Panduan atur foto: geser, zoom in, zoom out"
+                            className="w-full rounded-lg border border-green-200 dark:border-green-800"
+                            loading="lazy"
+                        />
+                        <span className="text-muted-foreground mt-1 block text-center text-[11px]">Ketuk gambar untuk perbesar</span>
+                    </button>
+
                     <ul className="space-y-1.5 text-xs text-green-700 dark:text-green-300">
                         <li className="flex items-start gap-2">
                             <Move className="mt-0.5 size-3.5 shrink-0" />
@@ -1300,6 +1313,29 @@ function CropReposition({
                     </button>
                 </div>
             </div>
+
+            {showGuide && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+                    onClick={() => setShowGuide(false)}
+                    role="button"
+                    tabIndex={0}
+                >
+                    <img
+                        src="/images/panduan-foto.webp"
+                        alt="Panduan atur foto"
+                        className="max-h-full max-w-full rounded-lg object-contain"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowGuide(false)}
+                        className="absolute top-4 right-4 rounded-full bg-white/90 p-2 text-zinc-800 shadow"
+                        aria-label="Tutup"
+                    >
+                        <X className="size-5" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
