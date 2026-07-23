@@ -1251,8 +1251,30 @@ function CropReposition({
                         </div>
                     )}
                 </div>
+
+                {/* Zoom control — kept right under the cropper */}
+                <div className="mt-3 flex items-center gap-3">
+                    <span className="text-muted-foreground text-xs">Zoom</span>
+                    <input
+                        type="range"
+                        min={1}
+                        max={5}
+                        step={0.05}
+                        value={zoom}
+                        onChange={(e) => setZoom(Number(e.target.value))}
+                        className="h-1.5 flex-1 cursor-pointer accent-green-600"
+                    />
+                    <button
+                        type="button"
+                        onClick={reset}
+                        className="rounded-md border border-green-300 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900"
+                    >
+                        Reset
+                    </button>
+                </div>
+
                 {/* Panduan crop */}
-                <div className="mt-3 rounded-lg border border-green-200 bg-white/70 p-3 dark:border-green-800 dark:bg-zinc-900/40">
+                <div className="mt-4 rounded-lg border border-green-200 bg-white/70 p-3 dark:border-green-800 dark:bg-zinc-900/40">
                     <p className="mb-2 text-xs font-semibold text-green-800 dark:text-green-200">Cara mengatur foto:</p>
 
                     {/* Poster panduan */}
@@ -1276,7 +1298,7 @@ function CropReposition({
                         <li className="flex items-start gap-2">
                             <ZoomIn className="mt-0.5 size-3.5 shrink-0" />
                             <span>
-                                <b>Perbesar/perkecil:</b> pakai slider <b>Zoom</b> di bawah.
+                                <b>Perbesar/perkecil:</b> pakai slider <b>Zoom</b> di atas.
                             </span>
                         </li>
                         <li className="flex items-start gap-2">
@@ -1292,25 +1314,6 @@ function CropReposition({
                             </span>
                         </li>
                     </ul>
-                </div>
-                <div className="mt-3 flex items-center gap-3">
-                    <span className="text-muted-foreground text-xs">Zoom</span>
-                    <input
-                        type="range"
-                        min={1}
-                        max={5}
-                        step={0.05}
-                        value={zoom}
-                        onChange={(e) => setZoom(Number(e.target.value))}
-                        className="h-1.5 flex-1 cursor-pointer accent-green-600"
-                    />
-                    <button
-                        type="button"
-                        onClick={reset}
-                        className="rounded-md border border-green-300 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900"
-                    >
-                        Reset
-                    </button>
                 </div>
             </div>
 
