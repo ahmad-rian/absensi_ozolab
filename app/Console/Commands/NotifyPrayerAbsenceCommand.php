@@ -9,12 +9,12 @@ use App\Models\PrayerAbsenceAlert;
 use App\Models\School;
 use App\Models\Student;
 use App\Services\Attendance\PrayerAbsenceScanner;
+use App\Support\PrayerSchedule;
 use App\Support\PrayerSettings;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
 
 class NotifyPrayerAbsenceCommand extends Command
 {
@@ -43,42 +43,62 @@ class NotifyPrayerAbsenceCommand extends Command
         $queued = 0;
 
         foreach ($schools as $school) {
-            $features = SchoolFeatures::for($school);
+            if (SchoolFeatures::for($school)->disabled(SchoolFeature::NotifAlpaSholat)) {
+                continue;
+            }
 
-            if ($features->disabled(SchoolFeature::NotifAlpaSholat)) {
+            $schedule = PrayerSchedule::for($school);
+
+            // Satu penjaga untuk seluruh sekolah, bukan per jenis: kalau Dhuha
+            // dinilai jam 09:30 dan Dzuhur jam 13:30, dua alert siswa yang sama
+            // tidak pernah bertemu dalam satu eksekusi dan orang tua menerima
+            // dua pesan bernada sama di hari yang sama.
+            if (! $this->schoolIsEvaluable($schedule, $date)) {
                 continue;
             }
 
             $threshold = (int) ($school->getSetting('prayer_absence_threshold') ?? 3);
             $requirePresent = (bool) ($school->getSetting('prayer_absence_require_present') ?? true);
 
-            /** @var array<string, array{alerts: Collection<int, PrayerAbsenceAlert>, labels: array<int, string>}> */
+            /** @var array<string, array<string, mixed>> */
             $perStudent = [];
 
-            foreach (PrayerType::chronological() as $type) {
+            foreach ($schedule->enabled() as $settings) {
+                $type = $settings->type;
+
                 if ($onlyType !== null && $type !== $onlyType) {
                     continue;
                 }
 
-                if (! $this->typeIsEvaluable($school, $type, $date, $features)) {
+                $result = $scanner->scan($school, $type, $date, $requirePresent);
+
+                // null = tidak ada data untuk dipindai (mis. libur panjang
+                // melebihi jendela pindai). Berbeda dari "tidak ada yang alpa",
+                // dan alert yang terbuka TIDAK boleh ikut ditutup karenanya.
+                if ($result === null) {
                     continue;
                 }
 
-                $hits = $scanner->scan($school, $type, $date, $threshold, $requirePresent);
-                $hitIds = $hits->map(fn (array $row) => $row['student']->id)->all();
+                // Alert ditutup hanya kalau rentetan siswa benar-benar putus —
+                // bukan kalau rentetannya sekadar turun di bawah ambang, yang
+                // terjadi begitu admin menaikkan `prayer_absence_threshold`.
+                $ongoing = $result->map(fn (array $row) => $row['student']->id)->all();
+                $this->resolveClosedAlerts($school, $type, $ongoing, $dryRun);
 
-                $this->resolveClosedAlerts($school, $type, $hitIds, $dryRun);
+                foreach ($result as $row) {
+                    if ($row['streak'] < $threshold) {
+                        continue;
+                    }
 
-                foreach ($hits as $row) {
                     $alert = $this->recordAlert($school, $type, $row, $dryRun);
 
                     if ($alert === null) {
                         continue;
                     }
 
-                    $perStudent[$row['student']->id]['alerts'][] = $alert;
-                    $perStudent[$row['student']->id]['labels'][] = $type->shortLabel();
-                    $perStudent[$row['student']->id]['student'] = $row['student'];
+                    $studentId = $row['student']->id;
+                    $perStudent[$studentId]['alerts'][] = $alert;
+                    $perStudent[$studentId]['labels'][] = $type->shortLabel();
                 }
             }
 
@@ -91,15 +111,18 @@ class NotifyPrayerAbsenceCommand extends Command
     }
 
     /**
-     * Hari berjalan baru boleh dinilai setelah jendela sholatnya benar-benar
-     * tutup plus tenggang; kalau tidak, scan pukul 12:59 kalah cepat dari tick
-     * penjadwal pukul 13:00.
+     * Hari berjalan baru boleh dinilai setelah jendela sholat TERAKHIR yang
+     * aktif tutup plus tenggang.
+     *
+     * Memakai jendela terakhir, bukan jendela masing-masing jenis, supaya
+     * seluruh jenis dievaluasi dalam satu eksekusi dan bisa digabung jadi satu
+     * pesan. Konsekuensinya peringatan Dhuha datang siang, bukan pagi.
      */
-    private function typeIsEvaluable(School $school, PrayerType $type, Carbon $date, SchoolFeatures $features): bool
+    private function schoolIsEvaluable(PrayerSchedule $schedule, Carbon $date): bool
     {
-        $feature = $type === PrayerType::Dhuha ? SchoolFeature::SholatDhuha : SchoolFeature::SholatDzuhur;
+        $enabled = $schedule->enabled();
 
-        if ($features->disabled($feature)) {
+        if ($enabled === []) {
             return false;
         }
 
@@ -107,20 +130,26 @@ class NotifyPrayerAbsenceCommand extends Command
             return true;
         }
 
-        $settings = PrayerSettings::for($school, $type);
-        $closesAt = $date->copy()->setTimeFromTimeString($settings->end)
+        $lastEnd = max(array_map(fn (PrayerSettings $settings) => $settings->end, $enabled));
+
+        $closesAt = $date->copy()
+            ->setTimeFromTimeString($lastEnd)
             ->addMinutes((int) config('attendance.prayer.absence_grace_minutes', 30));
 
         return SchoolTime::now()->greaterThan($closesAt);
     }
 
     /**
-     * Tutup alert terbuka milik siswa yang sudah tidak lagi punya rentetan —
-     * inilah "reset begitu siswa sholat lagi".
+     * Tutup alert terbuka milik siswa yang rentetannya BENAR-BENAR putus.
      *
-     * @param  array<int, string>  $stillFailing
+     * `$ongoing` berisi setiap siswa yang masih punya rentetan berjalan, tanpa
+     * peduli ambang — kalau daftar ini disaring ambang lebih dulu, menaikkan
+     * `prayer_absence_threshold` akan menandai siswa yang masih alpa tiap hari
+     * sebagai "sudah sembuh".
+     *
+     * @param  array<int, string>  $ongoing
      */
-    private function resolveClosedAlerts(School $school, PrayerType $type, array $stillFailing, bool $dryRun): void
+    private function resolveClosedAlerts(School $school, PrayerType $type, array $ongoing, bool $dryRun): void
     {
         $open = PrayerAbsenceAlert::withoutGlobalScope('school')
             ->where('school_id', $school->id)
@@ -129,7 +158,7 @@ class NotifyPrayerAbsenceCommand extends Command
             ->get();
 
         foreach ($open as $alert) {
-            if (in_array($alert->student_id, $stillFailing, true)) {
+            if (in_array($alert->student_id, $ongoing, true)) {
                 continue;
             }
 

@@ -1,9 +1,11 @@
 <?php
 
 use App\Enums\AppModule;
+use App\Enums\PrayerType;
 use App\Enums\SchoolFeature;
 use App\Models\School;
 use App\Models\Student;
+use App\Support\PrayerSettings;
 use App\Support\SchoolFeatures;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -209,4 +211,81 @@ test('the public scan endpoint answers json 403 when attendance is switched off'
         ->assertStatus(403)
         ->assertJsonPath('success', false)
         ->assertJsonPath('message', 'Absensi sekolah sedang dimatikan oleh admin.');
+});
+
+// ---------------------------------------------------------------- Regresi audit
+
+test('B-1: both read paths agree on every prayer feature', function () {
+    // Inilah bug terparah hasil audit: SchoolFeature bilang Dzuhur AKTIF
+    // sementara PrayerSettings membacanya MATI, selama key-nya belum ditulis.
+    // Kalau default-nya dibuat berbeda lagi suatu hari, test ini yang gagal.
+    $school = School::factory()->create(['settings' => []]);
+    $flags = SchoolFeatures::for($school);
+
+    expect($flags->enabled(SchoolFeature::SholatDzuhur))
+        ->toBe(PrayerSettings::for($school, PrayerType::Dzuhur)->enabled)
+        ->and($flags->enabled(SchoolFeature::SholatDhuha))
+        ->toBe(PrayerSettings::for($school, PrayerType::Dhuha)->enabled);
+});
+
+test('B-1: saving the feature tab does not switch prayer on by itself', function () {
+    $school = School::find($this->admin->school_id);
+    $school->forceFill(['settings' => []])->save();
+
+    $this->actingAs($this->admin)->put(route('admin.pengaturan.update'), [
+        'section' => 'fitur',
+        'features' => SchoolFeatures::for($school->fresh())->toArray(),
+    ])->assertSessionHasNoErrors();
+
+    expect(School::find($this->admin->school_id)->getSetting('prayer_enabled'))->toBeFalse();
+});
+
+test('B-1: a brand new school stores every switch explicitly', function () {
+    $superAdmin = createSuperAdminUser();
+
+    $this->actingAs($superAdmin)->post(route('admin.schools.store'), [
+        'name' => 'SMP Uji Fitur',
+    ])->assertSessionHasNoErrors();
+
+    $settings = School::where('name', 'SMP Uji Fitur')->first()->settings;
+
+    foreach (SchoolFeature::cases() as $feature) {
+        expect($settings)->toHaveKey($feature->settingKey());
+    }
+});
+
+test('B-1: the backfill leaves an explicitly stored value alone', function () {
+    $school = School::factory()->create([
+        'settings' => ['prayer_enabled' => true, 'whatsapp_enabled' => false],
+    ]);
+
+    $this->artisan('migrate', ['--force' => true])->assertSuccessful();
+
+    $school->refresh();
+
+    expect($school->getSetting('prayer_enabled'))->toBeTrue()
+        ->and($school->getSetting('whatsapp_enabled'))->toBeFalse();
+});
+
+test('B-10: a typo in the second feature name still fails loudly', function () {
+    // Dulu loop-nya `return` begitu fitur pertama aktif, jadi salah ketik di
+    // posisi kedua tidak pernah terdeteksi.
+    Route::middleware(['web', 'auth', 'feature:laporan,tidak-ada'])
+        ->get('/__feature-typo-kedua', fn () => 'ok');
+
+    $this->withoutExceptionHandling()
+        ->actingAs($this->admin)
+        ->get('/__feature-typo-kedua');
+})->throws(HttpException::class, 'Fitur tidak dikenal: tidak-ada');
+
+test('B-10: another tenant feature state is not observable through the api', function () {
+    $other = School::factory()->create(['settings' => ['feature_master_siswa' => false]]);
+    $otherOn = School::factory()->create(['settings' => ['feature_master_siswa' => true]]);
+
+    // Jawabannya harus sama apa pun status fitur sekolah lain — kalau berbeda,
+    // selisih 403/404 jadi oracle enumerasi lintas-tenant.
+    $off = $this->actingAs($this->admin)->getJson("/api/schools/{$other->id}/students");
+    $on = $this->actingAs($this->admin)->getJson("/api/schools/{$otherOn->id}/students");
+
+    expect($off->status())->toBe($on->status());
 });

@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 import { AttendanceHeatmap } from '@/components/student/attendance-heatmap';
 import { DailyBarChart, type DailySeries } from '@/components/student/daily-bar-chart';
@@ -117,16 +118,15 @@ export function StatsPanel({
                 <AttendanceHeatmap days={heatmap} title={heatmapTitle} />
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            {/* Tab sholat tidak punya perbandingan kelas maupun tren bulanan,
+                jadi kartu Runtun berdiri sendiri — satu kolom, bukan setengah
+                layar kosong di sebelahnya. */}
+            <div className={cn('grid gap-6', comparison && 'lg:grid-cols-2')}>
                 <StreakCard streaks={streaks} />
-                {comparison ? (
-                    <PeerComparisonCard comparison={comparison} studentRate={studentRate} />
-                ) : (
-                    monthly && <MonthlyTrendChart data={monthly} />
-                )}
+                {comparison && <PeerComparisonCard comparison={comparison} studentRate={studentRate} />}
             </div>
 
-            {comparison && monthly && <MonthlyTrendChart data={monthly} />}
+            {monthly && <MonthlyTrendChart data={monthly} />}
 
             <HistoryTable
                 title={historyTitle}

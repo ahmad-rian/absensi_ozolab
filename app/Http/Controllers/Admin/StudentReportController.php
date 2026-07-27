@@ -132,7 +132,11 @@ class StudentReportController extends Controller
      */
     private function prayerType(Request $request): ?PrayerType
     {
-        return PrayerType::fromSlug($request->query('jenis'));
+        // `query()` mengembalikan array untuk `?jenis[]=x`; tanpa penjaga ini
+        // signature `fromSlug(?string)` melempar TypeError alias 500.
+        $jenis = $request->query('jenis');
+
+        return is_string($jenis) ? PrayerType::fromSlug($jenis) : null;
     }
 
     private function prayerPrefix(?PrayerType $type): string

@@ -110,6 +110,36 @@
         </table>
     @endisset
 
+    @if (!empty($byWeekday['series']))
+        <h3>Pola per Hari</h3>
+        <table class="detail" style="margin-bottom:14px">
+            <thead>
+                <tr>
+                    <th>Hari</th>
+                    <th>Hari Efektif</th>
+                    <th>Hadir</th>
+                    <th>Terlambat</th>
+                    <th>Izin</th>
+                    <th>Sakit</th>
+                    <th>Alpa</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($byWeekday['series'] as $row)
+                    <tr>
+                        <td>{{ $row['weekday'] }}</td>
+                        <td>{{ $row['effective'] }}</td>
+                        <td>{{ $row['hadir'] }}</td>
+                        <td>{{ $row['terlambat'] }}</td>
+                        <td>{{ $row['izin'] }}</td>
+                        <td>{{ $row['sakit'] }}</td>
+                        <td>{{ $row['alpa'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     @if (!empty($byWeekday['worst_day']))
         <p style="font-size:11px; margin-bottom:10px;">
             Hari dengan keterlambatan tertinggi: <strong>{{ $byWeekday['worst_day'] }}</strong>.

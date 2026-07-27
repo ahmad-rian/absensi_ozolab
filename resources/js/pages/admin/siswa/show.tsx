@@ -6,8 +6,6 @@ import {
     CalendarDays,
     CreditCard,
     Download,
-    FileSpreadsheet,
-    FileText,
     HardDrive,
     Images,
     Loader2,
@@ -27,12 +25,10 @@ import { attendanceSlices, prayerSlices } from '@/components/student/status-pie'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dashboard } from '@/routes';
 import type { SchoolFeatureMap } from '@/types';
@@ -660,6 +656,26 @@ function PrayerPanel({
     onApply: () => void;
 }) {
     const detail = stats?.types[0];
+
+    // Payload sudah tiba tapi jenis ini tidak aktif: tampilkan sebabnya, bukan
+    // skeleton abadi yang terbaca seperti request menggantung.
+    if (stats && !detail) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Absen sholat belum diaktifkan</CardTitle>
+                    <CardDescription>
+                        Nyalakan dulu di Pengaturan → tab Absen Sholat, lengkap dengan jam mulai dan selesai.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button variant="outline" asChild>
+                        <Link href="/admin/pengaturan?tab=sholat">Buka Pengaturan</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        );
+    }
 
     const tiles: TileSpec[] = [
         { label: 'Ikut Sholat', value: detail?.summary.hadir ?? '—', icon: MoonStar, tone: 'green' },

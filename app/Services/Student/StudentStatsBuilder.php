@@ -14,6 +14,7 @@ use App\Support\PrayerSettings;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 /**
@@ -156,6 +157,15 @@ class StudentStatsBuilder
             $types = array_values(array_filter($types, fn (PrayerType $type) => $type === $only));
         }
 
+        // Tanpa satu pun jenis aktif tidak ada yang bisa dilaporkan. Dulu di
+        // sini `when($types !== [], ...)` MELEWATI filter jenis sepenuhnya,
+        // sehingga laporan berjudul "Dhuha" untuk sekolah yang Dhuha-nya mati
+        // justru menampilkan angka Dzuhur — dengan tabel rincian kosong dan
+        // persentase yang bisa melebihi 100%.
+        if ($types === []) {
+            return $this->emptyPrayerPayload($student, $schedule, $start, $end);
+        }
+
         // Satu query untuk semua jenis; pengelompokan dikerjakan di PHP supaya
         // tidak ada query tambahan per jenis sholat.
         $rows = PrayerAttendance::query()
@@ -163,10 +173,7 @@ class StudentStatsBuilder
             ->where('student_id', $student->id)
             ->whereDate('prayer_date', '>=', $start)
             ->whereDate('prayer_date', '<=', $end)
-            ->when($types !== [], fn ($query) => $query->whereIn(
-                'prayer_type',
-                array_map(fn (PrayerType $type) => $type->value, $types),
-            ))
+            ->whereIn('prayer_type', array_map(fn (PrayerType $type) => $type->value, $types))
             ->orderByDesc('prayer_date')
             ->orderByDesc('recorded_at')
             ->get();
@@ -208,6 +215,7 @@ class StudentStatsBuilder
                 'recent' => $typeRows->take(30)->map(fn (PrayerAttendance $row) => [
                     'id' => $row->id,
                     'date' => $row->prayer_date->format('d M Y'),
+                    'sort_key' => $row->prayer_date->toDateString().' '.($row->recorded_at?->format('H:i') ?? '00:00'),
                     'type' => $row->prayer_type->value,
                     'type_label' => $row->prayer_type->label(),
                     'status' => $row->status->value,
@@ -242,13 +250,51 @@ class StudentStatsBuilder
                 $effectiveDates,
                 $rows->map(fn (PrayerAttendance $row) => $row->prayer_date->toDateString())->unique()->values()->all(),
             ),
+            // Diurutkan lewat `sort_key` (Y-m-d H:i), BUKAN `date` yang sudah
+            // diformat 'd M Y' — perbandingan string atas format itu menaruh
+            // "30 Jun" di atas "05 Jul" dan ikut merusak potongan 30 teratas.
             'recent' => collect($perType)
                 ->flatMap(fn (array $type) => $type['recent'])
-                ->sortByDesc('date')
+                ->sortByDesc('sort_key')
                 ->take(30)
+                ->map(fn (array $row) => Arr::except($row, 'sort_key'))
                 ->values()
                 ->all(),
             'types' => $perType,
+        ];
+    }
+
+    /**
+     * Payload sholat saat tidak ada satu pun jenis yang bisa dilaporkan —
+     * sekolah belum mengaktifkan sholat, atau jenis yang diminta lewat
+     * `?jenis=` sedang dimatikan.
+     *
+     * Dikembalikan eksplisit alih-alih menjalankan query tanpa filter jenis,
+     * yang dulu membuat laporan satu jenis menampilkan angka jenis lain.
+     *
+     * @return array<string, mixed>
+     */
+    private function emptyPrayerPayload(Student $student, ?PrayerSchedule $schedule, string $start, string $end): array
+    {
+        $effectiveDays = count($this->effectiveDates($student, $start, $end));
+
+        return [
+            'enabled' => $schedule?->anyEnabled() ?? false,
+            'covered' => $schedule?->covers($student) ?? false,
+            'opt_in' => $student->prayer_opt_in,
+            'school_includes_all' => $schedule?->get(PrayerType::Dzuhur)->allReligions ?? false,
+            'religion_label' => $student->religion?->label(),
+            'window' => null,
+            'summary' => [
+                'hadir' => 0,
+                'tidak_hadir' => 0,
+                'effective_days' => $effectiveDays,
+                'opportunities' => 0,
+                'rate' => 0.0,
+            ],
+            'daily' => [],
+            'recent' => [],
+            'types' => [],
         ];
     }
 
@@ -295,6 +341,10 @@ class StudentStatsBuilder
             ->where('school_id', $student->school_id)
             ->whereDate('attendance_date', '>=', $start)
             ->whereDate('attendance_date', '<=', $end)
+            // distinct() di SQL: tanpa ini seluruh baris absensi satu sekolah
+            // ditarik ke memori (ratusan siswa x puluhan hari x check-in dan
+            // check-out) hanya untuk mendapat paling banyak 31 tanggal unik.
+            ->distinct()
             ->orderBy('attendance_date')
             ->pluck('attendance_date')
             // DISTINCT di SQL bisa meloloskan tanggal yang sama dua kali karena
@@ -400,11 +450,12 @@ class StudentStatsBuilder
      */
     private function weekdayBuckets(Student $student, array $effectiveDates, Collection $rows, string $dateColumn = 'attendance_date'): array
     {
+        $empty = ['effective' => 0, 'hadir' => 0, 'terlambat' => 0, 'izin' => 0, 'sakit' => 0, 'alpa' => 0];
         $buckets = [];
 
         foreach ($effectiveDates as $date) {
             $iso = Carbon::parse($date)->dayOfWeekIso;
-            $buckets[$iso] ??= ['effective' => 0, 'hadir' => 0, 'terlambat' => 0];
+            $buckets[$iso] ??= $empty;
             $buckets[$iso]['effective']++;
         }
 
@@ -415,13 +466,19 @@ class StudentStatsBuilder
                 continue;
             }
 
-            if ($row instanceof Attendance && $row->status === AttendanceStatus::Terlambat) {
-                $buckets[$iso]['terlambat']++;
+            // Tiap status punya ember sendiri. Dulu hanya TERLAMBAT yang
+            // dipisah, sehingga hari IZIN/SAKIT/ALPA ikut dihitung sebagai
+            // hadir — chart bisa menampilkan Senin 100% hadir sementara kartu
+            // ringkasan di layar yang sama menyebut alpa 4.
+            $bucket = match ($row->status ?? null) {
+                AttendanceStatus::Terlambat => 'terlambat',
+                AttendanceStatus::Izin => 'izin',
+                AttendanceStatus::Sakit => 'sakit',
+                AttendanceStatus::Alpa => 'alpa',
+                default => 'hadir',
+            };
 
-                continue;
-            }
-
-            $buckets[$iso]['hadir']++;
+            $buckets[$iso][$bucket]++;
         }
 
         ksort($buckets);
@@ -435,6 +492,9 @@ class StudentStatsBuilder
                 'effective' => $bucket['effective'],
                 'hadir' => $bucket['hadir'],
                 'terlambat' => $bucket['terlambat'],
+                'izin' => $bucket['izin'],
+                'sakit' => $bucket['sakit'],
+                'alpa' => $bucket['alpa'],
                 'rate' => $bucket['effective'] > 0 ? round($present / $bucket['effective'] * 100, 1) : 0.0,
                 'late_rate' => $bucket['effective'] > 0 ? round($bucket['terlambat'] / $bucket['effective'] * 100, 1) : 0.0,
             ];
@@ -615,11 +675,18 @@ class StudentStatsBuilder
         foreach ($effectiveDates as $date) {
             $statuses = $indexed[$date] ?? [];
 
+            // Tiap status punya serinya sendiri. Dulu hari yang hanya punya
+            // baris IZIN/SAKIT/ALPA menghasilkan ketiga seri nol alias batang
+            // kosong — ketidakhadiran yang dicatat eksplisit justru hilang,
+            // sementara hari tanpa catatan sama sekali tetap tampil.
             $result[] = [
                 'date' => Carbon::parse($date)->translatedFormat('d M'),
                 'hadir' => isset($statuses[AttendanceStatus::Hadir->value]) ? 1 : 0,
                 'terlambat' => isset($statuses[AttendanceStatus::Terlambat->value]) ? 1 : 0,
-                'tidak_hadir' => $statuses === [] ? 1 : 0,
+                'izin' => isset($statuses[AttendanceStatus::Izin->value]) ? 1 : 0,
+                'sakit' => isset($statuses[AttendanceStatus::Sakit->value]) ? 1 : 0,
+                'alpa' => isset($statuses[AttendanceStatus::Alpa->value]) ? 1 : 0,
+                'tanpa_keterangan' => $statuses === [] ? 1 : 0,
             ];
         }
 

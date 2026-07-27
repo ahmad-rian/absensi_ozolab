@@ -10,10 +10,15 @@ export type DailySeries = {
     radius?: [number, number, number, number];
 };
 
+// Warnanya sengaja sama dengan irisan pie di status-pie.tsx: satu status harus
+// berwarna sama di mana pun ia muncul.
 export const ATTENDANCE_SERIES: DailySeries[] = [
     { key: 'hadir', name: 'Hadir', color: 'var(--color-chart-2)' },
     { key: 'terlambat', name: 'Terlambat', color: 'var(--color-chart-3)' },
-    { key: 'tidak_hadir', name: 'Tanpa Catatan', color: 'var(--color-chart-5)', radius: [4, 4, 0, 0] },
+    { key: 'izin', name: 'Izin', color: 'var(--color-chart-1)' },
+    { key: 'sakit', name: 'Sakit', color: 'var(--color-chart-4)' },
+    { key: 'alpa', name: 'Alpa', color: 'var(--color-chart-5)' },
+    { key: 'tanpa_keterangan', name: 'Tanpa Catatan', color: 'var(--color-muted-foreground)', radius: [4, 4, 0, 0] },
 ];
 
 export const PRAYER_SERIES: DailySeries[] = [

@@ -439,3 +439,110 @@ test('whatsapp only goes out when the school has an active WA channel', function
         ->where('channel', NotificationChannel::Whatsapp->value)
         ->count())->toBe(1);
 });
+
+// ---------------------------------------------------------------- Regresi audit
+
+/**
+ * Test lama semuanya memakai tanggal LAMPAU, sehingga penjaga "jendela sudah
+ * tutup?" selalu di-short-circuit dan bug penggabungan pesan tidak terlihat.
+ * Blok ini sengaja memakai hari ini.
+ */
+function todaySetup(): Carbon
+{
+    $today = SchoolTime::today();
+
+    // Seluruh tujuh hari diaktifkan supaya rentetan tiga hari terakhir tidak
+    // terpotong akhir pekan, apa pun hari test ini dijalankan.
+    foreach ([6, 7] as $day) {
+        AttendanceSchedule::factory()->create([
+            'school_id' => test()->school->id,
+            'classroom_id' => null,
+            'day_of_week' => $day,
+            'is_active' => true,
+        ]);
+    }
+
+    foreach (range(0, 2) as $offset) {
+        markPresent(test()->student, $today->copy()->subDays($offset));
+    }
+
+    return $today;
+}
+
+test('B-5: two missed types on the same day produce exactly one message', function () {
+    Queue::fake();
+
+    $this->school->setSetting('prayer_dhuha_enabled', true);
+    $today = todaySetup();
+
+    // Setelah jendela Dzuhur (terakhir) tutup plus tenggang.
+    $this->travelTo($today->copy()->setTime(13, 45));
+
+    runAbsenceCommand($today);
+
+    $alerts = PrayerAbsenceAlert::withoutGlobalScope('school')->get();
+
+    expect($alerts)->toHaveCount(2);
+    Queue::assertPushed(SendPrayerAbsenceNotification::class, 1);
+
+    $primary = $alerts->firstWhere('combined_types', '!=', null);
+
+    expect($primary->combined_types)->toContain('Dhuha')
+        ->and($primary->combined_types)->toContain('Dzuhur');
+});
+
+test('B-5: nothing is evaluated before the last window closes', function () {
+    Queue::fake();
+
+    $this->school->setSetting('prayer_dhuha_enabled', true);
+    $today = todaySetup();
+
+    // Jendela Dhuha sudah tutup, Dzuhur belum. Dulu di sini Dhuha dikirim
+    // sendirian, lalu Dzuhur menyusul sore hari sebagai pesan kedua.
+    $this->travelTo($today->copy()->setTime(9, 45));
+
+    runAbsenceCommand($today);
+
+    expect(PrayerAbsenceAlert::withoutGlobalScope('school')->count())->toBe(0);
+    Queue::assertNothingPushed();
+});
+
+test('B-6: raising the threshold does not close a running streak', function () {
+    Queue::fake();
+
+    foreach (range(0, 3) as $offset) {
+        markPresent($this->student, $this->monday->copy()->addDays($offset));
+    }
+
+    runAbsenceCommand($this->monday->copy()->addDays(3));
+
+    $alert = PrayerAbsenceAlert::withoutGlobalScope('school')->first();
+    expect($alert->resolved_at)->toBeNull();
+
+    // Ambang naik 3 -> 6; siswa masih alpa tiap hari, jadi alert-nya harus
+    // TETAP terbuka. Dulu ia langsung ditandai "sudah sembuh".
+    $this->school->setSetting('prayer_absence_threshold', 6);
+
+    runAbsenceCommand($this->monday->copy()->addDays(3));
+
+    expect($alert->fresh()->resolved_at)->toBeNull();
+});
+
+test('B-6: a long holiday does not close open alerts', function () {
+    Queue::fake();
+
+    foreach (range(0, 2) as $offset) {
+        markPresent($this->student, $this->monday->copy()->addDays($offset));
+    }
+
+    runAbsenceCommand($this->monday->copy()->addDays(2));
+
+    $alert = PrayerAbsenceAlert::withoutGlobalScope('school')->first();
+    expect($alert)->not->toBeNull();
+
+    // Tanggal acuan 60 hari kemudian: tidak ada satu pun hari operasional di
+    // jendela pindai, jadi pindaian tidak bisa dilakukan sama sekali.
+    runAbsenceCommand($this->monday->copy()->addDays(62));
+
+    expect($alert->fresh()->resolved_at)->toBeNull();
+});

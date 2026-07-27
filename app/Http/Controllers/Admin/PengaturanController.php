@@ -100,20 +100,28 @@ class PengaturanController extends Controller
     {
         $school = School::find(auth()->user()->school_id);
 
-        $keys = [
+        // Hanya field teks yang boleh jatuh ke string kosong.
+        $textKeys = [
             'school_name',
             'timezone',
-            'whatsapp_enabled',
-            'notify_on_check_in',
-            'notify_on_check_out',
             'whatsapp_template_attendance',
             'whatsapp_template_prayer_absence',
         ];
 
         $settings = [];
-        foreach ($keys as $key) {
+        foreach ($textKeys as $key) {
             $settings[$key] = $school?->getSetting($key) ?? Setting::getValue($key, '');
         }
+
+        // Saklar WAJIB dihidrasi sebagai boolean bertipe. Dulu ia ikut jalur
+        // di atas dan menghasilkan `''` untuk key yang belum ada, sehingga
+        // checkbox tampil tidak tercentang padahal fiturnya aktif — lalu
+        // menekan Simpan menuliskan `false` dan mematikan notifikasi kehadiran
+        // ke seluruh orang tua.
+        $features = SchoolFeatures::for($school);
+        $settings['whatsapp_enabled'] = $features->enabled(SchoolFeature::NotifAbsensi);
+        $settings['notify_on_check_in'] = (bool) ($school?->getSetting('notify_on_check_in') ?? true);
+        $settings['notify_on_check_out'] = (bool) ($school?->getSetting('notify_on_check_out') ?? true);
 
         $settings['prayer_absence_threshold'] = (int) ($school?->getSetting('prayer_absence_threshold') ?? 3);
         $settings['prayer_absence_require_present'] = (bool) ($school?->getSetting('prayer_absence_require_present') ?? true);

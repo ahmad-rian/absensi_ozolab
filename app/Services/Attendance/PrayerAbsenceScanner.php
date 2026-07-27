@@ -30,9 +30,18 @@ class PrayerAbsenceScanner
     private const SCAN_DAYS = 30;
 
     /**
-     * @return Collection<int, array{student: Student, streak: int, start: string, last: string}>
+     * Setiap siswa yang sedang punya rentetan berjalan, tanpa penyaringan
+     * ambang — pemanggil yang memutuskan mana yang layak dinotifikasi dan mana
+     * yang cukup menahan alert-nya tetap terbuka.
+     *
+     * `null` berarti pindaian TIDAK BISA dilakukan (tidak ada satu pun hari
+     * operasional dalam jendela pindai, mis. libur panjang). Itu berbeda dari
+     * koleksi kosong yang berarti "tidak ada yang alpa" — kalau keduanya
+     * disamakan, libur panjang akan menutup semua alert yang terbuka.
+     *
+     * @return ?Collection<int, array{student: Student, streak: int, start: string, last: string}>
      */
-    public function scan(School $school, PrayerType $type, Carbon $upTo, int $threshold, bool $requirePresent): Collection
+    public function scan(School $school, PrayerType $type, Carbon $upTo, bool $requirePresent): ?Collection
     {
         $from = $upTo->copy()->subDays(self::SCAN_DAYS)->toDateString();
         $to = $upTo->toDateString();
@@ -40,13 +49,15 @@ class PrayerAbsenceScanner
         $operatingDays = $this->operatingDays($school, $from, $to);
 
         if ($operatingDays === []) {
-            return collect();
+            return null;
         }
 
         $settings = PrayerSettings::for($school, $type);
         $students = $this->candidates($school, $settings);
 
         if ($students->isEmpty()) {
+            // Pindaian valid, hanya tidak ada siswa yang tercakup — alert lama
+            // milik siswa yang sudah tidak wajib sholat memang layak ditutup.
             return collect();
         }
 
@@ -55,7 +66,7 @@ class PrayerAbsenceScanner
         $prayed = $this->prayed($school, $type, $from, $to);
 
         return $students
-            ->map(function (Student $student) use ($operatingDays, $activeDaysByClassroom, $presence, $prayed, $requirePresent, $threshold) {
+            ->map(function (Student $student) use ($operatingDays, $activeDaysByClassroom, $presence, $prayed, $requirePresent) {
                 $streak = $this->streakFor(
                     $student,
                     $operatingDays,
@@ -65,7 +76,7 @@ class PrayerAbsenceScanner
                     $requirePresent,
                 );
 
-                if (count($streak) < $threshold) {
+                if ($streak === []) {
                     return null;
                 }
 
@@ -79,22 +90,6 @@ class PrayerAbsenceScanner
             })
             ->filter()
             ->values();
-    }
-
-    /**
-     * Apakah siswa ini sedang punya rentetan berjalan sama sekali.
-     * Dipakai untuk menutup alert yang terbuka begitu siswa sholat lagi.
-     */
-    public function hasBrokenStreak(
-        Student $student,
-        School $school,
-        PrayerType $type,
-        Carbon $upTo,
-        bool $requirePresent,
-    ): bool {
-        $result = $this->scan($school, $type, $upTo, 1, $requirePresent);
-
-        return ! $result->contains(fn (array $row) => $row['student']->id === $student->id);
     }
 
     /**

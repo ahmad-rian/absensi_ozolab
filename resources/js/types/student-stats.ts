@@ -11,6 +11,9 @@ export type WeekdayPoint = {
     effective: number;
     hadir: number;
     terlambat: number;
+    izin: number;
+    sakit: number;
+    alpa: number;
     rate: number;
     late_rate: number;
 };

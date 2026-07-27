@@ -252,3 +252,66 @@ test('prayer stats can be narrowed to a single type', function () {
     expect($data['types'])->toHaveCount(1)
         ->and($data['types'][0]['type'])->toBe(PrayerType::Dhuha->value);
 });
+
+// ---------------------------------------------------------------- Regresi audit
+
+test('B-7: an ALPA day is not counted as present in the weekday chart', function () {
+    // Dulu hanya TERLAMBAT yang dipisah, sehingga Senin bisa tampil 100% hadir
+    // di chart sementara kartu ringkasan di layar yang sama menyebut alpa 2.
+    checkIn($this->student, $this->monday, '07:00', AttendanceStatus::Alpa);
+    checkIn($this->student, $this->monday->copy()->addWeek(), '07:00', AttendanceStatus::Alpa);
+
+    [$start, $end] = statsRange();
+    $data = $this->stats->attendanceFor($this->student, $start, $end);
+
+    $senin = collect($data['by_weekday']['series'])->firstWhere('weekday', 'Senin');
+
+    expect($senin['alpa'])->toBe(2)
+        ->and($senin['hadir'])->toBe(0)
+        ->and($senin['rate'])->toBe(0.0);
+});
+
+test('B-8: an IZIN day shows up as its own series, not an empty bar', function () {
+    checkIn($this->student, $this->monday, '07:00', AttendanceStatus::Izin);
+    checkIn($this->student, $this->monday->copy()->addDay(), '07:00', AttendanceStatus::Sakit);
+
+    [$start, $end] = statsRange();
+    $data = $this->stats->attendanceFor($this->student, $start, $end);
+
+    $first = collect($data['daily'])->firstWhere('date', $this->monday->translatedFormat('d M'));
+    $second = collect($data['daily'])->firstWhere('date', $this->monday->copy()->addDay()->translatedFormat('d M'));
+
+    expect($first['izin'])->toBe(1)
+        ->and($first['tanpa_keterangan'])->toBe(0)
+        ->and($second['sakit'])->toBe(1);
+});
+
+test('B-9: effective days stay correct after the SQL-side dedup', function () {
+    // Dua baris (check-in + check-out) pada hari yang sama harus tetap satu
+    // hari efektif.
+    checkIn($this->student, $this->monday, '07:00');
+
+    Attendance::factory()->create([
+        'school_id' => $this->school->id,
+        'student_id' => $this->student->id,
+        'attendance_date' => $this->monday->toDateString(),
+        'type' => AttendanceType::CheckOut,
+        'recorded_at' => $this->monday->copy()->setTime(14, 0),
+    ]);
+
+    [$start, $end] = statsRange();
+    $data = $this->stats->attendanceFor($this->student, $start, $end);
+
+    expect($data['summary']['effective_days'])->toBe(1);
+});
+
+test('B-3: a student without a school gets an empty prayer payload, not a leak', function () {
+    $orphan = Student::factory()->create(['school_id' => null]);
+
+    [$start, $end] = statsRange();
+    $data = $this->stats->prayerFor($orphan, $start, $end);
+
+    expect($data['types'])->toBe([])
+        ->and($data['summary']['hadir'])->toBe(0)
+        ->and($data['enabled'])->toBeFalse();
+});

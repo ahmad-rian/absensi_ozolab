@@ -34,7 +34,10 @@ export function WeekdayDistributionChart({ data, title }: { data?: WeekdayBlock;
                     <Tooltip contentStyle={TOOLTIP_STYLE} />
                     <Legend wrapperStyle={{ fontSize: '0.75rem' }} />
                     <Bar dataKey="hadir" name="Hadir" stackId="a" fill="var(--color-chart-2)" />
-                    <Bar dataKey="terlambat" name="Terlambat" stackId="a" fill="var(--color-chart-3)" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="terlambat" name="Terlambat" stackId="a" fill="var(--color-chart-3)" />
+                    <Bar dataKey="izin" name="Izin" stackId="a" fill="var(--color-chart-1)" />
+                    <Bar dataKey="sakit" name="Sakit" stackId="a" fill="var(--color-chart-4)" />
+                    <Bar dataKey="alpa" name="Alpa" stackId="a" fill="var(--color-chart-5)" radius={[0, 4, 4, 0]} />
                 </BarChart>
             </ResponsiveContainer>
         </ChartFrame>

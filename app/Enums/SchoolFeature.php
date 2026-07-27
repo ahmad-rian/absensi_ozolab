@@ -67,11 +67,22 @@ enum SchoolFeature: string
      * Fitur yang sudah ada sebelum panel ini WAJIB default aktif supaya tidak
      * ada sekolah yang kehilangan fungsi setelah deploy. Hanya fitur baru yang
      * default mati.
+     *
+     * Ketiga fitur yang memakai key lama HARUS mengambil default dari sumber
+     * yang sama dengan pembacanya. Sebelumnya SholatDzuhur default `true` di
+     * sini sementara `PrayerSettings` membacanya dari config yang default
+     * `false` — selama key-nya belum pernah ditulis, kedua jalur memberi
+     * jawaban berlawanan, dan menyimpan tab Fitur akan menyalakan absen sholat
+     * untuk sekolah yang tidak pernah memintanya.
      */
     public function defaultEnabled(): bool
     {
         return match ($this) {
-            self::SholatDhuha, self::NotifAlpaSholat => false,
+            self::SholatDzuhur => (bool) config('attendance.prayer.enabled', false),
+            self::SholatDhuha => (bool) config('attendance.prayer_dhuha.enabled', false),
+            // Cocok dengan default di DispatchAttendanceNotifications.
+            self::NotifAbsensi => true,
+            self::NotifAlpaSholat => false,
             default => true,
         };
     }

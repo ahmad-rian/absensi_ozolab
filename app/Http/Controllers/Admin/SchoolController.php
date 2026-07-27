@@ -76,11 +76,11 @@ class SchoolController extends Controller
             'late_threshold_time' => '07:15',
             'default_check_out_time' => '14:30',
             'timezone' => 'Asia/Jakarta',
-            'whatsapp_enabled' => true,
             'notify_on_check_in' => true,
             'notify_on_check_out' => true,
-            // Sekolah baru mulai dengan seluruh fitur lama menyala, sama
-            // seperti hasil backfill untuk sekolah yang sudah ada.
+            // Seluruh saklar fitur ditulis eksplisit — termasuk
+            // `whatsapp_enabled` dan `prayer_enabled` yang memakai nama lama —
+            // supaya sekolah baru tidak pernah punya keadaan "belum diatur".
             ...self::defaultFeatureFlags(),
         ];
 
@@ -217,9 +217,10 @@ class SchoolController extends Controller
     /**
      * Nilai awal saklar fitur untuk sekolah baru.
      *
-     * Diturunkan dari enum supaya sekolah baru dan hasil backfill tidak pernah
-     * berbeda; fitur yang memakai key lama (prayer_enabled dan kawan-kawan)
-     * dilewati karena sudah punya nilai sendiri di array di atas.
+     * SELURUH key ditulis, termasuk yang memakai nama lama (`prayer_enabled`
+     * dan kawan-kawan). Melewatkannya membuat sekolah baru lahir dengan
+     * keadaan "belum pernah diatur", yang dibaca berbeda oleh `SchoolFeatures`
+     * dan `PrayerSettings` — lihat migrasi backfill_mapped_feature_keys.
      *
      * @return array<string, bool>
      */
@@ -228,13 +229,7 @@ class SchoolController extends Controller
         $flags = [];
 
         foreach (SchoolFeature::cases() as $feature) {
-            $key = $feature->settingKey();
-
-            if (! str_starts_with($key, 'feature_')) {
-                continue;
-            }
-
-            $flags[$key] = $feature->defaultEnabled();
+            $flags[$feature->settingKey()] = $feature->defaultEnabled();
         }
 
         return $flags;

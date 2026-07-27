@@ -6,6 +6,7 @@ use App\Enums\Religion;
 use App\Models\Attendance;
 use App\Models\PrayerAttendance;
 use App\Models\Student;
+use App\Services\Student\StudentStatsBuilder;
 use App\Support\SchoolTime;
 
 beforeEach(function () {
@@ -165,4 +166,71 @@ test('the dhuha report gets its own filename', function () {
         ->get(reportUrl('sholat', 'pdf').'&jenis=dhuha')
         ->assertOk()
         ->assertHeader('content-disposition', 'attachment; filename=sholat-dhuha-20250099-'.$this->start.'-'.$this->end.'.pdf');
+});
+
+// ---------------------------------------------------------------- Regresi audit
+
+test('B-3: asking for a disabled type reports zero, not the other type', function () {
+    // Dhuha mati (default). Dulu filter jenisnya dilewati sepenuhnya, sehingga
+    // laporan berjudul Dhuha menampilkan angka Dzuhur dengan tabel kosong.
+    $body = $this->actingAs($this->admin)
+        ->get(reportUrl('sholat', 'csv').'&jenis=dhuha')
+        ->streamedContent();
+
+    expect($body)->toContain('"Ikut Sholat",0')
+        ->and($body)->not->toContain('Sholat Dzuhur');
+});
+
+test('B-3: the rate can never exceed 100 percent', function () {
+    $this->admin->school->setSetting('prayer_dhuha_enabled', true);
+
+    PrayerAttendance::factory()->dhuha()->create([
+        'school_id' => $this->admin->school_id,
+        'student_id' => $this->student->id,
+        'prayer_date' => $this->day->toDateString(),
+    ]);
+
+    $data = app(StudentStatsBuilder::class)
+        ->prayerFor($this->student, $this->start, $this->end);
+
+    expect($data['summary']['rate'])->toBeLessThanOrEqual(100.0);
+});
+
+test('B-4: the prayer history is ordered newest first across months', function () {
+    // sortByDesc atas string 'd M Y' menaruh "30 Jun" di atas "05 Jul".
+    $school = $this->admin->school;
+    $school->setSetting('prayer_start', '00:00');
+    $school->setSetting('prayer_end', '23:59');
+
+    $june = SchoolTime::now()->startOfMonth()->subMonth()->addDays(27);
+    $july = SchoolTime::now()->startOfMonth()->addDays(4);
+
+    foreach ([$june, $july] as $day) {
+        Attendance::factory()->create([
+            'school_id' => $school->id,
+            'student_id' => $this->student->id,
+            'attendance_date' => $day->toDateString(),
+            'type' => AttendanceType::CheckIn,
+        ]);
+
+        PrayerAttendance::factory()->create([
+            'school_id' => $school->id,
+            'student_id' => $this->student->id,
+            'prayer_date' => $day->toDateString(),
+            'recorded_at' => $day->copy()->setTime(11, 30),
+        ]);
+    }
+
+    $data = app(StudentStatsBuilder::class)
+        ->prayerFor($this->student, $june->toDateString(), $july->toDateString());
+
+    $dates = collect($data['recent'])->pluck('date')->all();
+
+    expect($dates[0])->toBe($july->format('d M Y'));
+});
+
+test('B-12: an array jenis parameter does not blow up', function () {
+    $this->actingAs($this->admin)
+        ->get(reportUrl('sholat', 'csv').'&jenis[]=dhuha')
+        ->assertOk();
 });

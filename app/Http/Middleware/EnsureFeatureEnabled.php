@@ -32,17 +32,22 @@ class EnsureFeatureEnabled
             return $next($request);
         }
 
-        $flags = SchoolFeatures::for($school);
-
-        foreach ($features as $value) {
+        // SELURUH nama divalidasi lebih dulu. Kalau validasinya menumpang di
+        // dalam loop pencocokan, salah ketik pada nama kedua tidak pernah
+        // terdeteksi selama nama pertama kebetulan aktif.
+        $resolved = array_map(function (string $value) {
             $feature = SchoolFeature::tryFrom($value);
 
-            if ($feature === null) {
-                // Salah ketik di routes/web.php harus berisik, bukan diam-diam
-                // membuka pintu.
-                abort(500, "Fitur tidak dikenal: {$value}");
-            }
+            // Salah ketik di routes/web.php harus berisik, bukan diam-diam
+            // membuka pintu.
+            abort_if($feature === null, 500, "Fitur tidak dikenal: {$value}");
 
+            return $feature;
+        }, $features);
+
+        $flags = SchoolFeatures::for($school);
+
+        foreach ($resolved as $feature) {
             if ($flags->enabled($feature)) {
                 return $next($request);
             }
@@ -53,14 +58,18 @@ class EnsureFeatureEnabled
 
     private function resolveSchool(Request $request): ?School
     {
-        // Rute publik mengikat {school:scanner_token}; rute admin memakai
-        // singleton yang dipasang SetCurrentSchool.
-        $bound = $request->route('school');
-
-        if ($bound instanceof School) {
-            return $bound;
+        // Sekolah pengguna didahulukan. Memakai binding rute lebih dulu membuat
+        // `/api/schools/{lain}/students` dinilai atas fitur milik tenant LAIN —
+        // selisih 403/404-nya jadi oracle yang membocorkan status fitur mereka,
+        // dan pesan galatnya pun menyesatkan.
+        if (app()->bound('currentSchool')) {
+            return app('currentSchool');
         }
 
-        return app()->bound('currentSchool') ? app('currentSchool') : null;
+        // Rute publik (scan) tidak punya pengguna, jadi di sanalah binding
+        // {school:scanner_token} memang satu-satunya konteks yang ada.
+        $bound = $request->route('school');
+
+        return $bound instanceof School ? $bound : null;
     }
 }
