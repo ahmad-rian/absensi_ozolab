@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { dashboard } from '@/routes';
 
-type AttendanceType = 'CHECK_IN' | 'CHECK_OUT';
+type AttendanceType = 'AUTO' | 'CHECK_IN' | 'CHECK_OUT';
 type ScanMode = 'barcode' | 'webcam';
 
 type StudentResult = {
@@ -36,7 +36,7 @@ let logId = 0;
 
 export default function ScannerIndex() {
     const [scanMode, setScanMode] = useState<ScanMode>('barcode');
-    const [attendanceType, setAttendanceType] = useState<AttendanceType>('CHECK_IN');
+    const [attendanceType, setAttendanceType] = useState<AttendanceType>('AUTO');
     const [lastStudent, setLastStudent] = useState<StudentResult | null>(null);
     const [lastError, setLastError] = useState<string | null>(null);
     const [scanLog, setScanLog] = useState<ScanLogItem[]>([]);
@@ -172,23 +172,38 @@ export default function ScannerIndex() {
                 </div>
 
                 {/* Attendance Type Toggle */}
-                <div className="mx-auto flex w-full max-w-2xl gap-2">
-                    <Button
-                        variant={attendanceType === 'CHECK_IN' ? 'default' : 'outline'}
-                        className="flex-1"
-                        onClick={() => setAttendanceType('CHECK_IN')}
-                    >
-                        <LogIn className="mr-2 size-4" />
-                        Masuk
-                    </Button>
-                    <Button
-                        variant={attendanceType === 'CHECK_OUT' ? 'default' : 'outline'}
-                        className="flex-1"
-                        onClick={() => setAttendanceType('CHECK_OUT')}
-                    >
-                        <LogOut className="mr-2 size-4" />
-                        Pulang
-                    </Button>
+                <div className="mx-auto w-full max-w-2xl space-y-2">
+                    <div className="flex gap-2">
+                        <Button
+                            variant={attendanceType === 'AUTO' ? 'default' : 'outline'}
+                            className="flex-1"
+                            onClick={() => setAttendanceType('AUTO')}
+                        >
+                            <Zap className="mr-2 size-4" />
+                            Otomatis
+                        </Button>
+                        <Button
+                            variant={attendanceType === 'CHECK_IN' ? 'default' : 'outline'}
+                            className="flex-1"
+                            onClick={() => setAttendanceType('CHECK_IN')}
+                        >
+                            <LogIn className="mr-2 size-4" />
+                            Masuk
+                        </Button>
+                        <Button
+                            variant={attendanceType === 'CHECK_OUT' ? 'default' : 'outline'}
+                            className="flex-1"
+                            onClick={() => setAttendanceType('CHECK_OUT')}
+                        >
+                            <LogOut className="mr-2 size-4" />
+                            Pulang
+                        </Button>
+                    </div>
+                    <p className="text-muted-foreground text-center text-xs">
+                        {attendanceType === 'AUTO'
+                            ? 'Masuk / pulang ditentukan otomatis dari jam scan sesuai Jadwal Absensi.'
+                            : 'Mode override manual — dipakai hanya untuk koreksi. Kembalikan ke Otomatis setelah selesai.'}
+                    </p>
                 </div>
 
                 <div className="mx-auto w-full max-w-2xl space-y-4">

@@ -46,7 +46,7 @@ class CardGenerationController extends Controller
     {
         $request->validate([
             'layout_id' => ['required', 'exists:school_card_layouts,id'],
-            'student_id' => ['required', 'exists:students,id'],
+            'student_id' => ['required', $this->belongsToSchool('students')],
         ]);
 
         $layout = SchoolCardLayout::forSchool()->findOrFail($request->layout_id);
@@ -70,7 +70,7 @@ class CardGenerationController extends Controller
         $validated = $request->validate([
             'layout_id' => ['required', 'exists:school_card_layouts,id'],
             'student_ids' => ['nullable', 'array'],
-            'classroom_id' => ['nullable', 'exists:classrooms,id'],
+            'classroom_id' => ['nullable', $this->belongsToSchool('classrooms')],
         ]);
 
         $layout = SchoolCardLayout::forSchool()->findOrFail($validated['layout_id']);

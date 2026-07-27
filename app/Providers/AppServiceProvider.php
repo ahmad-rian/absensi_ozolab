@@ -6,10 +6,12 @@ use App\Events\StudentCheckedIn;
 use App\Events\StudentCheckedOut;
 use App\Listeners\DispatchAttendanceNotifications;
 use App\Listeners\LogAttendanceActivity;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -35,6 +37,16 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureDefaults();
         $this->configureEvents();
+        $this->configureAuthorization();
+    }
+
+    /**
+     * SUPER_ADMIN lolos semua gate, jadi tidak perlu sinkron ulang tiap kali
+     * modul baru ditambahkan — dan tidak mungkin mengunci dirinya sendiri.
+     */
+    protected function configureAuthorization(): void
+    {
+        Gate::before(fn (User $user) => $user->isSuperAdmin() ? true : null);
     }
 
     protected function configureEvents(): void

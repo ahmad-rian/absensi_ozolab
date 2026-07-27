@@ -21,18 +21,13 @@ class StudentApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'school_id' => ['sometimes', 'exists:schools,id'],
-            'classroom_id' => ['sometimes', 'exists:classrooms,id'],
+            'classroom_id' => ['sometimes', $this->belongsToSchool('classrooms')],
             'search' => ['sometimes', 'string', 'max:100'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
         $query = Student::with(['classroom.academicYear', 'parentProfile.user', 'school'])
             ->where('is_active', true);
-
-        if ($request->filled('school_id')) {
-            $query->where('school_id', $request->school_id);
-        }
 
         if ($request->filled('classroom_id')) {
             $query->where('classroom_id', $request->classroom_id);
@@ -145,9 +140,13 @@ class StudentApiController extends Controller
     /**
      * GET /api/schools — List active schools.
      */
-    public function schools(): JsonResponse
+    public function schools(Request $request): JsonResponse
     {
         $schools = School::where('is_active', true)
+            ->unless(
+                $request->user()->isSuperAdmin(),
+                fn ($q) => $q->where('id', $request->user()->school_id),
+            )
             ->withCount(['students', 'classrooms'])
             ->orderBy('name')
             ->get(['id', 'name', 'slug', 'city', 'logo_path']);
@@ -158,8 +157,13 @@ class StudentApiController extends Controller
     /**
      * GET /api/schools/{school}/students — All students of a school.
      */
-    public function schoolStudents(School $school): JsonResponse
+    public function schoolStudents(Request $request, School $school): JsonResponse
     {
+        abort_unless(
+            $request->user()->isSuperAdmin() || $school->id === $request->user()->school_id,
+            404,
+        );
+
         $students = $school->students()
             ->with(['classroom'])
             ->where('is_active', true)

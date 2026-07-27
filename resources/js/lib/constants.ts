@@ -18,6 +18,7 @@ export const PARENT_RELATION = {
 } as const;
 
 export const USER_ROLE = {
+    SUPER_ADMIN: { label: 'Super Admin' },
     ADMIN: { label: 'Admin' },
     GURU: { label: 'Guru' },
     ORANG_TUA: { label: 'Orang Tua' },

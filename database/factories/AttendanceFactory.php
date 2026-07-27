@@ -18,8 +18,11 @@ class AttendanceFactory extends Factory
         $date = fake()->dateTimeBetween('-90 days', 'now');
 
         return [
-            'school_id' => null,
             'student_id' => Student::factory(),
+            // Ikut sekolah siswanya; tanpa ini baris absensi lahir tanpa
+            // school_id dan tidak pernah lolos global scope sekolah.
+            'school_id' => fn (array $attributes) => Student::withoutGlobalScope('school')
+                ->find($attributes['student_id'])?->school_id,
             'attendance_date' => $date->format('Y-m-d'),
             'type' => AttendanceType::CheckIn,
             'status' => fake()->randomElement([

@@ -87,7 +87,7 @@ class GenerateController extends Controller
     {
         $frameUrl = null;
         if ($cardForm->frame_id) {
-            $frame = SchoolFrame::find($cardForm->frame_id);
+            $frame = SchoolFrame::acrossSchools()->find($cardForm->frame_id);
             $frameUrl = $frame ? Storage::disk('public')->url($frame->image_path) : null;
         }
 

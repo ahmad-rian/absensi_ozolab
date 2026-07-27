@@ -69,4 +69,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule): void {
         // Purge stale photo-preview temp files hourly.
         $schedule->command('temp:clean')->hourly();
+
+        // Close attendance rows that checked in but never checked out. Runs
+        // hourly because each school sets its own check_out_end.
+        $schedule->command('attendance:auto-checkout')->hourly()->withoutOverlapping();
     })->create();

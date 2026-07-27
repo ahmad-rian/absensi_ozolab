@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Edit, Plus, Shield, Trash2 } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { Edit, Lock, Plus, Shield, Trash2 } from 'lucide-react';
+import { Fragment, type FormEvent, useState } from 'react';
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -15,25 +15,33 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
-type Role = { id: string; name: string; permissions: string[]; users_count: number };
-type Props = { roles: Role[]; permissions: string[] };
+type Module = { permission: string; label: string };
+type ModuleGroup = { group: string; modules: Module[] };
+type Role = {
+    id: string;
+    name: string;
+    label: string;
+    is_builtin: boolean;
+    is_locked: boolean;
+    permissions: string[];
+    users_count: number;
+};
+type Props = { roles: Role[]; modules: ModuleGroup[] };
 
-const roleLabels: Record<string, string> = {
-    SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin Sekolah', GURU: 'Guru / Operator', ORANG_TUA: 'Orang Tua / Wali',
+/** Bentuk minimal yang dipakai matrix, supaya form create & edit bisa berbagi helper. */
+type PermissionForm = {
+    data: { permissions: string[] };
+    setData: (key: 'permissions', value: string[]) => void;
+    processing: boolean;
 };
 
-const permissionLabels: Record<string, string> = {
-    'dashboard.view': 'Lihat Dashboard', 'student.view': 'Lihat Siswa', 'student.create': 'Tambah Siswa',
-    'student.update': 'Edit Siswa', 'student.delete': 'Hapus Siswa', 'attendance.view': 'Lihat Absensi',
-    'attendance.create': 'Catat Absensi', 'attendance.export': 'Ekspor Absensi', 'classroom.view': 'Lihat Kelas',
-    'classroom.manage': 'Kelola Kelas', 'report.view': 'Lihat Laporan', 'setting.manage': 'Kelola Pengaturan',
-    'user.view': 'Lihat Pengguna', 'user.create': 'Tambah Pengguna', 'user.update': 'Edit Pengguna',
-    'user.delete': 'Hapus Pengguna', 'school.manage': 'Kelola Sekolah',
-};
-
-export default function RolesIndex({ roles, permissions }: Props) {
+export default function RolesIndex({ roles, modules }: Props) {
     const [createOpen, setCreateOpen] = useState(false);
     const [editingRole, setEditingRole] = useState<Role | null>(null);
+
+    const allModules = modules.flatMap((g) => g.modules);
+    const labelOf = (permission: string) =>
+        allModules.find((m) => m.permission === permission)?.label ?? permission;
 
     const createForm = useForm({ name: '', permissions: [] as string[] });
     const editForm = useForm({ permissions: [] as string[] });
@@ -58,19 +66,61 @@ export default function RolesIndex({ roles, permissions }: Props) {
         router.delete(`/admin/roles/${id}`, { preserveScroll: true });
     }
 
-    function togglePermission(form: typeof createForm | typeof editForm, perm: string) {
+    function togglePermission(form: PermissionForm, permission: string) {
         const current = form.data.permissions;
-        form.setData('permissions', current.includes(perm) ? current.filter((p) => p !== perm) : [...current, perm]);
+        form.setData('permissions', current.includes(permission) ? current.filter((p) => p !== permission) : [...current, permission]);
+    }
+
+    function toggleGroup(form: PermissionForm, group: ModuleGroup) {
+        const perms = group.modules.map((m) => m.permission);
+        const allChecked = perms.every((p) => form.data.permissions.includes(p));
+
+        form.setData(
+            'permissions',
+            allChecked
+                ? form.data.permissions.filter((p) => !perms.includes(p))
+                : [...new Set([...form.data.permissions, ...perms])],
+        );
+    }
+
+    function moduleMatrix(form: PermissionForm) {
+        return (
+            <div className="grid max-h-[55vh] gap-5 overflow-y-auto pr-1">
+                {modules.map((group) => (
+                    <div key={group.group} className="grid gap-2">
+                        <div className="flex items-center justify-between">
+                            <Label className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">{group.group}</Label>
+                            <Button type="button" variant="ghost" size="sm" className="h-6 text-xs" onClick={() => toggleGroup(form, group)}>
+                                Centang semua
+                            </Button>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                            {group.modules.map((module) => (
+                                <label key={module.permission} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                        checked={form.data.permissions.includes(module.permission)}
+                                        onCheckedChange={() => togglePermission(form, module.permission)}
+                                    />
+                                    {module.label}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
     }
 
     return (
         <>
-            <Head title="Role & Izin" />
+            <Head title="Role & Hak Akses" />
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Role & Izin Akses</h1>
-                        <p className="text-muted-foreground text-sm">Kelola role pengguna dan izin akses sistem.</p>
+                        <h1 className="text-2xl font-bold tracking-tight">Role & Hak Akses</h1>
+                        <p className="text-muted-foreground text-sm">
+                            Hak akses diberikan per modul. Satu centang = akses penuh ke modul itu.
+                        </p>
                     </div>
                     <Button onClick={() => setCreateOpen(true)}>
                         <Plus className="mr-2 size-4" />
@@ -89,15 +139,24 @@ export default function RolesIndex({ roles, permissions }: Props) {
                                             <Shield className="size-5" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-base">{roleLabels[role.name] ?? role.name}</CardTitle>
+                                            <CardTitle className="flex items-center gap-2 text-base">
+                                                {role.label}
+                                                {role.is_builtin && <Badge variant="outline" className="text-[10px]">Bawaan</Badge>}
+                                            </CardTitle>
                                             <CardDescription>{role.users_count} pengguna</CardDescription>
                                         </div>
                                     </div>
                                     <div className="flex gap-1">
-                                        <Button variant="ghost" size="icon" onClick={() => openEdit(role)}>
-                                            <Edit className="size-4" />
-                                        </Button>
-                                        {role.users_count === 0 && (
+                                        {role.is_locked ? (
+                                            <span className="text-muted-foreground flex size-9 items-center justify-center" title="Akses penuh, tidak bisa diubah">
+                                                <Lock className="size-4" />
+                                            </span>
+                                        ) : (
+                                            <Button variant="ghost" size="icon" onClick={() => openEdit(role)}>
+                                                <Edit className="size-4" />
+                                            </Button>
+                                        )}
+                                        {!role.is_builtin && role.users_count === 0 && (
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <Button variant="ghost" size="icon"><Trash2 className="text-destructive size-4" /></Button>
@@ -105,7 +164,7 @@ export default function RolesIndex({ roles, permissions }: Props) {
                                                 <AlertDialogContent>
                                                     <AlertDialogHeader>
                                                         <AlertDialogTitle>Hapus Role</AlertDialogTitle>
-                                                        <AlertDialogDescription>Yakin hapus role "{roleLabels[role.name] ?? role.name}"?</AlertDialogDescription>
+                                                        <AlertDialogDescription>Yakin hapus role "{role.label}"?</AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Batal</AlertDialogCancel>
@@ -119,10 +178,13 @@ export default function RolesIndex({ roles, permissions }: Props) {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-1.5">
-                                    {role.permissions.map((perm) => (
-                                        <Badge key={perm} variant="secondary" className="text-xs">{permissionLabels[perm] ?? perm}</Badge>
+                                    {role.is_locked && <Badge variant="secondary" className="text-xs">Akses penuh semua modul</Badge>}
+                                    {!role.is_locked && role.permissions.map((permission) => (
+                                        <Badge key={permission} variant="secondary" className="text-xs">{labelOf(permission)}</Badge>
                                     ))}
-                                    {role.permissions.length === 0 && <p className="text-muted-foreground text-xs">Tidak ada izin</p>}
+                                    {!role.is_locked && role.permissions.length === 0 && (
+                                        <p className="text-muted-foreground text-xs">Tidak ada akses</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -132,37 +194,46 @@ export default function RolesIndex({ roles, permissions }: Props) {
                 {/* Permission Matrix */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Matriks Izin Akses</CardTitle>
-                        <CardDescription>Klik ikon edit pada role card di atas untuk mengubah izin.</CardDescription>
+                        <CardTitle>Matriks Akses Modul</CardTitle>
+                        <CardDescription>Klik ikon edit pada kartu role di atas untuk mengubah akses.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[250px]">Izin</TableHead>
+                                    <TableHead className="w-[250px]">Modul</TableHead>
                                     {roles.map((role) => (
-                                        <TableHead key={role.id} className="text-center">{roleLabels[role.name] ?? role.name}</TableHead>
+                                        <TableHead key={role.id} className="text-center">{role.label}</TableHead>
                                     ))}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {permissions.map((perm) => (
-                                    <TableRow key={perm}>
-                                        <TableCell className="font-medium">{permissionLabels[perm] ?? perm}</TableCell>
-                                        {roles.map((role) => (
-                                            <TableCell key={role.id} className="text-center">
-                                                {role.permissions.includes(perm) ? (
-                                                    <span className="inline-flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
-                                                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex size-5 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600">
-                                                        <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                                                    </span>
-                                                )}
+                                {modules.map((group) => (
+                                    <Fragment key={group.group}>
+                                        <TableRow className="bg-muted/40">
+                                            <TableCell colSpan={roles.length + 1} className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                                                {group.group}
                                             </TableCell>
+                                        </TableRow>
+                                        {group.modules.map((module) => (
+                                            <TableRow key={module.permission}>
+                                                <TableCell className="font-medium">{module.label}</TableCell>
+                                                {roles.map((role) => (
+                                                    <TableCell key={role.id} className="text-center">
+                                                        {role.is_locked || role.permissions.includes(module.permission) ? (
+                                                            <span className="inline-flex size-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                                                                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex size-5 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600">
+                                                                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+                                                ))}
+                                            </TableRow>
                                         ))}
-                                    </TableRow>
+                                    </Fragment>
                                 ))}
                             </TableBody>
                         </Table>
@@ -172,7 +243,7 @@ export default function RolesIndex({ roles, permissions }: Props) {
 
             {/* Create Role Dialog */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-2xl">
                     <form onSubmit={handleCreate}>
                         <DialogHeader><DialogTitle>Tambah Role Baru</DialogTitle></DialogHeader>
                         <div className="grid gap-4 py-4">
@@ -181,20 +252,7 @@ export default function RolesIndex({ roles, permissions }: Props) {
                                 <Input value={createForm.data.name} onChange={(e) => createForm.setData('name', e.target.value)} placeholder="Nama role baru" />
                                 {createForm.errors.name && <p className="text-destructive text-sm">{createForm.errors.name}</p>}
                             </div>
-                            <div className="grid gap-2">
-                                <Label>Izin Akses</Label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {permissions.map((perm) => (
-                                        <label key={perm} className="flex items-center gap-2 text-sm">
-                                            <Checkbox
-                                                checked={createForm.data.permissions.includes(perm)}
-                                                onCheckedChange={() => togglePermission(createForm, perm)}
-                                            />
-                                            {permissionLabels[perm] ?? perm}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                            {moduleMatrix(createForm)}
                         </div>
                         <DialogFooter>
                             <Button type="submit" disabled={createForm.processing}>Simpan</Button>
@@ -205,23 +263,10 @@ export default function RolesIndex({ roles, permissions }: Props) {
 
             {/* Edit Permissions Dialog */}
             <Dialog open={!!editingRole} onOpenChange={(open) => { if (!open) setEditingRole(null); }}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-2xl">
                     <form onSubmit={handleEdit}>
-                        <DialogHeader><DialogTitle>Edit Izin — {roleLabels[editingRole?.name ?? ''] ?? editingRole?.name}</DialogTitle></DialogHeader>
-                        <div className="grid gap-2 py-4">
-                            <Label>Izin Akses</Label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {permissions.map((perm) => (
-                                    <label key={perm} className="flex items-center gap-2 text-sm">
-                                        <Checkbox
-                                            checked={editForm.data.permissions.includes(perm)}
-                                            onCheckedChange={() => togglePermission(editForm, perm)}
-                                        />
-                                        {permissionLabels[perm] ?? perm}
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
+                        <DialogHeader><DialogTitle>Akses Modul — {editingRole?.label}</DialogTitle></DialogHeader>
+                        <div className="grid gap-2 py-4">{moduleMatrix(editForm)}</div>
                         <DialogFooter>
                             <Button type="submit" disabled={editForm.processing}>Simpan Perubahan</Button>
                         </DialogFooter>
@@ -235,6 +280,6 @@ export default function RolesIndex({ roles, permissions }: Props) {
 RolesIndex.layout = {
     breadcrumbs: [
         { title: 'Dashboard', href: dashboard() },
-        { title: 'Role & Izin', href: '/admin/roles' },
+        { title: 'Role & Hak Akses', href: '/admin/roles' },
     ],
 };

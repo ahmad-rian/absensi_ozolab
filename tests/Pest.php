@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,11 +20,8 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->beforeEach(function () {
-        // Seed roles for spatie permission middleware
-        $roles = ['SUPER_ADMIN', 'ADMIN', 'GURU', 'ORANG_TUA'];
-        foreach ($roles as $role) {
-            Role::findOrCreate($role, 'web');
-        }
+        // Role + permission per modul, sama persis dengan produksi.
+        $this->seed(RolePermissionSeeder::class);
     })
     ->in('Feature');
 

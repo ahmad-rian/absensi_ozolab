@@ -10,19 +10,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Spinner } from '@/components/ui/spinner';
 import { dashboard } from '@/routes';
 
-const roleLabels: Record<string, string> = { ADMIN: 'Admin Sekolah', GURU: 'Guru' };
+const roleLabels: Record<string, string> = {
+    SUPER_ADMIN: 'Super Admin',
+    ADMIN: 'Admin Sekolah',
+    GURU: 'Guru',
+    ORANG_TUA: 'Orang Tua',
+};
 
 type Role = { id: string; name: string };
-type EditUser = { id: string; name: string; email: string; phone: string | null; is_active: boolean; role: string };
+type Module = { permission: string; label: string };
+type ModuleGroup = { group: string; modules: Module[] };
+type EditUser = {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    is_active: boolean;
+    role: string;
+    extra_permissions: string[];
+};
 
-export default function UsersEdit({ editUser, roles }: { editUser: EditUser; roles: Role[] }) {
+export default function UsersEdit({ editUser, roles, modules }: { editUser: EditUser; roles: Role[]; modules: ModuleGroup[] }) {
     const { data, setData, put, processing, errors } = useForm({
         name: editUser.name,
         email: editUser.email,
         phone: editUser.phone ?? '',
         role: editUser.role,
         is_active: editUser.is_active,
+        extra_permissions: editUser.extra_permissions ?? [],
     });
+
+    function toggleExtra(permission: string) {
+        setData(
+            'extra_permissions',
+            data.extra_permissions.includes(permission)
+                ? data.extra_permissions.filter((p) => p !== permission)
+                : [...data.extra_permissions, permission],
+        );
+    }
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -43,7 +68,7 @@ export default function UsersEdit({ editUser, roles }: { editUser: EditUser; rol
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="mx-auto w-full max-w-xl space-y-6">
+                <form onSubmit={handleSubmit} className="mx-auto w-full max-w-2xl space-y-6">
                     <Card>
                         <CardHeader><CardTitle>Data Pengguna</CardTitle></CardHeader>
                         <CardContent className="grid gap-4">
@@ -80,6 +105,34 @@ export default function UsersEdit({ editUser, roles }: { editUser: EditUser; rol
                             </div>
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Akses Tambahan</CardTitle>
+                            <p className="text-muted-foreground text-sm">
+                                Modul di luar role. Kosongkan kalau cukup pakai akses bawaan role.
+                            </p>
+                        </CardHeader>
+                        <CardContent className="grid gap-5">
+                            {modules.map((group) => (
+                                <div key={group.group} className="grid gap-2">
+                                    <Label className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">{group.group}</Label>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                        {group.modules.map((module) => (
+                                            <label key={module.permission} className="flex items-center gap-2 text-sm">
+                                                <Checkbox
+                                                    checked={data.extra_permissions.includes(module.permission)}
+                                                    onCheckedChange={() => toggleExtra(module.permission)}
+                                                />
+                                                {module.label}
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+
                     <div className="flex gap-3">
                         <Button variant="outline" asChild className="flex-1"><Link href="/admin/users">Batal</Link></Button>
                         <Button type="submit" disabled={processing} className="flex-1">{processing && <Spinner />}Simpan Perubahan</Button>

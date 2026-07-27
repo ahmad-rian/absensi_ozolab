@@ -3,19 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AttendanceType;
-use App\Models\Attendance;
 use App\Models\School;
-use App\Models\Student;
 use App\Services\Attendance\AttendanceRecorder;
+use App\Services\Attendance\StudentLookup;
+use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class PublicScannerController extends Controller
 {
+    public function __construct(
+        private readonly StudentLookup $studentLookup,
+    ) {}
+
     public function index(School $school): Response
     {
         return Inertia::render('scan/public', [
@@ -41,7 +44,7 @@ class PublicScannerController extends Controller
             'token' => ['required', 'string'],
         ]);
 
-        $student = $this->findStudent($request->token, $school->id);
+        $student = $this->studentLookup->find($request->token, $school->id);
 
         if (! $student) {
             return response()->json([
@@ -50,21 +53,14 @@ class PublicScannerController extends Controller
             ], 404);
         }
 
-        $type = $this->determineType($student);
-
-        if ($type === null) {
-            return response()->json([
-                'success' => false,
-                'message' => $student->full_name.' sudah absen masuk & pulang hari ini.',
-            ], 422);
-        }
-
+        // Tipe (masuk/pulang) ditentukan server dari jendela waktu jadwal.
         $result = $recorder->record(
             student: $student,
-            type: $type,
             recordedBy: null,
             deviceId: 'PUBLIC-SCAN',
         );
+
+        $type = $result['attendance']?->type;
 
         return response()->json([
             'success' => $result['success'],
@@ -84,58 +80,10 @@ class PublicScannerController extends Controller
                     ? Storage::disk('public')->url($student->photo_path)
                     : null,
                 'status' => $result['attendance']?->status->label(),
-                'type' => $type->value,
+                'type' => $type?->value,
                 'type_label' => $type === AttendanceType::CheckIn ? 'Masuk' : 'Pulang',
-                'time' => now('Asia/Jakarta')->format('H:i:s'),
+                'time' => SchoolTime::now()->format('H:i:s'),
             ] : null,
         ], $result['success'] ? 200 : 422);
-    }
-
-    /**
-     * Cari siswa aktif berdasarkan QR token → NISN → NIS, dibatasi sekolah.
-     */
-    private function findStudent(string $token, string $schoolId): ?Student
-    {
-        foreach (['qr_token', 'nisn', 'nis'] as $column) {
-            $student = Student::where($column, $token)
-                ->where('school_id', $schoolId)
-                ->where('is_active', true)
-                ->with('classroom')
-                ->first();
-
-            if ($student) {
-                return $student;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Deteksi otomatis: belum absen → Masuk, sudah Masuk → Pulang, keduanya → null.
-     */
-    private function determineType(Student $student): ?AttendanceType
-    {
-        $date = Carbon::now('Asia/Jakarta')->toDateString();
-
-        $hasCheckIn = Attendance::where('student_id', $student->id)
-            ->whereDate('attendance_date', $date)
-            ->where('type', AttendanceType::CheckIn)
-            ->exists();
-
-        if (! $hasCheckIn) {
-            return AttendanceType::CheckIn;
-        }
-
-        $hasCheckOut = Attendance::where('student_id', $student->id)
-            ->whereDate('attendance_date', $date)
-            ->where('type', AttendanceType::CheckOut)
-            ->exists();
-
-        if (! $hasCheckOut) {
-            return AttendanceType::CheckOut;
-        }
-
-        return null;
     }
 }

@@ -137,7 +137,8 @@ class CardFormController extends Controller
      */
     private function frames(): Collection
     {
-        return SchoolFrame::query()
+        // Kartu Bebas adalah alat lintas sekolah milik SUPER_ADMIN.
+        return SchoolFrame::acrossSchools()
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'name', 'image_path', 'width', 'height', 'category'])

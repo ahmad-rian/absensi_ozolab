@@ -26,13 +26,13 @@ type CameraDevice = { id: string; label: string };
 
 interface QrScannerProps {
     scanEndpoint: string;
-    scanType?: 'CHECK_IN' | 'CHECK_OUT';
+    scanType?: 'AUTO' | 'CHECK_IN' | 'CHECK_OUT';
     extraPayload?: Record<string, unknown>;
 }
 
 let activeScannerId: string | null = null;
 
-export function QrScanner({ scanEndpoint, scanType = 'CHECK_IN', extraPayload = {} }: QrScannerProps) {
+export function QrScanner({ scanEndpoint, scanType = 'AUTO', extraPayload = {} }: QrScannerProps) {
     const [status, setStatus] = useState<'loading' | 'scanning' | 'error'>('loading');
     const [error, setError] = useState<string | null>(null);
     const [lastResult, setLastResult] = useState<ScanResult | null>(null);

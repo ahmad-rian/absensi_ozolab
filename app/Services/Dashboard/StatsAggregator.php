@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
 use App\Models\Attendance;
 use App\Models\Student;
+use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -16,7 +17,7 @@ class StatsAggregator
      */
     public function getOverview(?Carbon $date = null): array
     {
-        $date ??= Carbon::today();
+        $date ??= SchoolTime::today();
 
         $totalStudents = Student::where('is_active', true)->count();
 
@@ -54,7 +55,7 @@ class StatsAggregator
      */
     public function getClassroomRanking(?Carbon $date = null, int $days = 30): array
     {
-        $date ??= Carbon::today();
+        $date ??= SchoolTime::today();
         $startDate = $date->copy()->subDays($days);
 
         return DB::table('attendances')

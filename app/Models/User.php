@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserRole;
 use App\Models\Concerns\BelongsToSchool;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -37,6 +38,21 @@ class User extends Authenticatable implements PasskeyUser
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
         ];
+    }
+
+    /**
+     * User tidak ikut global scope sekolah: guard, relasi orang tua, dan
+     * notifikasi memuat User dari konteks lintas sekolah. Pembatasan sekolah
+     * untuk User ditegakkan eksplisit di UserManagementController.
+     */
+    public static function schoolScopeApplies(): bool
+    {
+        return false;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole(UserRole::SuperAdmin->value);
     }
 
     public function parentProfile(): HasOne

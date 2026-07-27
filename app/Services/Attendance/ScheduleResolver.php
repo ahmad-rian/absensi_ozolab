@@ -4,13 +4,14 @@ namespace App\Services\Attendance;
 
 use App\Models\AttendanceSchedule;
 use App\Models\Student;
+use App\Support\SchoolTime;
 use Carbon\Carbon;
 
 class ScheduleResolver
 {
     public function resolve(Student $student, ?Carbon $date = null): ?AttendanceSchedule
     {
-        $date ??= Carbon::now();
+        $date = $date ? SchoolTime::toLocal($date) : SchoolTime::now();
         $dayOfWeek = $date->dayOfWeekIso; // 1=Monday ... 7=Sunday
 
         // Try class-specific schedule first

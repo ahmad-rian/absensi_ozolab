@@ -39,6 +39,15 @@ test('a student can be registered via the form', function () {
         'full_name' => 'Ahmad Fauzi',
         'gender' => 'LAKI_LAKI',
         'classroom_id' => $classroom->id,
+        'no_absen' => '1',
+        'nisn' => '0011223344',
+        'religion' => 'ISLAM',
+        'birth_place' => 'Jakarta',
+        'birth_date' => '2013-04-01',
+        'address' => 'Jl. Melati No. 1',
+        'parent_name' => 'Budi Santoso',
+        'parent_phone' => '081234567890',
+        'parent_relation' => 'WALI',
     ]);
 
     $response->assertOk();
@@ -71,6 +80,7 @@ test('a student can be registered with all optional fields', function () {
         'address' => 'Jl. Merdeka No. 10',
         'parent_name' => 'Budi Santoso',
         'parent_phone' => '812345678',
+        'parent_relation' => 'WALI',
     ]);
 
     $response->assertOk();
@@ -87,7 +97,11 @@ test('a student can be registered with all optional fields', function () {
 test('student registration validates required fields', function () {
     $response = $this->post('/daftar', []);
 
-    $response->assertSessionHasErrors(['school_id', 'full_name', 'gender', 'classroom_id']);
+    $response->assertSessionHasErrors([
+        'school_id', 'full_name', 'gender', 'classroom_id',
+        'no_absen', 'nisn', 'religion', 'birth_place', 'birth_date', 'address',
+        'parent_name', 'parent_phone', 'parent_relation',
+    ]);
 });
 
 test('student registration validates gender enum', function () {

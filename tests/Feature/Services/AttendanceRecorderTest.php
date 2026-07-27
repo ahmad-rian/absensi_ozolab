@@ -4,79 +4,121 @@ use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
 use App\Events\StudentCheckedIn;
 use App\Events\StudentCheckedOut;
-use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
 use App\Models\Student;
 use App\Services\Attendance\AttendanceRecorder;
+use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Event;
 
+/**
+ * Jadwal default aplikasi: masuk 06:00, telat > 08:00, pulang 13:00–18:00.
+ */
 beforeEach(function () {
     Event::fake([StudentCheckedIn::class, StudentCheckedOut::class]);
+
+    $this->monday = SchoolTime::now()->startOfWeek(Carbon::MONDAY)->addWeek();
     $this->student = Student::factory()->create();
 
-    // Create schedule for today
-    AttendanceSchedule::factory()->create([
-        'classroom_id' => $this->student->classroom_id,
-        'day_of_week' => Carbon::now()->dayOfWeekIso,
-        'check_in_start' => '06:30',
-        'check_in_end' => '09:00',
-        'late_threshold' => '07:15',
-        'check_out_start' => '14:00',
-        'check_out_end' => '16:00',
-    ]);
+    foreach (range(1, 5) as $day) {
+        AttendanceSchedule::factory()->create([
+            'classroom_id' => $this->student->classroom_id,
+            'day_of_week' => $day,
+        ]);
+    }
+
+    $this->recorder = app(AttendanceRecorder::class);
 });
 
+function mondayAt(int $hour, int $minute = 0): Carbon
+{
+    return test()->monday->copy()->setTime($hour, $minute);
+}
+
 test('records check-in as hadir when on time', function () {
-    $recorder = app(AttendanceRecorder::class);
-    $timestamp = Carbon::today('Asia/Jakarta')->setTime(7, 10);
+    $result = $this->recorder->record($this->student, timestamp: mondayAt(7, 10));
 
-    $result = $recorder->record($this->student, AttendanceType::CheckIn, timestamp: $timestamp);
-
-    expect($result['success'])->toBeTrue();
-    expect($result['attendance']->status)->toBe(AttendanceStatus::Hadir);
+    expect($result['success'])->toBeTrue()
+        ->and($result['attendance']->type)->toBe(AttendanceType::CheckIn)
+        ->and($result['attendance']->status)->toBe(AttendanceStatus::Hadir);
 });
 
 test('records check-in as terlambat when past threshold', function () {
-    $recorder = app(AttendanceRecorder::class);
-    $timestamp = Carbon::today('Asia/Jakarta')->setTime(7, 30);
+    $result = $this->recorder->record($this->student, timestamp: mondayAt(8, 30));
 
-    $result = $recorder->record($this->student, AttendanceType::CheckIn, timestamp: $timestamp);
-
-    expect($result['success'])->toBeTrue();
-    expect($result['attendance']->status)->toBe(AttendanceStatus::Terlambat);
+    expect($result['success'])->toBeTrue()
+        ->and($result['attendance']->type)->toBe(AttendanceType::CheckIn)
+        ->and($result['attendance']->status)->toBe(AttendanceStatus::Terlambat);
 });
 
-test('prevents double check-in on same day', function () {
-    $recorder = app(AttendanceRecorder::class);
-    $timestamp = Carbon::today('Asia/Jakarta')->setTime(7, 5);
+test('rejects a scan before the check-in window opens', function () {
+    $result = $this->recorder->record($this->student, timestamp: mondayAt(5, 59));
 
-    $first = $recorder->record($this->student, AttendanceType::CheckIn, timestamp: $timestamp);
+    expect($result['success'])->toBeFalse()
+        ->and($result['message'])->toContain('Belum waktunya absen');
+});
+
+test('rejects a scan after the check-out window closes', function () {
+    $result = $this->recorder->record($this->student, timestamp: mondayAt(18, 1));
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['message'])->toContain('sudah tutup');
+});
+
+test('a second scan inside the check-in window is rejected, not converted to check-out', function () {
+    $first = $this->recorder->record($this->student, timestamp: mondayAt(7, 5));
     expect($first['success'])->toBeTrue();
 
-    $second = $recorder->record($this->student, AttendanceType::CheckIn, timestamp: $timestamp->addMinutes(5));
-    expect($second['success'])->toBeFalse();
-    expect($second['message'])->toContain('sudah melakukan check-in');
+    $second = $this->recorder->record($this->student, timestamp: mondayAt(7, 10));
+
+    expect($second['success'])->toBeFalse()
+        ->and($second['message'])->toContain('Sudah absen masuk')
+        ->and($this->student->attendances()->where('type', AttendanceType::CheckOut)->count())->toBe(0);
 });
 
-test('records check-out after check-in', function () {
-    $recorder = app(AttendanceRecorder::class);
+test('resolves check-out from the afternoon window', function () {
+    $this->recorder->record($this->student, timestamp: mondayAt(7, 5));
+    $result = $this->recorder->record($this->student, timestamp: mondayAt(14, 30));
 
-    $recorder->record($this->student, AttendanceType::CheckIn, timestamp: Carbon::today('Asia/Jakarta')->setTime(7, 5));
-    $result = $recorder->record($this->student, AttendanceType::CheckOut, timestamp: Carbon::today('Asia/Jakarta')->setTime(14, 30));
+    expect($result['success'])->toBeTrue()
+        ->and($result['attendance']->type)->toBe(AttendanceType::CheckOut)
+        ->and($result['attendance']->status)->toBe(AttendanceStatus::Hadir);
+});
 
-    expect($result['success'])->toBeTrue();
-    expect($result['attendance']->type)->toBe(AttendanceType::CheckOut);
-    expect($result['attendance']->status)->toBe(AttendanceStatus::Hadir);
+test('check-out is allowed even when the student never checked in', function () {
+    $result = $this->recorder->record($this->student, timestamp: mondayAt(14, 0));
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['attendance']->type)->toBe(AttendanceType::CheckOut);
+});
+
+test('the next morning is a fresh check-in when yesterday was never closed', function () {
+    $monday = $this->recorder->record($this->student, timestamp: mondayAt(7, 0));
+    expect($monday['attendance']->type)->toBe(AttendanceType::CheckIn);
+
+    $tuesday = $this->recorder->record($this->student, timestamp: mondayAt(7, 0)->addDay());
+
+    expect($tuesday['success'])->toBeTrue()
+        ->and($tuesday['attendance']->type)->toBe(AttendanceType::CheckIn)
+        ->and($this->student->attendances()->where('type', AttendanceType::CheckIn)->count())->toBe(2);
+});
+
+test('an explicit type overrides the time window', function () {
+    $result = $this->recorder->record(
+        $this->student,
+        type: AttendanceType::CheckOut,
+        timestamp: mondayAt(7, 0),
+    );
+
+    expect($result['success'])->toBeTrue()
+        ->and($result['attendance']->type)->toBe(AttendanceType::CheckOut);
 });
 
 test('fails when no schedule exists for the day', function () {
-    $recorder = app(AttendanceRecorder::class);
-    // Use a Sunday where no schedule exists
-    $sunday = Carbon::now()->next(Carbon::SUNDAY);
+    $sunday = $this->monday->copy()->addDays(6)->setTime(7, 5);
 
-    $result = $recorder->record($this->student, AttendanceType::CheckIn, timestamp: $sunday->setTime(7, 5));
+    $result = $this->recorder->record($this->student, timestamp: $sunday);
 
-    expect($result['success'])->toBeFalse();
-    expect($result['message'])->toContain('jadwal');
+    expect($result['success'])->toBeFalse()
+        ->and($result['message'])->toContain('jadwal');
 });

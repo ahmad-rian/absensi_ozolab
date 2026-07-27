@@ -11,11 +11,16 @@ Route::post('telegram/webhook/{school}', [TelegramWebhookController::class, 'han
 
 /*
 |--------------------------------------------------------------------------
-| API Routes — Public (rate-limited, no auth)
+| API Routes — butuh sesi login
 |--------------------------------------------------------------------------
+|
+| Sebelumnya grup ini terbuka tanpa auth dan `GET /api/students` membocorkan
+| seluruh siswa dari semua sekolah. Sekarang memakai sesi web yang sama dengan
+| panel admin; hasilnya otomatis ter-scope ke sekolah user oleh global scope.
+|
 */
 
-Route::middleware('throttle:60,1')->group(function () {
+Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
     // Schools
     Route::get('schools', [StudentApiController::class, 'schools']);
     Route::get('schools/{school}/students', [StudentApiController::class, 'schoolStudents']);

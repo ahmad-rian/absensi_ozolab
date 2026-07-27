@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 
 const roleConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
+    SUPER_ADMIN: { label: 'Super Admin', variant: 'default' },
     ADMIN: { label: 'Admin', variant: 'default' },
     GURU: { label: 'Guru', variant: 'secondary' },
     ORANG_TUA: { label: 'Orang Tua', variant: 'outline' },

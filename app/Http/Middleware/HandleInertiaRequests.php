@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\School;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
@@ -53,6 +54,18 @@ class HandleInertiaRequests extends Middleware
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,
             ],
+            'impersonation' => function () use ($request) {
+                $originalId = $request->session()->get('impersonator_id');
+
+                if (! $originalId) {
+                    return ['active' => false, 'original_name' => null];
+                }
+
+                return [
+                    'active' => true,
+                    'original_name' => User::find($originalId)?->name,
+                ];
+            },
             'currentSchool' => function () {
                 // Read from singleton set by SetCurrentSchool middleware — always fresh
                 $school = app()->bound('currentSchool') ? app('currentSchool') : null;
@@ -63,7 +76,9 @@ class HandleInertiaRequests extends Middleware
                     'slug' => $school->slug,
                 ] : null;
             },
-            'schools' => $user ? function () {
+            // Daftar sekolah hanya relevan untuk school switcher SUPER_ADMIN;
+            // mengirimnya ke semua user membocorkan daftar tenant.
+            'schools' => $user?->isSuperAdmin() ? function () {
                 return School::where('is_active', true)
                     ->orderBy('name')
                     ->get(['id', 'name', 'slug']);

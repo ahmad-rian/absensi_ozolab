@@ -10,7 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Spinner } from '@/components/ui/spinner';
 import { dashboard } from '@/routes';
 
-const roleLabels: Record<string, string> = { ADMIN: 'Admin Sekolah', GURU: 'Guru' };
+const roleLabels: Record<string, string> = {
+    SUPER_ADMIN: 'Super Admin',
+    ADMIN: 'Admin Sekolah',
+    GURU: 'Guru',
+    ORANG_TUA: 'Orang Tua',
+};
 
 type Role = { id: string; name: string };
 

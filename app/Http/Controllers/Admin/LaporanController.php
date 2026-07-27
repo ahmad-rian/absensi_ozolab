@@ -8,8 +8,8 @@ use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Setting;
+use App\Support\SchoolTime;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Collection;
@@ -22,8 +22,8 @@ class LaporanController extends Controller
 {
     public function index(Request $request): Response
     {
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+        $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
         $classroomId = $request->input('classroom_id');
 
         $schoolId = auth()->user()->school_id;
@@ -58,14 +58,14 @@ class LaporanController extends Controller
 
     public function export(Request $request): StreamedResponse
     {
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+        $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
         $classroomId = $request->input('classroom_id');
         $schoolId = auth()->user()->school_id;
 
         $reportData = $this->getReportData($startDate, $endDate, $classroomId, $schoolId);
 
-        $filename = 'laporan-kehadiran-'.Carbon::now()->format('Y-m-d').'.csv';
+        $filename = 'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d').'.csv';
 
         return response()->streamDownload(function () use ($reportData) {
             $handle = fopen('php://output', 'w');
@@ -107,8 +107,8 @@ class LaporanController extends Controller
 
     public function exportPdf(Request $request): HttpResponse
     {
-        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', Carbon::now()->endOfMonth()->toDateString());
+        $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
         $classroomId = $request->input('classroom_id');
         $schoolId = auth()->user()->school_id;
 
@@ -135,7 +135,7 @@ class LaporanController extends Controller
 
         $pdf->setPaper('a4', 'landscape');
 
-        $filename = 'laporan-kehadiran-'.Carbon::now()->format('Y-m-d').'.pdf';
+        $filename = 'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d').'.pdf';
 
         return $pdf->download($filename);
     }

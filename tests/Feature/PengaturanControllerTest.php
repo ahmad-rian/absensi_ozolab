@@ -37,9 +37,6 @@ test('pengaturan can be updated', function () {
 
     $response = $this->actingAs($user)->put(route('admin.pengaturan.update'), [
         'school_name' => 'SD Negeri 2',
-        'default_check_in_time' => '07:30',
-        'late_threshold_time' => '07:45',
-        'default_check_out_time' => '15:30',
         'timezone' => 'Asia/Makassar',
         'whatsapp_enabled' => true,
         'notify_on_check_in' => true,
@@ -50,8 +47,22 @@ test('pengaturan can be updated', function () {
     $response->assertRedirect(route('admin.pengaturan'));
     $school = School::find($user->school_id);
     expect($school->getSetting('school_name'))->toBe('SD Negeri 2');
-    expect($school->getSetting('default_check_in_time'))->toBe('07:30');
     expect($school->getSetting('timezone'))->toBe('Asia/Makassar');
+});
+
+test('pengaturan no longer stores attendance times', function () {
+    $user = createAdminUser();
+
+    $this->actingAs($user)->put(route('admin.pengaturan.update'), [
+        'default_check_in_time' => '07:30',
+        'late_threshold_time' => '07:45',
+        'default_check_out_time' => '15:30',
+    ])->assertRedirect(route('admin.pengaturan'));
+
+    $school = School::find($user->school_id);
+
+    expect($school->getSetting('default_check_in_time'))->toBeNull()
+        ->and($school->getSetting('late_threshold_time'))->toBeNull();
 });
 
 test('pengaturan validates timezone values', function () {

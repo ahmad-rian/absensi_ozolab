@@ -1,12 +1,36 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Download, HardDrive, Images, Loader2, Printer, User } from 'lucide-react';
+import {
+    AlarmClock,
+    ArrowLeft,
+    CalendarCheck,
+    CalendarDays,
+    CreditCard,
+    Download,
+    FileSpreadsheet,
+    FileText,
+    HardDrive,
+    Images,
+    Loader2,
+    MoonStar,
+    Percent,
+    Printer,
+    User,
+    UserCheck,
+    UserX,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { AttendanceDailyChart, type DailyPoint } from '@/components/student/attendance-daily-chart';
+import { PrayerDailyChart, type PrayerDailyPoint } from '@/components/student/prayer-daily-chart';
+import { StatTile } from '@/components/student/stat-tile';
+import { StatusPie, type AttendanceSummary } from '@/components/student/status-pie';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dashboard } from '@/routes';
 
 type Classroom = {
@@ -61,11 +85,73 @@ type PhotoSheetTemplate = {
     label: string;
 };
 
+type GeneratedCard = {
+    id: string;
+    layout_type: string;
+    layout_name: string;
+    drive_url: string | null;
+    file_url: string | null;
+    created_at: string;
+};
+
+type AttendanceRow = {
+    id: string;
+    date: string;
+    type: string;
+    type_label: string;
+    status: string;
+    status_label: string;
+    time: string | null;
+    device_id: string | null;
+};
+
+type PrayerRow = {
+    id: string;
+    date: string;
+    status: string;
+    status_label: string;
+    time: string | null;
+    device_id: string | null;
+};
+
+type AttendancePayload = {
+    summary: AttendanceSummary;
+    daily: DailyPoint[];
+    recent: AttendanceRow[];
+};
+
+type PrayerPayload = {
+    enabled: boolean;
+    covered: boolean;
+    window: string | null;
+    summary: { hadir: number; tidak_hadir: number; effective_days: number; rate: number };
+    daily: PrayerDailyPoint[];
+    recent: PrayerRow[];
+};
+
 type PageProps = {
     student: Student;
     qrSvg: string;
     photoSheets: PhotoSheet[];
     photoSheetTemplates: PhotoSheetTemplate[];
+    cards: GeneratedCard[];
+    filters: { start: string; end: string };
+    attendance?: AttendancePayload;
+    prayer?: PrayerPayload;
+};
+
+const CARD_TYPES: { value: string; label: string }[] = [
+    { value: 'osis', label: 'Kartu OSIS' },
+    { value: 'perpustakaan', label: 'Kartu Perpustakaan' },
+    { value: 'identitas', label: 'Kartu Identitas' },
+];
+
+const statusBadgeClass: Record<string, string> = {
+    HADIR: 'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/40 dark:text-green-300',
+    TERLAMBAT: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    IZIN: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+    SAKIT: 'border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+    ALPA: 'border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900/40 dark:text-red-300',
 };
 
 const sheetStatusConfig: Record<string, { label: string; className: string }> = {
@@ -107,10 +193,42 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
-export default function SiswaShow({ student, qrSvg, photoSheets, photoSheetTemplates }: PageProps) {
+export default function SiswaShow({
+    student,
+    qrSvg,
+    photoSheets,
+    photoSheetTemplates,
+    cards,
+    filters,
+    attendance,
+    prayer,
+}: PageProps) {
     const [template, setTemplate] = useState(photoSheetTemplates[0]?.value ?? '');
     const [caption, setCaption] = useState('');
     const [generating, setGenerating] = useState(false);
+    const [tab, setTab] = useState(() => initialTab());
+    const [startDate, setStartDate] = useState(filters.start);
+    const [endDate, setEndDate] = useState(filters.end);
+
+    const rangeLabel = `${filters.start} s/d ${filters.end}`;
+    const exportQuery = `start_date=${filters.start}&end_date=${filters.end}`;
+
+    // Tab disimpan di query string supaya refresh dan tombol back tidak
+    // melompat balik ke Profil.
+    function changeTab(value: string) {
+        setTab(value);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', value);
+        window.history.replaceState({}, '', url.toString());
+    }
+
+    function applyRange() {
+        router.get(
+            `/admin/siswa/${student.id}`,
+            { tab, start_date: startDate, end_date: endDate },
+            { preserveState: true, preserveScroll: true },
+        );
+    }
 
     const hasProcessingSheet = photoSheets.some((sheet) => sheet.status === 'processing');
 
@@ -177,6 +295,23 @@ export default function SiswaShow({ student, qrSvg, photoSheets, photoSheetTempl
                     </Button>
                 </div>
 
+                <Tabs value={tab} onValueChange={changeTab}>
+                    <TabsList>
+                        <TabsTrigger value="profil">
+                            <User className="size-4" />
+                            Profil
+                        </TabsTrigger>
+                        <TabsTrigger value="absensi">
+                            <CalendarCheck className="size-4" />
+                            Absensi Sekolah
+                        </TabsTrigger>
+                        <TabsTrigger value="sholat">
+                            <MoonStar className="size-4" />
+                            Absen Sholat
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="profil">
                 {/* Content */}
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Left: Student Info */}
@@ -375,10 +510,305 @@ export default function SiswaShow({ student, qrSvg, photoSheets, photoSheetTempl
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Kartu Digital — tautan langsung ke berkas di Google Drive */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <CreditCard className="size-5" />
+                                    Kartu Digital
+                                </CardTitle>
+                                <CardDescription>Buka langsung kartunya, tanpa perlu mencari di Google Drive.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                {CARD_TYPES.map((type) => {
+                                    const card = cards.find((item) => item.layout_type === type.value);
+                                    const url = card?.drive_url ?? card?.file_url ?? null;
+
+                                    return (
+                                        <div key={type.value} className="flex items-center justify-between gap-2 border-b py-2 last:border-b-0">
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-medium">{card?.layout_name ?? type.label}</p>
+                                                <p className="text-muted-foreground text-xs">
+                                                    {card ? card.created_at : 'Belum digenerate'}
+                                                </p>
+                                            </div>
+                                            {url ? (
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <a href={url} target="_blank" rel="noreferrer">
+                                                        {card?.drive_url ? <HardDrive className="mr-1.5 size-4" /> : <Download className="mr-1.5 size-4" />}
+                                                        Buka
+                                                    </a>
+                                                </Button>
+                                            ) : (
+                                                <Button variant="outline" size="sm" disabled>
+                                                    Buka
+                                                </Button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
+                    </TabsContent>
+
+                    <TabsContent value="absensi" className="space-y-6">
+                        <RangeBar
+                            startDate={startDate}
+                            endDate={endDate}
+                            onStartChange={setStartDate}
+                            onEndChange={setEndDate}
+                            onApply={applyRange}
+                            csvHref={`/admin/siswa/${student.id}/laporan/absensi/csv?${exportQuery}`}
+                            pdfHref={`/admin/siswa/${student.id}/laporan/absensi/pdf?${exportQuery}`}
+                        />
+
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            <StatTile label="Hadir" value={attendance?.summary.hadir ?? '—'} icon={UserCheck} tone="green" />
+                            <StatTile label="Terlambat" value={attendance?.summary.terlambat ?? '—'} icon={AlarmClock} tone="amber" />
+                            <StatTile
+                                label="Tidak Hadir"
+                                value={
+                                    attendance
+                                        ? attendance.summary.alpa + attendance.summary.izin + attendance.summary.sakit + attendance.summary.tanpa_keterangan
+                                        : '—'
+                                }
+                                icon={UserX}
+                                tone="red"
+                                hint={
+                                    attendance
+                                        ? `Izin ${attendance.summary.izin} · Sakit ${attendance.summary.sakit} · Alpa ${attendance.summary.alpa}`
+                                        : undefined
+                                }
+                            />
+                            <StatTile
+                                label="Kehadiran"
+                                value={attendance?.summary.rate ?? '—'}
+                                suffix="%"
+                                icon={Percent}
+                                tone="blue"
+                                hint={attendance ? `${attendance.summary.effective_days} hari efektif` : undefined}
+                            />
+                        </div>
+
+                        <div className="grid gap-6 lg:grid-cols-2">
+                            <AttendanceDailyChart data={attendance?.daily} range={rangeLabel} />
+                            <StatusPie summary={attendance?.summary} />
+                        </div>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Riwayat Absensi</CardTitle>
+                                <CardDescription>30 catatan terakhir pada rentang ini</CardDescription>
+                            </CardHeader>
+                            <CardContent className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Tanggal</TableHead>
+                                            <TableHead>Jenis</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Jam</TableHead>
+                                            <TableHead>Perangkat</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {!attendance ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                                                    Memuat…
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : attendance.recent.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                                                    Belum ada catatan absensi pada rentang ini.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            attendance.recent.map((row) => (
+                                                <TableRow key={row.id}>
+                                                    <TableCell className="font-medium">{row.date}</TableCell>
+                                                    <TableCell>{row.type_label}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className={statusBadgeClass[row.status] ?? ''}>
+                                                            {row.status_label}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="font-mono">{row.time ?? '-'}</TableCell>
+                                                    <TableCell className="text-muted-foreground text-xs">{row.device_id ?? '-'}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="sholat" className="space-y-6">
+                        {prayer && !prayer.enabled ? (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Absen sholat belum diaktifkan</CardTitle>
+                                    <CardDescription>
+                                        Nyalakan dulu di Pengaturan Sekolah, lengkap dengan jam mulai dan selesai.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button variant="outline" asChild>
+                                        <Link href="/admin/pengaturan">Buka Pengaturan</Link>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <>
+                                <RangeBar
+                                    startDate={startDate}
+                                    endDate={endDate}
+                                    onStartChange={setStartDate}
+                                    onEndChange={setEndDate}
+                                    onApply={applyRange}
+                                    csvHref={`/admin/siswa/${student.id}/laporan/sholat/csv?${exportQuery}`}
+                                    pdfHref={`/admin/siswa/${student.id}/laporan/sholat/pdf?${exportQuery}`}
+                                />
+
+                                {prayer && !prayer.covered && (
+                                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+                                        Siswa ini tidak termasuk peserta absen sholat. Nyalakan “Sertakan siswa non-Islam” di Pengaturan bila memang perlu diikutkan.
+                                    </p>
+                                )}
+
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                    <StatTile label="Ikut Sholat" value={prayer?.summary.hadir ?? '—'} icon={MoonStar} tone="green" />
+                                    <StatTile label="Tidak Ikut" value={prayer?.summary.tidak_hadir ?? '—'} icon={UserX} tone="red" />
+                                    <StatTile label="Hari Efektif" value={prayer?.summary.effective_days ?? '—'} icon={CalendarDays} tone="slate" />
+                                    <StatTile
+                                        label="Kehadiran"
+                                        value={prayer?.summary.rate ?? '—'}
+                                        suffix="%"
+                                        icon={Percent}
+                                        tone="blue"
+                                        hint={prayer?.window ? `Jendela ${prayer.window}` : undefined}
+                                    />
+                                </div>
+
+                                <PrayerDailyChart data={prayer?.daily} range={rangeLabel} />
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Riwayat Absen Sholat</CardTitle>
+                                        <CardDescription>30 catatan terakhir pada rentang ini</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Tanggal</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead>Jam</TableHead>
+                                                    <TableHead>Perangkat</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {!prayer ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={4} className="text-muted-foreground py-8 text-center">
+                                                            Memuat…
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : prayer.recent.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={4} className="text-muted-foreground py-8 text-center">
+                                                            Belum ada catatan absen sholat pada rentang ini.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    prayer.recent.map((row) => (
+                                                        <TableRow key={row.id}>
+                                                            <TableCell className="font-medium">{row.date}</TableCell>
+                                                            <TableCell>
+                                                                <Badge variant="outline" className={statusBadgeClass[row.status] ?? ''}>
+                                                                    {row.status_label}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="font-mono">{row.time ?? '-'}</TableCell>
+                                                            <TableCell className="text-muted-foreground text-xs">{row.device_id ?? '-'}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+                            </>
+                        )}
+                    </TabsContent>
+                </Tabs>
             </div>
         </>
+    );
+}
+
+function initialTab(): string {
+    if (typeof window === 'undefined') {
+        return 'profil';
+    }
+
+    const requested = new URL(window.location.href).searchParams.get('tab');
+
+    return requested && ['profil', 'absensi', 'sholat'].includes(requested) ? requested : 'profil';
+}
+
+function RangeBar({
+    startDate,
+    endDate,
+    onStartChange,
+    onEndChange,
+    onApply,
+    csvHref,
+    pdfHref,
+}: {
+    startDate: string;
+    endDate: string;
+    onStartChange: (value: string) => void;
+    onEndChange: (value: string) => void;
+    onApply: () => void;
+    csvHref: string;
+    pdfHref: string;
+}) {
+    return (
+        <Card>
+            <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:max-w-md">
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="start_date" className="text-xs">Dari Tanggal</Label>
+                        <Input id="start_date" type="date" value={startDate} onChange={(e) => onStartChange(e.target.value)} />
+                    </div>
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="end_date" className="text-xs">Sampai Tanggal</Label>
+                        <Input id="end_date" type="date" value={endDate} onChange={(e) => onEndChange(e.target.value)} />
+                    </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button onClick={onApply}>Terapkan</Button>
+                    <Button variant="outline" asChild>
+                        <a href={csvHref}>
+                            <FileSpreadsheet className="mr-1.5 size-4" />
+                            CSV
+                        </a>
+                    </Button>
+                    <Button variant="outline" asChild>
+                        <a href={pdfHref}>
+                            <FileText className="mr-1.5 size-4" />
+                            PDF
+                        </a>
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 

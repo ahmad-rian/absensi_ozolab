@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AttendanceSchedule;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
+use App\Services\Attendance\ScheduleProvisioner;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -190,26 +190,6 @@ class SchoolController extends Controller
      */
     private function createDefaultSchedules(School $school): void
     {
-        $schedules = [];
-
-        // Monday (1) to Saturday (6)
-        for ($day = 1; $day <= 6; $day++) {
-            $schedules[] = [
-                'id' => (string) Str::ulid(),
-                'school_id' => $school->id,
-                'classroom_id' => null, // global schedule
-                'day_of_week' => $day,
-                'check_in_start' => '06:00',
-                'check_in_end' => '08:00',
-                'late_threshold' => '07:15',
-                'check_out_start' => '12:00',
-                'check_out_end' => '17:00',
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
-
-        AttendanceSchedule::insert($schedules);
+        app(ScheduleProvisioner::class)->provision($school->id);
     }
 }

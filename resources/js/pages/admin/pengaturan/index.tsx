@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Bell, Building2, Clock, ImageIcon, Save, Upload } from 'lucide-react';
+import { Bell, Building2, Clock, ImageIcon, MoonStar, Save, Upload } from 'lucide-react';
 import { type FormEvent, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,10 @@ import { dashboard } from '@/routes';
 type SettingsData = {
     school_name: string;
     timezone: string;
+    prayer_enabled: boolean;
+    prayer_start: string;
+    prayer_end: string;
+    prayer_all_religions: boolean;
     whatsapp_enabled: boolean;
     notify_on_check_in: boolean;
     notify_on_check_out: boolean;
@@ -33,6 +37,10 @@ export default function PengaturanIndex({ settings, logoUrl, faviconUrl }: Props
     const { data, setData, put, processing } = useForm<SettingsData>({
         school_name: (settings.school_name as string) || '',
         timezone: (settings.timezone as string) || 'Asia/Jakarta',
+        prayer_enabled: Boolean(settings.prayer_enabled),
+        prayer_start: (settings.prayer_start as string) || '11:00',
+        prayer_end: (settings.prayer_end as string) || '13:00',
+        prayer_all_religions: Boolean(settings.prayer_all_religions),
         whatsapp_enabled: Boolean(settings.whatsapp_enabled),
         notify_on_check_in: Boolean(settings.notify_on_check_in),
         notify_on_check_out: Boolean(settings.notify_on_check_out),
@@ -195,7 +203,69 @@ export default function PengaturanIndex({ settings, logoUrl, faviconUrl }: Props
                     </CardContent>
                 </Card>
 
-                {/* Card 3: Konfigurasi WhatsApp */}
+                {/* Card 3: Absen Sholat Dzuhur */}
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <MoonStar className="size-5 text-emerald-600" />
+                            <CardTitle>Absen Sholat Dzuhur</CardTitle>
+                        </div>
+                        <CardDescription>
+                            Absen terpisah dari absensi sekolah, sekali scan per hari. Hari aktifnya mengikuti Jadwal Absensi.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <Checkbox
+                                id="prayer_enabled"
+                                checked={data.prayer_enabled}
+                                onCheckedChange={(checked) => setData('prayer_enabled', Boolean(checked))}
+                            />
+                            <Label htmlFor="prayer_enabled" className="cursor-pointer text-sm font-medium">
+                                Aktifkan absen sholat dzuhur
+                            </Label>
+                        </div>
+                        <Separator />
+                        <div className="grid gap-4 pl-7 sm:grid-cols-2">
+                            <div className="grid gap-2">
+                                <Label htmlFor="prayer_start" className="text-sm font-medium">Jam Mulai</Label>
+                                <Input
+                                    id="prayer_start"
+                                    type="time"
+                                    value={data.prayer_start}
+                                    onChange={(e) => setData('prayer_start', e.target.value)}
+                                    disabled={!data.prayer_enabled}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="prayer_end" className="text-sm font-medium">Jam Selesai</Label>
+                                <Input
+                                    id="prayer_end"
+                                    type="time"
+                                    value={data.prayer_end}
+                                    onChange={(e) => setData('prayer_end', e.target.value)}
+                                    disabled={!data.prayer_enabled}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 pl-7">
+                            <Checkbox
+                                id="prayer_all_religions"
+                                checked={data.prayer_all_religions}
+                                onCheckedChange={(checked) => setData('prayer_all_religions', Boolean(checked))}
+                                disabled={!data.prayer_enabled}
+                            />
+                            <Label htmlFor="prayer_all_religions" className="cursor-pointer text-sm font-medium">
+                                Sertakan siswa non-Islam
+                            </Label>
+                        </div>
+                        <p className="text-muted-foreground pl-7 text-xs">
+                            Tanpa centang ini, hanya siswa beragama Islam yang bisa scan dan dihitung di laporan.
+                        </p>
+                    </CardContent>
+                </Card>
+
+                {/* Card 4: Konfigurasi WhatsApp */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center gap-2">

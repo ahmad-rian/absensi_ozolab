@@ -8,6 +8,7 @@ use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\NotificationLog;
 use App\Models\Student;
+use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,7 @@ class DashboardController extends Controller
 {
     public function index(): Response
     {
-        $today = Carbon::today();
+        $today = SchoolTime::today();
         $totalActiveStudents = Student::forSchool()->where('is_active', true)->count();
 
         return Inertia::render('dashboard', [

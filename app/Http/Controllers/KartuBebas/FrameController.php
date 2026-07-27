@@ -17,7 +17,8 @@ class FrameController extends Controller
 
     public function index(): Response
     {
-        $frames = SchoolFrame::where('category', self::CATEGORY)
+        $frames = SchoolFrame::acrossSchools()
+            ->where('category', self::CATEGORY)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();

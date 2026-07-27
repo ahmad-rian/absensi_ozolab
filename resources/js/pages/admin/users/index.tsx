@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Edit, Plus, Search, Trash2 } from 'lucide-react';
+import { Edit, Plus, Search, Trash2, UserRoundCog } from 'lucide-react';
 import { useState } from 'react';
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -31,7 +31,7 @@ const roleColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outl
     ORANG_TUA: 'outline',
 };
 
-export default function UsersIndex({ users, roles, filters }: {
+export default function UsersIndex({ users, roles, filters, isSuperAdmin }: {
     users: Paginated;
     roles: Role[];
     filters: { search: string; role: string };
@@ -121,6 +121,27 @@ export default function UsersIndex({ users, roles, filters }: {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-1">
+                                            {isSuperAdmin && user.is_active && !user.roles.some((r) => r.name === 'SUPER_ADMIN') && (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" title="Masuk sebagai pengguna ini">
+                                                            <UserRoundCog className="size-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Masuk Sebagai Pengguna</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Anda akan memakai aplikasi sebagai {user.name}. Aktivitas dicatat di log. Bisa kembali kapan saja lewat banner di atas.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => router.post(`/admin/users/${user.id}/impersonate`)}>Masuk</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
                                             <Button variant="ghost" size="icon" asChild>
                                                 <Link href={`/admin/users/${user.id}/edit`}><Edit className="size-4" /></Link>
                                             </Button>

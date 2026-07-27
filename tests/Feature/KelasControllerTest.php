@@ -103,7 +103,7 @@ test('store skips duplicate classrooms', function () {
 
 test('authenticated users can update a classroom', function () {
     $user = createAdminUser();
-    $classroom = Classroom::factory()->create(['name' => 'VII-A']);
+    $classroom = Classroom::factory()->create(['name' => 'VII-A', 'school_id' => $user->school_id]);
 
     $this->actingAs($user)
         ->put(route('kelas.update', $classroom), [
@@ -121,7 +121,7 @@ test('authenticated users can update a classroom', function () {
 
 test('authenticated users can delete a classroom without students', function () {
     $user = createAdminUser();
-    $classroom = Classroom::factory()->create();
+    $classroom = Classroom::factory()->create(['school_id' => $user->school_id]);
 
     $this->actingAs($user)
         ->delete(route('kelas.destroy', $classroom))
@@ -132,8 +132,8 @@ test('authenticated users can delete a classroom without students', function () 
 
 test('classroom with students cannot be deleted', function () {
     $user = createAdminUser();
-    $classroom = Classroom::factory()->create();
-    Student::factory()->create(['classroom_id' => $classroom->id]);
+    $classroom = Classroom::factory()->create(['school_id' => $user->school_id]);
+    Student::factory()->create(['school_id' => $user->school_id, 'classroom_id' => $classroom->id]);
 
     $this->actingAs($user)
         ->delete(route('kelas.destroy', $classroom))

@@ -9,6 +9,7 @@ use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\Student;
 use App\Services\Attendance\AttendanceRecorder;
+use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +27,7 @@ class AbsensiController extends Controller
             ->whereHas('student', fn ($q) => $q->where('school_id', $schoolId))
             ->orderByDesc('recorded_at');
 
-        $date = $request->query('date', now()->toDateString());
+        $date = $request->query('date', SchoolTime::todayString());
         $query->whereDate('attendance_date', $date);
 
         if ($request->filled('classroom_id')) {
@@ -68,7 +69,7 @@ class AbsensiController extends Controller
     public function store(Request $request, AttendanceRecorder $recorder): RedirectResponse
     {
         $validated = $request->validate([
-            'student_id' => ['required', 'exists:students,id'],
+            'student_id' => ['required', $this->belongsToSchool('students')],
             'type' => ['required', 'in:CHECK_IN,CHECK_OUT'],
             'status' => ['required', 'in:HADIR,TERLAMBAT,ALPA,IZIN,SAKIT'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -84,7 +85,7 @@ class AbsensiController extends Controller
 
         $type = AttendanceType::from($validated['type']);
         // recorded_at disimpan sebagai WIB wall-clock (konsisten dgn AttendanceRecorder).
-        $timestamp = isset($validated['recorded_at']) ? Carbon::parse($validated['recorded_at']) : Carbon::now('Asia/Jakarta');
+        $timestamp = isset($validated['recorded_at']) ? Carbon::parse($validated['recorded_at']) : SchoolTime::now();
 
         $status = AttendanceStatus::from($validated['status']);
 

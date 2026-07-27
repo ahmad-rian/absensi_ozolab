@@ -38,7 +38,7 @@ class KelasController extends Controller
     {
         $validated = $request->validate([
             'grade_level' => ['required', 'integer', 'min:1', 'max:12'],
-            'academic_year_id' => ['required', 'exists:academic_years,id'],
+            'academic_year_id' => ['required', $this->belongsToSchool('academic_years')],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100'],
             'parallel_from' => ['required', 'string', 'size:1', 'regex:/^[A-Z]$/'],
             'parallel_to' => ['required', 'string', 'size:1', 'regex:/^[A-Z]$/'],
@@ -92,7 +92,7 @@ class KelasController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'grade_level' => ['required', 'integer', 'min:1', 'max:12'],
-            'academic_year_id' => ['required', 'exists:academic_years,id'],
+            'academic_year_id' => ['required', $this->belongsToSchool('academic_years')],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 

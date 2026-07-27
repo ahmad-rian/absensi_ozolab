@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
 use App\Models\Attendance;
 use App\Models\Student;
+use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -19,7 +20,7 @@ class GenerateDailyAttendanceReport extends Command
     {
         $date = $this->option('date')
             ? Carbon::parse($this->option('date'))
-            : Carbon::today();
+            : SchoolTime::today();
 
         $this->info("Attendance Report for {$date->format('d F Y')}");
         $this->newLine();

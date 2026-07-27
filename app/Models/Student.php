@@ -67,6 +67,11 @@ class Student extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function prayerAttendances(): HasMany
+    {
+        return $this->hasMany(PrayerAttendance::class);
+    }
+
     public function notificationLogs(): HasMany
     {
         return $this->hasMany(NotificationLog::class);

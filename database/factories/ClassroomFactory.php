@@ -18,7 +18,11 @@ class ClassroomFactory extends Factory
 
         return [
             'school_id' => null,
-            'academic_year_id' => AcademicYear::factory(),
+            // Tahun ajaran harus ikut sekolah kelasnya, kalau tidak validasi
+            // FK lintas sekolah menolaknya.
+            'academic_year_id' => fn (array $attributes) => AcademicYear::factory()
+                ->create(['school_id' => $attributes['school_id'] ?? null])
+                ->id,
             'name' => "{$grade}{$parallel}",
             'grade_level' => $grade,
             'homeroom_teacher_id' => null,

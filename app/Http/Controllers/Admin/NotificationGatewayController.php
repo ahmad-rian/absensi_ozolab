@@ -116,7 +116,7 @@ class NotificationGatewayController extends Controller
      */
     private function syncTelegramConnection(School $school, TelegramConnect $telegramConnect): ?string
     {
-        $channel = SchoolNotificationChannel::where('school_id', $school->id)
+        $channel = SchoolNotificationChannel::acrossSchools()->where('school_id', $school->id)
             ->where('channel', SchoolChannelType::Telegram->value)
             ->first();
 
@@ -156,7 +156,7 @@ class NotificationGatewayController extends Controller
 
     public function destroy(School $school): RedirectResponse
     {
-        SchoolNotificationChannel::where('school_id', $school->id)->delete();
+        SchoolNotificationChannel::acrossSchools()->where('school_id', $school->id)->delete();
 
         // Sisakan Ozolab WA aktif sebagai default.
         SchoolNotificationChannel::create([
@@ -199,7 +199,7 @@ class NotificationGatewayController extends Controller
      */
     private function saveChannel(School $school, SchoolChannelType $type, bool $isActive, array $settings = []): void
     {
-        $channel = SchoolNotificationChannel::firstOrNew([
+        $channel = SchoolNotificationChannel::acrossSchools()->firstOrNew([
             'school_id' => $school->id,
             'channel' => $type->value,
         ]);
@@ -218,7 +218,7 @@ class NotificationGatewayController extends Controller
      */
     private function channelsPayload(School $school): array
     {
-        $channels = $school->notificationChannels()->get()->keyBy(fn (SchoolNotificationChannel $c) => $c->channel->value);
+        $channels = $school->notificationChannels()->withoutGlobalScope('school')->get()->keyBy(fn (SchoolNotificationChannel $c) => $c->channel->value);
 
         $fonnte = $channels->get(SchoolChannelType::FonnteWa->value);
         $telegram = $channels->get(SchoolChannelType::Telegram->value);

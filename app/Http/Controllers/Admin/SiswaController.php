@@ -9,6 +9,7 @@ use App\Models\ParentProfile;
 use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
 use App\Services\PhotoSheetGeneratorService;
+use App\Services\Student\StudentStatsBuilder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -49,7 +50,7 @@ class SiswaController extends Controller
         ]);
     }
 
-    public function show(Student $siswa, QrTokenGenerator $qrGenerator): Response
+    public function show(Request $request, Student $siswa, QrTokenGenerator $qrGenerator, StudentStatsBuilder $stats): Response
     {
         $siswa->load(['classroom', 'parentProfile.user']);
 
@@ -77,6 +78,8 @@ class SiswaController extends Controller
             ->map(fn (array $config, string $key) => ['value' => $key, 'label' => $config['label']])
             ->values();
 
+        $range = $stats->resolveRange($request->query('start_date'), $request->query('end_date'));
+
         return Inertia::render('admin/siswa/show', [
             'student' => array_merge($studentData, [
                 'religion_label' => $siswa->religion?->label(),
@@ -87,7 +90,40 @@ class SiswaController extends Controller
             'qrSvg' => $qrSvg,
             'photoSheets' => $photoSheets,
             'photoSheetTemplates' => $photoSheetTemplates,
+            'cards' => $this->generatedCards($siswa),
+            'filters' => $range,
+            // Ditunda supaya tab Profil tampil seketika; chart menyusul.
+            'attendance' => Inertia::defer(fn () => $stats->attendanceFor($siswa, $range['start'], $range['end'])),
+            'prayer' => Inertia::defer(fn () => $stats->prayerFor($siswa, $range['start'], $range['end'])),
         ]);
+    }
+
+    /**
+     * Kartu terbaru per jenis layout (OSIS / Perpustakaan / Identitas),
+     * lengkap dengan tautan langsung ke berkasnya di Google Drive.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function generatedCards(Student $siswa): array
+    {
+        return CardGenerationLog::where('student_id', $siswa->id)
+            ->where('type', 'card')
+            ->where('status', 'completed')
+            ->with('cardLayout:id,name,type')
+            ->latest()
+            ->get()
+            ->filter(fn (CardGenerationLog $log) => $log->cardLayout !== null)
+            ->unique(fn (CardGenerationLog $log) => $log->cardLayout->type)
+            ->values()
+            ->map(fn (CardGenerationLog $log) => [
+                'id' => $log->id,
+                'layout_type' => $log->cardLayout->type,
+                'layout_name' => $log->cardLayout->name,
+                'drive_url' => $log->drive_url,
+                'file_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
+                'created_at' => $log->created_at->format('d M Y H:i'),
+            ])
+            ->all();
     }
 
     public function qrCode(Student $siswa, QrTokenGenerator $qrGenerator): HttpResponse
@@ -123,11 +159,11 @@ class SiswaController extends Controller
             'nisn' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nisn')->where('school_id', auth()->user()->school_id)],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
             'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
-            'classroom_id' => ['required', 'exists:classrooms,id'],
+            'classroom_id' => ['required', $this->belongsToSchool('classrooms')],
             'birth_place' => ['nullable', 'string', 'max:255'],
             'birth_date' => ['nullable', 'date'],
             'address' => ['nullable', 'string', 'max:90'],
-            'parent_profile_id' => ['nullable', 'exists:parent_profiles,id'],
+            'parent_profile_id' => ['nullable', $this->belongsToSchool('parent_profiles')],
         ], [
             'full_name.required' => 'Nama lengkap wajib diisi.',
             'full_name.max' => 'Nama lengkap maksimal 255 karakter.',
@@ -178,11 +214,11 @@ class SiswaController extends Controller
             'nisn' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nisn')->where('school_id', auth()->user()->school_id)->ignore($siswa->id)],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
             'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
-            'classroom_id' => ['required', 'exists:classrooms,id'],
+            'classroom_id' => ['required', $this->belongsToSchool('classrooms')],
             'birth_place' => ['nullable', 'string', 'max:255'],
             'birth_date' => ['nullable', 'date'],
             'address' => ['nullable', 'string', 'max:90'],
-            'parent_profile_id' => ['nullable', 'exists:parent_profiles,id'],
+            'parent_profile_id' => ['nullable', $this->belongsToSchool('parent_profiles')],
             'is_active' => ['sometimes', 'boolean'],
         ], [
             'full_name.required' => 'Nama lengkap wajib diisi.',

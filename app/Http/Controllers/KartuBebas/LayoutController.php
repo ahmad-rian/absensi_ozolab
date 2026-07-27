@@ -155,7 +155,7 @@ class LayoutController extends Controller
      */
     private function frames(): Collection
     {
-        return SchoolFrame::query()
+        return SchoolFrame::acrossSchools()
             ->where('category', 'kartu_bebas')
             ->where('is_active', true)
             ->orderBy('name')

@@ -68,8 +68,8 @@ test('guests are redirected from orang tua show', function () {
 
 test('authenticated users can visit orang tua show', function () {
     $user = createAdminUser();
-    $parent = ParentProfile::factory()->create();
-    Student::factory()->create(['parent_profile_id' => $parent->id]);
+    $parent = ParentProfile::factory()->create(['school_id' => $user->school_id]);
+    Student::factory()->create(['school_id' => $user->school_id, 'parent_profile_id' => $parent->id]);
 
     $this->actingAs($user)
         ->get(route('admin.orang-tua.show', $parent))

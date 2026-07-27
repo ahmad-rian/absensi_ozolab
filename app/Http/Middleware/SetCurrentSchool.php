@@ -17,23 +17,34 @@ class SetCurrentSchool
             return $next($request);
         }
 
-        // Session-based school selection takes priority over user.school_id
-        $schoolId = session('current_school_id', $user->school_id);
+        // Hanya SUPER_ADMIN yang boleh berpindah sekolah lewat session. Untuk
+        // role lain konteksnya selalu users.school_id, sehingga nilai session
+        // sisa (mis. setelah impersonate) tidak bisa membawa mereka ke sekolah
+        // lain.
+        $schoolId = $user->isSuperAdmin()
+            ? session('current_school_id', $user->school_id)
+            : $user->school_id;
 
-        // Ensure schoolId is valid and belongs to an active school
-        $school = $schoolId ? School::where('id', $schoolId)->where('is_active', true)->first() : null;
+        $school = $schoolId
+            ? School::where('id', $schoolId)->where('is_active', true)->first()
+            : null;
 
-        if ($school) {
-            // Sync session + user model so all scopes read the same value
-            session(['current_school_id' => $school->id]);
+        if (! $school) {
+            $request->session()->forget('current_school_id');
 
-            if ($user->school_id !== $school->id) {
-                $user->school_id = $school->id;
-                $user->saveQuietly(); // no events, just sync
-            }
-
-            app()->instance('currentSchool', $school);
+            return $next($request);
         }
+
+        session(['current_school_id' => $school->id]);
+
+        // Kolom users.school_id ikut disinkronkan hanya untuk SUPER_ADMIN,
+        // karena global scope sekolah membacanya.
+        if ($user->isSuperAdmin() && $user->school_id !== $school->id) {
+            $user->school_id = $school->id;
+            $user->saveQuietly(); // no events, just sync
+        }
+
+        app()->instance('currentSchool', $school);
 
         return $next($request);
     }

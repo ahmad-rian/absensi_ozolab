@@ -17,11 +17,7 @@ class AttendanceScheduleFactory extends Factory
             'school_id' => null,
             'classroom_id' => Classroom::factory(),
             'day_of_week' => fake()->numberBetween(1, 5),
-            'check_in_start' => '06:30',
-            'check_in_end' => '09:00',
-            'late_threshold' => '07:15',
-            'check_out_start' => '14:00',
-            'check_out_end' => '16:00',
+            ...config('attendance.default_schedule'),
             'is_active' => true,
         ];
     }
