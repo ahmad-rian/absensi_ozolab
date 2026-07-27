@@ -103,14 +103,26 @@ class RegisterStudentCardsJob implements ShouldQueue
         }
     }
 
+    /**
+     * `schools.id` dan `students.id` keduanya ULID — dulu diformat dengan `%d`
+     * sehingga runtuh jadi `1` dan seluruh sekolah menulis ke folder yang sama.
+     * Komponen acak membuat nama berkas tidak bisa ditebak dari nama siswa.
+     */
+    private function photoStoragePath(School $school, Student $student): string
+    {
+        return sprintf('photos/students/%s/%s-%s.png', $school->id, $student->id, Str::random(16));
+    }
+
     private function processPhoto(Student $student, School $school): void
     {
-        // Reuse the temp file already downloaded during crop-preview (no 2nd Drive hit).
-        if ($this->photoTemp && Storage::disk('public')->exists($this->photoTemp)) {
+        // Pakai ulang berkas pratinjau yang sudah diunduh saat crop-preview
+        // (tidak perlu memukul Drive dua kali). Path-nya dibentuk server dari
+        // kunci cache, bukan dikirim klien.
+        if ($this->photoTemp && Storage::disk('local')->exists($this->photoTemp)) {
             try {
-                $storagePath = sprintf('photos/students/%d/%d-%s.png', $school->id, $student->id, Str::slug($student->full_name));
-                (new PhotoCropService)->cropAndStore(Storage::disk('public')->path($this->photoTemp), $storagePath, 9, $this->manualCrop);
-                Storage::disk('public')->delete($this->photoTemp);
+                $storagePath = $this->photoStoragePath($school, $student);
+                (new PhotoCropService)->cropAndStore(Storage::disk('local')->path($this->photoTemp), $storagePath, 9, $this->manualCrop);
+                Storage::disk('local')->delete($this->photoTemp);
                 $student->update(['photo_path' => $storagePath]);
 
                 return;
@@ -139,8 +151,8 @@ class RegisterStudentCardsJob implements ShouldQueue
 
         try {
             $service = GoogleDriveService::forSchool($driveConfig);
-            $searchFolderId = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id ?: 'root';
-            $files = $service->findFileByName($filename, $searchFolderId);
+            $searchFolderId = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id;
+            $files = $searchFolderId ? $service->findFileByName($filename, $searchFolderId) : [];
             if (empty($files)) {
                 return false;
             }
@@ -148,7 +160,7 @@ class RegisterStudentCardsJob implements ShouldQueue
             $tempPath = tempnam(sys_get_temp_dir(), 'student_photo_');
             $service->downloadFile($files[0]['id'], $tempPath);
 
-            $storagePath = sprintf('photos/students/%d/%d-%s.png', $school->id, $student->id, Str::slug($student->full_name));
+            $storagePath = $this->photoStoragePath($school, $student);
             (new PhotoCropService)->cropAndStore($tempPath, $storagePath, 9, $manualCrop);
 
             @unlink($tempPath);

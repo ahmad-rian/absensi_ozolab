@@ -4,6 +4,7 @@ import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileCo
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,23 +19,25 @@ type PageProps = {
 export default function Profile({
     mustVerifyEmail,
     status,
+    passwordRules,
 }: {
     mustVerifyEmail: boolean;
     status?: string;
+    passwordRules?: string;
 }) {
     const { auth } = usePage<PageProps>().props;
 
     return (
         <>
-            <Head title="Profile settings" />
+            <Head title="Pengaturan Profil" />
 
-            <h1 className="sr-only">Profile settings</h1>
+            <h1 className="sr-only">Pengaturan profil</h1>
 
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Profile information"
-                    description="Update your name and email address"
+                    title="Informasi Profil"
+                    description="Perbarui nama dan alamat email"
                 />
 
                 <Form
@@ -123,6 +126,68 @@ export default function Profile({
                 </Form>
             </div>
 
+            <div className="space-y-6">
+                <Heading
+                    variant="small"
+                    title="Ubah Password"
+                    description="Gunakan password yang panjang dan tidak dipakai di tempat lain"
+                />
+
+                <Form
+                    {...ProfileController.updatePassword.form()}
+                    options={{ preserveScroll: true }}
+                    resetOnSuccess={['current_password', 'password', 'password_confirmation']}
+                    className="space-y-6"
+                >
+                    {({ processing, errors }) => (
+                        <>
+                            <div className="grid gap-2">
+                                <Label htmlFor="current_password">Password saat ini</Label>
+                                <PasswordInput
+                                    id="current_password"
+                                    name="current_password"
+                                    className="mt-1 block w-full"
+                                    autoComplete="current-password"
+                                    required
+                                />
+                                <InputError className="mt-2" message={errors.current_password} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="password">Password baru</Label>
+                                <PasswordInput
+                                    id="password"
+                                    name="password"
+                                    className="mt-1 block w-full"
+                                    autoComplete="new-password"
+                                    required
+                                />
+                                {passwordRules && (
+                                    <p className="text-muted-foreground text-xs">{passwordRules}</p>
+                                )}
+                                <InputError className="mt-2" message={errors.password} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="password_confirmation">Konfirmasi password baru</Label>
+                                <PasswordInput
+                                    id="password_confirmation"
+                                    name="password_confirmation"
+                                    className="mt-1 block w-full"
+                                    autoComplete="new-password"
+                                    required
+                                />
+                                <InputError className="mt-2" message={errors.password_confirmation} />
+                            </div>
+
+                            <Button disabled={processing} data-test="update-password-button">
+                                Simpan Password
+                            </Button>
+                        </>
+                    )}
+                </Form>
+            </div>
+
             <DeleteUser />
         </>
     );
@@ -131,7 +196,7 @@ export default function Profile({
 Profile.layout = {
     breadcrumbs: [
         {
-            title: 'Profile settings',
+            title: 'Pengaturan Profil',
             href: edit(),
         },
     ],

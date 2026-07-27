@@ -60,10 +60,12 @@ class UserManagementController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:20'],
             'password' => ['required', 'string', Password::min(8), 'confirmed'],
             'role' => ['required', 'string', Rule::in($this->assignableRoles()->pluck('name'))],
+            'extra_permissions' => ['array'],
+            'extra_permissions.*' => [Rule::in($this->grantablePermissions())],
         ], [
             'name.required' => 'Nama wajib diisi.',
             'email.required' => 'Email wajib diisi.',
@@ -84,6 +86,7 @@ class UserManagementController extends Controller
         ]);
 
         $user->assignRole($validated['role']);
+        $user->syncPermissions($validated['extra_permissions'] ?? []);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengguna berhasil ditambahkan.']);
 
@@ -115,14 +118,22 @@ class UserManagementController extends Controller
         $isSuperAdmin = auth()->user()->isSuperAdmin();
         abort_unless($isSuperAdmin || $user->school_id === auth()->user()->school_id, 403);
 
+        // Penjaga "satu sekolah" di atas ikut meloloskan akun sendiri, sehingga
+        // seorang admin bisa menaikkan haknya sendiri lewat extra_permissions.
+        abort_if(
+            ! $isSuperAdmin && $user->is($request->user()),
+            403,
+            'Tidak bisa mengubah role atau hak akses akun sendiri.',
+        );
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/', 'unique:users,email,'.$user->id],
             'phone' => ['nullable', 'string', 'max:20'],
             'role' => ['required', 'string', Rule::in($this->assignableRoles()->pluck('name'))],
             'is_active' => ['sometimes', 'boolean'],
             'extra_permissions' => ['array'],
-            'extra_permissions.*' => [Rule::in(AppModule::permissions())],
+            'extra_permissions.*' => [Rule::in($this->grantablePermissions())],
         ]);
 
         $user->update([
@@ -159,6 +170,31 @@ class UserManagementController extends Controller
     }
 
     /**
+     * Permission yang boleh diberikan oleh user yang sedang login.
+     *
+     * Non-super-admin tidak boleh menyentuh modul grup "Sistem" (sekolah, role,
+     * gateway, impersonate, kartu bebas) dan tidak boleh memberikan hak yang
+     * dirinya sendiri tidak punya.
+     *
+     * @return array<int, string>
+     */
+    private function grantablePermissions(): array
+    {
+        if (auth()->user()->isSuperAdmin()) {
+            return AppModule::permissions();
+        }
+
+        $owned = auth()->user()->getAllPermissions()->pluck('name');
+
+        return collect(AppModule::cases())
+            ->reject(fn (AppModule $module) => $module->group() === 'Sistem')
+            ->map(fn (AppModule $module) => $module->permission())
+            ->intersect($owned)
+            ->values()
+            ->all();
+    }
+
+    /**
      * Role yang boleh diberikan oleh user yang sedang login. Hanya SUPER_ADMIN
      * yang boleh mengangkat SUPER_ADMIN lain; role custom ikut terdaftar.
      *
@@ -180,7 +216,10 @@ class UserManagementController extends Controller
      */
     private function modulePayload(): array
     {
+        $grantable = $this->grantablePermissions();
+
         return collect(AppModule::cases())
+            ->filter(fn (AppModule $module) => in_array($module->permission(), $grantable, true))
             ->groupBy(fn (AppModule $module) => $module->group())
             ->map(fn ($modules, $group) => [
                 'group' => $group,

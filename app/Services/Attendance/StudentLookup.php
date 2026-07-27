@@ -7,12 +7,14 @@ use App\Models\Student;
 /**
  * Pencarian siswa dari hasil scan, dibatasi ke satu sekolah.
  *
- * Urutan QR token → NISN → NIS disengaja: NIS bisa sama antar sekolah, jadi
- * dipakai terakhir dan tetap di-scope `school_id`.
+ * Hanya cocok pada `qr_token`. Fallback ke NIS/NISN sengaja dihapus: kolom itu
+ * bisa ditebak (NIS 8 digit dengan rentang sempit), sehingga scanner publik
+ * dulu bisa dipakai memalsukan kehadiran dan memanen PII siswa satu sekolah
+ * tanpa akun sama sekali.
  */
 class StudentLookup
 {
-    public function find(string $token, string $schoolId): ?Student
+    public function findByQrToken(string $token, string $schoolId): ?Student
     {
         $token = trim($token);
 
@@ -20,18 +22,10 @@ class StudentLookup
             return null;
         }
 
-        foreach (['qr_token', 'nisn', 'nis'] as $column) {
-            $student = Student::where($column, $token)
-                ->where('school_id', $schoolId)
-                ->where('is_active', true)
-                ->with('classroom')
-                ->first();
-
-            if ($student) {
-                return $student;
-            }
-        }
-
-        return null;
+        return Student::where('qr_token', $token)
+            ->where('school_id', $schoolId)
+            ->where('is_active', true)
+            ->with('classroom')
+            ->first();
     }
 }

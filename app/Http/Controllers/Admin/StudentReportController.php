@@ -168,13 +168,13 @@ class StudentReportController extends Controller
             fwrite($handle, "\xEF\xBB\xBF");
 
             foreach ($preamble as $line) {
-                fputcsv($handle, $line);
+                fputcsv($handle, array_map(fn ($cell) => $this->csvSafe($cell), $line));
             }
 
             fputcsv($handle, $header);
 
             foreach ($rows as $row) {
-                fputcsv($handle, $row);
+                fputcsv($handle, array_map(fn ($cell) => $this->csvSafe($cell), $row));
             }
 
             fclose($handle);

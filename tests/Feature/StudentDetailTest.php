@@ -201,3 +201,32 @@ test('a student from another school is not reachable', function () {
         ->get(route('admin.siswa.show', $other))
         ->assertNotFound();
 });
+
+test('the prayer opt-in can be toggled from the student page', function () {
+    $this->admin->school->setSetting('prayer_enabled', true);
+
+    $kristen = Student::factory()->create([
+        'school_id' => $this->schoolId,
+        'religion' => Religion::Kristen,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.siswa.prayer-opt-in', $kristen), ['prayer_opt_in' => true])
+        ->assertRedirect();
+
+    expect($kristen->fresh()->prayer_opt_in)->toBeTrue();
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.siswa.prayer-opt-in', $kristen), ['prayer_opt_in' => null])
+        ->assertRedirect();
+
+    expect($kristen->fresh()->prayer_opt_in)->toBeNull();
+});
+
+test('the prayer opt-in of another school student is not reachable', function () {
+    $other = Student::factory()->create(['school_id' => School::factory()->create()->id]);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.siswa.prayer-opt-in', $other), ['prayer_opt_in' => true])
+        ->assertNotFound();
+});

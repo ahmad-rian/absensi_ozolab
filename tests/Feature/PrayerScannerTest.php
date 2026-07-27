@@ -83,13 +83,13 @@ test('a second scan on the same day is rejected', function () {
     expect(PrayerAttendance::count())->toBe(1);
 });
 
-test('scanning works via NIS too', function () {
+test('a raw NIS is rejected on the prayer scanner too', function () {
     $school = makePrayerSchool();
     $student = makeMuslimStudent($school);
 
     $this->postJson(route('public.prayer-scanner.scan', $school->scanner_token), ['token' => $student->nis])
-        ->assertOk()
-        ->assertJson(['success' => true]);
+        ->assertStatus(404)
+        ->assertJson(['success' => false]);
 });
 
 test('a student from another school is rejected', function () {
@@ -139,24 +139,10 @@ test('a non-muslim student is rejected unless the school opts in', function () {
         ->assertJson(['success' => true]);
 });
 
-test('the admin prayer scanner needs the scanner permission', function () {
-    $school = makePrayerSchool();
-    $student = makeMuslimStudent($school);
-    $admin = createAdminUser(['school_id' => $school->id]);
+test('the admin scanner pages are gone \u2014 scanning only happens on the public links', function () {
+    $admin = createAdminUser();
 
-    $this->actingAs($admin)
-        ->get(route('admin.scanner.sholat'))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('admin/scanner/prayer')->where('prayer.enabled', true));
-
-    $this->actingAs($admin)
-        ->postJson(route('admin.scanner.sholat.scan'), ['token' => $student->qr_token])
-        ->assertOk()
-        ->assertJson(['success' => true]);
-
-    expect(PrayerAttendance::first()->recorded_by)->toBe($admin->id);
-});
-
-test('guests cannot use the admin prayer scanner', function () {
-    $this->postJson(route('admin.scanner.sholat.scan'), ['token' => 'abc'])->assertUnauthorized();
+    $this->actingAs($admin)->get('/admin/scanner')->assertNotFound();
+    $this->actingAs($admin)->get('/admin/scanner/sholat')->assertNotFound();
+    $this->actingAs($admin)->postJson('/admin/scanner/scan', ['token' => 'abc'])->assertNotFound();
 });

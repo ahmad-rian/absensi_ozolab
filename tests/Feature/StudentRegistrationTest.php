@@ -126,8 +126,10 @@ test('student registration does not require authentication', function () {
 
 test('preview photo returns not found when drive is not configured', function () {
     $school = School::factory()->create(['is_active' => true]);
+    $token = registrationToken();
 
     $response = $this->postJson('/daftar/preview-photo', [
+        'token' => $token,
         'school_id' => $school->id,
         'filename' => 'test.jpg',
     ]);
@@ -137,8 +139,34 @@ test('preview photo returns not found when drive is not configured', function ()
 });
 
 test('preview photo validates required fields', function () {
-    $response = $this->postJson('/daftar/preview-photo', []);
+    $token = registrationToken();
+
+    $response = $this->postJson('/daftar/preview-photo', ['token' => $token]);
 
     $response->assertUnprocessable();
     $response->assertJsonValidationErrors(['school_id', 'filename']);
 });
+
+test('preview photo refuses a request without a registration session', function () {
+    $school = School::factory()->create(['is_active' => true]);
+
+    $this->postJson('/daftar/preview-photo', [
+        'school_id' => $school->id,
+        'filename' => 'test.jpg',
+    ])->assertForbidden();
+
+    $this->postJson('/daftar/crop-preview', [
+        'school_id' => $school->id,
+        'filename' => 'test.jpg',
+    ])->assertForbidden();
+});
+
+/**
+ * Buka halaman /daftar dulu supaya token sesinya terbit, seperti browser asli.
+ */
+function registrationToken(): string
+{
+    test()->get('/daftar')->assertOk();
+
+    return session('registration_token');
+}

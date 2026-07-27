@@ -1,4 +1,5 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
@@ -12,6 +13,9 @@ export function AppSidebarHeader({
             <div className="flex items-center gap-2 overflow-hidden">
                 <SidebarTrigger className="-ml-1 shrink-0" />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
+            </div>
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+                <ThemeToggle />
             </div>
         </header>
     );

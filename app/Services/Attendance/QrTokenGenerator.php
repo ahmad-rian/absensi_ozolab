@@ -11,11 +11,14 @@ use BaconQrCode\Writer;
 class QrTokenGenerator
 {
     /**
-     * Build the QR token as "<identity>.<signature>" where identity is the
-     * student's NISN (fallback to NIS) so the NISN is readable from the QR,
-     * and the signature is an HMAC keyed by a secret + random nonce. The NISN
-     * is visible but the token cannot be forged without the secret, and every
-     * call produces a fresh signature so rotation always invalidates old QRs.
+     * Bentuk token QR: "<identity>.<signature>", identity = NISN (fallback NIS)
+     * supaya terbaca dari QR, signature = potongan HMAC ber-nonce acak.
+     *
+     * Catatan penting: verifikasi TIDAK menghitung ulang HMAC — `verify()`
+     * hanya melakukan lookup kolom `qr_token`. Jadi ketahanan token terhadap
+     * pemalsuan sepenuhnya berasal dari nonce 64 bit CSPRNG, bukan dari
+     * rahasianya. Jangan mengandalkan `attendance.qr_token_secret` sebagai
+     * kontrol keamanan; merotasinya tidak berefek apa pun.
      */
     public function generate(Student $student): string
     {

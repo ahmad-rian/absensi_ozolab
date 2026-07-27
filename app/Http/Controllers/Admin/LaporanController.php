@@ -87,9 +87,11 @@ class LaporanController extends Controller
 
             foreach ($reportData as $row) {
                 fputcsv($handle, [
-                    $row['nis'],
-                    $row['full_name'],
-                    $row['classroom_name'],
+                    // Nama & NIS berasal dari pendaftaran publik — netralkan
+                    // supaya tidak dieksekusi sebagai rumus di Excel.
+                    $this->csvSafe($row['nis']),
+                    $this->csvSafe($row['full_name']),
+                    $this->csvSafe($row['classroom_name']),
                     $row['hadir'],
                     $row['terlambat'],
                     $row['izin'],

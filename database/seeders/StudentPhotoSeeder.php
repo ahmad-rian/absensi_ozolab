@@ -49,7 +49,9 @@ class StudentPhotoSeeder extends Seeder
 
             $image = $this->generateAvatar($initials, $color, $isMale);
 
-            $filename = sprintf('%s/%d-%s.webp', $dir, $student->id, Str::slug($student->full_name));
+            // ULID harus %s; %d meruntuhkannya jadi "1" dan seluruh siswa
+            // menimpa berkas yang sama.
+            $filename = sprintf('%s/%s-%s.webp', $dir, $student->id, Str::random(16));
             $fullPath = Storage::disk('public')->path($filename);
 
             imagewebp($image, $fullPath, 85);

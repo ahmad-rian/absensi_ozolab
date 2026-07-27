@@ -140,3 +140,38 @@ test('honours a custom window set by the school', function () {
     expect($this->recorder->record($student, timestamp: prayerAt(11, 30))['success'])->toBeFalse()
         ->and($this->recorder->record($student, timestamp: prayerAt(12, 15))['success'])->toBeTrue();
 });
+
+test('a per-student opt-in overrides the school rule', function () {
+    $kristen = Student::factory()->create([
+        'school_id' => $this->school->id,
+        'religion' => Religion::Kristen,
+        'prayer_opt_in' => true,
+    ]);
+
+    $result = $this->recorder->record($kristen, timestamp: prayerAt(11, 30));
+
+    expect($result['success'])->toBeTrue();
+});
+
+test('a per-student opt-out excludes a muslim student', function () {
+    $this->student->update(['prayer_opt_in' => false]);
+
+    $result = $this->recorder->record($this->student->fresh(), timestamp: prayerAt(11, 30));
+
+    expect($result['success'])->toBeFalse()
+        ->and($result['message'])->toContain('beragama Islam');
+});
+
+test('a null opt-in keeps following the school rule', function () {
+    $kristen = Student::factory()->create([
+        'school_id' => $this->school->id,
+        'religion' => Religion::Kristen,
+        'prayer_opt_in' => null,
+    ]);
+
+    expect($this->recorder->record($kristen, timestamp: prayerAt(11, 30))['success'])->toBeFalse();
+
+    $this->school->setSetting('prayer_all_religions', true);
+
+    expect($this->recorder->record($kristen->fresh(), timestamp: prayerAt(11, 40))['success'])->toBeTrue();
+});

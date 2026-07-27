@@ -26,7 +26,16 @@ class TelegramWebhookController extends Controller
         $channel = $this->telegramChannel($school);
 
         // Validate the secret header Telegram echoes back from setWebhook.
-        if (! $channel || $request->header('X-Telegram-Bot-Api-Secret-Token') !== $channel->setting('webhook_secret')) {
+        //
+        // Penjaga lama membandingkan `null !== null` ketika webhook_secret belum
+        // sempat tersimpan — hasilnya false, jadi tidak pernah trip dan siapa
+        // pun bisa mengirim update palsu.
+        $secret = (string) $channel?->setting('webhook_secret');
+
+        if (! $channel || $secret === '' || ! hash_equals(
+            $secret,
+            (string) $request->header('X-Telegram-Bot-Api-Secret-Token', '')
+        )) {
             return response()->json(['ok' => false], 403);
         }
 

@@ -19,10 +19,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentRegistrationController extends Controller
 {
@@ -39,17 +41,89 @@ class StudentRegistrationController extends Controller
         return Inertia::render('student-register', [
             'schools' => $schools,
             'classrooms' => $classrooms,
+            // Mengikat endpoint pratinjau ke sesi yang benar-benar membuka
+            // halaman ini, supaya tidak bisa dipanggil lepas lewat curl.
+            'registrationToken' => $this->issueRegistrationToken(),
         ]);
+    }
+
+    /**
+     * Token sesi pendaftaran — dipakai endpoint pratinjau foto.
+     */
+    private function issueRegistrationToken(): string
+    {
+        $token = session('registration_token');
+
+        if (! $token) {
+            $token = Str::random(40);
+            session(['registration_token' => $token]);
+        }
+
+        return $token;
+    }
+
+    private function assertRegistrationToken(Request $request): void
+    {
+        $expected = (string) session('registration_token', '');
+        $given = (string) $request->input('token', '');
+
+        abort_if(
+            $expected === '' || ! hash_equals($expected, $given),
+            403,
+            'Sesi pendaftaran tidak valid. Muat ulang halaman.',
+        );
+    }
+
+    /**
+     * Unduh foto dari Drive ke disk privat, lalu kembalikan kunci + URL
+     * bertanda tangan. Path penyimpanan tidak pernah keluar ke klien.
+     *
+     * @return array{key: string, path: string, url: string}
+     */
+    private function storePreview(GoogleDriveService $service, string $driveFileId): array
+    {
+        $key = Str::random(32);
+        $path = 'registration-previews/'.$key.'.jpg';
+        $fullPath = Storage::disk('local')->path($path);
+
+        $dir = dirname($fullPath);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $service->downloadFile($driveFileId, $fullPath);
+
+        cache()->put('registration-preview:'.$key, $path, now()->addHour());
+
+        return [
+            'key' => $key,
+            'path' => $fullPath,
+            'url' => URL::temporarySignedRoute('student.register.preview-file', now()->addHour(), ['key' => $key]),
+        ];
+    }
+
+    /**
+     * Sajikan berkas pratinjau lewat URL bertanda tangan.
+     */
+    public function previewFile(string $key): StreamedResponse
+    {
+        $path = cache()->get('registration-preview:'.$key);
+
+        abort_unless($path && Storage::disk('local')->exists($path), 404);
+
+        return Storage::disk('local')->response($path, null, ['Content-Type' => 'image/jpeg']);
     }
 
     public function store(Request $request, ParentProfileService $parentProfileService, QrTokenGenerator $qrGenerator): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'school_id' => ['required', 'exists:schools,id'],
-            'full_name' => ['required', 'string', 'max:255'],
-            'nis' => ['nullable', 'string', 'max:50', 'unique:students,nis'],
-            'no_absen' => ['required', 'string', 'max:10'],
-            'nisn' => ['required', 'string', 'max:20', 'unique:students,nisn'],
+            // Nama & NIS dari form publik ini berakhir di export CSV dan header
+            // HTTP, jadi karakternya dibatasi di sumbernya.
+            'full_name' => ['required', 'string', 'max:255', "regex:/^[\p{L}\p{N} .,'\-]+$/u"],
+            'nis' => ['nullable', 'string', 'max:50', 'alpha_num', 'unique:students,nis'],
+            'no_absen' => ['required', 'string', 'max:10', 'alpha_num'],
+            'nisn' => ['required', 'string', 'max:20', 'alpha_num', 'unique:students,nisn'],
             'gender' => ['required', Rule::enum(Gender::class)],
             'religion' => ['required', Rule::enum(Religion::class)],
             'classroom_id' => ['required', Rule::exists('classrooms', 'id')->where('school_id', $request->school_id)],
@@ -58,10 +132,10 @@ class StudentRegistrationController extends Controller
             'address' => ['required', 'string', 'max:90'],
             'parent_name' => ['required', 'string', 'max:255'],
             'parent_phone' => ['required', 'string', 'max:20'],
-            'parent_email' => ['nullable', 'email', 'max:255'],
+            'parent_email' => ['nullable', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'parent_relation' => ['required', 'string', 'in:AYAH,IBU,WALI'],
             'photo_drive_filename' => ['nullable', 'string', 'max:500'],
-            'photo_temp' => ['nullable', 'string', 'max:255'],
+            'photo_key' => ['nullable', 'string', 'alpha_num', 'size:32'],
             'manual_crop' => ['nullable', 'array'],
             'manual_crop.sx' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
             'manual_crop.sy' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
@@ -134,13 +208,22 @@ class StudentRegistrationController extends Controller
         // Offload the slow work (Drive photo download + crop + card render) to the
         // queue so the request returns instantly and never hits a gateway timeout.
         $hasPhoto = ! empty($validated['photo_drive_filename']);
-        $generateCards = (bool) ($validated['generate_cards'] ?? false);
+
+        // Render kartu memanggil headless Chrome. Tanpa syarat foto, endpoint
+        // publik ini bisa dipakai memaksa dua job render per request.
+        $generateCards = $hasPhoto && (bool) ($validated['generate_cards'] ?? false);
 
         if ($hasPhoto || $generateCards) {
+            // Kunci ditukar jadi path di sisi server; klien tidak pernah
+            // menentukan berkas mana yang dibaca lalu dihapus job.
+            $previewPath = $validated['photo_key'] ?? null
+                ? cache()->get('registration-preview:'.$validated['photo_key'])
+                : null;
+
             RegisterStudentCardsJob::dispatch(
                 $student->id,
                 $hasPhoto ? $validated['photo_drive_filename'] : null,
-                $validated['photo_temp'] ?? null,
+                $previewPath,
                 $validated['manual_crop'] ?? null,
                 $generateCards,
             );
@@ -219,53 +302,65 @@ class StudentRegistrationController extends Controller
      */
     public function previewPhoto(Request $request): JsonResponse
     {
+        $this->assertRegistrationToken($request);
+
         $validated = $request->validate([
             'school_id' => ['required', 'exists:schools,id'],
             'filename' => ['required', 'string', 'max:500'],
         ]);
 
-        $school = School::with('driveConfig')->findOrFail($validated['school_id']);
-        $driveConfig = $school->driveConfig;
+        $service = $this->driveFor($validated['school_id']);
 
-        if (! $driveConfig || ! $driveConfig->is_active) {
+        if (! $service) {
             return response()->json(['found' => false, 'message' => 'Google Drive belum dikonfigurasi untuk sekolah ini.']);
         }
 
-        if (! GoogleDriveService::hasGlobalCredentials() && ! $driveConfig->service_account_json) {
-            return response()->json(['found' => false, 'message' => 'Credentials Google Drive belum diset.']);
-        }
-
         try {
-            $service = GoogleDriveService::forSchool($driveConfig);
-            $searchFolderId = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id ?: 'root';
-            $files = $service->findFileByName($validated['filename'], $searchFolderId);
+            $files = $service['client']->findFileByName($validated['filename'], $service['folder']);
 
             if (empty($files)) {
-                return response()->json(['found' => false, 'message' => 'File "'.$validated['filename'].'" tidak ditemukan di folder Foto Siswa.']);
+                return response()->json(['found' => false, 'message' => 'Foto tidak ditemukan di folder Foto Siswa.']);
             }
 
-            // Download to temp for preview
-            $driveFileId = $files[0]['id'];
-            $tempName = 'temp/preview-'.Str::random(16).'.jpg';
-            $fullPath = Storage::disk('public')->path($tempName);
-
-            $dir = dirname($fullPath);
-            if (! is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
-
-            $service->downloadFile($driveFileId, $fullPath);
+            $preview = $this->storePreview($service['client'], $files[0]['id']);
 
             return response()->json([
                 'found' => true,
-                'filename' => $files[0]['name'],
-                'preview_url' => Storage::disk('public')->url($tempName),
+                'preview_url' => $preview['url'],
+                'photo_key' => $preview['key'],
             ]);
         } catch (\Throwable $e) {
-            Log::warning('Photo preview failed', ['filename' => $validated['filename'], 'error' => $e->getMessage()]);
+            Log::warning('Photo preview failed', ['error' => $e->getMessage()]);
 
-            return response()->json(['found' => false, 'message' => 'Gagal mengambil foto: '.$e->getMessage()]);
+            return response()->json(['found' => false, 'message' => 'Foto tidak dapat diambil.']);
         }
+    }
+
+    /**
+     * Klien Drive + folder pencarian untuk satu sekolah, atau null bila belum
+     * dikonfigurasi. Pesan galat sengaja seragam supaya tidak jadi orakel.
+     *
+     * @return array{client: GoogleDriveService, folder: string}|null
+     */
+    private function driveFor(string $schoolId): ?array
+    {
+        $driveConfig = School::with('driveConfig')->findOrFail($schoolId)->driveConfig;
+
+        if (! $driveConfig || ! $driveConfig->is_active) {
+            return null;
+        }
+
+        if (! GoogleDriveService::hasGlobalCredentials() && ! $driveConfig->service_account_json) {
+            return null;
+        }
+
+        $folder = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id;
+
+        if (! $folder) {
+            return null;
+        }
+
+        return ['client' => GoogleDriveService::forSchool($driveConfig), 'folder' => $folder];
     }
 
     /**
@@ -274,55 +369,39 @@ class StudentRegistrationController extends Controller
      */
     public function cropPreview(Request $request): JsonResponse
     {
+        $this->assertRegistrationToken($request);
+
         $validated = $request->validate([
             'school_id' => ['required', 'exists:schools,id'],
             'filename' => ['required', 'string', 'max:500'],
         ]);
 
-        $school = School::with('driveConfig')->findOrFail($validated['school_id']);
-        $driveConfig = $school->driveConfig;
+        $service = $this->driveFor($validated['school_id']);
 
-        if (! $driveConfig || ! $driveConfig->is_active) {
+        if (! $service) {
             return response()->json(['found' => false, 'message' => 'Google Drive belum dikonfigurasi untuk sekolah ini.']);
         }
 
-        if (! GoogleDriveService::hasGlobalCredentials() && ! $driveConfig->service_account_json) {
-            return response()->json(['found' => false, 'message' => 'Credentials Google Drive belum diset.']);
-        }
-
         try {
-            $service = GoogleDriveService::forSchool($driveConfig);
-            $searchFolderId = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id ?: 'root';
-            $files = $service->findFileByName($validated['filename'], $searchFolderId);
+            $files = $service['client']->findFileByName($validated['filename'], $service['folder']);
 
             if (empty($files)) {
-                return response()->json(['found' => false, 'message' => 'File "'.$validated['filename'].'" tidak ditemukan di folder Foto Siswa.']);
+                return response()->json(['found' => false, 'message' => 'Foto tidak ditemukan di folder Foto Siswa.']);
             }
 
-            $driveFileId = $files[0]['id'];
-            $tempName = 'temp/preview-'.Str::random(16).'.jpg';
-            $fullPath = Storage::disk('public')->path($tempName);
-
-            $dir = dirname($fullPath);
-            if (! is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
-
-            $service->downloadFile($driveFileId, $fullPath);
-
-            $cropService = new PhotoCropService;
+            $preview = $this->storePreview($service['client'], $files[0]['id']);
 
             return response()->json([
                 'found' => true,
-                'filename' => $files[0]['name'],
-                'preview_url' => Storage::disk('public')->url($tempName),
-                'photo_temp' => $tempName, // reuse on submit → no second Drive download
-                'crop' => $cropService->autoCropRect($fullPath),
+                'preview_url' => $preview['url'],
+                // Kunci, bukan path — path dari klien tidak pernah dipercaya.
+                'photo_key' => $preview['key'],
+                'crop' => (new PhotoCropService)->autoCropRect($preview['path']),
             ]);
         } catch (\Throwable $e) {
-            Log::warning('Photo crop-preview failed', ['filename' => $validated['filename'], 'error' => $e->getMessage()]);
+            Log::warning('Photo crop-preview failed', ['error' => $e->getMessage()]);
 
-            return response()->json(['found' => false, 'message' => 'Gagal mengambil foto: '.$e->getMessage()]);
+            return response()->json(['found' => false, 'message' => 'Foto tidak dapat diambil.']);
         }
     }
 }

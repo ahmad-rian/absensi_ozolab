@@ -8,6 +8,7 @@ use App\Models\Student;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Str;
 use Spatie\Browsershot\Browsershot;
 
 class AlbumGeneratorService
@@ -20,6 +21,9 @@ class AlbumGeneratorService
      */
     public function generateAlbum(Collection $students, SchoolAlbumLayout $layout, School $school): array
     {
+        // Album berisi foto + NIS satu kelas; timestamp saja terlalu mudah
+        // ditebak untuk berkas yang tersimpan di disk publik.
+        $batchToken = Str::random(16);
         $config = $layout->layout_config ?? [];
         $perPage = $layout->columns * $layout->rows;
         $chunks = $students->chunk($perPage);
@@ -45,9 +49,10 @@ class AlbumGeneratorService
             ])->render();
 
             $filename = sprintf(
-                'albums/%d/album-%s-page-%d.png',
+                'albums/%s/album-%s-%s-page-%d.png',
                 $school->id,
                 now()->format('Ymd-His'),
+                $batchToken,
                 $pageNum + 1,
             );
 

@@ -59,8 +59,18 @@ class CardLayoutController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', 'in:osis,perpustakaan,identitas'],
             'layout_config' => ['required', 'array'],
+            // Ketiga nilai ini disisipkan mentah ke blok <style> yang dirender
+            // headless Chrome; <style> adalah raw-text element sehingga
+            // escaping Blade tidak berlaku di sana.
+            'layout_config.header_gradient_start' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{3,8}$/'],
+            'layout_config.header_gradient_end' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{3,8}$/'],
+            'layout_config.header_text_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{3,8}$/'],
             'is_default' => ['boolean'],
         ]);
+
+        // Rule bertingkat di atas membuat `validated()` hanya mengembalikan
+        // sub-key yang punya rule; kembalikan konfigurasi utuh setelah lolos.
+        $validated['layout_config'] = $request->input('layout_config');
 
         if ($validated['is_default'] ?? false) {
             SchoolCardLayout::forSchool()
@@ -113,9 +123,18 @@ class CardLayoutController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', 'in:osis,perpustakaan,identitas'],
             'layout_config' => ['required', 'array'],
+            // Ketiga nilai ini disisipkan mentah ke blok <style> yang dirender
+            // headless Chrome; <style> adalah raw-text element sehingga
+            // escaping Blade tidak berlaku di sana.
+            'layout_config.header_gradient_start' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{3,8}$/'],
+            'layout_config.header_gradient_end' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{3,8}$/'],
+            'layout_config.header_text_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{3,8}$/'],
             'is_default' => ['boolean'],
             'is_active' => ['boolean'],
         ]);
+
+        // Lihat catatan di store(): rule bertingkat memangkas hasil validated().
+        $validated['layout_config'] = $request->input('layout_config');
 
         if ($validated['is_default'] ?? false) {
             SchoolCardLayout::forSchool()

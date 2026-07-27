@@ -20,6 +20,10 @@ class ImpersonationController extends Controller
     {
         $impersonator = $request->user();
 
+        // Gate super-admin sebelumnya hanya ada di JSX; endpointnya bisa
+        // dipanggil langsung oleh siapa pun yang memegang impersonate.access,
+        // termasuk untuk user sekolah lain.
+        abort_unless($impersonator->isSuperAdmin(), 403, 'Hanya Super Admin yang bisa menyamar.');
         abort_if($request->session()->has(self::SESSION_KEY), 403, 'Anda sudah dalam mode menyamar.');
         abort_if($user->is($impersonator), 403, 'Tidak bisa menyamar diri sendiri.');
         abort_if($user->isSuperAdmin(), 403, 'Tidak bisa menyamar sesama Super Admin.');

@@ -6,6 +6,7 @@ use App\Enums\NotificationChannel;
 use App\Enums\NotificationStatus;
 use App\Models\Concerns\BelongsToSchool;
 use Database\Factories\NotificationLogFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,7 @@ class NotificationLog extends Model
         'error_message',
         'attempt_count',
         'sent_at',
+        'read_at',
     ];
 
     protected function casts(): array
@@ -41,7 +43,17 @@ class NotificationLog extends Model
             'response_body' => 'array',
             'attempt_count' => 'integer',
             'sent_at' => 'datetime',
+            'read_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeUnread($query)
+    {
+        return $query->whereNull('read_at');
     }
 
     public function student(): BelongsTo

@@ -20,7 +20,7 @@ Route::post('telegram/webhook/{school}', [TelegramWebhookController::class, 'han
 |
 */
 
-Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
+Route::middleware(['web', 'auth', 'permission:siswa.access', 'throttle:60,1'])->group(function () {
     // Schools
     Route::get('schools', [StudentApiController::class, 'schools']);
     Route::get('schools/{school}/students', [StudentApiController::class, 'schoolStudents']);

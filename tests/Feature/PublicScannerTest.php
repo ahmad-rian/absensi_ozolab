@@ -158,12 +158,34 @@ test('late morning scan is still a check-in but flagged terlambat', function () 
         ->assertJson(['success' => true, 'student' => ['type' => 'CHECK_IN', 'status' => 'Terlambat']]);
 });
 
-test('scan works via NIS as well as qr token', function () {
+test('a raw NIS is rejected — only the QR token is accepted', function () {
     [$school, $student] = makeScannableStudent();
 
+    // NIS bisa ditebak (8 digit, rentang sempit); dulu ini cukup untuk
+    // memalsukan kehadiran siswa mana pun tanpa akun.
     $this->postJson(route('public.scanner.scan', $school->scanner_token), ['token' => $student->nis])
+        ->assertStatus(404)
+        ->assertJson(['success' => false]);
+
+    $this->postJson(route('public.scanner.scan', $school->scanner_token), ['token' => $student->nisn])
+        ->assertStatus(404);
+
+    expect($student->attendances()->count())->toBe(0);
+});
+
+test('the scan response does not leak student PII', function () {
+    [$school, $student] = makeScannableStudent();
+
+    $payload = $this->postJson(route('public.scanner.scan', $school->scanner_token), ['token' => $student->qr_token])
         ->assertOk()
-        ->assertJson(['success' => true]);
+        ->json('student');
+
+    expect($payload)->toHaveKeys(['full_name', 'nis', 'no_absen', 'classroom', 'status', 'time'])
+        ->and($payload)->not->toHaveKey('address')
+        ->and($payload)->not->toHaveKey('birth_date')
+        ->and($payload)->not->toHaveKey('birth_place')
+        ->and($payload)->not->toHaveKey('religion')
+        ->and($payload)->not->toHaveKey('nisn');
 });
 
 test('cannot scan a student from another school via wrong token', function () {

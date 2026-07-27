@@ -26,6 +26,7 @@ import { StatusPie, type AttendanceSummary } from '@/components/student/status-p
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -123,6 +124,9 @@ type AttendancePayload = {
 type PrayerPayload = {
     enabled: boolean;
     covered: boolean;
+    opt_in: boolean | null;
+    school_includes_all: boolean;
+    religion_label: string | null;
     window: string | null;
     summary: { hadir: number; tidak_hadir: number; effective_days: number; rate: number };
     daily: PrayerDailyPoint[];
@@ -675,11 +679,7 @@ export default function SiswaShow({
                                     pdfHref={`/admin/siswa/${student.id}/laporan/sholat/pdf?${exportQuery}`}
                                 />
 
-                                {prayer && !prayer.covered && (
-                                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
-                                        Siswa ini tidak termasuk peserta absen sholat. Nyalakan “Sertakan siswa non-Islam” di Pengaturan bila memang perlu diikutkan.
-                                    </p>
-                                )}
+                                {prayer && <PrayerMembershipCard studentId={student.id} prayer={prayer} />}
 
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                     <StatTile label="Ikut Sholat" value={prayer?.summary.hadir ?? '—'} icon={MoonStar} tone="green" />
@@ -760,6 +760,56 @@ function initialTab(): string {
     const requested = new URL(window.location.href).searchParams.get('tab');
 
     return requested && ['profil', 'absensi', 'sholat'].includes(requested) ? requested : 'profil';
+}
+
+function PrayerMembershipCard({ studentId, prayer }: { studentId: string; prayer: PrayerPayload }) {
+    const schoolRule = prayer.school_includes_all ? 'semua siswa ikut' : 'hanya siswa beragama Islam';
+    const overridden = prayer.opt_in !== null;
+
+    function setOptIn(value: boolean | null) {
+        router.patch(
+            `/admin/siswa/${studentId}/prayer-opt-in`,
+            { prayer_opt_in: value },
+            { preserveScroll: true, preserveState: true },
+        );
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <MoonStar className="size-5" />
+                    Kepesertaan Sholat
+                </CardTitle>
+                <CardDescription>
+                    Agama: {prayer.religion_label ?? '-'} · Aturan sekolah: {schoolRule}
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                <label className="flex items-center gap-3 text-sm">
+                    <Checkbox
+                        checked={prayer.covered}
+                        onCheckedChange={(checked) => setOptIn(Boolean(checked))}
+                    />
+                    Ikutkan siswa ini di absen sholat
+                </label>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <Badge variant={prayer.covered ? 'default' : 'secondary'}>
+                        {prayer.covered ? 'Ikut absen sholat' : 'Tidak ikut'}
+                    </Badge>
+                    <span className="text-muted-foreground text-xs">
+                        {overridden ? 'Diatur khusus untuk siswa ini' : 'Mengikuti aturan sekolah'}
+                    </span>
+                    {overridden && (
+                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setOptIn(null)}>
+                            Kembalikan ke aturan sekolah
+                        </Button>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
 }
 
 function RangeBar({

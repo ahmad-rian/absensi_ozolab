@@ -14,7 +14,13 @@ class ParentProfileService
     public function findOrCreateFromRegistration(string $schoolId, string $parentName, string $parentPhone, string $relation = 'WALI', ?string $email = null): ParentProfile
     {
         $phone = trim($parentPhone);
+
+        // Pertahanan berlapis: alamat ber-CR/LF pernah lolos rule `email` dan
+        // berakhir mentah di perintah SMTP `RCPT TO`.
         $email = $email ? trim($email) : null;
+        if ($email !== null && preg_match('/[\r\n]/', $email)) {
+            $email = null;
+        }
 
         $existing = ParentProfile::where('school_id', $schoolId)
             ->where('whatsapp_number', $phone)

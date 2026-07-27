@@ -61,8 +61,8 @@ class OrangTuaController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'notification_email' => ['nullable', 'email', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/', 'unique:users,email'],
+            'notification_email' => ['nullable', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'phone' => [
                 'required', 'string', 'max:20', 'regex:/^[0-9]+$/',
                 Rule::unique('parent_profiles', 'whatsapp_number')->where(fn ($q) => $q->where('school_id', $schoolId)),
@@ -142,8 +142,8 @@ class OrangTuaController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$parentProfile->user_id],
-            'notification_email' => ['nullable', 'email', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/', 'unique:users,email,'.$parentProfile->user_id],
+            'notification_email' => ['nullable', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'phone' => [
                 'required', 'string', 'max:20', 'regex:/^[0-9]+$/',
                 Rule::unique('parent_profiles', 'whatsapp_number')

@@ -72,7 +72,7 @@ class PhotoSheetGeneratorService
         ])->render();
 
         $filename = sprintf(
-            'sheets/%d/%s-%s-%s.png',
+            'sheets/%s/%s-%s-%s.png',
             $student->school_id,
             Str::slug($student->full_name),
             $student->nis ?? $student->id,

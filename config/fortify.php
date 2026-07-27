@@ -160,18 +160,13 @@ return [
     |
     */
 
+    // 2FA dan passkeys dimatikan: nol pemakai, dan login passkey memang tidak
+    // pernah dipasang di halaman login. Mematikannya juga membuat middleware
+    // `password.confirm` tidak lagi terpasang di route mana pun.
     'features' => [
         // Features::registration(),
         Features::resetPasswords(),
         Features::emailVerification(),
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-            // 'window' => 0
-        ]),
-        Features::passkeys([
-            'confirmPassword' => true,
-        ]),
     ],
 
 ];

@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Building2, Edit, Mail, MapPin, Phone, Plus, ScanLine, Search, Trash2 } from 'lucide-react';
+import { Building2, Edit, Mail, MapPin, MoonStar, Phone, Plus, ScanLine, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -9,6 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { dashboard } from '@/routes';
 
@@ -23,6 +24,7 @@ type School = {
     website: string | null;
     is_active: boolean;
     scanner_token: string;
+    prayer_enabled: boolean;
     users_count: number;
     students_count: number;
     classrooms_count: number;
@@ -39,11 +41,11 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
         router.get('/admin/schools', { search: value || undefined }, { preserveState: true, replace: true });
     }
 
-    async function copyScanLink(token: string) {
-        const url = `${window.location.origin}/scan/${token}`;
+    async function copyScanLink(token: string, kind: 'absensi' | 'sholat') {
+        const url = `${window.location.origin}/scan/${token}${kind === 'sholat' ? '/sholat' : ''}`;
         try {
             await navigator.clipboard.writeText(url);
-            toast.success('Link scan disalin.');
+            toast.success(kind === 'sholat' ? 'Link absen sholat disalin.' : 'Link absensi disalin.');
         } catch {
             toast.error('Gagal menyalin link.');
         }
@@ -123,9 +125,31 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
                                     <Button variant="outline" size="sm" asChild>
                                         <Link href={`/admin/schools/${school.id}/edit`}><Edit className="mr-1 size-3.5" />Edit</Link>
                                     </Button>
-                                    <Button variant="outline" size="sm" onClick={() => copyScanLink(school.scanner_token)}>
-                                        <ScanLine className="mr-1 size-3.5" />Link Scan
-                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm">
+                                                <ScanLine className="mr-1 size-3.5" />Link Scan
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start">
+                                            <DropdownMenuItem onClick={() => copyScanLink(school.scanner_token, 'absensi')}>
+                                                <ScanLine className="mr-2 size-4" />
+                                                Salin link absensi
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                disabled={!school.prayer_enabled}
+                                                onClick={() => copyScanLink(school.scanner_token, 'sholat')}
+                                            >
+                                                <MoonStar className="mr-2 size-4" />
+                                                <span className="flex flex-col items-start">
+                                                    Salin link absen sholat
+                                                    {!school.prayer_enabled && (
+                                                        <span className="text-muted-foreground text-xs">Belum diaktifkan</span>
+                                                    )}
+                                                </span>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="outline" size="sm"><Trash2 className="text-destructive mr-1 size-3.5" />Hapus</Button>

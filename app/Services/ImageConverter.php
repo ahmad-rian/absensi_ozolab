@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ImageConverter
 {
@@ -26,8 +27,23 @@ class ImageConverter
         $source = $this->createImageFromFile($file->getPathname(), $file->getMimeType());
 
         if (! $source) {
-            // Fallback: store original file as-is if GD can't process
-            $path = trim($directory, '/').'/'.Str::ulid().'.'.$file->getClientOriginalExtension();
+            // Fallback: simpan berkas asli apa adanya kalau GD tidak bisa
+            // mengolahnya. Ekstensinya diambil dari hasil sniffing mime, BUKAN
+            // dari nama berkas klien — berkas ber-signature PNG palsu bernama
+            // `x.html` dulu tersimpan sebagai .html dan disajikan sebagai HTML
+            // same-origin.
+            $extension = match ($file->getMimeType()) {
+                'image/jpeg', 'image/jpg' => 'jpg',
+                'image/png' => 'png',
+                'image/webp' => 'webp',
+                'image/gif' => 'gif',
+                'image/bmp' => 'bmp',
+                default => throw ValidationException::withMessages([
+                    'file' => 'Format gambar tidak didukung.',
+                ]),
+            };
+
+            $path = trim($directory, '/').'/'.Str::ulid().'.'.$extension;
             Storage::disk($disk)->put($path, file_get_contents($file->getPathname()));
 
             return $path;

@@ -11,6 +11,7 @@ use App\Services\AlbumGeneratorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -92,7 +93,9 @@ class AlbumGenerationController extends Controller
         }
 
         // Multiple pages — create ZIP
-        $zipName = sprintf('albums/%d/album-%s.zip', $school->id, now()->format('Ymd-His'));
+        // Timestamp saja terlalu mudah ditebak untuk arsip berisi foto + NIS
+        // satu kelas; tambahkan komponen acak.
+        $zipName = sprintf('albums/%s/album-%s-%s.zip', $school->id, now()->format('Ymd-His'), Str::random(16));
         $zipPath = Storage::disk('public')->path($zipName);
         $dir = dirname($zipPath);
         if (! is_dir($dir)) {

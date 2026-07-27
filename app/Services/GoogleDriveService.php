@@ -273,11 +273,22 @@ class GoogleDriveService
      */
     public function findFileByName(string $name, ?string $folderId = null): array
     {
-        $folderId = $folderId ?: $this->config->root_folder_id ?: 'root';
-        $escapedName = str_replace("'", "\\'", $name);
+        $folderId = $folderId ?: $this->config->root_folder_id;
+
+        // Tanpa folder yang jelas, jangan pernah jatuh ke 'root' — itu menyapu
+        // seluruh Drive dan membuat pencarian bisa dipakai sebagai enumerator.
+        if (! $folderId) {
+            return [];
+        }
+
+        // Backslash harus ikut di-escape, kalau tidak nilai ini bisa memutus
+        // string query Drive.
+        $escapedName = str_replace(['\\', "'"], ['\\\\', "\\'"], $name);
 
         $result = $this->drive->files->listFiles([
-            'q' => "'{$folderId}' in parents and name contains '{$escapedName}' and trashed = false",
+            // Nama persis, bukan `name contains` — prefix matching membuat satu
+            // huruf cukup untuk memanen berkas orang lain.
+            'q' => "'{$folderId}' in parents and name = '{$escapedName}' and trashed = false",
             'pageSize' => 5,
             'fields' => 'files(id, name, mimeType)',
             'supportsAllDrives' => true,

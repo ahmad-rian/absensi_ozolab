@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Services\Attendance\ScheduleProvisioner;
+use App\Support\PrayerSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -21,6 +22,25 @@ class SchoolController extends Controller
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
+
+        // Kirim field eksplisit — jangan serialisasi seluruh baris School,
+        // yang ikut membawa kolom `settings` beserta template notifikasi.
+        $schools->through(fn (School $school) => [
+            'id' => $school->id,
+            'name' => $school->name,
+            'slug' => $school->slug,
+            'address' => $school->address,
+            'city' => $school->city,
+            'phone' => $school->phone,
+            'email' => $school->email,
+            'website' => $school->website,
+            'is_active' => $school->is_active,
+            'scanner_token' => $school->scanner_token,
+            'prayer_enabled' => PrayerSettings::for($school)->enabled,
+            'users_count' => $school->users_count,
+            'students_count' => $school->students_count,
+            'classrooms_count' => $school->classrooms_count,
+        ]);
 
         return Inertia::render('admin/schools/index', [
             'schools' => $schools,
@@ -40,7 +60,7 @@ class SchoolController extends Controller
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'website' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -78,7 +98,10 @@ class SchoolController extends Controller
     public function edit(School $school): Response
     {
         return Inertia::render('admin/schools/edit', [
-            'school' => $school,
+            // Jangan serialisasi model utuh — kolom `settings` ikut terbawa.
+            'school' => $school->only([
+                'id', 'name', 'slug', 'address', 'city', 'phone', 'email', 'website', 'is_active',
+            ]),
         ]);
     }
 
@@ -89,7 +112,7 @@ class SchoolController extends Controller
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'website' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
         ]);

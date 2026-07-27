@@ -46,8 +46,10 @@ class CardGeneratorService
             'exportMm' => $exportMm,
         ])->render();
 
+        // %s, bukan %d — school_id adalah ULID dan dulu runtuh jadi "1",
+        // sehingga seluruh sekolah menulis ke direktori yang sama.
         $filename = sprintf(
-            'cards/%d/%s-%s-%s.png',
+            'cards/%s/%s-%s-%s.png',
             $school->id,
             Str::slug($student->full_name),
             $student->nis ?? $student->id,

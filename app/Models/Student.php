@@ -28,6 +28,7 @@ class Student extends Model
         'full_name',
         'gender',
         'religion',
+        'prayer_opt_in',
         'birth_place',
         'birth_date',
         'address',
@@ -45,6 +46,7 @@ class Student extends Model
         return [
             'gender' => Gender::class,
             'religion' => Religion::class,
+            'prayer_opt_in' => 'boolean',
             'birth_date' => 'date',
             'qr_issued_at' => 'datetime',
             'qr_rotated_at' => 'datetime',

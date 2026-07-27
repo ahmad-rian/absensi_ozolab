@@ -44,11 +44,11 @@ class NotificationGatewayController extends Controller
             'channels.TELEGRAM.is_active' => ['boolean'],
             'channels.TELEGRAM.bot_token' => ['nullable', 'string', 'min:20'],
             'channels.EMAIL.is_active' => ['boolean'],
-            'channels.EMAIL.sender_email' => ['nullable', 'email', 'max:255'],
+            'channels.EMAIL.sender_email' => ['nullable', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'channels.EMAIL.sender_name' => ['nullable', 'string', 'max:255'],
-            'channels.EMAIL.smtp_host' => ['nullable', 'string', 'max:255'],
+            'channels.EMAIL.smtp_host' => ['nullable', 'string', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'channels.EMAIL.smtp_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
-            'channels.EMAIL.smtp_username' => ['nullable', 'string', 'max:255'],
+            'channels.EMAIL.smtp_username' => ['nullable', 'string', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'channels.EMAIL.smtp_password' => ['nullable', 'string', 'max:255'],
             'channels.EMAIL.smtp_encryption' => ['nullable', 'in:tls,ssl,none'],
         ]);
@@ -93,6 +93,11 @@ class NotificationGatewayController extends Controller
 
         if (! empty($email['smtp_password'])) {
             $emailSettings['smtp_password'] = $email['smtp_password'];
+        } elseif ($this->smtpHostChanged($school, $emailSettings['smtp_host'])) {
+            // Ganti host tanpa mengisi password = rotasi kredensial. Kalau
+            // password lama dipakai ulang, tombol "Test" bisa dipakai
+            // mengirimkannya ke server siapa pun.
+            $emailSettings['smtp_password'] = '';
         }
 
         $this->saveChannel($school, SchoolChannelType::Email, (bool) ($email['is_active'] ?? false), $emailSettings);
@@ -126,13 +131,20 @@ class NotificationGatewayController extends Controller
 
         $token = (string) $channel->setting('bot_token');
 
+        // Kedua jalur gagal di bawah berhenti SEBELUM webhook_secret ditulis.
+        // Kalau kanal dibiarkan aktif, webhook-nya berjalan tanpa secret —
+        // itu yang dulu membuat penjaga di TelegramWebhookController lolos.
         if ($token === '') {
+            $this->deactivate($channel);
+
             return 'Telegram aktif tetapi Bot Token belum diisi.';
         }
 
         $username = $telegramConnect->resolveUsername($token);
 
         if (! $username) {
+            $this->deactivate($channel);
+
             return 'Bot Token Telegram tidak valid atau gagal menghubungi Telegram. Periksa token.';
         }
 
@@ -192,6 +204,22 @@ class NotificationGatewayController extends Controller
                 ? 'Pesan test berhasil dikirim!'
                 : 'Gagal mengirim. Periksa kredensial dan pastikan channel aktif.',
         ]);
+    }
+
+    private function deactivate(SchoolNotificationChannel $channel): void
+    {
+        $channel->is_active = false;
+        $channel->save();
+    }
+
+    private function smtpHostChanged(School $school, string $newHost): bool
+    {
+        $current = SchoolNotificationChannel::acrossSchools()
+            ->where('school_id', $school->id)
+            ->where('channel', SchoolChannelType::Email->value)
+            ->first();
+
+        return $current !== null && (string) ($current->settings['smtp_host'] ?? '') !== $newHost;
     }
 
     /**

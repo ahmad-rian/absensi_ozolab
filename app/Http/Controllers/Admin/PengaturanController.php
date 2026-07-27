@@ -51,9 +51,10 @@ class PengaturanController extends Controller
             $settings['prayer_all_religions'] = $prayer->allReligions;
         }
 
-        // App-level logo/favicon (global, not per-school)
-        $logoPath = Setting::getValue('app_logo', '');
-        $faviconPath = Setting::getValue('app_favicon', '');
+        // Branding per sekolah, dengan fallback ke nilai global lama supaya
+        // sekolah yang belum pernah mengunggah tidak kehilangan logonya.
+        $logoPath = $school?->getSetting('app_logo') ?: Setting::getValue('app_logo', '');
+        $faviconPath = $school?->getSetting('app_favicon') ?: Setting::getValue('app_favicon', '');
 
         return Inertia::render('admin/pengaturan/index', [
             'settings' => $settings,
@@ -110,15 +111,10 @@ class PengaturanController extends Controller
 
     public function uploadLogo(Request $request, ImageConverter $converter): RedirectResponse
     {
-        $request->validate(['logo' => ['required', 'image', 'max:2048']]);
-
-        $oldPath = Setting::getValue('app_logo', '');
-        if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-            Storage::disk('public')->delete($oldPath);
-        }
+        $request->validate(['logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']]);
 
         $path = $converter->storeAsWebp($request->file('logo'), 'images/branding', 'public', 85, 512);
-        Setting::setValue('app_logo', $path);
+        $this->storeBranding('app_logo', $path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Logo berhasil diupload.']);
 
@@ -127,18 +123,39 @@ class PengaturanController extends Controller
 
     public function uploadFavicon(Request $request, ImageConverter $converter): RedirectResponse
     {
-        $request->validate(['favicon' => ['required', 'image', 'max:2048']]);
-
-        $oldPath = Setting::getValue('app_favicon', '');
-        if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-            Storage::disk('public')->delete($oldPath);
-        }
+        $request->validate(['favicon' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,ico', 'max:2048']]);
 
         $path = $converter->storeAsWebp($request->file('favicon'), 'images/branding', 'public', 85, 128);
-        Setting::setValue('app_favicon', $path);
+        $this->storeBranding('app_favicon', $path);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Favicon berhasil diupload.']);
 
         return to_route('admin.pengaturan');
+    }
+
+    /**
+     * Simpan branding di sekolah yang sedang aktif, bukan di tabel `settings`
+     * global — kalau global, admin satu sekolah mengubah tampilan keenam tenant
+     * sekaligus dan menghapus berkas milik sekolah lain.
+     */
+    private function storeBranding(string $key, string $path): void
+    {
+        $school = School::find(auth()->user()->school_id);
+
+        if (! $school) {
+            Setting::setValue($key, $path);
+
+            return;
+        }
+
+        $old = $school->getSetting($key);
+
+        // Hanya hapus berkas milik sekolah ini sendiri; nilai global lama
+        // dibiarkan karena masih dipakai sekolah lain sebagai fallback.
+        if ($old && $old !== Setting::getValue($key) && Storage::disk('public')->exists($old)) {
+            Storage::disk('public')->delete($old);
+        }
+
+        $school->setSetting($key, $path);
     }
 }

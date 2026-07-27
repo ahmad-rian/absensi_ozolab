@@ -18,7 +18,6 @@ use App\Http\Controllers\Admin\OrangTuaController;
 use App\Http\Controllers\Admin\PengaturanController;
 use App\Http\Controllers\Admin\PhotoSheetController;
 use App\Http\Controllers\Admin\RolePermissionController;
-use App\Http\Controllers\Admin\ScannerController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\StudentReportController;
@@ -52,6 +51,9 @@ Route::get('daftar', [StudentRegistrationController::class, 'index'])->name('stu
 Route::post('daftar', [StudentRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('student.register.store');
 Route::post('daftar/preview-photo', [StudentRegistrationController::class, 'previewPhoto'])->middleware('throttle:20,1')->name('student.register.preview-photo');
 Route::post('daftar/crop-preview', [StudentRegistrationController::class, 'cropPreview'])->middleware('throttle:20,1')->name('student.register.crop-preview');
+Route::get('daftar/preview/{key}', [StudentRegistrationController::class, 'previewFile'])
+    ->middleware('signed')
+    ->name('student.register.preview-file');
 Route::get('daftar/status/{student}', [StudentRegistrationController::class, 'status'])->middleware('throttle:120,1')->name('student.register.status');
 Route::get('daftar/{student}/hasil', [StudentRegistrationController::class, 'result'])->name('student.register.result');
 
@@ -87,6 +89,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::resource('siswa', SiswaController::class)->names('admin.siswa');
         Route::get('siswa/{siswa}/qr', [SiswaController::class, 'qrCode'])->name('admin.siswa.qr');
         Route::post('siswa/{siswa}/photo-sheet', [PhotoSheetController::class, 'generate'])->name('admin.siswa.photo-sheet');
+        Route::patch('siswa/{siswa}/prayer-opt-in', [SiswaController::class, 'updatePrayerOptIn'])->name('admin.siswa.prayer-opt-in');
         Route::get('siswa/{siswa}/laporan/absensi/csv', [StudentReportController::class, 'attendanceCsv'])->name('admin.siswa.laporan.absensi.csv');
         Route::get('siswa/{siswa}/laporan/absensi/pdf', [StudentReportController::class, 'attendancePdf'])->name('admin.siswa.laporan.absensi.pdf');
         Route::get('siswa/{siswa}/laporan/sholat/csv', [StudentReportController::class, 'prayerCsv'])->name('admin.siswa.laporan.sholat.csv');
@@ -111,21 +114,19 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::post('absensi', [AbsensiController::class, 'store'])->name('admin.absensi.store');
     });
 
-    Route::middleware('permission:scanner.access')->group(function () {
-        Route::get('scanner', [ScannerController::class, 'index'])->name('admin.scanner');
-        Route::post('scanner/scan', [ScannerController::class, 'scan'])->name('admin.scanner.scan');
-        Route::get('scanner/sholat', [ScannerController::class, 'prayerIndex'])->name('admin.scanner.sholat');
-        Route::post('scanner/sholat/scan', [ScannerController::class, 'prayerScan'])->name('admin.scanner.sholat.scan');
-    });
-
     Route::middleware('permission:laporan.access')->group(function () {
         Route::get('laporan/export-pdf', [LaporanController::class, 'exportPdf'])->name('admin.laporan.export-pdf');
         Route::get('laporan/export', [LaporanController::class, 'export'])->name('admin.laporan.export');
         Route::get('laporan', [LaporanController::class, 'index'])->name('admin.laporan');
     });
 
-    Route::middleware('permission:notifikasi.access')
-        ->get('notifikasi', [NotifikasiController::class, 'index'])->name('admin.notifikasi');
+    Route::middleware('permission:notifikasi.access')->group(function () {
+        Route::get('notifikasi', [NotifikasiController::class, 'index'])->name('admin.notifikasi');
+        Route::post('notifikasi/baca-semua', [NotifikasiController::class, 'markAllRead'])->name('admin.notifikasi.read-all');
+        Route::delete('notifikasi/terbaca', [NotifikasiController::class, 'destroyRead'])->name('admin.notifikasi.destroy-read');
+        Route::post('notifikasi/{notifikasi}/baca', [NotifikasiController::class, 'markRead'])->name('admin.notifikasi.read');
+        Route::delete('notifikasi/{notifikasi}', [NotifikasiController::class, 'destroy'])->name('admin.notifikasi.destroy');
+    });
 
     // Kartu & Album
     Route::middleware('permission:frames.access')->group(function () {
@@ -183,24 +184,26 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::middleware('permission:wa-config.access')
         ->get('wa-config', [WaConfigController::class, 'index'])->name('admin.wa-config');
 
-    // Sistem
-    Route::middleware('permission:impersonate.access')->group(function () {
+    // Sistem — modul yang menyentuh data lintas sekolah. Permission saja
+    // tidak cukup di sini: School, Role, dan SchoolNotificationChannel tidak
+    // ber-tenant, jadi global scope tidak melindungi apa pun.
+    Route::middleware(['permission:impersonate.access', 'super-admin'])->group(function () {
         Route::post('users/{user}/impersonate', [ImpersonationController::class, 'store'])->name('admin.users.impersonate');
     });
 
-    Route::middleware('permission:notification-gateways.access')->group(function () {
+    Route::middleware(['permission:notification-gateways.access', 'super-admin'])->group(function () {
         Route::get('notification-gateways', [NotificationGatewayController::class, 'index'])->name('admin.notification-gateways');
         Route::put('notification-gateways/{school}', [NotificationGatewayController::class, 'update'])->name('admin.notification-gateways.update');
         Route::delete('notification-gateways/{school}', [NotificationGatewayController::class, 'destroy'])->name('admin.notification-gateways.destroy');
         Route::post('notification-gateways/{school}/test', [NotificationGatewayController::class, 'test'])->name('admin.notification-gateways.test');
     });
 
-    Route::middleware('permission:schools.access')->group(function () {
+    Route::middleware(['permission:schools.access', 'super-admin'])->group(function () {
         Route::resource('schools', SchoolController::class)->except(['show'])->names('admin.schools');
         Route::post('schools/{school}/scanner-token', [SchoolController::class, 'regenerateScannerToken'])->name('admin.schools.regenerate-scanner');
     });
 
-    Route::middleware('permission:roles.access')->group(function () {
+    Route::middleware(['permission:roles.access', 'super-admin'])->group(function () {
         Route::get('roles', [RolePermissionController::class, 'index'])->name('admin.roles');
         Route::post('roles', [RolePermissionController::class, 'store'])->name('admin.roles.store');
         Route::put('roles/{role}', [RolePermissionController::class, 'update'])->name('admin.roles.update');
@@ -208,7 +211,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     });
 
     // Kartu Bebas / Haji — dynamic card form builder
-    Route::middleware('permission:card-forms.access')->group(function () {
+    Route::middleware(['permission:card-forms.access', 'super-admin'])->group(function () {
         Route::get('card-forms', [AdminCardFormController::class, 'index'])->name('admin.card-forms');
         Route::get('card-forms/create', [AdminCardFormController::class, 'create'])->name('admin.card-forms.create');
         Route::post('card-forms', [AdminCardFormController::class, 'store'])->name('admin.card-forms.store');
@@ -224,7 +227,7 @@ Route::middleware('auth')
     ->post('admin/stop-impersonate', [ImpersonationController::class, 'destroy'])
     ->name('admin.stop-impersonate');
 
-Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
+Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-admin'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
     Route::get('/', [KartuBebasDashboardController::class, 'index'])->name('dashboard');
 
     // Layout Kartu (= CardForm template: dynamic fields + card design)

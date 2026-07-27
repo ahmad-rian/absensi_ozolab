@@ -19,6 +19,7 @@ type Classroom = { id: string; school_id: string; name: string; grade_level: num
 type Props = {
     schools: School[];
     classrooms: Classroom[];
+    registrationToken: string;
 };
 
 type RegistrationResult = {
@@ -86,7 +87,7 @@ type FormData = {
     parent_email: string;
     parent_relation: string;
     photo_drive_filename: string;
-    photo_temp: string;
+    photo_key: string;
     manual_crop: CropRect | null;
     generate_cards: boolean;
 };
@@ -108,7 +109,7 @@ const INITIAL_DATA: FormData = {
     parent_email: '',
     parent_relation: 'WALI',
     photo_drive_filename: '',
-    photo_temp: '',
+    photo_key: '',
     manual_crop: null,
     generate_cards: true,
 };
@@ -135,7 +136,7 @@ function readPersisted(): { data: FormData; step: number } {
     return { data: INITIAL_DATA, step: 1 };
 }
 
-export default function StudentRegister({ schools, classrooms }: Props) {
+export default function StudentRegister({ schools, classrooms, registrationToken }: Props) {
     const { flash } = usePage().props as unknown as { flash: { success?: string } };
 
     // Restore persisted wizard state once, synchronously, via lazy initializers.
@@ -385,7 +386,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         setPreviewError('');
         setPhotoPreview(null);
         setAutoCrop(null);
-        setData((prev) => ({ ...prev, manual_crop: null, photo_temp: '' }));
+        setData((prev) => ({ ...prev, manual_crop: null, photo_key: '' }));
 
         try {
             const res = await fetch('/daftar/crop-preview', {
@@ -396,6 +397,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                     Accept: 'application/json',
                 },
                 body: JSON.stringify({
+                    token: registrationToken,
                     school_id: data.school_id,
                     filename: data.photo_drive_filename.trim(),
                 }),
@@ -404,8 +406,8 @@ export default function StudentRegister({ schools, classrooms }: Props) {
             const json = await res.json();
 
             if (json.found) {
-                setPhotoPreview({ url: json.preview_url, filename: json.filename });
-                setData('photo_temp', json.photo_temp ?? '');
+                setPhotoPreview({ url: json.preview_url, filename: data.photo_drive_filename.trim() });
+                setData('photo_key', json.photo_key ?? '');
 
                 if (json.crop) {
                     setAutoCrop(json.crop);
@@ -425,7 +427,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
         } finally {
             setPreviewLoading(false);
         }
-    }, [data.photo_drive_filename, data.school_id, csrfToken, setData]);
+    }, [data.photo_drive_filename, data.school_id, csrfToken, registrationToken, setData]);
 
     // Auto-search the Drive photo as the user types (debounced) — no button needed.
     useEffect(() => {
@@ -936,7 +938,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                                     ...prev,
                                                     photo_drive_filename: e.target.value,
                                                     manual_crop: null,
-                                                    photo_temp: '',
+                                                    photo_key: '',
                                                 }));
                                                 setPhotoPreview(null);
                                                 setAutoCrop(null);
@@ -971,7 +973,7 @@ export default function StudentRegister({ schools, classrooms }: Props) {
                                         onClose={() => {
                                             setPhotoPreview(null);
                                             setAutoCrop(null);
-                                            setData((prev) => ({ ...prev, manual_crop: null, photo_temp: '' }));
+                                            setData((prev) => ({ ...prev, manual_crop: null, photo_key: '' }));
                                         }}
                                     />
                                 )}

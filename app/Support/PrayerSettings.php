@@ -34,9 +34,16 @@ class PrayerSettings
 
     /**
      * Apakah siswa ini wajib absen sholat.
+     *
+     * `prayer_opt_in` per siswa menang atas aturan sekolah; `null` berarti
+     * ikut aturan sekolah.
      */
     public function covers(Student $student): bool
     {
+        if ($student->prayer_opt_in !== null) {
+            return $student->prayer_opt_in;
+        }
+
         return $this->allReligions || $student->religion === Religion::Islam;
     }
 

@@ -99,6 +99,22 @@ class SiswaController extends Controller
     }
 
     /**
+     * Kepesertaan absen sholat khusus siswa ini.
+     *
+     * `null` mengembalikannya ke aturan sekolah.
+     */
+    public function updatePrayerOptIn(Request $request, Student $siswa): RedirectResponse
+    {
+        $validated = $request->validate([
+            'prayer_opt_in' => ['present', 'nullable', 'boolean'],
+        ]);
+
+        $siswa->update(['prayer_opt_in' => $validated['prayer_opt_in']]);
+
+        return back();
+    }
+
+    /**
      * Kartu terbaru per jenis layout (OSIS / Perpustakaan / Identitas),
      * lengkap dengan tautan langsung ke berkasnya di Google Drive.
      *
@@ -129,7 +145,9 @@ class SiswaController extends Controller
     public function qrCode(Student $siswa, QrTokenGenerator $qrGenerator): HttpResponse
     {
         $svg = $qrGenerator->renderSvg($siswa);
-        $filename = 'qr-'.$siswa->nis.'-'.Str::slug($siswa->full_name).'.svg';
+        // `nis` ikut di-slug: nilainya berasal dari pendaftaran publik dan bisa
+        // menyuntik parameter `filename*` ke header Content-Disposition.
+        $filename = 'qr-'.Str::slug($siswa->nis.'-'.$siswa->full_name).'.svg';
 
         return response($svg, 200, [
             'Content-Type' => 'image/svg+xml',

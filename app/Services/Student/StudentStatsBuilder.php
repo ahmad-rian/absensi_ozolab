@@ -140,6 +140,10 @@ class StudentStatsBuilder
         return [
             'enabled' => $settings?->enabled ?? false,
             'covered' => $settings?->covers($student) ?? false,
+            // null = ikut aturan sekolah; true/false = dioverride per siswa
+            'opt_in' => $student->prayer_opt_in,
+            'school_includes_all' => $settings?->allReligions ?? false,
+            'religion_label' => $student->religion?->label(),
             'window' => $settings ? $settings->displayStart().' – '.$settings->displayEnd() : null,
             'summary' => [
                 'hadir' => $hadir,

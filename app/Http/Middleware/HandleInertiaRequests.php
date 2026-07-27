@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\NotificationLog;
 use App\Models\School;
 use App\Models\Setting;
 use App\Models\User;
@@ -66,6 +67,15 @@ class HandleInertiaRequests extends Middleware
                     'original_name' => User::find($originalId)?->name,
                 ];
             },
+            // Dipakai badge di sidebar. Closure, jadi query-nya hanya jalan
+            // saat prop ini benar-benar diminta.
+            'notifications' => $user ? function () use ($user) {
+                return [
+                    'unread' => $user->school_id
+                        ? NotificationLog::where('school_id', $user->school_id)->whereNull('read_at')->count()
+                        : 0,
+                ];
+            } : ['unread' => 0],
             'currentSchool' => function () {
                 // Read from singleton set by SetCurrentSchool middleware — always fresh
                 $school = app()->bound('currentSchool') ? app('currentSchool') : null;
@@ -84,11 +94,15 @@ class HandleInertiaRequests extends Middleware
                     ->get(['id', 'name', 'slug']);
             } : [],
             'app' => function () {
-                $logoPath = Setting::getValue('app_logo');
-                $faviconPath = Setting::getValue('app_favicon');
+                // Branding milik sekolah aktif, dengan fallback ke nilai global
+                // lama supaya tampilan tidak berubah setelah deploy.
+                $school = app()->bound('currentSchool') ? app('currentSchool') : null;
+
+                $logoPath = $school?->getSetting('app_logo') ?: Setting::getValue('app_logo');
+                $faviconPath = $school?->getSetting('app_favicon') ?: Setting::getValue('app_favicon');
 
                 return [
-                    'school_name' => Setting::getValue('school_name', 'SMP Nusantara'),
+                    'school_name' => $school?->name ?? Setting::getValue('school_name', 'SMP Nusantara'),
                     'logo' => $logoPath ? Storage::disk('public')->url($logoPath) : null,
                     'favicon' => $faviconPath ? Storage::disk('public')->url($faviconPath) : null,
                 ];

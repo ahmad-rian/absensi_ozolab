@@ -51,7 +51,7 @@ class PrayerScannerController extends Controller
             'token' => ['required', 'string'],
         ]);
 
-        $student = $this->studentLookup->find($request->token, $school->id);
+        $student = $this->studentLookup->findByQrToken($request->token, $school->id);
 
         if (! $student) {
             return response()->json([
@@ -72,16 +72,13 @@ class PrayerScannerController extends Controller
             'success' => $result['success'],
             'message' => $result['message'],
             'student' => $result['success'] ? [
+                // Layar gerbang hanya butuh identitas seperlunya. Alamat,
+                // tanggal lahir, agama, dan NISN sengaja tidak dikirim — itu
+                // yang dulu membuat endpoint ini jadi alat panen PII.
                 'full_name' => $student->full_name,
                 'nis' => $student->nis,
-                'nisn' => $student->nisn,
                 'no_absen' => $student->no_absen,
                 'classroom' => $student->classroom?->name,
-                'gender' => $student->gender?->label(),
-                'religion' => $student->religion?->label(),
-                'birth_place' => $student->birth_place,
-                'birth_date' => $student->birth_date?->translatedFormat('d F Y'),
-                'address' => $student->address,
                 'photo_url' => $student->photo_path
                     ? Storage::disk('public')->url($student->photo_path)
                     : null,
