@@ -64,6 +64,11 @@ class Student extends Model
         return $this->belongsTo(Classroom::class);
     }
 
+    public function classHistories(): HasMany
+    {
+        return $this->hasMany(StudentClassHistory::class);
+    }
+
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);

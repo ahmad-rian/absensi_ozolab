@@ -1,11 +1,13 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    ArrowUpRight,
     BarChart3,
     Bell,
     BookOpen,
     Building2,
     CalendarCheck,
     Clock,
+    FileSpreadsheet,
     FileText,
     Frame,
     GraduationCap,
@@ -59,8 +61,10 @@ const sections: NavSection[] = [
         label: 'Master Data',
         items: [
             { title: 'Siswa', href: '/admin/siswa', icon: GraduationCap, permission: 'siswa.access', feature: 'master_siswa' },
+            { title: 'Impor Siswa', href: '/admin/siswa/import', icon: FileSpreadsheet, permission: 'siswa.access', feature: 'master_siswa' },
             { title: 'Orang Tua', href: '/admin/orang-tua', icon: Users, permission: 'orang-tua.access', feature: 'master_siswa' },
             { title: 'Kelas', href: '/admin/kelas', icon: School, permission: 'kelas.access', feature: 'master_siswa' },
+            { title: 'Kenaikan Kelas', href: '/admin/kelas/kenaikan', icon: ArrowUpRight, permission: 'kelas.access', feature: 'master_siswa' },
         ],
     },
     {

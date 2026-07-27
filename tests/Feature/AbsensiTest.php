@@ -5,6 +5,7 @@ use App\Enums\AttendanceType;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\Student;
+use App\Support\SchoolTime;
 
 test('guests are redirected from absensi page', function () {
     $this->get(route('admin.absensi'))->assertRedirect(route('login'));
@@ -67,18 +68,18 @@ test('absensi page filters by classroom', function () {
 
     Attendance::factory()->create([
         'student_id' => $student->id,
-        'attendance_date' => today(),
+        'attendance_date' => SchoolTime::today(),
         'type' => AttendanceType::CheckIn,
         'status' => AttendanceStatus::Hadir,
-        'recorded_at' => now(),
+        'recorded_at' => SchoolTime::now(),
     ]);
 
     Attendance::factory()->create([
         'student_id' => $otherStudent->id,
-        'attendance_date' => today(),
+        'attendance_date' => SchoolTime::today(),
         'type' => AttendanceType::CheckIn,
         'status' => AttendanceStatus::Terlambat,
-        'recorded_at' => now(),
+        'recorded_at' => SchoolTime::now(),
     ]);
 
     $this->actingAs($user)
@@ -94,18 +95,18 @@ test('absensi page filters by status', function () {
 
     Attendance::factory()->create([
         'student_id' => $student->id,
-        'attendance_date' => today(),
+        'attendance_date' => SchoolTime::today(),
         'type' => AttendanceType::CheckIn,
         'status' => AttendanceStatus::Hadir,
-        'recorded_at' => now(),
+        'recorded_at' => SchoolTime::now(),
     ]);
 
     Attendance::factory()->create([
         'student_id' => Student::factory()->create(['school_id' => $user->school_id])->id,
-        'attendance_date' => today(),
+        'attendance_date' => SchoolTime::today(),
         'type' => AttendanceType::CheckIn,
         'status' => AttendanceStatus::Terlambat,
-        'recorded_at' => now(),
+        'recorded_at' => SchoolTime::now(),
     ]);
 
     $this->actingAs($user)

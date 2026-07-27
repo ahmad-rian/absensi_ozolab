@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Moon, ScanBarcode, Send, Sun, X } from 'lucide-react';
+import { ArrowRight, Moon, Send, Sun, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
@@ -63,7 +63,7 @@ export function Navbar() {
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                     <Link href="/" className="flex items-center gap-2.5 font-bold">
                         {app?.logo ? (
-                            <img src={currentSchool.logo} alt={name} className="size-8 rounded-lg object-contain" />
+                            <img src={app.logo} alt={name} className="size-8 rounded-lg object-contain" />
                         ) : (
                             <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
                                 <AppLogoIcon className="size-4.5 fill-current text-white" />
@@ -89,12 +89,6 @@ export function Navbar() {
                             <Link href="/daftar-telegram">
                                 <Send className="mr-1.5 size-4" />
                                 Telegram
-                            </Link>
-                        </Button>
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href="/scan">
-                                <ScanBarcode className="mr-1.5 size-4" />
-                                Scanner
                             </Link>
                         </Button>
                         <Button variant="ghost" size="icon" className="size-9" onClick={toggleTheme}>
@@ -149,7 +143,7 @@ export function Navbar() {
                         }`}>
                         <Link href="/" className="flex items-center gap-2.5 font-bold" onClick={() => setMobileOpen(false)}>
                             {app?.logo ? (
-                                <img src={currentSchool.logo} alt={name} className="size-8 rounded-lg object-contain" />
+                                <img src={app.logo} alt={name} className="size-8 rounded-lg object-contain" />
                             ) : (
                                 <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
                                     <AppLogoIcon className="size-4.5 fill-current text-white" />
@@ -194,12 +188,6 @@ export function Navbar() {
                             <Link href="/daftar-telegram" onClick={() => setMobileOpen(false)}>
                                 <Send className="mr-2 size-5" />
                                 Hubungkan Telegram
-                            </Link>
-                        </Button>
-                        <Button variant="outline" className="mb-3 h-12 w-full rounded-xl text-base" asChild>
-                            <Link href="/scan" onClick={() => setMobileOpen(false)}>
-                                <ScanBarcode className="mr-2 size-5" />
-                                Scanner Absensi
                             </Link>
                         </Button>
                         {auth.user ? (

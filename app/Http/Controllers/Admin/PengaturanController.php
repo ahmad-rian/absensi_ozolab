@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\PrayerType;
 use App\Enums\SchoolFeature;
 use App\Http\Controllers\Controller;
+use App\Models\AcademicYear;
 use App\Models\School;
 use App\Models\Setting;
 use App\Services\ImageConverter;
@@ -35,6 +36,9 @@ class PengaturanController extends Controller
             // Jam masuk/pulang tidak diatur di sini — sumber kebenarannya
             // adalah menu Jadwal Absensi (tabel attendance_schedules).
             'timezone' => ['nullable', 'string', 'in:Asia/Jakarta,Asia/Makassar,Asia/Jayapura'],
+            // Rule `exists` yang terkunci ke sekolah ditambahkan di update():
+            // ia bergantung user yang login sehingga tidak bisa hidup di konstanta.
+            'academic_year_id' => ['nullable', 'string'],
         ],
         'sholat' => [
             'prayer_dhuha_enabled' => ['required', 'boolean'],
@@ -146,8 +150,16 @@ class PengaturanController extends Controller
         $logoPath = $school?->getSetting('app_logo') ?: Setting::getValue('app_logo', '');
         $faviconPath = $school?->getSetting('app_favicon') ?: Setting::getValue('app_favicon', '');
 
+        // Tahun ajaran BUKAN bagian dari schools.settings — ia hidup di kolom
+        // `is_active` tabel academic_years — jadi dikirim sebagai prop sendiri.
+        $academicYears = AcademicYear::forSchool()
+            ->orderByDesc('start_date')
+            ->get(['id', 'name', 'is_active']);
+
         return Inertia::render('admin/pengaturan/index', [
             'settings' => $settings,
+            'academicYears' => $academicYears,
+            'activeAcademicYearId' => $academicYears->firstWhere('is_active', true)?->id,
             'features' => SchoolFeatures::for($school)->toArray(),
             'featureCatalog' => $this->featureCatalog(),
             'logoUrl' => $logoPath && Storage::disk('public')->exists($logoPath)
@@ -169,6 +181,10 @@ class PengaturanController extends Controller
 
         $rules = self::SECTION_RULES[$section] ?? self::LEGACY_RULES;
 
+        if ($section === 'umum') {
+            $rules['academic_year_id'] = ['nullable', $this->belongsToSchool('academic_years')];
+        }
+
         $validator = validator($request->all(), $rules);
 
         if ($section === 'sholat') {
@@ -180,6 +196,17 @@ class PengaturanController extends Controller
         // `section` bukan pengaturan; kalau ikut ter-merge ia mengotori
         // schools.settings dengan key sampah yang tidak pernah dibaca siapa pun.
         unset($validated['section']);
+
+        // Tahun ajaran aktif ditulis ke tabelnya sendiri, bukan ke
+        // schools.settings — kalau ia ikut ter-merge, akan ada dua sumber
+        // kebenaran dan salinan di settings pasti basi begitu tahun ajaran
+        // diaktifkan dari menu Kelas.
+        $academicYearId = $validated['academic_year_id'] ?? null;
+        unset($validated['academic_year_id']);
+
+        if ($academicYearId) {
+            AcademicYear::forSchool()->findOrFail($academicYearId)->activate();
+        }
 
         foreach (self::BOOLEAN_KEYS as $key) {
             if (array_key_exists($key, $validated)) {

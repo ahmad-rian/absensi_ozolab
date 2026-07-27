@@ -4,6 +4,7 @@ use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
 use App\Models\Attendance;
 use App\Models\Student;
+use App\Support\SchoolTime;
 
 test('guests are redirected to the login page', function () {
     $response = $this->get(route('dashboard'));
@@ -43,10 +44,10 @@ test('dashboard stats reflect attendance data', function () {
 
     Attendance::factory()->create([
         'student_id' => $student->id,
-        'attendance_date' => today(),
+        'attendance_date' => SchoolTime::today(),
         'type' => AttendanceType::CheckIn,
         'status' => AttendanceStatus::Hadir,
-        'recorded_at' => now(),
+        'recorded_at' => SchoolTime::now(),
     ]);
 
     $response = $this->actingAs($user)->get(route('dashboard'));

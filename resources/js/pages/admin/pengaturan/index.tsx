@@ -10,7 +10,7 @@ import {
 } from '@/components/pengaturan/settings-tabs';
 import { SholatTab } from '@/components/pengaturan/sholat-tab';
 import { TampilanTab } from '@/components/pengaturan/tampilan-tab';
-import { UmumTab } from '@/components/pengaturan/umum-tab';
+import { UmumTab, type AcademicYearOption } from '@/components/pengaturan/umum-tab';
 import { PageHeader } from '@/components/shared/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dashboard } from '@/routes';
@@ -18,13 +18,23 @@ import type { SchoolFeatureMap } from '@/types';
 
 type Props = {
     settings: SettingsValues;
+    academicYears: AcademicYearOption[];
+    activeAcademicYearId: string | null;
     features: SchoolFeatureMap;
     featureCatalog: FeatureCatalog;
     logoUrl: string;
     faviconUrl: string;
 };
 
-export default function PengaturanIndex({ settings, features, featureCatalog, logoUrl, faviconUrl }: Props) {
+export default function PengaturanIndex({
+    settings,
+    academicYears,
+    activeAcademicYearId,
+    features,
+    featureCatalog,
+    logoUrl,
+    faviconUrl,
+}: Props) {
     const page = usePage();
     const [tab, setTab] = useState<SettingsSection>(() => resolveSettingsTab(page.url));
 
@@ -87,7 +97,12 @@ export default function PengaturanIndex({ settings, features, featureCatalog, lo
                     </TabsList>
 
                     <TabsContent value="umum">
-                        <UmumTab settings={settings} onDirtyChange={markDirty('umum')} />
+                        <UmumTab
+                            settings={settings}
+                            academicYears={academicYears}
+                            activeAcademicYearId={activeAcademicYearId}
+                            onDirtyChange={markDirty('umum')}
+                        />
                     </TabsContent>
 
                     <TabsContent value="tampilan">

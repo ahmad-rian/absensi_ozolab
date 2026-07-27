@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AttendanceScheduleController;
 use App\Http\Controllers\Admin\CardFormController as AdminCardFormController;
 use App\Http\Controllers\Admin\CardGenerationController;
 use App\Http\Controllers\Admin\CardLayoutController;
+use App\Http\Controllers\Admin\ClassPromotionController;
 use App\Http\Controllers\Admin\DriveConfigController;
 use App\Http\Controllers\Admin\FrameController;
 use App\Http\Controllers\Admin\ImpersonationController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Admin\PhotoSheetController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SiswaController;
+use App\Http\Controllers\Admin\StudentImportController;
 use App\Http\Controllers\Admin\StudentReportController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
@@ -86,6 +88,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         ->get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware(['permission:siswa.access', 'feature:master_siswa'])->group(function () {
+        // Wajib sebelum resource: `siswa/{siswa}` akan menelan `siswa/import`.
+        Route::get('siswa/import', [StudentImportController::class, 'index'])->name('admin.siswa.import');
+        Route::get('siswa/import/template', [StudentImportController::class, 'template'])->name('admin.siswa.import.template');
+        Route::post('siswa/import', [StudentImportController::class, 'upload'])->name('admin.siswa.import.upload');
+        Route::get('siswa/import/{key}', [StudentImportController::class, 'review'])->name('admin.siswa.import.review');
+        Route::post('siswa/import/{key}/apply', [StudentImportController::class, 'apply'])->name('admin.siswa.import.apply');
+
         Route::resource('siswa', SiswaController::class)->names('admin.siswa');
         Route::get('siswa/{siswa}/qr', [SiswaController::class, 'qrCode'])->name('admin.siswa.qr');
         Route::post('siswa/{siswa}/photo-sheet', [PhotoSheetController::class, 'generate'])->name('admin.siswa.photo-sheet');
@@ -101,6 +110,12 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     });
 
     Route::middleware(['permission:kelas.access', 'feature:master_siswa'])->group(function () {
+        // Wajib sebelum resource supaya `kelas/{classroom}` tidak menelannya.
+        Route::get('kelas/kenaikan', [ClassPromotionController::class, 'index'])->name('admin.kelas.kenaikan');
+        Route::post('kelas/kenaikan', [ClassPromotionController::class, 'upload'])->name('admin.kelas.kenaikan.upload');
+        Route::get('kelas/kenaikan/{key}', [ClassPromotionController::class, 'review'])->name('admin.kelas.kenaikan.review');
+        Route::post('kelas/kenaikan/{key}/apply', [ClassPromotionController::class, 'apply'])->name('admin.kelas.kenaikan.apply');
+
         Route::resource('kelas', KelasController::class)->except(['show', 'create', 'edit'])->parameter('kelas', 'classroom');
     });
 

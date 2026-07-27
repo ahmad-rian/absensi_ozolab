@@ -53,6 +53,9 @@ class StudentRegistrationController extends Controller
                 'logo_path' => $school->logo_path,
             ]),
             'classrooms' => $classrooms,
+            // Garis bantu overlay cropper diambil dari servis crop, bukan diketik ulang
+            // di frontend, supaya panduan visual selalu ikut kalibrasi framing server.
+            'photoGuide' => PhotoCropService::framingGuide(),
             // Mengikat endpoint pratinjau ke sesi yang benar-benar membuka
             // halaman ini, supaya tidak bisa dipanggil lepas lewat curl.
             'registrationToken' => $this->issueRegistrationToken(),

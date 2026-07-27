@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Cropper from 'react-easy-crop';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
+import type { CropGuide } from '@/components/shared/crop-guide-overlay';
+import { CropGuideOverlay } from '@/components/shared/crop-guide-overlay';
 import { SimpleCaptcha } from '@/components/simple-captcha';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +21,7 @@ type Classroom = { id: string; school_id: string; name: string; grade_level: num
 type Props = {
     schools: School[];
     classrooms: Classroom[];
+    photoGuide: CropGuide;
     registrationToken: string;
 };
 
@@ -136,7 +139,7 @@ function readPersisted(): { data: FormData; step: number } {
     return { data: INITIAL_DATA, step: 1 };
 }
 
-export default function StudentRegister({ schools, classrooms, registrationToken }: Props) {
+export default function StudentRegister({ schools, classrooms, photoGuide, registrationToken }: Props) {
     const { flash } = usePage().props as unknown as { flash: { success?: string } };
 
     // Restore persisted wizard state once, synchronously, via lazy initializers.
@@ -969,6 +972,7 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                         imageUrl={photoPreview.url}
                                         filename={photoPreview.filename}
                                         auto={autoCrop}
+                                        guide={photoGuide}
                                         onChange={(rect) => setData('manual_crop', rect)}
                                         onClose={() => {
                                             setPhotoPreview(null);
@@ -1155,12 +1159,14 @@ function CropReposition({
     imageUrl,
     filename,
     auto,
+    guide,
     onChange,
     onClose,
 }: {
     imageUrl: string;
     filename: string;
     auto: AutoCrop;
+    guide: CropGuide;
     onChange: (rect: CropRect) => void;
     onClose: () => void;
 }) {
@@ -1252,6 +1258,7 @@ function CropReposition({
                             <Loader2 className="size-6 animate-spin text-white/70" />
                         </div>
                     )}
+                    {natural && initialArea && <CropGuideOverlay guide={guide} />}
                 </div>
 
                 {/* Zoom control — kept right under the cropper */}
@@ -1306,7 +1313,8 @@ function CropReposition({
                         <li className="flex items-start gap-2">
                             <Crop className="mt-0.5 size-3.5 shrink-0" />
                             <span>
-                                <b>Pastikan wajah penuh</b> di dalam kotak (rasio pas foto 3×4).
+                                <b>Pastikan wajah penuh</b> di dalam kotak — rasio pas foto 3×4 (16:21). Ikuti garis bantu di atas foto: mata
+                                di garis hijau, bahu terlihat.
                             </span>
                         </li>
                         <li className="flex items-start gap-2">

@@ -201,6 +201,64 @@ it('subject touching the top edge still detects and crops validly', function () 
     @unlink($src);
 });
 
+// ---- Manual crop rect (drag-to-reposition) ----
+
+if (! function_exists('cropRectDims')) {
+    /**
+     * Panggil cropToNormalizedRect yang private supaya ukuran hasilnya bisa diperiksa
+     * persis, tanpa terganggu upscale minimum di cropAndStore().
+     *
+     * @param  array{sx: float, sy: float, sw: float, sh: float}  $rect
+     * @return array{0: int, 1: int}
+     */
+    function cropRectDims(int $w, int $h, array $rect): array
+    {
+        $image = imagecreatetruecolor($w, $h);
+        $method = new ReflectionMethod(PhotoCropService::class, 'cropToNormalizedRect');
+        $cropped = $method->invoke(new PhotoCropService, $image, $w, $h, $rect);
+        $dims = [imagesx($cropped), imagesy($cropped)];
+        imagedestroy($cropped);
+
+        return $dims;
+    }
+}
+
+it('forces the manual crop rect to 16:21 when the client sends a 1:1 rect', function () {
+    // Gambar persegi: sw == sh berarti rect yang diminta klien benar-benar 1:1 dalam piksel.
+    [$w, $h] = cropRectDims(900, 900, ['sx' => 0.2, 'sy' => 0.2, 'sw' => 0.6, 'sh' => 0.6]);
+
+    expect($h)->toBe(540);
+    expect($w)->toBe(411); // 540 * 16/21, dibulatkan
+    expect($w / $h)->toBeBetween(16 / 21 * 0.99, 16 / 21 * 1.01);
+});
+
+it('forces the manual crop rect to 16:21 when the client sends a too-tall rect', function () {
+    [$w, $h] = cropRectDims(1000, 1000, ['sx' => 0.1, 'sy' => 0.0, 'sw' => 0.3, 'sh' => 0.9]);
+
+    expect($w)->toBe(300);
+    expect($h)->toBe(394); // 300 / (16/21), dibulatkan
+    expect($w / $h)->toBeBetween(16 / 21 * 0.99, 16 / 21 * 1.01);
+});
+
+it('leaves a client rect that already has the card ratio exactly as requested', function () {
+    // 480x630 piksel = tepat 16:21 pada gambar 1000x800.
+    [$w, $h] = cropRectDims(1000, 800, ['sx' => 0.25, 'sy' => 0.1, 'sw' => 480 / 1000, 'sh' => 630 / 800]);
+
+    expect($w)->toBe(480);
+    expect($h)->toBe(630);
+});
+
+it('produces framing guide fractions that are ordered and inside the crop', function () {
+    $guide = PhotoCropService::framingGuide();
+
+    expect($guide['headroom'])->toBe($guide['headTop']);
+    expect($guide['headTop'])->toBeLessThan($guide['eyeLine']);
+    expect($guide['eyeLine'])->toBeLessThan($guide['headBottom']);
+    expect($guide['headBottom'])->toBeLessThan($guide['shoulderLine']);
+    expect($guide['shoulderLine'])->toBeLessThan(1.0);
+    expect($guide['ratio'])->toBe(16 / 21);
+});
+
 it('throws a clear error on an unreadable / unsupported file', function () {
     $txt = tempnam(sys_get_temp_dir(), 'crop').'.txt';
     file_put_contents($txt, 'this is not an image');

@@ -22,6 +22,12 @@ class PhotoCropService
     // Headroom above the top of the head, as a fraction of the crop height.
     private const HEADROOM_FRACTION = 0.10;
 
+    // Eye line, as a fraction of the head height measured down from the crown.
+    private const EYE_HEAD_FRACTION = 0.40;
+
+    // Shoulder line, as a multiple of the head height measured down from the crown.
+    private const SHOULDER_HEAD_FRACTION = 1.35;
+
     // ---- Background segmentation constants ----
     // Longest side of the downscaled working image used for mask analysis.
     private const WORK_MAX = 520;
@@ -675,6 +681,28 @@ class PhotoCropService
     }
 
     /**
+     * Garis panduan framing sebagai pecahan (0..1) dari tinggi crop, plus rasio slot.
+     *
+     * Diturunkan dari konstanta framing yang dipakai smart-crop supaya overlay di UI
+     * tidak pernah melenceng dari hasil crop yang benar-benar diproduksi server.
+     *
+     * @return array{headroom: float, headTop: float, headBottom: float, eyeLine: float, shoulderLine: float, ratio: float}
+     */
+    public static function framingGuide(): array
+    {
+        $headTop = self::HEADROOM_FRACTION;
+
+        return [
+            'headroom' => self::HEADROOM_FRACTION,
+            'headTop' => $headTop,
+            'headBottom' => $headTop + self::HEAD_FRACTION,
+            'eyeLine' => $headTop + self::EYE_HEAD_FRACTION * self::HEAD_FRACTION,
+            'shoulderLine' => $headTop + self::SHOULDER_HEAD_FRACTION * self::HEAD_FRACTION,
+            'ratio' => self::SLOT_RATIO,
+        ];
+    }
+
+    /**
      * Downscale so the longest side is at most $maxDim (keeps ratio). No-op if smaller.
      *
      * @return array{0: \GdImage, 1: int, 2: int}
@@ -707,6 +735,24 @@ class PhotoCropService
         $ch = max(1, min($h, $ch));
         $cx = (int) round(($rect['sx'] ?? 0) * $w);
         $cy = (int) round(($rect['sy'] ?? 0) * $h);
+
+        // Rect datang dari klien, jadi rasionya tidak bisa dipercaya: UI yang keliru
+        // atau request buatan tangan akan menghasilkan pas foto gepeng. Pangkas sisi
+        // yang berlebih (tidak pernah menambah) dan tahan titik tengah rect asli.
+        if (abs($cw / $ch - self::SLOT_RATIO) > 0.001) {
+            $centerX = $cx + $cw / 2;
+            $centerY = $cy + $ch / 2;
+
+            if ($cw / $ch > self::SLOT_RATIO) {
+                $cw = max(1, (int) round($ch * self::SLOT_RATIO));
+            } else {
+                $ch = max(1, (int) round($cw / self::SLOT_RATIO));
+            }
+
+            $cx = (int) round($centerX - $cw / 2);
+            $cy = (int) round($centerY - $ch / 2);
+        }
+
         $cx = max(0, min($w - $cw, $cx));
         $cy = max(0, min($h - $ch, $cy));
 

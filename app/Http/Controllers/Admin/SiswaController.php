@@ -184,9 +184,9 @@ class SiswaController extends Controller
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'nis' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nis')->where('school_id', auth()->user()->school_id)],
+            'nis' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nis')->where('school_id', auth()->user()->school_id)->whereNull('deleted_at')],
             'no_absen' => ['nullable', 'string', 'max:20'],
-            'nisn' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nisn')->where('school_id', auth()->user()->school_id)],
+            'nisn' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nisn')->where('school_id', auth()->user()->school_id)->whereNull('deleted_at')],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
             'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
             'classroom_id' => ['required', $this->belongsToSchool('classrooms')],
@@ -239,9 +239,9 @@ class SiswaController extends Controller
     {
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'nis' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nis')->where('school_id', auth()->user()->school_id)->ignore($siswa->id)],
+            'nis' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nis')->where('school_id', auth()->user()->school_id)->whereNull('deleted_at')->ignore($siswa->id)],
             'no_absen' => ['nullable', 'string', 'max:20'],
-            'nisn' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nisn')->where('school_id', auth()->user()->school_id)->ignore($siswa->id)],
+            'nisn' => ['nullable', 'string', 'max:50', Rule::unique('students', 'nisn')->where('school_id', auth()->user()->school_id)->whereNull('deleted_at')->ignore($siswa->id)],
             'gender' => ['required', 'in:LAKI_LAKI,PEREMPUAN'],
             'religion' => ['nullable', 'in:ISLAM,KRISTEN,KATOLIK,HINDU,BUDDHA,KONGHUCU'],
             'classroom_id' => ['required', $this->belongsToSchool('classrooms')],

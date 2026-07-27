@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { Building2, Clock, Save } from 'lucide-react';
+import { Building2, CalendarRange, Clock, Save } from 'lucide-react';
 import { type FormEvent, useEffect } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -9,17 +9,28 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SettingsValues } from './settings-tabs';
 
+export type AcademicYearOption = {
+    id: string;
+    name: string;
+    is_active: boolean;
+};
+
 type UmumData = {
     section: 'umum';
     school_name: string;
     timezone: string;
+    academic_year_id: string;
 };
 
 export function UmumTab({
     settings,
+    academicYears,
+    activeAcademicYearId,
     onDirtyChange,
 }: {
     settings: SettingsValues;
+    academicYears: AcademicYearOption[];
+    activeAcademicYearId: string | null;
     onDirtyChange: (dirty: boolean) => void;
 }) {
     const { data, setData, put, processing, errors, isDirty } = useForm<UmumData>({
@@ -28,6 +39,7 @@ export function UmumTab({
         section: 'umum',
         school_name: (settings.school_name as string) || '',
         timezone: (settings.timezone as string) || 'Asia/Jakarta',
+        academic_year_id: activeAcademicYearId ?? '',
     });
 
     useEffect(() => onDirtyChange(isDirty), [isDirty, onDirtyChange]);
@@ -89,6 +101,48 @@ export function UmumTab({
                             </SelectContent>
                         </Select>
                         <InputError message={errors.timezone} />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <CalendarRange className="size-5 text-amber-600" />
+                        <CardTitle>Tahun Ajaran Aktif</CardTitle>
+                    </div>
+                    <CardDescription>
+                        Menentukan tahun ajaran yang dipakai sebagai acuan kelas dan laporan. Hanya satu tahun
+                        ajaran yang bisa aktif.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-2">
+                        <Label htmlFor="academic_year_id" className="text-sm font-medium">
+                            Tahun Ajaran
+                        </Label>
+                        {academicYears.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">
+                                Belum ada tahun ajaran. Buka menu Kelas untuk membuatnya.
+                            </p>
+                        ) : (
+                            <Select
+                                value={data.academic_year_id}
+                                onValueChange={(val) => setData('academic_year_id', val)}
+                            >
+                                <SelectTrigger id="academic_year_id" className="w-64">
+                                    <SelectValue placeholder="Pilih tahun ajaran" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {academicYears.map((year) => (
+                                        <SelectItem key={year.id} value={year.id}>
+                                            {year.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <InputError message={errors.academic_year_id} />
                     </div>
                 </CardContent>
             </Card>
