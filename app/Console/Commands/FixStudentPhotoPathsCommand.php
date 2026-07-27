@@ -122,6 +122,15 @@ class FixStudentPhotoPathsCommand extends Command
         $purged = 0;
 
         foreach (array_unique($sources) as $source) {
+            // Di mode dry-run kolom photo_path belum diperbarui, jadi setiap
+            // sumber pasti masih "dipakai" dan peringatannya hanya bising.
+            // Yang dilaporkan cukup jumlah rencananya.
+            if ($dryRun) {
+                $purged++;
+
+                continue;
+            }
+
             $stillUsed = Student::withoutGlobalScope('school')
                 ->where('photo_path', $source)
                 ->exists();
@@ -132,7 +141,7 @@ class FixStudentPhotoPathsCommand extends Command
                 continue;
             }
 
-            if (! $dryRun && $disk->exists($source)) {
+            if ($disk->exists($source)) {
                 $disk->delete($source);
             }
 
