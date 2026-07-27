@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\SchoolChannelType;
+use App\Enums\SchoolFeature;
 use App\Models\School;
 use App\Models\Student;
+use App\Rules\SchoolFeatureEnabled;
 use App\Support\PhoneNumber;
+use App\Support\SchoolFeatures;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,10 +30,18 @@ class ParentTelegramController extends Controller
                     ->where('is_active', true);
             })
             ->orderBy('name')
-            ->get(['id', 'name', 'city']);
+            ->get(['id', 'name', 'city', 'settings'])
+            // Halaman ini multi-tenant dalam satu layar, jadi tidak bisa
+            // dijaga middleware `feature:`; penyaringan dilakukan per baris.
+            ->filter(fn (School $school) => SchoolFeatures::for($school)->enabled(SchoolFeature::PendaftaranTelegram))
+            ->values();
 
         return Inertia::render('parent-telegram', [
-            'schools' => $schools,
+            'schools' => $schools->map(fn (School $school) => [
+                'id' => $school->id,
+                'name' => $school->name,
+                'city' => $school->city,
+            ]),
         ]);
     }
 
@@ -40,7 +51,13 @@ class ParentTelegramController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'school_id' => ['required', 'exists:schools,id'],
+            'school_id' => [
+                'required',
+                'exists:schools,id',
+                // Menyaring daftar di UI saja tidak cukup — school_id masih
+                // bisa dikirim langsung ke endpoint ini.
+                new SchoolFeatureEnabled(SchoolFeature::PendaftaranTelegram, 'Sekolah ini sedang tidak menerima pendaftaran Telegram.'),
+            ],
             'student_id' => ['required', 'exists:students,id'],
             'whatsapp_number' => ['required', 'string', 'max:20'],
             'telegram_chat_id' => ['required', 'string', 'max:50', 'regex:/^-?\d+$/'],

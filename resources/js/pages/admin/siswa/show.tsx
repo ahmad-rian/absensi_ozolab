@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage, WhenVisible } from '@inertiajs/react';
 import {
     AlarmClock,
     ArrowLeft,
@@ -19,10 +19,11 @@ import {
     UserX,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { AttendanceDailyChart, type DailyPoint } from '@/components/student/attendance-daily-chart';
-import { PrayerDailyChart, type PrayerDailyPoint } from '@/components/student/prayer-daily-chart';
-import { StatTile } from '@/components/student/stat-tile';
-import { StatusPie, type AttendanceSummary } from '@/components/student/status-pie';
+import { ATTENDANCE_SERIES, PRAYER_SERIES } from '@/components/student/daily-bar-chart';
+import { PrayerMembershipCard } from '@/components/student/prayer-membership-card';
+import { reportExports } from '@/components/student/range-bar';
+import { StatsPanel, type TileSpec } from '@/components/student/stats-panel';
+import { attendanceSlices, prayerSlices } from '@/components/student/status-pie';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,9 +31,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dashboard } from '@/routes';
+import type { SchoolFeatureMap } from '@/types';
+import type { AttendanceStats, PrayerStats, RangeFilters } from '@/types/student-stats';
 
 type Classroom = {
     id: string;
@@ -95,53 +99,18 @@ type GeneratedCard = {
     created_at: string;
 };
 
-type AttendanceRow = {
-    id: string;
-    date: string;
-    type: string;
-    type_label: string;
-    status: string;
-    status_label: string;
-    time: string | null;
-    device_id: string | null;
-};
-
-type PrayerRow = {
-    id: string;
-    date: string;
-    status: string;
-    status_label: string;
-    time: string | null;
-    device_id: string | null;
-};
-
-type AttendancePayload = {
-    summary: AttendanceSummary;
-    daily: DailyPoint[];
-    recent: AttendanceRow[];
-};
-
-type PrayerPayload = {
-    enabled: boolean;
-    covered: boolean;
-    opt_in: boolean | null;
-    school_includes_all: boolean;
-    religion_label: string | null;
-    window: string | null;
-    summary: { hadir: number; tidak_hadir: number; effective_days: number; rate: number };
-    daily: PrayerDailyPoint[];
-    recent: PrayerRow[];
-};
-
 type PageProps = {
     student: Student;
     qrSvg: string;
     photoSheets: PhotoSheet[];
     photoSheetTemplates: PhotoSheetTemplate[];
     cards: GeneratedCard[];
-    filters: { start: string; end: string };
-    attendance?: AttendancePayload;
-    prayer?: PrayerPayload;
+    filters: RangeFilters;
+    /** Ditunda — tab absensi paling sering dibuka, jadi dihangatkan lebih dulu. */
+    attendance?: AttendanceStats;
+    /** Opsional — hanya diambil saat tab jenisnya benar-benar dibuka. */
+    prayerDhuha?: PrayerStats;
+    prayerDzuhur?: PrayerStats;
 };
 
 const CARD_TYPES: { value: string; label: string }[] = [
@@ -150,13 +119,6 @@ const CARD_TYPES: { value: string; label: string }[] = [
     { value: 'identitas', label: 'Kartu Identitas' },
 ];
 
-const statusBadgeClass: Record<string, string> = {
-    HADIR: 'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/40 dark:text-green-300',
-    TERLAMBAT: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
-    IZIN: 'border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-    SAKIT: 'border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
-    ALPA: 'border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900/40 dark:text-red-300',
-};
 
 const sheetStatusConfig: Record<string, { label: string; className: string }> = {
     completed: {
@@ -205,17 +167,27 @@ export default function SiswaShow({
     cards,
     filters,
     attendance,
-    prayer,
+    prayerDhuha,
+    prayerDzuhur,
 }: PageProps) {
+    const { features } = usePage().props as unknown as { features?: Partial<SchoolFeatureMap> };
+
+    // Tab jenis sholat yang dimatikan sekolah disembunyikan sepenuhnya, bukan
+    // ditampilkan lalu kosong — flag-nya ada di prop non-defer supaya tidak
+    // ada kedip panel kosong sebelum payload statistiknya tiba.
+    const prayerTabs = [
+        { value: 'dhuha', label: 'Sholat Dhuha', prop: 'prayerDhuha', feature: 'sholat_dhuha' as const },
+        { value: 'dzuhur', label: 'Sholat Dzuhur', prop: 'prayerDzuhur', feature: 'sholat_dzuhur' as const },
+    ].filter((entry) => features?.[entry.feature] !== false);
+
+    const allowedTabs = ['profil', 'absensi', ...prayerTabs.map((entry) => entry.value)];
+
     const [template, setTemplate] = useState(photoSheetTemplates[0]?.value ?? '');
     const [caption, setCaption] = useState('');
     const [generating, setGenerating] = useState(false);
-    const [tab, setTab] = useState(() => initialTab());
+    const [tab, setTab] = useState(() => initialTab(allowedTabs));
     const [startDate, setStartDate] = useState(filters.start);
     const [endDate, setEndDate] = useState(filters.end);
-
-    const rangeLabel = `${filters.start} s/d ${filters.end}`;
-    const exportQuery = `start_date=${filters.start}&end_date=${filters.end}`;
 
     // Tab disimpan di query string supaya refresh dan tombol back tidak
     // melompat balik ke Profil.
@@ -309,10 +281,12 @@ export default function SiswaShow({
                             <CalendarCheck className="size-4" />
                             Absensi Sekolah
                         </TabsTrigger>
-                        <TabsTrigger value="sholat">
-                            <MoonStar className="size-4" />
-                            Absen Sholat
-                        </TabsTrigger>
+                        {prayerTabs.map((entry) => (
+                            <TabsTrigger key={entry.value} value={entry.value}>
+                                <MoonStar className="size-4" />
+                                {entry.label}
+                            </TabsTrigger>
+                        ))}
                     </TabsList>
 
                     <TabsContent value="profil">
@@ -558,307 +532,189 @@ export default function SiswaShow({
                 </div>
                     </TabsContent>
 
-                    <TabsContent value="absensi" className="space-y-6">
-                        <RangeBar
+                    <TabsContent value="absensi">
+                        <StatsPanel
+                            range={filters.label}
                             startDate={startDate}
                             endDate={endDate}
                             onStartChange={setStartDate}
                             onEndChange={setEndDate}
                             onApply={applyRange}
-                            csvHref={`/admin/siswa/${student.id}/laporan/absensi/csv?${exportQuery}`}
-                            pdfHref={`/admin/siswa/${student.id}/laporan/absensi/pdf?${exportQuery}`}
+                            exports={reportExports(student.id, 'absensi', filters.start, filters.end)}
+                            tiles={attendanceTiles(attendance)}
+                            daily={attendance?.daily}
+                            dailySeries={ATTENDANCE_SERIES}
+                            dailyTitle="Kehadiran Harian"
+                            slices={attendanceSlices(attendance?.summary)}
+                            pieTitle="Distribusi Status"
+                            weekday={attendance?.by_weekday}
+                            weekdayTitle="Pola per Hari"
+                            streaks={attendance?.streaks}
+                            monthly={attendance?.monthly}
+                            heatmap={attendance?.heatmap}
+                            heatmapTitle="Kalender Kehadiran"
+                            comparison={attendance?.comparison}
+                            studentRate={attendance?.summary.rate}
+                            history={attendance?.recent}
+                            historyTitle="Riwayat Absensi"
+                            historyEmpty="Belum ada catatan absensi pada rentang ini."
+                            historyShowType
                         />
-
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <StatTile label="Hadir" value={attendance?.summary.hadir ?? '—'} icon={UserCheck} tone="green" />
-                            <StatTile label="Terlambat" value={attendance?.summary.terlambat ?? '—'} icon={AlarmClock} tone="amber" />
-                            <StatTile
-                                label="Tidak Hadir"
-                                value={
-                                    attendance
-                                        ? attendance.summary.alpa + attendance.summary.izin + attendance.summary.sakit + attendance.summary.tanpa_keterangan
-                                        : '—'
-                                }
-                                icon={UserX}
-                                tone="red"
-                                hint={
-                                    attendance
-                                        ? `Izin ${attendance.summary.izin} · Sakit ${attendance.summary.sakit} · Alpa ${attendance.summary.alpa}`
-                                        : undefined
-                                }
-                            />
-                            <StatTile
-                                label="Kehadiran"
-                                value={attendance?.summary.rate ?? '—'}
-                                suffix="%"
-                                icon={Percent}
-                                tone="blue"
-                                hint={attendance ? `${attendance.summary.effective_days} hari efektif` : undefined}
-                            />
-                        </div>
-
-                        <div className="grid gap-6 lg:grid-cols-2">
-                            <AttendanceDailyChart data={attendance?.daily} range={rangeLabel} />
-                            <StatusPie summary={attendance?.summary} />
-                        </div>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Riwayat Absensi</CardTitle>
-                                <CardDescription>30 catatan terakhir pada rentang ini</CardDescription>
-                            </CardHeader>
-                            <CardContent className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Tanggal</TableHead>
-                                            <TableHead>Jenis</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Jam</TableHead>
-                                            <TableHead>Perangkat</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {!attendance ? (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
-                                                    Memuat…
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : attendance.recent.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
-                                                    Belum ada catatan absensi pada rentang ini.
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            attendance.recent.map((row) => (
-                                                <TableRow key={row.id}>
-                                                    <TableCell className="font-medium">{row.date}</TableCell>
-                                                    <TableCell>{row.type_label}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className={statusBadgeClass[row.status] ?? ''}>
-                                                            {row.status_label}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="font-mono">{row.time ?? '-'}</TableCell>
-                                                    <TableCell className="text-muted-foreground text-xs">{row.device_id ?? '-'}</TableCell>
-                                                </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
                     </TabsContent>
 
-                    <TabsContent value="sholat" className="space-y-6">
-                        {prayer && !prayer.enabled ? (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Absen sholat belum diaktifkan</CardTitle>
-                                    <CardDescription>
-                                        Nyalakan dulu di Pengaturan Sekolah, lengkap dengan jam mulai dan selesai.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Button variant="outline" asChild>
-                                        <Link href="/admin/pengaturan">Buka Pengaturan</Link>
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        ) : (
-                            <>
-                                <RangeBar
+                    {prayerTabs.map((entry) => (
+                        <TabsContent key={entry.value} value={entry.value}>
+                            {/* Key pada rentang: applyRange memakai preserveState sehingga
+                                komponen tidak remount, dan WhenVisible yang hanya menembak
+                                sekali akan macet di Skeleton setelah tombol Terapkan. */}
+                            <WhenVisible
+                                key={`${entry.value}-${filters.start}-${filters.end}`}
+                                data={entry.prop}
+                                fallback={<PanelSkeleton />}
+                            >
+                                <PrayerPanel
+                                    studentId={student.id}
+                                    jenis={entry.value}
+                                    stats={entry.value === 'dhuha' ? prayerDhuha : prayerDzuhur}
+                                    filters={filters}
                                     startDate={startDate}
                                     endDate={endDate}
                                     onStartChange={setStartDate}
                                     onEndChange={setEndDate}
                                     onApply={applyRange}
-                                    csvHref={`/admin/siswa/${student.id}/laporan/sholat/csv?${exportQuery}`}
-                                    pdfHref={`/admin/siswa/${student.id}/laporan/sholat/pdf?${exportQuery}`}
                                 />
-
-                                {prayer && <PrayerMembershipCard studentId={student.id} prayer={prayer} />}
-
-                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                    <StatTile label="Ikut Sholat" value={prayer?.summary.hadir ?? '—'} icon={MoonStar} tone="green" />
-                                    <StatTile label="Tidak Ikut" value={prayer?.summary.tidak_hadir ?? '—'} icon={UserX} tone="red" />
-                                    <StatTile label="Hari Efektif" value={prayer?.summary.effective_days ?? '—'} icon={CalendarDays} tone="slate" />
-                                    <StatTile
-                                        label="Kehadiran"
-                                        value={prayer?.summary.rate ?? '—'}
-                                        suffix="%"
-                                        icon={Percent}
-                                        tone="blue"
-                                        hint={prayer?.window ? `Jendela ${prayer.window}` : undefined}
-                                    />
-                                </div>
-
-                                <PrayerDailyChart data={prayer?.daily} range={rangeLabel} />
-
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Riwayat Absen Sholat</CardTitle>
-                                        <CardDescription>30 catatan terakhir pada rentang ini</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="overflow-x-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Tanggal</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                    <TableHead>Jam</TableHead>
-                                                    <TableHead>Perangkat</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {!prayer ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={4} className="text-muted-foreground py-8 text-center">
-                                                            Memuat…
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ) : prayer.recent.length === 0 ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={4} className="text-muted-foreground py-8 text-center">
-                                                            Belum ada catatan absen sholat pada rentang ini.
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ) : (
-                                                    prayer.recent.map((row) => (
-                                                        <TableRow key={row.id}>
-                                                            <TableCell className="font-medium">{row.date}</TableCell>
-                                                            <TableCell>
-                                                                <Badge variant="outline" className={statusBadgeClass[row.status] ?? ''}>
-                                                                    {row.status_label}
-                                                                </Badge>
-                                                            </TableCell>
-                                                            <TableCell className="font-mono">{row.time ?? '-'}</TableCell>
-                                                            <TableCell className="text-muted-foreground text-xs">{row.device_id ?? '-'}</TableCell>
-                                                        </TableRow>
-                                                    ))
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </CardContent>
-                                </Card>
-                            </>
-                        )}
-                    </TabsContent>
+                            </WhenVisible>
+                        </TabsContent>
+                    ))}
                 </Tabs>
             </div>
         </>
     );
 }
 
-function initialTab(): string {
+/** `sholat` adalah nama tab lama sebelum dipecah; tautan lama tetap mendarat
+ *  di tempat yang masuk akal alih-alih diam-diam kembali ke Profil. */
+const TAB_ALIASES: Record<string, string> = { sholat: 'dzuhur' };
+
+function initialTab(allowed: string[]): string {
     if (typeof window === 'undefined') {
         return 'profil';
     }
 
-    const requested = new URL(window.location.href).searchParams.get('tab');
+    const raw = new URL(window.location.href).searchParams.get('tab') ?? '';
+    const requested = TAB_ALIASES[raw] ?? raw;
 
-    return requested && ['profil', 'absensi', 'sholat'].includes(requested) ? requested : 'profil';
+    return allowed.includes(requested) ? requested : 'profil';
 }
 
-function PrayerMembershipCard({ studentId, prayer }: { studentId: string; prayer: PrayerPayload }) {
-    const schoolRule = prayer.school_includes_all ? 'semua siswa ikut' : 'hanya siswa beragama Islam';
-    const overridden = prayer.opt_in !== null;
-
-    function setOptIn(value: boolean | null) {
-        router.patch(
-            `/admin/siswa/${studentId}/prayer-opt-in`,
-            { prayer_opt_in: value },
-            { preserveScroll: true, preserveState: true },
-        );
-    }
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <MoonStar className="size-5" />
-                    Kepesertaan Sholat
-                </CardTitle>
-                <CardDescription>
-                    Agama: {prayer.religion_label ?? '-'} · Aturan sekolah: {schoolRule}
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-                <label className="flex items-center gap-3 text-sm">
-                    <Checkbox
-                        checked={prayer.covered}
-                        onCheckedChange={(checked) => setOptIn(Boolean(checked))}
-                    />
-                    Ikutkan siswa ini di absen sholat
-                </label>
-
-                <div className="flex flex-wrap items-center gap-3">
-                    <Badge variant={prayer.covered ? 'default' : 'secondary'}>
-                        {prayer.covered ? 'Ikut absen sholat' : 'Tidak ikut'}
-                    </Badge>
-                    <span className="text-muted-foreground text-xs">
-                        {overridden ? 'Diatur khusus untuk siswa ini' : 'Mengikuti aturan sekolah'}
-                    </span>
-                    {overridden && (
-                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setOptIn(null)}>
-                            Kembalikan ke aturan sekolah
-                        </Button>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
-    );
+function attendanceTiles(attendance?: AttendanceStats): TileSpec[] {
+    return [
+        { label: 'Hadir', value: attendance?.summary.hadir ?? '—', icon: UserCheck, tone: 'green' },
+        { label: 'Terlambat', value: attendance?.summary.terlambat ?? '—', icon: AlarmClock, tone: 'amber' },
+        {
+            label: 'Tidak Hadir',
+            value: attendance
+                ? attendance.summary.alpa +
+                  attendance.summary.izin +
+                  attendance.summary.sakit +
+                  attendance.summary.tanpa_keterangan
+                : '—',
+            icon: UserX,
+            tone: 'red',
+            hint: attendance
+                ? `Izin ${attendance.summary.izin} · Sakit ${attendance.summary.sakit} · Alpa ${attendance.summary.alpa}`
+                : undefined,
+        },
+        {
+            label: 'Kehadiran',
+            value: attendance?.summary.rate ?? '—',
+            suffix: '%',
+            icon: Percent,
+            tone: 'blue',
+            hint: attendance
+                ? `Tepat waktu ${attendance.summary.punctual_rate}% · Rata-rata masuk ${attendance.punctuality.avg_check_in ?? '-'}`
+                : undefined,
+        },
+    ];
 }
 
-function RangeBar({
+function PrayerPanel({
+    studentId,
+    jenis,
+    stats,
+    filters,
     startDate,
     endDate,
     onStartChange,
     onEndChange,
     onApply,
-    csvHref,
-    pdfHref,
 }: {
+    studentId: string;
+    jenis: string;
+    stats?: PrayerStats;
+    filters: RangeFilters;
     startDate: string;
     endDate: string;
     onStartChange: (value: string) => void;
     onEndChange: (value: string) => void;
     onApply: () => void;
-    csvHref: string;
-    pdfHref: string;
 }) {
+    const detail = stats?.types[0];
+
+    const tiles: TileSpec[] = [
+        { label: 'Ikut Sholat', value: detail?.summary.hadir ?? '—', icon: MoonStar, tone: 'green' },
+        { label: 'Tidak Ikut', value: detail?.summary.tidak_hadir ?? '—', icon: UserX, tone: 'red' },
+        { label: 'Hari Efektif', value: detail?.summary.effective_days ?? '—', icon: CalendarDays, tone: 'slate' },
+        {
+            label: 'Kehadiran',
+            value: detail?.summary.rate ?? '—',
+            suffix: '%',
+            icon: Percent,
+            tone: 'blue',
+            hint: detail ? `Jendela ${detail.window}` : undefined,
+        },
+    ];
+
     return (
-        <Card>
-            <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-end lg:justify-between">
-                <div className="grid flex-1 gap-3 sm:grid-cols-2 lg:max-w-md">
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="start_date" className="text-xs">Dari Tanggal</Label>
-                        <Input id="start_date" type="date" value={startDate} onChange={(e) => onStartChange(e.target.value)} />
-                    </div>
-                    <div className="grid gap-1.5">
-                        <Label htmlFor="end_date" className="text-xs">Sampai Tanggal</Label>
-                        <Input id="end_date" type="date" value={endDate} onChange={(e) => onEndChange(e.target.value)} />
-                    </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    <Button onClick={onApply}>Terapkan</Button>
-                    <Button variant="outline" asChild>
-                        <a href={csvHref}>
-                            <FileSpreadsheet className="mr-1.5 size-4" />
-                            CSV
-                        </a>
-                    </Button>
-                    <Button variant="outline" asChild>
-                        <a href={pdfHref}>
-                            <FileText className="mr-1.5 size-4" />
-                            PDF
-                        </a>
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+        <StatsPanel
+            range={filters.label}
+            startDate={startDate}
+            endDate={endDate}
+            onStartChange={onStartChange}
+            onEndChange={onEndChange}
+            onApply={onApply}
+            exports={reportExports(studentId, 'sholat', filters.start, filters.end, jenis)}
+            tiles={tiles}
+            daily={detail?.daily}
+            dailySeries={PRAYER_SERIES}
+            dailyTitle="Kehadiran Sholat Harian"
+            slices={prayerSlices(detail?.summary)}
+            pieTitle="Proporsi Kehadiran"
+            weekday={detail?.by_weekday}
+            weekdayTitle="Pola per Hari"
+            streaks={detail?.streaks}
+            heatmap={detail?.heatmap}
+            heatmapTitle="Kalender Sholat"
+            history={detail?.recent}
+            historyTitle="Riwayat Absen Sholat"
+            historyEmpty="Belum ada catatan absen sholat pada rentang ini."
+        >
+            {stats && <PrayerMembershipCard studentId={studentId} prayer={stats} />}
+        </StatsPanel>
+    );
+}
+
+function PanelSkeleton() {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-24 w-full" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[0, 1, 2, 3].map((index) => (
+                    <Skeleton key={index} className="h-20 w-full" />
+                ))}
+            </div>
+            <Skeleton className="h-[360px] w-full" />
+        </div>
     );
 }
 

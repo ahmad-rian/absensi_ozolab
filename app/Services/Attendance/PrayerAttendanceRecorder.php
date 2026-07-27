@@ -3,17 +3,24 @@
 namespace App\Services\Attendance;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\PrayerType;
 use App\Models\PrayerAttendance;
 use App\Models\Student;
 use App\Models\User;
+use App\Support\PrayerSchedule;
 use App\Support\PrayerSettings;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
- * Absen sholat dzuhur — sekali check-in per siswa per hari, di dalam jendela
- * yang diatur per sekolah (default 11:00–13:00).
+ * Absen sholat berjamaah — sekali check-in per siswa per hari PER JENIS sholat,
+ * di dalam jendela yang diatur per sekolah (Dhuha default 07:30–09:00, Dzuhur
+ * default 11:00–13:00).
+ *
+ * Jenis sholat ditentukan dari JAM scan, bukan dari link: satu perangkat di
+ * mushola melayani keduanya dan petugas tidak bisa salah mode. Kedua jendela
+ * dijamin tidak tumpang tindih oleh validasi di PengaturanController.
  *
  * Sengaja tidak menulis ke `attendances` dan tidak memancarkan event apa pun:
  * statistik absensi sekolah harus tetap bersih, dan orang tua tidak perlu
@@ -26,6 +33,8 @@ class PrayerAttendanceRecorder
     ) {}
 
     /**
+     * @param  ?PrayerType  $type  null = deteksi otomatis dari jam scan.
+     *                             Diisi hanya oleh pencatatan manual.
      * @return array{success: bool, attendance: ?PrayerAttendance, message: string}
      */
     public function record(
@@ -33,6 +42,7 @@ class PrayerAttendanceRecorder
         ?User $recordedBy = null,
         ?string $deviceId = null,
         ?Carbon $timestamp = null,
+        ?PrayerType $type = null,
     ): array {
         $timestamp = $timestamp ? SchoolTime::toLocal($timestamp) : SchoolTime::now();
         $date = $timestamp->toDateString();
@@ -43,9 +53,9 @@ class PrayerAttendanceRecorder
             return $this->fail('Siswa belum terhubung ke sekolah mana pun.');
         }
 
-        $settings = PrayerSettings::for($school);
+        $schedule = PrayerSchedule::for($school);
 
-        if (! $settings->enabled) {
+        if (! $schedule->anyEnabled()) {
             return $this->fail('Absen sholat belum diaktifkan untuk sekolah ini.');
         }
 
@@ -53,18 +63,33 @@ class PrayerAttendanceRecorder
             return $this->fail('Tidak ada jadwal aktif untuk hari ini.');
         }
 
-        if (! $settings->covers($student)) {
+        if (! $schedule->covers($student)) {
             return $this->fail('Absen sholat hanya untuk siswa beragama Islam.');
         }
 
+        $settings = $this->resolveSettings($schedule, $type, $timestamp);
+
+        if ($settings === null) {
+            if ($type !== null) {
+                return $this->fail('Absen '.$type->label().' belum diaktifkan untuk sekolah ini.');
+            }
+
+            // Deteksi otomatis gagal: sebutkan SEMUA jendela yang aktif supaya
+            // petugas tahu harus scan jam berapa.
+            return $this->fail('Absen sholat dibuka pukul '.$schedule->windowsSentence().'.');
+        }
+
+        // Jenis eksplisit yang jamnya di luar jendelanya sendiri tetap ditolak,
+        // supaya pencatatan manual tidak bisa memalsukan jam.
         if (! $settings->isWithinWindow($timestamp)) {
             return $this->fail(
-                'Absen sholat dibuka pukul '.$settings->displayStart().' s/d '.$settings->displayEnd().'.'
+                'Absen '.$settings->type->label().' dibuka pukul '
+                .$settings->displayStart().' s/d '.$settings->displayEnd().'.'
             );
         }
 
-        if ($existing = $this->existingRecord($student, $date)) {
-            return $this->fail($this->alreadyRecordedMessage($existing));
+        if ($existing = $this->existingRecord($student, $date, $settings->type)) {
+            return $this->fail($this->alreadyRecordedMessage($settings->type, $existing));
         }
 
         try {
@@ -72,30 +97,51 @@ class PrayerAttendanceRecorder
                 'school_id' => $student->school_id,
                 'student_id' => $student->id,
                 'prayer_date' => $date,
+                'prayer_type' => $settings->type,
                 'status' => AttendanceStatus::Hadir,
                 'recorded_at' => $timestamp,
                 'recorded_by' => $recordedBy?->id,
-                'device_id' => $deviceId,
+                // Device id default dibedakan per jenis supaya laporan bisa
+                // membedakan sumber scan; Dzuhur menahan nilai lama.
+                'device_id' => $deviceId ?? $settings->type->deviceId(),
             ]);
         } catch (UniqueConstraintViolationException) {
-            return $this->fail($this->alreadyRecordedMessage(null));
+            return $this->fail($this->alreadyRecordedMessage($settings->type, null));
         }
 
         return [
             'success' => true,
             'attendance' => $attendance,
-            'message' => 'Absen sholat berhasil dicatat.',
+            'message' => 'Absen '.$settings->type->label().' berhasil dicatat.',
         ];
     }
 
-    private function existingRecord(Student $student, string $date): ?PrayerAttendance
+    /**
+     * Jenis eksplisit dipakai apa adanya (kalau aktif); kalau null, jam scan
+     * yang menentukan.
+     */
+    private function resolveSettings(PrayerSchedule $schedule, ?PrayerType $type, Carbon $timestamp): ?PrayerSettings
     {
+        if ($type !== null) {
+            $settings = $schedule->get($type);
+
+            return $settings->enabled ? $settings : null;
+        }
+
+        return $schedule->resolveFor($timestamp);
+    }
+
+    private function existingRecord(Student $student, string $date, PrayerType $type): ?PrayerAttendance
+    {
+        // SQLite menyimpan kolom `date` beserta komponen waktu, jadi
+        // perbandingannya wajib lewat whereDate, bukan where biasa.
         return PrayerAttendance::where('student_id', $student->id)
             ->whereDate('prayer_date', $date)
+            ->where('prayer_type', $type->value)
             ->first();
     }
 
-    private function alreadyRecordedMessage(?PrayerAttendance $existing): string
+    private function alreadyRecordedMessage(PrayerType $type, ?PrayerAttendance $existing): string
     {
         // `recorded_at` disimpan sebagai jam dinding sekolah (lihat SchoolTime),
         // jadi diformat apa adanya tanpa konversi zona waktu.
@@ -103,7 +149,7 @@ class PrayerAttendanceRecorder
             ? ' pukul '.$existing->recorded_at->format('H:i')
             : '';
 
-        return 'Sudah absen sholat hari ini'.$at.'.';
+        return 'Sudah absen '.$type->label().' hari ini'.$at.'.';
     }
 
     /**

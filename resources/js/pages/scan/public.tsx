@@ -4,13 +4,19 @@ import { PublicScanConsole, type ScanSchool } from '@/components/scanner/public-
 type PageProps = {
     school: ScanSchool;
     scanToken: string;
+    featureEnabled: boolean;
 };
 
-export default function PublicScanPage({ school, scanToken }: PageProps) {
+export default function PublicScanPage({ school, scanToken, featureEnabled }: PageProps) {
     return (
         <>
             <Head title={`Scan Absensi — ${school.name}`} />
-            <PublicScanConsole school={school} scanUrl={`/scan/${scanToken}`} tagline="Absensi Digital" />
+            <PublicScanConsole
+                school={school}
+                scanUrl={`/scan/${scanToken}`}
+                tagline="Absensi Digital"
+                disabledNotice={featureEnabled ? null : 'Absensi sekolah sedang dimatikan oleh admin.'}
+            />
         </>
     );
 }

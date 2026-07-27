@@ -1,6 +1,8 @@
 <?php
 
+use App\Enums\AppModule;
 use App\Enums\SchoolChannelType;
+use App\Enums\SchoolFeature;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Models\School;
 use App\Models\SchoolNotificationChannel;
@@ -204,6 +206,38 @@ test('every system-module route is guarded by the super-admin middleware', funct
                 || in_array(EnsureSuperAdmin::class, $middleware, true);
 
             return $usesSystemPermission && ! $guarded;
+        })
+        ->map(fn ($route) => $route->uri())
+        ->values()
+        ->all();
+
+    expect($unguarded)->toBe([]);
+});
+
+test('every route of a feature-owned module also carries the feature middleware', function () {
+    // Cermin dari test di atas: rute modul baru yang lupa dipasangi `feature:`
+    // akan diam-diam mengabaikan saklar di halaman Pengaturan.
+    $expected = [];
+
+    foreach (AppModule::cases() as $module) {
+        $feature = SchoolFeature::forModule($module);
+
+        if ($feature !== null) {
+            $expected['permission:'.$module->permission()] = 'feature:'.$feature->value;
+        }
+    }
+
+    $unguarded = collect(app('router')->getRoutes()->getRoutes())
+        ->filter(function ($route) use ($expected) {
+            $middleware = collect($route->gatherMiddleware())->filter(fn ($m) => is_string($m));
+
+            $needed = $middleware
+                ->map(fn ($m) => $expected[$m] ?? null)
+                ->filter()
+                ->values();
+
+            return $needed->isNotEmpty()
+                && $needed->contains(fn ($feature) => ! $middleware->contains($feature));
         })
         ->map(fn ($route) => $route->uri())
         ->values()

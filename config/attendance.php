@@ -46,6 +46,34 @@ return [
         'start' => env('PRAYER_ATTENDANCE_START', '11:00'),
         'end' => env('PRAYER_ATTENDANCE_END', '13:00'),
         'all_religions' => env('PRAYER_ATTENDANCE_ALL_RELIGIONS', false),
+
+        /**
+         * Tenggang setelah jendela sholat tutup sebelum hari ini dievaluasi
+         * oleh `prayer:notify-absence`, supaya scan pukul 12:59 tidak kalah
+         * cepat dari tick penjadwal pukul 13:00.
+         */
+        'absence_grace_minutes' => env('PRAYER_ABSENCE_GRACE_MINUTES', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Absen Sholat Dhuha
+    |--------------------------------------------------------------------------
+    |
+    | Default MATI. Sekolah yang sudah berjalan hanya menjalankan Dzuhur; Dhuha
+    | baru aktif setelah admin menyalakannya di menu Pengaturan. Jendelanya
+    | wajib tidak tumpang tindih dengan jendela Dzuhur — divalidasi di
+    | PengaturanController supaya deteksi-jam di scanner tidak pernah ambigu.
+    |
+    | `all_religions` sengaja tidak diduplikasi di sini: kepesertaan lintas
+    | agama itu kebijakan sekolah terhadap SISWA, bukan properti waktu sholat,
+    | jadi satu key `prayer_all_religions` dipakai bersama kedua jenis.
+    |
+    */
+    'prayer_dhuha' => [
+        'enabled' => env('PRAYER_DHUHA_ENABLED', false),
+        'start' => env('PRAYER_DHUHA_START', '07:30'),
+        'end' => env('PRAYER_DHUHA_END', '09:00'),
     ],
 
     /**

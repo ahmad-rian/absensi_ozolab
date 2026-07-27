@@ -1,343 +1,116 @@
-import { Head, router, useForm } from '@inertiajs/react';
-import { Bell, Building2, Clock, ImageIcon, MoonStar, Save, Upload } from 'lucide-react';
-import { type FormEvent, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
+import { Head, usePage } from '@inertiajs/react';
+import { useCallback, useRef, useState } from 'react';
+import { FiturTab, type FeatureCatalog } from '@/components/pengaturan/fitur-tab';
+import { NotifikasiTab } from '@/components/pengaturan/notifikasi-tab';
+import {
+    SETTINGS_TABS,
+    resolveSettingsTab,
+    type SettingsSection,
+    type SettingsValues,
+} from '@/components/pengaturan/settings-tabs';
+import { SholatTab } from '@/components/pengaturan/sholat-tab';
+import { TampilanTab } from '@/components/pengaturan/tampilan-tab';
+import { UmumTab } from '@/components/pengaturan/umum-tab';
+import { PageHeader } from '@/components/shared/page-header';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dashboard } from '@/routes';
-
-type SettingsData = {
-    school_name: string;
-    timezone: string;
-    prayer_enabled: boolean;
-    prayer_start: string;
-    prayer_end: string;
-    prayer_all_religions: boolean;
-    whatsapp_enabled: boolean;
-    notify_on_check_in: boolean;
-    notify_on_check_out: boolean;
-    whatsapp_template_attendance: string;
-};
+import type { SchoolFeatureMap } from '@/types';
 
 type Props = {
-    settings: Record<string, string | boolean>;
+    settings: SettingsValues;
+    features: SchoolFeatureMap;
+    featureCatalog: FeatureCatalog;
     logoUrl: string;
     faviconUrl: string;
 };
 
-export default function PengaturanIndex({ settings, logoUrl, faviconUrl }: Props) {
-    const logoInputRef = useRef<HTMLInputElement>(null);
-    const faviconInputRef = useRef<HTMLInputElement>(null);
+export default function PengaturanIndex({ settings, features, featureCatalog, logoUrl, faviconUrl }: Props) {
+    const page = usePage();
+    const [tab, setTab] = useState<SettingsSection>(() => resolveSettingsTab(page.url));
 
-    const { data, setData, put, processing } = useForm<SettingsData>({
-        school_name: (settings.school_name as string) || '',
-        timezone: (settings.timezone as string) || 'Asia/Jakarta',
-        prayer_enabled: Boolean(settings.prayer_enabled),
-        prayer_start: (settings.prayer_start as string) || '11:00',
-        prayer_end: (settings.prayer_end as string) || '13:00',
-        prayer_all_religions: Boolean(settings.prayer_all_religions),
-        whatsapp_enabled: Boolean(settings.whatsapp_enabled),
-        notify_on_check_in: Boolean(settings.notify_on_check_in),
-        notify_on_check_out: Boolean(settings.notify_on_check_out),
-        whatsapp_template_attendance: (settings.whatsapp_template_attendance as string) || '',
-    });
+    // Tiap tab memegang useForm sendiri dan melaporkan status kotornya ke sini,
+    // supaya penjaga pindah-tab tahu ada perubahan yang belum disimpan tanpa
+    // harus mengangkat seluruh state form ke halaman ini.
+    const dirty = useRef<Partial<Record<SettingsSection, boolean>>>({});
+    const [dirtyTick, setDirtyTick] = useState(0);
 
-    function handleSubmit(e: FormEvent) {
-        e.preventDefault();
-        put('/admin/pengaturan', { preserveScroll: true });
-    }
+    const markDirty = useCallback((section: SettingsSection) => {
+        return (value: boolean) => {
+            if (dirty.current[section] === value) {
+                return;
+            }
 
-    function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        router.post('/admin/pengaturan/upload-logo', { logo: file }, { preserveScroll: true });
-    }
+            dirty.current[section] = value;
+            setDirtyTick((tick) => tick + 1);
+        };
+    }, []);
 
-    function handleFaviconUpload(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        router.post('/admin/pengaturan/upload-favicon', { favicon: file }, { preserveScroll: true });
+    function changeTab(value: string) {
+        const next = value as SettingsSection;
+
+        if (dirty.current[tab] && ! window.confirm('Ada perubahan yang belum disimpan. Tinggalkan tab ini?')) {
+            return;
+        }
+
+        setTab(next);
+
+        // replaceState, bukan pushState: pindah tab bukan navigasi. Admin yang
+        // menekan Back mengharapkan keluar dari Pengaturan, bukan menyusuri
+        // lima tab mundur satu per satu.
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', next);
+        window.history.replaceState({}, '', url.toString());
     }
 
     return (
         <>
             <Head title="Pengaturan Situs" />
 
-            <form onSubmit={handleSubmit} className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
-                {/* Page Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Pengaturan Situs</h1>
-                        <p className="text-muted-foreground text-sm">Kelola konfigurasi aplikasi absensi</p>
-                    </div>
-                    <Button type="submit" disabled={processing}>
-                        <Save className="mr-2 size-4" />
-                        Simpan
-                    </Button>
-                </div>
+            <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
+                <PageHeader title="Pengaturan Situs" description="Kelola konfigurasi aplikasi absensi" />
 
-                {/* Card 1: Informasi Situs */}
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Building2 className="size-5 text-blue-600" />
-                            <CardTitle>Informasi Situs</CardTitle>
-                        </div>
-                        <CardDescription>Nama dan identitas situs yang ditampilkan di aplikasi.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="school_name" className="text-sm font-medium">Nama Situs</Label>
-                            <Input
-                                id="school_name"
-                                value={data.school_name}
-                                onChange={(e) => setData('school_name', e.target.value)}
-                                placeholder="Masukkan nama situs"
-                            />
-                        </div>
-
-                        <Separator />
-
-                        {/* Logo Upload */}
-                        <div className="grid gap-2">
-                            <Label className="text-sm font-medium">Logo Aplikasi</Label>
-                            <div className="flex items-center gap-4">
-                                {logoUrl ? (
-                                    <div className="flex size-20 items-center justify-center overflow-hidden rounded-lg border bg-white p-1">
-                                        <img src={logoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
-                                    </div>
-                                ) : (
-                                    <div className="text-muted-foreground flex size-20 items-center justify-center rounded-lg border bg-muted">
-                                        <ImageIcon className="size-8 opacity-40" />
-                                    </div>
-                                )}
-                                <div className="space-y-2">
-                                    <input
-                                        ref={logoInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleLogoUpload}
+                <Tabs value={tab} onValueChange={changeTab}>
+                    <TabsList>
+                        {SETTINGS_TABS.map(({ value, label, icon: Icon }) => (
+                            <TabsTrigger key={value} value={value}>
+                                <Icon className="size-4" />
+                                {label}
+                                {dirty.current[value] && (
+                                    <span
+                                        key={dirtyTick}
+                                        className="bg-primary size-1.5 rounded-full"
+                                        title="Ada perubahan yang belum disimpan"
                                     />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => logoInputRef.current?.click()}
-                                    >
-                                        <Upload className="mr-2 size-4" />
-                                        Upload Logo
-                                    </Button>
-                                    <p className="text-muted-foreground text-xs">Format: JPG, PNG, WebP. Maks 2MB.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Favicon Upload */}
-                        <div className="grid gap-2">
-                            <Label className="text-sm font-medium">Favicon Aplikasi</Label>
-                            <div className="flex items-center gap-4">
-                                {faviconUrl ? (
-                                    <div className="flex size-20 items-center justify-center overflow-hidden rounded-lg border bg-white p-1">
-                                        <img src={faviconUrl} alt="Favicon" className="max-h-full max-w-full object-contain" />
-                                    </div>
-                                ) : (
-                                    <div className="text-muted-foreground flex size-20 items-center justify-center rounded-lg border bg-muted">
-                                        <ImageIcon className="size-8 opacity-40" />
-                                    </div>
                                 )}
-                                <div className="space-y-2">
-                                    <input
-                                        ref={faviconInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleFaviconUpload}
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => faviconInputRef.current?.click()}
-                                    >
-                                        <Upload className="mr-2 size-4" />
-                                        Upload Favicon
-                                    </Button>
-                                    <p className="text-muted-foreground text-xs">Format: JPG, PNG, WebP. Maks 2MB.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
 
-                {/* Card 2: Zona Waktu */}
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Clock className="size-5 text-green-600" />
-                            <CardTitle>Zona Waktu</CardTitle>
-                        </div>
-                        <CardDescription>Pengaturan zona waktu untuk sistem absensi.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-2">
-                            <Label htmlFor="timezone" className="text-sm font-medium">Zona Waktu</Label>
-                            <Select value={data.timezone} onValueChange={(val) => setData('timezone', val)}>
-                                <SelectTrigger className="w-64">
-                                    <SelectValue placeholder="Pilih zona waktu" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Asia/Jakarta">Asia/Jakarta (WIB)</SelectItem>
-                                    <SelectItem value="Asia/Makassar">Asia/Makassar (WITA)</SelectItem>
-                                    <SelectItem value="Asia/Jayapura">Asia/Jayapura (WIT)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
+                    <TabsContent value="umum">
+                        <UmumTab settings={settings} onDirtyChange={markDirty('umum')} />
+                    </TabsContent>
 
-                {/* Card 3: Absen Sholat Dzuhur */}
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <MoonStar className="size-5 text-emerald-600" />
-                            <CardTitle>Absen Sholat Dzuhur</CardTitle>
-                        </div>
-                        <CardDescription>
-                            Absen terpisah dari absensi sekolah, sekali scan per hari. Hari aktifnya mengikuti Jadwal Absensi.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <Checkbox
-                                id="prayer_enabled"
-                                checked={data.prayer_enabled}
-                                onCheckedChange={(checked) => setData('prayer_enabled', Boolean(checked))}
-                            />
-                            <Label htmlFor="prayer_enabled" className="cursor-pointer text-sm font-medium">
-                                Aktifkan absen sholat dzuhur
-                            </Label>
-                        </div>
-                        <Separator />
-                        <div className="grid gap-4 pl-7 sm:grid-cols-2">
-                            <div className="grid gap-2">
-                                <Label htmlFor="prayer_start" className="text-sm font-medium">Jam Mulai</Label>
-                                <Input
-                                    id="prayer_start"
-                                    type="time"
-                                    value={data.prayer_start}
-                                    onChange={(e) => setData('prayer_start', e.target.value)}
-                                    disabled={!data.prayer_enabled}
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="prayer_end" className="text-sm font-medium">Jam Selesai</Label>
-                                <Input
-                                    id="prayer_end"
-                                    type="time"
-                                    value={data.prayer_end}
-                                    onChange={(e) => setData('prayer_end', e.target.value)}
-                                    disabled={!data.prayer_enabled}
-                                />
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 pl-7">
-                            <Checkbox
-                                id="prayer_all_religions"
-                                checked={data.prayer_all_religions}
-                                onCheckedChange={(checked) => setData('prayer_all_religions', Boolean(checked))}
-                                disabled={!data.prayer_enabled}
-                            />
-                            <Label htmlFor="prayer_all_religions" className="cursor-pointer text-sm font-medium">
-                                Sertakan siswa non-Islam
-                            </Label>
-                        </div>
-                        <p className="text-muted-foreground pl-7 text-xs">
-                            Tanpa centang ini, hanya siswa beragama Islam yang bisa scan dan dihitung di laporan.
-                        </p>
-                    </CardContent>
-                </Card>
+                    <TabsContent value="tampilan">
+                        <TampilanTab logoUrl={logoUrl} faviconUrl={faviconUrl} />
+                    </TabsContent>
 
-                {/* Card 4: Konfigurasi WhatsApp */}
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Bell className="size-5 text-purple-600" />
-                            <CardTitle>Konfigurasi WhatsApp</CardTitle>
-                        </div>
-                        <CardDescription>Atur notifikasi WhatsApp yang dikirim ke orang tua.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <Checkbox
-                                id="whatsapp_enabled"
-                                checked={data.whatsapp_enabled}
-                                onCheckedChange={(checked) => setData('whatsapp_enabled', Boolean(checked))}
-                            />
-                            <Label htmlFor="whatsapp_enabled" className="cursor-pointer text-sm font-medium">
-                                Aktifkan Notifikasi WhatsApp
-                            </Label>
-                        </div>
-                        <Separator />
-                        <div className="space-y-3 pl-7">
-                            <div className="flex items-center gap-3">
-                                <Checkbox
-                                    id="notify_on_check_in"
-                                    checked={data.notify_on_check_in}
-                                    onCheckedChange={(checked) => setData('notify_on_check_in', Boolean(checked))}
-                                    disabled={!data.whatsapp_enabled}
-                                />
-                                <Label htmlFor="notify_on_check_in" className="cursor-pointer text-sm font-medium">
-                                    Kirim notifikasi saat check-in
-                                </Label>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Checkbox
-                                    id="notify_on_check_out"
-                                    checked={data.notify_on_check_out}
-                                    onCheckedChange={(checked) => setData('notify_on_check_out', Boolean(checked))}
-                                    disabled={!data.whatsapp_enabled}
-                                />
-                                <Label htmlFor="notify_on_check_out" className="cursor-pointer text-sm font-medium">
-                                    Kirim notifikasi saat check-out
-                                </Label>
-                            </div>
-                        </div>
-                        <Separator />
-                        <div className="grid gap-2">
-                            <Label htmlFor="whatsapp_template_attendance" className="text-sm font-medium">
-                                Template Pesan Kehadiran
-                            </Label>
-                            <Textarea
-                                id="whatsapp_template_attendance"
-                                value={data.whatsapp_template_attendance}
-                                onChange={(e) => setData('whatsapp_template_attendance', e.target.value)}
-                                placeholder="Contoh: Yth. {parent_name}, anak Anda {student_name} telah {status} pada {date} pukul {time}."
-                                rows={4}
-                                disabled={!data.whatsapp_enabled}
-                            />
-                            <p className="text-muted-foreground text-xs">
-                                Variabel yang tersedia: {'{parent_name}'}, {'{student_name}'}, {'{status}'}, {'{date}'}, {'{time}'}
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+                    <TabsContent value="fitur">
+                        <FiturTab features={features} catalog={featureCatalog} onDirtyChange={markDirty('fitur')} />
+                    </TabsContent>
 
-                {/* Submit Button */}
-                <div className="flex justify-end">
-                    <Button type="submit" disabled={processing} className="gap-2">
-                        <Save className="size-4" />
-                        Simpan Pengaturan
-                    </Button>
-                </div>
-            </form>
+                    <TabsContent value="sholat">
+                        <SholatTab settings={settings} onDirtyChange={markDirty('sholat')} />
+                    </TabsContent>
+
+                    <TabsContent value="notifikasi">
+                        <NotifikasiTab
+                            settings={settings}
+                            features={features}
+                            onDirtyChange={markDirty('notifikasi')}
+                        />
+                    </TabsContent>
+                </Tabs>
+            </div>
         </>
     );
 }

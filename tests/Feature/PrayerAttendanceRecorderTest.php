@@ -75,8 +75,10 @@ test('only allows one check-in per day', function () {
 
     $second = $this->recorder->record($this->student, timestamp: prayerAt(12, 0));
 
+    // Pesannya menyebut jenis sholat sejak Dhuha ditambahkan — "sudah absen
+    // sholat hari ini" jadi menyesatkan ketika ada dua jenis.
     expect($second['success'])->toBeFalse()
-        ->and($second['message'])->toContain('Sudah absen sholat hari ini pukul 11:10')
+        ->and($second['message'])->toContain('Sudah absen Sholat Dzuhur hari ini pukul 11:10')
         ->and(PrayerAttendance::count())->toBe(1);
 });
 

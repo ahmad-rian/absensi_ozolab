@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Enums\Gender;
 use App\Enums\Religion;
+use App\Enums\SchoolFeature;
 use App\Jobs\RegisterStudentCardsJob;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Student;
+use App\Rules\SchoolFeatureEnabled;
 use App\Services\Attendance\QrTokenGenerator;
 use App\Services\GoogleDriveService;
 use App\Services\ParentProfileService;
 use App\Services\PhotoCropService;
+use App\Support\SchoolFeatures;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,16 +33,25 @@ class StudentRegistrationController extends Controller
 {
     public function index(): Response
     {
+        // Kolom `settings` ikut ditarik hanya untuk menilai fitur, lalu dibuang
+        // sebelum dikirim ke halaman publik — isinya memuat template notifikasi
+        // dan kredensial yang tidak boleh bocor.
         $schools = School::where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'logo_path']);
+            ->get(['id', 'name', 'logo_path', 'settings'])
+            ->filter(fn (School $school) => SchoolFeatures::for($school)->enabled(SchoolFeature::PendaftaranPublik))
+            ->values();
 
         $classrooms = Classroom::whereIn('school_id', $schools->pluck('id'))
             ->orderBy('name')
             ->get(['id', 'school_id', 'name', 'grade_level']);
 
         return Inertia::render('student-register', [
-            'schools' => $schools,
+            'schools' => $schools->map(fn (School $school) => [
+                'id' => $school->id,
+                'name' => $school->name,
+                'logo_path' => $school->logo_path,
+            ]),
             'classrooms' => $classrooms,
             // Mengikat endpoint pratinjau ke sesi yang benar-benar membuka
             // halaman ini, supaya tidak bisa dipanggil lepas lewat curl.
@@ -117,7 +129,7 @@ class StudentRegistrationController extends Controller
     public function store(Request $request, ParentProfileService $parentProfileService, QrTokenGenerator $qrGenerator): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
-            'school_id' => ['required', 'exists:schools,id'],
+            'school_id' => ['required', 'exists:schools,id', new SchoolFeatureEnabled(SchoolFeature::PendaftaranPublik)],
             // Nama & NIS dari form publik ini berakhir di export CSV dan header
             // HTTP, jadi karakternya dibatasi di sumbernya.
             'full_name' => ['required', 'string', 'max:255', "regex:/^[\p{L}\p{N} .,'\-]+$/u"],

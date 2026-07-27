@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\SchoolFeature;
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Services\Attendance\ScheduleProvisioner;
-use App\Support\PrayerSettings;
+use App\Support\PrayerSchedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -36,7 +37,9 @@ class SchoolController extends Controller
             'website' => $school->website,
             'is_active' => $school->is_active,
             'scanner_token' => $school->scanner_token,
-            'prayer_enabled' => PrayerSettings::for($school)->enabled,
+            // Penanda "sekolah ini memakai absen sholat" — cukup salah satu
+            // jenis aktif, karena tautan scan-nya memang satu untuk keduanya.
+            'prayer_enabled' => PrayerSchedule::for($school)->anyEnabled(),
             'users_count' => $school->users_count,
             'students_count' => $school->students_count,
             'classrooms_count' => $school->classrooms_count,
@@ -76,6 +79,9 @@ class SchoolController extends Controller
             'whatsapp_enabled' => true,
             'notify_on_check_in' => true,
             'notify_on_check_out' => true,
+            // Sekolah baru mulai dengan seluruh fitur lama menyala, sama
+            // seperti hasil backfill untuk sekolah yang sudah ada.
+            ...self::defaultFeatureFlags(),
         ];
 
         // Ensure unique slug
@@ -206,6 +212,32 @@ class SchoolController extends Controller
                 'frame_id' => null,
             ],
         ]);
+    }
+
+    /**
+     * Nilai awal saklar fitur untuk sekolah baru.
+     *
+     * Diturunkan dari enum supaya sekolah baru dan hasil backfill tidak pernah
+     * berbeda; fitur yang memakai key lama (prayer_enabled dan kawan-kawan)
+     * dilewati karena sudah punya nilai sendiri di array di atas.
+     *
+     * @return array<string, bool>
+     */
+    private static function defaultFeatureFlags(): array
+    {
+        $flags = [];
+
+        foreach (SchoolFeature::cases() as $feature) {
+            $key = $feature->settingKey();
+
+            if (! str_starts_with($key, 'feature_')) {
+                continue;
+            }
+
+            $flags[$key] = $feature->defaultEnabled();
+        }
+
+        return $flags;
     }
 
     /**

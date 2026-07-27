@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\PrayerType;
 use App\Http\Controllers\Controller;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
@@ -91,10 +92,21 @@ class SiswaController extends Controller
             'photoSheets' => $photoSheets,
             'photoSheetTemplates' => $photoSheetTemplates,
             'cards' => $this->generatedCards($siswa),
-            'filters' => $range,
+            'filters' => [
+                ...$range,
+                'label' => $stats->rangeLabel($range['start'], $range['end']),
+            ],
             // Ditunda supaya tab Profil tampil seketika; chart menyusul.
             'attendance' => Inertia::defer(fn () => $stats->attendanceFor($siswa, $range['start'], $range['end'])),
-            'prayer' => Inertia::defer(fn () => $stats->prayerFor($siswa, $range['start'], $range['end'])),
+            // Statistik sholat hanya dihitung saat tabnya dibuka. Menghitung
+            // dua jenis sholat di setiap kunjungan halaman profil terlalu mahal
+            // untuk halaman yang paling sering dipakai sekadar mencetak QR.
+            'prayerDhuha' => Inertia::optional(
+                fn () => $stats->prayerFor($siswa, $range['start'], $range['end'], PrayerType::Dhuha),
+            ),
+            'prayerDzuhur' => Inertia::optional(
+                fn () => $stats->prayerFor($siswa, $range['start'], $range['end'], PrayerType::Dzuhur),
+            ),
         ]);
     }
 

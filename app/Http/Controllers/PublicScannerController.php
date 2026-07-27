@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AttendanceType;
+use App\Enums\SchoolFeature;
 use App\Models\School;
 use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\StudentLookup;
+use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,6 +30,10 @@ class PublicScannerController extends Controller
                 'is_active' => $school->is_active,
             ],
             'scanToken' => $school->scanner_token,
+            // Dipisah dari is_active supaya operator tahu bedanya "sekolah
+            // nonaktif" dan "fitur absensi dimatikan admin". Halaman tetap 200:
+            // tablet di dinding harus menampilkan pesan, bukan layar 403.
+            'featureEnabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiSekolah),
         ]);
     }
 
@@ -37,6 +43,16 @@ class PublicScannerController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Halaman absensi sekolah ini sedang tidak aktif.',
+            ], 403);
+        }
+
+        // Guard fitur sengaja di controller, bukan middleware: `abort(403)`
+        // menghasilkan halaman HTML/Inertia, sedangkan konsol scan memanggil
+        // endpoint ini dengan fetch dan hanya membaca {success, message}.
+        if (SchoolFeatures::for($school)->disabled(SchoolFeature::AbsensiSekolah)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Absensi sekolah sedang dimatikan oleh admin.',
             ], 403);
         }
 

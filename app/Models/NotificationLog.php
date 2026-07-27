@@ -21,6 +21,7 @@ class NotificationLog extends Model
         'school_id',
         'student_id',
         'attendance_id',
+        'prayer_absence_alert_id',
         'parent_profile_id',
         'channel',
         'whatsapp_number',
@@ -64,6 +65,11 @@ class NotificationLog extends Model
     public function attendance(): BelongsTo
     {
         return $this->belongsTo(Attendance::class);
+    }
+
+    public function prayerAbsenceAlert(): BelongsTo
+    {
+        return $this->belongsTo(PrayerAbsenceAlert::class);
     }
 
     public function parentProfile(): BelongsTo

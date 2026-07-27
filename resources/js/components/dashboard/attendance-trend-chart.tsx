@@ -1,4 +1,5 @@
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { TOOLTIP_STYLE } from '@/components/shared/chart-frame';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -34,12 +35,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
                             />
                             <YAxis tick={{ fontSize: 12 }} className="fill-muted-foreground" />
                             <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'hsl(var(--card))',
-                                    border: '1px solid hsl(var(--border))',
-                                    borderRadius: '0.5rem',
-                                    fontSize: '0.875rem',
-                                }}
+                                contentStyle={TOOLTIP_STYLE}
                             />
                             <Line
                                 type="monotone"

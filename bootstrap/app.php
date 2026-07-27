@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'super-admin' => EnsureSuperAdmin::class,
+            'feature' => EnsureFeatureEnabled::class,
         ]);
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
@@ -77,4 +79,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Close attendance rows that checked in but never checked out. Runs
         // hourly because each school sets its own check_out_end.
         $schedule->command('attendance:auto-checkout')->hourly()->withoutOverlapping();
+
+        // Peringatan alpa sholat. Hourly, bukan dailyAt(), karena jendela
+        // sholat diatur per sekolah — satu jam tetap pasti salah untuk
+        // sebagian tenant. Command sendiri yang memutuskan apakah jendela hari
+        // ini sudah benar-benar tutup.
+        $schedule->command('prayer:notify-absence')->hourly()->withoutOverlapping();
     })->create();

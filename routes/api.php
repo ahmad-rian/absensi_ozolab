@@ -20,7 +20,9 @@ Route::post('telegram/webhook/{school}', [TelegramWebhookController::class, 'han
 |
 */
 
-Route::middleware(['web', 'auth', 'permission:siswa.access', 'throttle:60,1'])->group(function () {
+// `feature:master_siswa` wajib ikut di sini: tanpa itu toggle Master Data bisa
+// dilewati sepenuhnya lewat GET /api/students.
+Route::middleware(['web', 'auth', 'permission:siswa.access', 'feature:master_siswa', 'throttle:60,1'])->group(function () {
     // Schools
     Route::get('schools', [StudentApiController::class, 'schools']);
     Route::get('schools/{school}/students', [StudentApiController::class, 'schoolStudents']);

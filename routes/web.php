@@ -85,7 +85,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::middleware('permission:dashboard.access')
         ->get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    Route::middleware('permission:siswa.access')->group(function () {
+    Route::middleware(['permission:siswa.access', 'feature:master_siswa'])->group(function () {
         Route::resource('siswa', SiswaController::class)->names('admin.siswa');
         Route::get('siswa/{siswa}/qr', [SiswaController::class, 'qrCode'])->name('admin.siswa.qr');
         Route::post('siswa/{siswa}/photo-sheet', [PhotoSheetController::class, 'generate'])->name('admin.siswa.photo-sheet');
@@ -96,31 +96,31 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::get('siswa/{siswa}/laporan/sholat/pdf', [StudentReportController::class, 'prayerPdf'])->name('admin.siswa.laporan.sholat.pdf');
     });
 
-    Route::middleware('permission:orang-tua.access')->group(function () {
+    Route::middleware(['permission:orang-tua.access', 'feature:master_siswa'])->group(function () {
         Route::resource('orang-tua', OrangTuaController::class)->parameter('orang-tua', 'parentProfile')->names('admin.orang-tua');
     });
 
-    Route::middleware('permission:kelas.access')->group(function () {
+    Route::middleware(['permission:kelas.access', 'feature:master_siswa'])->group(function () {
         Route::resource('kelas', KelasController::class)->except(['show', 'create', 'edit'])->parameter('kelas', 'classroom');
     });
 
-    Route::middleware('permission:jadwal-absensi.access')->group(function () {
+    Route::middleware(['permission:jadwal-absensi.access', 'feature:absensi_sekolah'])->group(function () {
         Route::resource('jadwal-absensi', AttendanceScheduleController::class)->except(['show', 'create', 'edit'])->parameter('jadwal-absensi', 'attendanceSchedule');
         Route::post('jadwal-absensi/generate-defaults', [AttendanceScheduleController::class, 'generateDefaults'])->name('jadwal-absensi.generate-defaults');
     });
 
-    Route::middleware('permission:absensi.access')->group(function () {
+    Route::middleware(['permission:absensi.access', 'feature:absensi_sekolah'])->group(function () {
         Route::get('absensi', [AbsensiController::class, 'index'])->name('admin.absensi');
         Route::post('absensi', [AbsensiController::class, 'store'])->name('admin.absensi.store');
     });
 
-    Route::middleware('permission:laporan.access')->group(function () {
+    Route::middleware(['permission:laporan.access', 'feature:laporan'])->group(function () {
         Route::get('laporan/export-pdf', [LaporanController::class, 'exportPdf'])->name('admin.laporan.export-pdf');
         Route::get('laporan/export', [LaporanController::class, 'export'])->name('admin.laporan.export');
         Route::get('laporan', [LaporanController::class, 'index'])->name('admin.laporan');
     });
 
-    Route::middleware('permission:notifikasi.access')->group(function () {
+    Route::middleware(['permission:notifikasi.access', 'feature:inbox_notifikasi'])->group(function () {
         Route::get('notifikasi', [NotifikasiController::class, 'index'])->name('admin.notifikasi');
         Route::post('notifikasi/baca-semua', [NotifikasiController::class, 'markAllRead'])->name('admin.notifikasi.read-all');
         Route::delete('notifikasi/terbaca', [NotifikasiController::class, 'destroyRead'])->name('admin.notifikasi.destroy-read');
@@ -129,14 +129,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     });
 
     // Kartu & Album
-    Route::middleware('permission:frames.access')->group(function () {
+    Route::middleware(['permission:frames.access', 'feature:kartu_album'])->group(function () {
         Route::get('frames', [FrameController::class, 'index'])->name('admin.frames');
         Route::post('frames', [FrameController::class, 'store'])->name('admin.frames.store');
         Route::put('frames/{frame}', [FrameController::class, 'update'])->name('admin.frames.update');
         Route::delete('frames/{frame}', [FrameController::class, 'destroy'])->name('admin.frames.destroy');
     });
 
-    Route::middleware('permission:card-layouts.access')->group(function () {
+    Route::middleware(['permission:card-layouts.access', 'feature:kartu_album'])->group(function () {
         Route::get('card-layouts', [CardLayoutController::class, 'index'])->name('admin.card-layouts');
         Route::get('card-layouts/create', [CardLayoutController::class, 'create'])->name('admin.card-layouts.create');
         Route::post('card-layouts', [CardLayoutController::class, 'store'])->name('admin.card-layouts.store');
@@ -145,19 +145,19 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::delete('card-layouts/{cardLayout}', [CardLayoutController::class, 'destroy'])->name('admin.card-layouts.destroy');
     });
 
-    Route::middleware('permission:card-generation.access')->group(function () {
+    Route::middleware(['permission:card-generation.access', 'feature:kartu_album'])->group(function () {
         Route::get('card-generation', [CardGenerationController::class, 'index'])->name('admin.card-generation');
         Route::post('card-generation/generate', [CardGenerationController::class, 'generate'])->name('admin.card-generation.generate');
     });
 
-    Route::middleware('permission:album-layouts.access')->group(function () {
+    Route::middleware(['permission:album-layouts.access', 'feature:kartu_album'])->group(function () {
         Route::get('album-layouts', [AlbumLayoutController::class, 'index'])->name('admin.album-layouts');
         Route::post('album-layouts', [AlbumLayoutController::class, 'store'])->name('admin.album-layouts.store');
         Route::put('album-layouts/{albumLayout}', [AlbumLayoutController::class, 'update'])->name('admin.album-layouts.update');
         Route::delete('album-layouts/{albumLayout}', [AlbumLayoutController::class, 'destroy'])->name('admin.album-layouts.destroy');
     });
 
-    Route::middleware('permission:album-generation.access')->group(function () {
+    Route::middleware(['permission:album-generation.access', 'feature:kartu_album'])->group(function () {
         Route::get('album-generation', [AlbumGenerationController::class, 'index'])->name('admin.album-generation');
         Route::get('album-generation/download', [AlbumGenerationController::class, 'generate'])->name('admin.album-generation.generate');
     });
@@ -170,18 +170,18 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::post('pengaturan/upload-favicon', [PengaturanController::class, 'uploadFavicon'])->name('admin.pengaturan.upload-favicon');
     });
 
-    Route::middleware('permission:users.access')->group(function () {
+    Route::middleware(['permission:users.access', 'feature:manajemen_pengguna'])->group(function () {
         Route::resource('users', UserManagementController::class)->except(['show'])->names('admin.users');
     });
 
-    Route::middleware('permission:drive-config.access')->group(function () {
+    Route::middleware(['permission:drive-config.access', 'feature:integrasi_drive'])->group(function () {
         Route::get('drive-config', [DriveConfigController::class, 'index'])->name('admin.drive-config');
         Route::post('drive-config', [DriveConfigController::class, 'update'])->name('admin.drive-config.update');
         Route::post('drive-config/test', [DriveConfigController::class, 'test'])->name('admin.drive-config.test');
         Route::get('drive-config/callback', [DriveConfigController::class, 'oauthCallback'])->name('admin.drive-config.callback');
     });
 
-    Route::middleware('permission:wa-config.access')
+    Route::middleware(['permission:wa-config.access', 'feature:integrasi_whatsapp'])
         ->get('wa-config', [WaConfigController::class, 'index'])->name('admin.wa-config');
 
     // Sistem — modul yang menyentuh data lintas sekolah. Permission saja

@@ -6,6 +6,7 @@ use App\Models\NotificationLog;
 use App\Models\School;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\SchoolFeatures;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
@@ -76,6 +77,14 @@ class HandleInertiaRequests extends Middleware
                         : 0,
                 ];
             } : ['unread' => 0],
+            // Peta lengkap nyala/mati fitur sekolah aktif. Selalu utuh (semua
+            // case hadir), jadi frontend boleh memakai perbandingan ketat dan
+            // tidak perlu menebak makna key yang hilang.
+            'features' => function () {
+                $school = app()->bound('currentSchool') ? app('currentSchool') : null;
+
+                return SchoolFeatures::for($school)->toArray();
+            },
             'currentSchool' => function () {
                 // Read from singleton set by SetCurrentSchool middleware — always fresh
                 $school = app()->bound('currentSchool') ? app('currentSchool') : null;

@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PrayerType;
 use App\Models\School;
 use App\Services\Attendance\PrayerAttendanceRecorder;
 use App\Services\Attendance\StudentLookup;
-use App\Support\PrayerSettings;
+use App\Support\PrayerSchedule;
 use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,8 +15,11 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Halaman scan khusus absen sholat dzuhur, terpisah dari scanner absensi
- * sekolah supaya device di mushola tidak bisa salah mode.
+ * Halaman scan khusus absen sholat, terpisah dari scanner absensi sekolah
+ * supaya perangkat di mushola tidak bisa salah mode.
+ *
+ * Satu URL melayani Dhuha maupun Dzuhur: jenisnya ditentukan recorder dari jam
+ * scan, karena kedua jendela dijamin tidak tumpang tindih.
  */
 class PrayerScannerController extends Controller
 {
@@ -25,7 +29,7 @@ class PrayerScannerController extends Controller
 
     public function index(School $school): Response
     {
-        $settings = PrayerSettings::for($school);
+        $schedule = PrayerSchedule::for($school);
 
         return Inertia::render('scan/prayer', [
             'school' => [
@@ -34,7 +38,10 @@ class PrayerScannerController extends Controller
                 'is_active' => $school->is_active,
             ],
             'scanToken' => $school->scanner_token,
-            'prayer' => $settings->toArray(),
+            // Prop lama dipertahankan (Dzuhur) supaya halaman yang belum
+            // diperbarui dan test lama tetap jalan.
+            'prayer' => $schedule->get(PrayerType::Dzuhur)->toArray(),
+            'prayerSchedule' => $schedule->toArray(),
         ]);
     }
 
@@ -63,7 +70,9 @@ class PrayerScannerController extends Controller
         $result = $recorder->record(
             student: $student,
             recordedBy: null,
-            deviceId: 'PRAYER-SCAN',
+            // Dibiarkan null: recorder yang tahu jenis sholat mana yang kena,
+            // jadi dia juga yang memilih label perangkatnya.
+            deviceId: null,
         );
 
         // Bentuk payload sengaja disamakan dengan scanner absensi sekolah
@@ -83,8 +92,10 @@ class PrayerScannerController extends Controller
                     ? Storage::disk('public')->url($student->photo_path)
                     : null,
                 'status' => $result['attendance']?->status->label(),
+                // `type` tetap 'PRAYER' — frontend memakainya sebagai penanda
+                // mode scanner; yang jadi dinamis adalah labelnya.
                 'type' => 'PRAYER',
-                'type_label' => 'Sholat Dzuhur',
+                'type_label' => $result['attendance']?->prayer_type->label() ?? 'Sholat',
                 'time' => SchoolTime::now()->format('H:i:s'),
             ] : null,
         ], $result['success'] ? 200 : 422);

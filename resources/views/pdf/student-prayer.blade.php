@@ -28,7 +28,7 @@
 <body>
     <div class="header">
         <h1>{{ $schoolName }}</h1>
-        <h2>Laporan Absen Sholat Dzuhur</h2>
+        <h2>Laporan Absen {{ $title ?? 'Sholat Dzuhur' }}</h2>
         <p>Periode: {{ $startDate }} s/d {{ $endDate }}@if ($window) · Jendela absen {{ $window }}@endif</p>
     </div>
 
@@ -58,11 +58,38 @@
         </tbody>
     </table>
 
+    @if (!empty($types) && count($types) > 1)
+        <h3>Rincian per Jenis Sholat</h3>
+        <table class="detail" style="margin-bottom:14px">
+            <thead>
+                <tr>
+                    <th>Jenis</th>
+                    <th>Jendela</th>
+                    <th>Ikut</th>
+                    <th>Tidak Ikut</th>
+                    <th>% Kehadiran</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($types as $type)
+                    <tr>
+                        <td>{{ $type['label'] }}</td>
+                        <td>{{ $type['window'] }}</td>
+                        <td>{{ $type['summary']['hadir'] }}</td>
+                        <td>{{ $type['summary']['tidak_hadir'] }}</td>
+                        <td>{{ $type['summary']['rate'] }}%</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     <h3>Rincian Catatan</h3>
     <table class="detail">
         <thead>
             <tr>
                 <th>Tanggal</th>
+                <th>Jenis</th>
                 <th>Status</th>
                 <th>Jam</th>
                 <th>Perangkat</th>
@@ -72,12 +99,13 @@
             @forelse ($recent as $row)
                 <tr>
                     <td>{{ $row['date'] }}</td>
+                    <td>{{ $row['type_label'] ?? '-' }}</td>
                     <td>{{ $row['status_label'] }}</td>
                     <td>{{ $row['time'] ?? '-' }}</td>
                     <td>{{ $row['device_id'] ?? '-' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="4" style="text-align: center">Tidak ada catatan pada periode ini.</td></tr>
+                <tr><td colspan="5" style="text-align: center">Tidak ada catatan pada periode ini.</td></tr>
             @endforelse
         </tbody>
     </table>

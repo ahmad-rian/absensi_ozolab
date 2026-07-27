@@ -12,6 +12,8 @@ class DefaultTelegramGateway implements TelegramGateway
 {
     private const DEFAULT_TEMPLATE = "Assalamualaikum Bapak/Ibu,\n\nBerikut informasi kehadiran putra/putri Anda:\n\nNama  : {nama_siswa}\nKelas : {kelas}\nStatus : {status}\nWaktu : {tanggal}, {waktu}\nSekolah : {nama_sekolah}\n\nTerima kasih atas perhatiannya.\n\nPesan otomatis dari sistem absensi {nama_sekolah}";
 
+    private const DEFAULT_PRAYER_ABSENCE_TEMPLATE = "Assalamualaikum Bapak/Ibu,\n\nKami sampaikan bahwa putra/putri Anda belum tercatat mengikuti sholat {jenis_sholat} di sekolah selama {jumlah_hari} hari sekolah berturut-turut.\n\nNama    : {nama_siswa}\nKelas   : {kelas}\nPeriode : {tanggal_mulai} s/d {tanggal_terakhir}\nSekolah : {nama_sekolah}\n\nMohon bantuan Bapak/Ibu untuk mengingatkan ananda. Bila ada alasan tertentu (sakit, izin, atau kendala lain), silakan menghubungi wali kelas.\n\nPesan otomatis dari sistem absensi {nama_sekolah}";
+
     public function __construct(
         private readonly int $timeout = 10,
     ) {}
@@ -21,7 +23,7 @@ class DefaultTelegramGateway implements TelegramGateway
      */
     public function sendTemplate(string $chatId, string $templateKey, array $variables, ?string $schoolId = null): bool
     {
-        return $this->send($chatId, $this->buildMessage($variables, $schoolId), $schoolId);
+        return $this->send($chatId, $this->buildMessage($variables, $schoolId, $templateKey), $schoolId);
     }
 
     public function sendText(string $chatId, string $message, ?string $schoolId = null): bool
@@ -82,12 +84,23 @@ class DefaultTelegramGateway implements TelegramGateway
     }
 
     /**
+     * Pilih template berdasarkan jenis notifikasi.
+     *
+     * `default =>` menjaga perilaku lama byte-identik: tanpa cabang ini,
+     * peringatan alpa sholat akan terkirim memakai template kehadiran.
+     *
      * @param  array<string, string>  $variables
      */
-    private function buildMessage(array $variables, ?string $schoolId): string
+    private function buildMessage(array $variables, ?string $schoolId, string $templateKey = 'attendance_notify'): string
     {
         $school = $schoolId ? School::find($schoolId) : null;
-        $template = $this->normalizeTemplate((string) ($school?->getSetting('whatsapp_template_attendance') ?: self::DEFAULT_TEMPLATE));
+
+        [$settingKey, $fallback] = match ($templateKey) {
+            'prayer_absence_notify' => ['whatsapp_template_prayer_absence', self::DEFAULT_PRAYER_ABSENCE_TEMPLATE],
+            default => ['whatsapp_template_attendance', self::DEFAULT_TEMPLATE],
+        };
+
+        $template = $this->normalizeTemplate((string) ($school?->getSetting($settingKey) ?: $fallback));
 
         $message = $template;
         foreach ($variables as $key => $value) {

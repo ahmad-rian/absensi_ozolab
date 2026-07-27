@@ -66,6 +66,56 @@
         </tbody>
     </table>
 
+    @isset($punctuality)
+        <h3>Ketepatan Waktu</h3>
+        <table class="summary" style="margin-bottom:14px">
+            <thead>
+                <tr>
+                    <th>Rata-rata Jam Masuk</th>
+                    <th>Paling Awal</th>
+                    <th>Paling Akhir</th>
+                    <th>Rata-rata Telat</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ $punctuality['avg_check_in'] ?? '-' }}</td>
+                    <td>{{ $punctuality['earliest'] ?? '-' }}</td>
+                    <td>{{ $punctuality['latest'] ?? '-' }}</td>
+                    <td>{{ isset($punctuality['avg_late_minutes']) ? $punctuality['avg_late_minutes'].' menit' : '-' }}</td>
+                </tr>
+            </tbody>
+        </table>
+    @endisset
+
+    @isset($streaks)
+        <h3>Runtun &amp; Perbandingan Kelas</h3>
+        <table class="summary" style="margin-bottom:14px">
+            <thead>
+                <tr>
+                    <th>Runtun Hadir Terpanjang</th>
+                    <th>Runtun Bolos Terpanjang</th>
+                    <th>Terakhir Tidak Hadir</th>
+                    <th>Rata-rata Kelas</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ $streaks['longest_present'] }} hari</td>
+                    <td>{{ $streaks['longest_absent'] }} hari</td>
+                    <td>{{ $streaks['last_absent_date'] ?? '-' }}</td>
+                    <td>{{ isset($comparison['class_rate']) ? $comparison['class_rate'].'%' : '-' }}</td>
+                </tr>
+            </tbody>
+        </table>
+    @endisset
+
+    @if (!empty($byWeekday['worst_day']))
+        <p style="font-size:11px; margin-bottom:10px;">
+            Hari dengan keterlambatan tertinggi: <strong>{{ $byWeekday['worst_day'] }}</strong>.
+        </p>
+    @endif
+
     <h3>Rincian Catatan</h3>
     <table class="detail">
         <thead>

@@ -4,6 +4,7 @@ namespace App\Services\Notification;
 
 use App\Enums\SchoolChannelType;
 use App\Mail\AttendanceNotificationMail;
+use App\Mail\PrayerAbsenceNotificationMail;
 use App\Models\School;
 use App\Models\SchoolNotificationChannel;
 use Illuminate\Contracts\Mail\Mailer;
@@ -27,8 +28,15 @@ class DefaultEmailGateway implements EmailGateway
 
         [$mailerName, $senderEmail, $senderName] = $this->resolveMailer($schoolId);
 
+        // `default =>` menjaga perilaku lama byte-identik: tanpa cabang ini,
+        // peringatan alpa sholat terkirim sebagai tabel kehadiran.
+        $mailable = match ($templateKey) {
+            'prayer_absence_notify' => new PrayerAbsenceNotificationMail($variables, $senderEmail, $senderName),
+            default => new AttendanceNotificationMail($variables, $senderEmail, $senderName),
+        };
+
         try {
-            $this->mailer($mailerName)->to($email)->send(new AttendanceNotificationMail($variables, $senderEmail, $senderName));
+            $this->mailer($mailerName)->to($email)->send($mailable);
 
             Log::channel('whatsapp')->info('Email: sent.', ['email' => $email, 'school_id' => $schoolId]);
 

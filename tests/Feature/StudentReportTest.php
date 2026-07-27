@@ -114,3 +114,55 @@ test('reports require the siswa permission', function () {
 test('guests are redirected away from the reports', function () {
     $this->get(reportUrl('absensi', 'csv'))->assertRedirect(route('login'));
 });
+
+// ---------------------------------------------------------------- Per jenis
+
+test('the prayer csv can be narrowed to dhuha only', function () {
+    $this->admin->school->setSetting('prayer_dhuha_enabled', true);
+
+    PrayerAttendance::factory()->dhuha()->create([
+        'school_id' => $this->admin->school_id,
+        'student_id' => $this->student->id,
+        'prayer_date' => $this->day->toDateString(),
+    ]);
+
+    $body = $this->actingAs($this->admin)
+        ->get(reportUrl('sholat', 'csv').'&jenis=dhuha')
+        ->streamedContent();
+
+    expect($body)->toContain('Sholat Dhuha')
+        ->and($body)->not->toContain('Sholat Dzuhur');
+});
+
+test('the prayer csv without a jenis reports every active type', function () {
+    $this->admin->school->setSetting('prayer_dhuha_enabled', true);
+
+    PrayerAttendance::factory()->dhuha()->create([
+        'school_id' => $this->admin->school_id,
+        'student_id' => $this->student->id,
+        'prayer_date' => $this->day->toDateString(),
+    ]);
+
+    $body = $this->actingAs($this->admin)
+        ->get(reportUrl('sholat', 'csv'))
+        ->streamedContent();
+
+    expect($body)->toContain('Sholat Dhuha')
+        ->and($body)->toContain('Sholat Dzuhur');
+});
+
+test('an unknown jenis falls back to every type instead of 404', function () {
+    // Tautan lama atau salah ketik tetap harus menghasilkan laporan.
+    $this->actingAs($this->admin)
+        ->get(reportUrl('sholat', 'csv').'&jenis=ngawur')
+        ->assertOk();
+});
+
+test('the dhuha report gets its own filename', function () {
+    $this->admin->school->setSetting('prayer_dhuha_enabled', true);
+
+    $this->actingAs($this->admin)
+        ->get(reportUrl('sholat', 'pdf').'&jenis=dhuha')
+        ->assertOk()
+        ->assertHeader('content-disposition', 'attachment; filename=sholat-dhuha-20250099-'.$this->start.'-'.$this->end.'.pdf');
+});

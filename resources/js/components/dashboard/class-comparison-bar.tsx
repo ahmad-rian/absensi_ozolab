@@ -1,4 +1,5 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { TOOLTIP_STYLE } from '@/components/shared/chart-frame';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -34,12 +35,7 @@ export function ClassComparisonBar({ data }: ClassComparisonBarProps) {
                             />
                             <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} className="fill-muted-foreground" width={40} />
                             <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'hsl(var(--card))',
-                                    border: '1px solid hsl(var(--border))',
-                                    borderRadius: '0.5rem',
-                                    fontSize: '0.875rem',
-                                }}
+                                contentStyle={TOOLTIP_STYLE}
                                 formatter={(value: number) => [`${value}%`, 'Kehadiran']}
                             />
                             <Bar dataKey="rate" fill="var(--color-chart-1)" radius={[0, 4, 4, 0]} barSize={16} />
