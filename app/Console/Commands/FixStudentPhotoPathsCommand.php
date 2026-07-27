@@ -38,6 +38,15 @@ class FixStudentPhotoPathsCommand extends Command
         $moved = 0;
         $skipped = 0;
         $missing = 0;
+        $shared = 0;
+
+        // Bug `%d` yang asli membuat beberapa siswa berbagi SATU berkas —
+        // nama berkasnya cuma slug nama siswa, jadi dua "Imam Sutrisno" di
+        // sekolah berbeda menunjuk file yang sama. Karena itu berkasnya
+        // disalin, bukan dipindah; sumber lama baru dihapus setelah semua
+        // pemakainya selesai. Dengan `move()`, siswa kedua akan menemukan
+        // berkasnya sudah lenyap dan kehilangan fotonya.
+        $legacySources = [];
 
         foreach ($students as $student) {
             $old = $student->photo_path;
@@ -63,25 +72,74 @@ class FixStudentPhotoPathsCommand extends Command
                 pathinfo($old, PATHINFO_EXTENSION) ?: 'png',
             );
 
+            if (in_array($old, $legacySources, true)) {
+                $shared++;
+            }
+
+            $legacySources[] = $old;
+
             $this->line(($dryRun ? '[dry-run] ' : '')."{$old} → {$new}");
 
             if (! $dryRun) {
                 $disk->makeDirectory(dirname($new));
-                $disk->move($old, $new);
+                $disk->copy($old, $new);
                 $student->forceFill(['photo_path' => $new])->saveQuietly();
             }
 
             $moved++;
         }
 
+        $purged = $this->purgeLegacySources($legacySources, $dryRun);
+
         $this->newLine();
         $this->info(($dryRun ? '[dry-run] ' : '')."Dipindah: {$moved}, sudah rapi: {$skipped}, berkas hilang: {$missing}.");
+
+        if ($shared > 0) {
+            $this->comment("{$shared} berkas dipakai lebih dari satu siswa — disalin, bukan dipindah.");
+        }
+
+        $this->info(($dryRun ? '[dry-run] ' : '')."Berkas lama dihapus: {$purged}.");
 
         if ($dryRun) {
             $this->comment('Tidak ada berkas yang disentuh. Jalankan tanpa --dry-run untuk menerapkan.');
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Hapus berkas lama setelah seluruh pemakainya dipindahkan.
+     *
+     * Dijaga dengan pemeriksaan ulang ke database: dengan `--school=` bisa saja
+     * masih ada siswa sekolah lain yang menunjuk berkas yang sama, dan
+     * menghapusnya akan membuat foto mereka hilang.
+     *
+     * @param  array<int, string>  $sources
+     */
+    private function purgeLegacySources(array $sources, bool $dryRun): int
+    {
+        $disk = Storage::disk('public');
+        $purged = 0;
+
+        foreach (array_unique($sources) as $source) {
+            $stillUsed = Student::withoutGlobalScope('school')
+                ->where('photo_path', $source)
+                ->exists();
+
+            if ($stillUsed) {
+                $this->warn("Masih dipakai siswa lain, tidak dihapus: {$source}");
+
+                continue;
+            }
+
+            if (! $dryRun && $disk->exists($source)) {
+                $disk->delete($source);
+            }
+
+            $purged++;
+        }
+
+        return $purged;
     }
 
     /**

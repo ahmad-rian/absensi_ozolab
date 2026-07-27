@@ -92,3 +92,50 @@ test('two students with the same name in different schools no longer collide', f
         ->and($this->student->fresh()->photo_path)->toStartWith("photos/students/{$this->school->id}/")
         ->and($twin->fresh()->photo_path)->toStartWith("photos/students/{$otherSchool->id}/");
 });
+
+test('two students sharing one legacy file both keep their photo', function () {
+    // Bug `%d` yang asli membuat nama berkas hanya slug nama siswa, jadi dua
+    // "Imam Sutrisno" di sekolah berbeda menunjuk satu file yang sama. Dengan
+    // move(), siswa kedua kehilangan fotonya diam-diam.
+    $legacy = 'photos/students/1/1-imam-sutrisno.png';
+    Storage::disk('public')->put($legacy, 'x');
+
+    $twin = Student::factory()->create([
+        'school_id' => School::factory()->create()->id,
+        'full_name' => 'Imam Sutrisno',
+    ]);
+
+    foreach ([$this->student, $twin] as $student) {
+        $student->forceFill(['photo_path' => $legacy])->saveQuietly();
+    }
+
+    $this->artisan('photos:fix-paths')->assertSuccessful();
+
+    foreach ([$this->student, $twin] as $student) {
+        $moved = $student->fresh()->photo_path;
+
+        expect($moved)->not->toBe($legacy)
+            ->and(Storage::disk('public')->exists($moved))->toBeTrue();
+    }
+
+    // Sumber lama tetap dibersihkan setelah kedua pemakainya pindah.
+    expect(Storage::disk('public')->exists($legacy))->toBeFalse();
+});
+
+test('a legacy file still referenced outside the school filter is kept', function () {
+    $legacy = 'photos/students/1/1-imam-sutrisno.png';
+    Storage::disk('public')->put($legacy, 'x');
+
+    $otherSchool = School::factory()->create();
+    $twin = Student::factory()->create(['school_id' => $otherSchool->id]);
+
+    foreach ([$this->student, $twin] as $student) {
+        $student->forceFill(['photo_path' => $legacy])->saveQuietly();
+    }
+
+    // Hanya satu sekolah yang dimigrasikan; berkasnya masih dipakai sekolah lain.
+    $this->artisan('photos:fix-paths', ['--school' => $this->school->id])->assertSuccessful();
+
+    expect(Storage::disk('public')->exists($legacy))->toBeTrue()
+        ->and($twin->fresh()->photo_path)->toBe($legacy);
+});
