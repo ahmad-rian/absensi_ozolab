@@ -30,9 +30,11 @@ export function CropGuideOverlay({
     // Lebar kepala manusia kira-kira 0,72x tingginya.
     const headRx = headRy * 0.72;
 
+    // `guide.eyeLine` sengaja tidak digambar — garisnya jatuh tepat di wajah dan
+    // lebih mengganggu daripada menolong. Nilainya tetap dipakai server untuk
+    // menghitung framing.
     const lines: { y: number; label: string; accent?: boolean }[] = [
         { y: guide.headroom * 100, label: 'Ruang di atas kepala' },
-        { y: guide.eyeLine * 100, label: 'Posisi mata', accent: true },
         { y: guide.shoulderLine * 100, label: 'Bahu terlihat' },
     ];
 

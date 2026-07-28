@@ -11,6 +11,7 @@ use Google\Service\Drive\DriveFile;
 use Google\Service\Drive\Permission;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class GoogleDriveService
 {
@@ -457,6 +458,18 @@ class GoogleDriveService
     public static function studentFolderName(Student $student): string
     {
         return trim(sprintf('%s - %s', $student->nis ?: $student->id, $student->full_name));
+    }
+
+    /**
+     * Nama foto siswa di Drive.
+     *
+     * Nama berkas lokalnya sengaja acak supaya tidak bisa ditebak dari nama siswa
+     * (lihat RegisterStudentCardsJob::photoStoragePath), tapi di Drive foto itu
+     * duduk bersama kartu-kartunya, jadi ia ikut pola yang sama dengan mereka.
+     */
+    public static function studentPhotoFileName(Student $student): string
+    {
+        return sprintf('%s-%s-foto.png', Str::slug($student->full_name), $student->nis ?: $student->id);
     }
 
     /**

@@ -65,7 +65,9 @@ class RegisterStudentCardsJob implements ShouldQueue
 
         // Result #3 — the cropped photo (already produced above). Log + upload.
         if ($student->photo_path) {
-            $driveUrl = $folderId ? $this->uploadToFolder($student->photo_path, $folderId, $school) : null;
+            $driveUrl = $folderId
+                ? $this->uploadToFolder($student->photo_path, $folderId, $school, GoogleDriveService::studentPhotoFileName($student))
+                : null;
             CardGenerationLog::create([
                 'school_id' => $school->id,
                 'student_id' => $student->id,
@@ -219,11 +221,11 @@ class RegisterStudentCardsJob implements ShouldQueue
         }
     }
 
-    private function uploadToFolder(string $storagePath, string $folderId, School $school): ?string
+    private function uploadToFolder(string $storagePath, string $folderId, School $school, ?string $fileName = null): ?string
     {
         try {
             $service = GoogleDriveService::forSchool($school->driveConfig);
-            $driveFile = $service->uploadFile(Storage::disk('public')->path($storagePath), basename($storagePath), $folderId, 'image/png');
+            $driveFile = $service->uploadFile(Storage::disk('public')->path($storagePath), $fileName ?: basename($storagePath), $folderId, 'image/png');
 
             return $service->makePublic($driveFile->getId());
         } catch (\Throwable $e) {

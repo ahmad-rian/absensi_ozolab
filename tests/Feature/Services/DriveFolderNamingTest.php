@@ -19,6 +19,28 @@ test('hasil generate siswa memakai folder kelas dan nama siswa', function () {
     expect(GoogleDriveService::studentFolderName($student))->toBe('12345 - Ahmad Rian');
 });
 
+test('foto siswa di Drive memakai pola nama yang sama dengan kartunya', function () {
+    $school = School::factory()->create();
+    $student = Student::factory()->create([
+        'school_id' => $school->id,
+        'nis' => '0834314',
+        'full_name' => 'Harlan Ferguson',
+    ]);
+
+    expect(GoogleDriveService::studentPhotoFileName($student))->toBe('harlan-ferguson-0834314-foto.png');
+});
+
+test('nama foto di Drive jatuh ke ULID saat siswa belum punya NIS', function () {
+    $school = School::factory()->create();
+    $student = Student::factory()->create([
+        'school_id' => $school->id,
+        'nis' => null,
+        'full_name' => "Ana O'Brien",
+    ]);
+
+    expect(GoogleDriveService::studentPhotoFileName($student))->toBe('ana-obrien-'.$student->id.'-foto.png');
+});
+
 test('siswa tanpa kelas dan tanpa NIS tetap dapat nama folder yang unik', function () {
     $school = School::factory()->create();
     $student = Student::factory()->create([

@@ -191,6 +191,17 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
             if (!data.school_id) {
                 e.school_id = 'Pilih sekolah terlebih dahulu.';
             }
+        } else if (current === 2) {
+            // Foto wajib: tanpa foto, kartu dan lembar pas foto tidak digenerate
+            // sama sekali (lihat StudentRegistrationController::store).
+            // `photo_key` — bukan `photoPreview` — yang dipakai sebagai penanda
+            // karena ia ikut tersimpan bersama draf form, jadi kembali ke langkah
+            // ini setelah halaman dimuat ulang tidak membuat user terkunci.
+            if (!data.photo_drive_filename.trim()) {
+                e.photo_drive_filename = 'Nama file foto wajib diisi.';
+            } else if (!data.photo_key) {
+                e.photo_drive_filename = 'Tunggu sampai foto muncul sebelum lanjut.';
+            }
         } else if (current === 3) {
             if (!data.full_name.trim()) {
                 e.full_name = 'Nama lengkap wajib diisi.';
@@ -240,7 +251,6 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                 e.parent_relation = 'Pilih hubungan orang tua.';
             }
         }
-        // step 2 (Foto) has no required fields — optional
 
         return e;
     }
@@ -958,6 +968,18 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                         Ketik nama file foto yang sudah diupload ke folder Foto Siswa di Google Drive — foto muncul otomatis untuk atur posisi crop wajah.
                                     </p>
 
+                                    {!data.photo_key && !previewError && (
+                                        <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                                            Foto wajib. Tombol Lanjut aktif setelah foto muncul di bawah.
+                                        </p>
+                                    )}
+
+                                    {err('photo_drive_filename') && (
+                                        <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                                            {err('photo_drive_filename')}
+                                        </p>
+                                    )}
+
                                     {previewError && (
                                         <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
                                             <AlertTriangle className="size-4 shrink-0" />
@@ -1073,11 +1095,7 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                         <Button
                             type="button"
                             onClick={goNext}
-                            disabled={
-                                step === 2 &&
-                                (previewLoading ||
-                                    (data.photo_drive_filename.trim() !== '' && !photoPreview && !previewError))
-                            }
+                            disabled={step === 2 && (previewLoading || !data.photo_key)}
                             className="h-11 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
                         >
                             {step === 2 && previewLoading && <Loader2 className="size-4 animate-spin" />}
