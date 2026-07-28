@@ -23,11 +23,13 @@ type DriveConfig = {
 type Props = {
     driveConfig: DriveConfig;
     hasGlobalCredentials: boolean;
+    isSuperAdmin: boolean;
+    platformRootFolderId: string | null;
 };
 
-export default function DriveConfigIndex({ driveConfig, hasGlobalCredentials }: Props) {
+export default function DriveConfigIndex({ driveConfig, hasGlobalCredentials, isSuperAdmin, platformRootFolderId }: Props) {
     const { data, setData, post, processing } = useForm({
-        root_folder_id: driveConfig?.root_folder_id || '',
+        platform_root_folder_id: platformRootFolderId || '',
         cards_folder_id: driveConfig?.cards_folder_id || '',
         albums_folder_id: driveConfig?.albums_folder_id || '',
         parents_folder_id: driveConfig?.parents_folder_id || '',
@@ -165,21 +167,32 @@ export default function DriveConfigIndex({ driveConfig, hasGlobalCredentials }: 
                                 Konfigurasi Folder
                             </CardTitle>
                             <CardDescription>
-                                Paste link folder Google Drive atau Folder ID. Pastikan folder sudah di-share ke service account.
+                                Subfolder dibuat otomatis di dalam folder sekolah ini. Isi manual hanya jika ingin mengarahkan ke folder
+                                lain — paste link Google Drive atau Folder ID.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="rounded-lg border p-4">
-                                <div className="mb-3">
-                                    <Label className="text-sm font-semibold">Root Folder (opsional)</Label>
-                                    <p className="text-muted-foreground text-xs">Folder induk yang menampung semua subfolder sekolah ini.</p>
+                            {isSuperAdmin && (
+                                <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-900 dark:bg-blue-950/30">
+                                    <div className="mb-3">
+                                        <Label className="text-sm font-semibold">Root Folder Platform</Label>
+                                        <p className="text-muted-foreground text-xs">
+                                            Folder induk di Drive Ozolab. Berlaku untuk <b>semua sekolah</b> — tiap sekolah otomatis dapat
+                                            subfoldernya sendiri di dalam sini. Hanya Super Admin yang bisa mengubah.
+                                        </p>
+                                    </div>
+                                    <Input
+                                        value={data.platform_root_folder_id}
+                                        onChange={(e) => setData('platform_root_folder_id', parseFolderId(e.target.value))}
+                                        placeholder="Paste link atau ID folder..."
+                                    />
+                                    {driveConfig?.root_folder_id && (
+                                        <p className="text-muted-foreground mt-2 text-xs">
+                                            Folder sekolah ini: <code>{driveConfig.root_folder_id}</code>
+                                        </p>
+                                    )}
                                 </div>
-                                <Input
-                                    value={data.root_folder_id}
-                                    onChange={(e) => setData('root_folder_id', parseFolderId(e.target.value))}
-                                    placeholder="Paste link atau ID folder..."
-                                />
-                            </div>
+                            )}
 
                             {folders.map((f) => (
                                 <div key={f.key} className="rounded-lg border p-4">
@@ -235,12 +248,16 @@ export default function DriveConfigIndex({ driveConfig, hasGlobalCredentials }: 
                     </CardHeader>
                     <CardContent>
                         <ol className="text-muted-foreground list-inside list-decimal space-y-2 text-sm">
-                            <li>Buat 3 folder di Google Drive (Kartu Siswa, Album Foto, Orang Tua)</li>
-                            <li><b>Share</b> ketiga folder ke email service account (minta ke Super Admin) dengan akses <b>Editor</b></li>
-                            <li>Buka folder → copy <b>link</b> atau <b>Folder ID</b> dari URL</li>
-                            <li>Paste link di form di atas — ID otomatis diambil dari URL</li>
-                            <li>Centang <b>Aktifkan</b> lalu klik <b>Simpan</b></li>
-                            <li>Klik <b>Test Koneksi</b> untuk memastikan terhubung</li>
+                            <li>Centang <b>Aktifkan Google Drive untuk sekolah ini</b> lalu klik <b>Simpan</b></li>
+                            <li>Klik <b>Test Koneksi</b> — folder sekolah beserta subfolder Kartu Siswa, Album Foto, Orang Tua, dan Pas Foto dibuat otomatis</li>
+                            <li>Kotak status di atas berubah hijau kalau folder sudah siap</li>
+                            <li>Isi Folder ID manual hanya kalau ingin mengarahkan hasil generate ke folder Drive lain</li>
+                            {isSuperAdmin && (
+                                <li>
+                                    <b>Super Admin:</b> Root Folder Platform hanya diisi sekali dan dipakai semua sekolah — jangan ganti kalau
+                                    sudah ada file di dalamnya
+                                </li>
+                            )}
                         </ol>
                     </CardContent>
                 </Card>

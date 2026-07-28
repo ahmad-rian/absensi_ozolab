@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\SchoolDriveConfig;
+use App\Models\Setting;
+use App\Models\Student;
 use Google\Client as GoogleClient;
 use Google\Service\Drive as GoogleDrive;
 use Google\Service\Drive\DriveFile;
@@ -12,7 +14,12 @@ use Illuminate\Support\Facades\Log;
 
 class GoogleDriveService
 {
+    public const PLATFORM_ROOT_SETTING_KEY = 'drive_platform_root_folder_id';
+
     private GoogleDrive $drive;
+
+    /** @var array<string, string> Cache folder per instance supaya batch tidak menembak Drive berulang kali. */
+    private array $folderCache = [];
 
     public function __construct(private SchoolDriveConfig $config)
     {
@@ -104,12 +111,36 @@ class GoogleDriveService
     }
 
     /**
+     * Root folder milik platform (Drive Ozolab) yang menampung folder semua sekolah.
+     *
+     * Hanya Super Admin yang boleh mengubahnya — sekolah tidak pernah menyentuh
+     * folder ini, mereka cuma dapat subfolder di dalamnya.
+     */
+    public static function platformRootFolderId(): ?string
+    {
+        $fromSetting = Setting::getValue(self::PLATFORM_ROOT_SETTING_KEY);
+
+        if (is_string($fromSetting) && $fromSetting !== '') {
+            return $fromSetting;
+        }
+
+        $fromEnv = config('services.google.drive_root_folder_id');
+
+        return is_string($fromEnv) && $fromEnv !== '' ? $fromEnv : null;
+    }
+
+    public static function setPlatformRootFolderId(?string $folderId): void
+    {
+        Setting::setValue(self::PLATFORM_ROOT_SETTING_KEY, $folderId ?: null);
+    }
+
+    /**
      * Test the connection by listing files in root folder.
      */
     public function testConnection(): bool
     {
         try {
-            $folderId = $this->config->root_folder_id ?: 'root';
+            $folderId = $this->config->root_folder_id ?: self::platformRootFolderId() ?: 'root';
             $this->drive->files->listFiles([
                 'q' => "'{$folderId}' in parents and trashed = false",
                 'pageSize' => 1,
@@ -319,6 +350,12 @@ class GoogleDriveService
      */
     public function findOrCreateFolder(string $name, string $parentId): string
     {
+        $cacheKey = $parentId.'|'.$name;
+
+        if (isset($this->folderCache[$cacheKey])) {
+            return $this->folderCache[$cacheKey];
+        }
+
         $escapedName = str_replace("'", "\\'", $name);
 
         $result = $this->drive->files->listFiles([
@@ -331,11 +368,28 @@ class GoogleDriveService
 
         $files = $result->getFiles();
 
-        if (count($files) > 0) {
-            return $files[0]->getId();
-        }
+        return $this->folderCache[$cacheKey] = count($files) > 0
+            ? $files[0]->getId()
+            : $this->createFolder($name, $parentId);
+    }
 
-        return $this->createFolder($name, $parentId);
+    /**
+     * Pindahkan file/folder ke parent lain. Dipakai saat merapikan struktur folder
+     * lama yang subfoldernya masih menempel langsung di root platform.
+     */
+    public function moveFile(string $fileId, string $newParentId): void
+    {
+        $current = $this->drive->files->get($fileId, [
+            'fields' => 'parents',
+            'supportsAllDrives' => true,
+        ]);
+
+        $this->drive->files->update($fileId, new DriveFile, [
+            'addParents' => $newParentId,
+            'removeParents' => implode(',', $current->getParents() ?: []),
+            'fields' => 'id, parents',
+            'supportsAllDrives' => true,
+        ]);
     }
 
     /**
@@ -349,20 +403,80 @@ class GoogleDriveService
     }
 
     /**
+     * Pastikan sekolah punya folder sendiri di dalam root platform.
+     *
+     * Sekolah tidak mengatur ini lewat UI: folder dibuat otomatis dengan nama
+     * sekolah di bawah root Ozolab, lalu ID-nya disimpan di `root_folder_id`.
+     */
+    public function ensureSchoolRoot(): ?string
+    {
+        if ($this->config->root_folder_id) {
+            return $this->config->root_folder_id;
+        }
+
+        $platformRootId = self::platformRootFolderId();
+
+        if (! $platformRootId) {
+            return null;
+        }
+
+        $schoolName = $this->config->school?->name ?: 'Sekolah '.$this->config->school_id;
+        $folderId = $this->findOrCreateFolder($schoolName, $platformRootId);
+
+        $this->config->update(['root_folder_id' => $folderId]);
+
+        return $folderId;
+    }
+
+    /**
+     * Folder tujuan semua hasil generate milik satu siswa:
+     * `{Root Platform}/{Sekolah}/{Kelas}/{NIS - Nama}`.
+     *
+     * Album foto tidak lewat sini — album dibuat per sekolah per batch.
+     */
+    public function studentFolderId(Student $student): ?string
+    {
+        $schoolRootId = $this->ensureSchoolRoot();
+
+        if (! $schoolRootId) {
+            return null;
+        }
+
+        $student->loadMissing('classroom');
+
+        $classFolderId = $this->findOrCreateFolder(self::classFolderName($student), $schoolRootId);
+
+        return $this->findOrCreateFolder(self::studentFolderName($student), $classFolderId);
+    }
+
+    public static function classFolderName(Student $student): string
+    {
+        return $student->classroom?->name ?: 'Tanpa Kelas';
+    }
+
+    public static function studentFolderName(Student $student): string
+    {
+        return trim(sprintf('%s - %s', $student->nis ?: $student->id, $student->full_name));
+    }
+
+    /**
      * Ensure all subfolders exist. Auto-creates from root if individual IDs are missing.
      *
      * @return array{cards_folder_id: string|null, albums_folder_id: string|null, parents_folder_id: string|null, sheets_folder_id: string|null}
      */
     public function ensureSubfolders(): array
     {
-        $rootId = $this->config->root_folder_id;
+        $rootId = $this->ensureSchoolRoot();
         $updates = [];
 
+        // Hasil generate per siswa masuk ke `{Kelas}/{NIS - Nama}` lewat
+        // studentFolderId(). Yang tersisa di sini hanya folder tingkat sekolah:
+        // album per batch, inbox foto dari orang tua, dan penampung kartu yang
+        // tidak terikat siswa (kartu bebas).
         $folderMap = [
             'cards_folder_id' => 'Kartu Siswa',
             'albums_folder_id' => 'Album Foto',
             'parents_folder_id' => 'Orang Tua',
-            'sheets_folder_id' => 'Pas Foto',
         ];
 
         foreach ($folderMap as $field => $folderName) {

@@ -87,9 +87,10 @@ class GenerateDynamicCardJob implements ShouldQueue
 
         try {
             $service = GoogleDriveService::forSchool($config);
+            $service->ensureSubfolders();
             $fullPath = Storage::disk('public')->path($localPath);
             $fileName = sprintf('%s-%s.png', Str::slug($form->name), $submission->id);
-            $folderId = $config->cards_folder_id ?: $config->root_folder_id ?: null;
+            $folderId = $config->fresh()->cards_folder_id ?: $config->root_folder_id ?: null;
 
             $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, 'image/png');
             $submission->drive_file_id = $driveFile->getId();

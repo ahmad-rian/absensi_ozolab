@@ -157,7 +157,11 @@ class CardGeneratorService
         $school = School::with('driveConfig')->find($log->school_id);
         $driveConfig = $school?->driveConfig;
 
-        if (! $driveConfig || ! $driveConfig->is_active || ! $driveConfig->service_account_json) {
+        if (! $driveConfig || ! $driveConfig->is_active) {
+            return;
+        }
+
+        if (! GoogleDriveService::hasGlobalCredentials() && ! $driveConfig->service_account_json) {
             return;
         }
 
@@ -168,7 +172,11 @@ class CardGeneratorService
             $fullPath = Storage::disk('public')->path($filePath);
             $fileName = basename($filePath);
 
-            $driveFile = $service->uploadFile($fullPath, $fileName, $driveConfig->cards_folder_id, 'image/png');
+            $log->loadMissing('student');
+            $folderId = ($log->student ? $service->studentFolderId($log->student) : null)
+                ?: $driveConfig->fresh()->cards_folder_id;
+
+            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, 'image/png');
             $driveUrl = $service->makePublic($driveFile->getId());
 
             $log->update([

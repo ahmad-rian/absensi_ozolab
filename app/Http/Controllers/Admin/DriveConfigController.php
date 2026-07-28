@@ -30,13 +30,15 @@ class DriveConfigController extends Controller
                 'last_tested_at' => $config->last_tested_at?->format('d M Y H:i'),
             ] : null,
             'hasGlobalCredentials' => GoogleDriveService::hasGlobalCredentials(),
+            'isSuperAdmin' => auth()->user()->isSuperAdmin(),
+            'platformRootFolderId' => GoogleDriveService::platformRootFolderId(),
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'root_folder_id' => ['nullable', 'string', 'max:255'],
+            'platform_root_folder_id' => ['nullable', 'string', 'max:255'],
             'cards_folder_id' => ['nullable', 'string', 'max:255'],
             'albums_folder_id' => ['nullable', 'string', 'max:255'],
             'parents_folder_id' => ['nullable', 'string', 'max:255'],
@@ -46,7 +48,13 @@ class DriveConfigController extends Controller
         $school = School::findOrFail(auth()->user()->school_id);
         $config = $school->driveConfig ?? new SchoolDriveConfig(['school_id' => $school->id]);
 
-        $config->root_folder_id = $validated['root_folder_id'] ?? $config->root_folder_id;
+        // Root folder platform adalah milik Ozolab, dipakai bersama semua sekolah.
+        // Folder sekolah sendiri (`root_folder_id`) dibuat otomatis di dalamnya
+        // oleh GoogleDriveService::ensureSchoolRoot(), bukan diisi manual.
+        if (auth()->user()->isSuperAdmin() && array_key_exists('platform_root_folder_id', $validated)) {
+            GoogleDriveService::setPlatformRootFolderId($validated['platform_root_folder_id']);
+        }
+
         $config->cards_folder_id = $validated['cards_folder_id'] ?? $config->cards_folder_id;
         $config->albums_folder_id = $validated['albums_folder_id'] ?? $config->albums_folder_id;
         $config->parents_folder_id = $validated['parents_folder_id'] ?? $config->parents_folder_id;
@@ -75,8 +83,15 @@ class DriveConfigController extends Controller
             return to_route('admin.drive-config');
         }
 
+        if (! $config->root_folder_id && ! GoogleDriveService::platformRootFolderId()) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Root folder platform belum diset oleh Super Admin.']);
+
+            return to_route('admin.drive-config');
+        }
+
         try {
             $service = GoogleDriveService::forSchool($config);
+            $service->ensureSubfolders();
             $success = $service->testConnection();
 
             $config->update(['last_tested_at' => now()]);

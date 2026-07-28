@@ -203,7 +203,7 @@ class RegisterStudentCardsJob implements ShouldQueue
     private function resolveStudentDriveFolder(Student $student, School $school): ?string
     {
         $driveConfig = $school->driveConfig;
-        if (! $driveConfig || ! $driveConfig->is_active || ! $driveConfig->cards_folder_id) {
+        if (! $driveConfig || ! $driveConfig->is_active) {
             return null;
         }
         if (! GoogleDriveService::hasGlobalCredentials() && ! $driveConfig->service_account_json) {
@@ -211,12 +211,7 @@ class RegisterStudentCardsJob implements ShouldQueue
         }
 
         try {
-            $service = GoogleDriveService::forSchool($driveConfig);
-            $student->loadMissing('classroom');
-            $classFolderId = $service->findOrCreateFolder($student->classroom?->name ?? 'Tanpa Kelas', $driveConfig->cards_folder_id);
-            $studentFolderName = sprintf('%s - %s', $student->nis ?? $student->id, $student->full_name);
-
-            return $service->findOrCreateFolder($studentFolderName, $classFolderId);
+            return GoogleDriveService::forSchool($driveConfig)->studentFolderId($student);
         } catch (\Throwable $e) {
             Log::warning('Failed to create student Drive folder', ['error' => $e->getMessage()]);
 

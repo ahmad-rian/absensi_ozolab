@@ -64,7 +64,9 @@ class GeneratePhotoSheetJob implements ShouldQueue
                 $drive = GoogleDriveService::forSchool($driveConfig);
                 $drive->ensureSubfolders();
 
-                $folderId = $driveConfig->sheets_folder_id ?: $driveConfig->root_folder_id;
+                $folderId = $drive->studentFolderId($student)
+                    ?: $driveConfig->sheets_folder_id
+                    ?: $driveConfig->root_folder_id;
                 $driveFile = $drive->uploadFile(Storage::disk('public')->path($path), basename($path), $folderId, 'image/png');
                 $driveUrl = $drive->makePublic($driveFile->getId());
 
