@@ -29,10 +29,13 @@ return new class extends Migration
 
             // Satu siswa hanya boleh punya satu kelas per tahun ajaran; unique
             // ini juga yang membuat kenaikan kelas aman dijalankan dua kali.
-            $table->unique(['student_id', 'academic_year_id']);
+            $table->unique(['student_id', 'academic_year_id'], 'sch_student_year_unique');
 
             // Daftar "siswa kelas berjalan" per sekolah adalah query terpanas.
-            $table->index(['school_id', 'academic_year_id', 'is_current']);
+            // Nama index ditulis eksplisit dan pendek: nama otomatis Laravel
+            // untuk tabel ini 67 karakter, melewati batas 64 karakter MySQL.
+            // SQLite tidak menegakkan batas itu sehingga test tetap hijau.
+            $table->index(['school_id', 'academic_year_id', 'is_current'], 'sch_school_year_current_index');
         });
 
         $this->backfillFromCurrentClassrooms();
