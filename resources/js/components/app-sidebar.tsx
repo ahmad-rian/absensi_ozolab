@@ -15,6 +15,7 @@ import {
     History,
     LayoutGrid,
     LayoutTemplate,
+    LifeBuoy,
     MessageSquare,
     Printer,
     School,
@@ -106,6 +107,15 @@ const sections: NavSection[] = [
         ],
     },
     {
+        label: 'Bantuan',
+        items: [
+            // Tanpa permission dan tanpa feature: isinya yang menyesuaikan role
+            // dan fitur sekolah, bukan menunya. Admin yang menu-nya banyak
+            // dimatikan tetap butuh tahu cara memakai sisanya.
+            { title: 'Panduan', href: '/admin/panduan', icon: LifeBuoy, permission: '' },
+        ],
+    },
+    {
         label: 'Integrasi & Pengaturan',
         items: [
             { title: 'Gateway Notifikasi', href: '/admin/notification-gateways', icon: MessageSquare, permission: 'notification-gateways.access' },
@@ -138,7 +148,7 @@ export function AppSidebar() {
             items
                 // `isSuperAdmin` hanya melompati cek permission, BUKAN cek
                 // fitur — sama persis dengan aturan di middleware `feature:`.
-                .filter((item) => (isSuperAdmin || granted.includes(item.permission)) && featureOn(item.feature))
+                .filter((item) => (item.permission === '' || isSuperAdmin || granted.includes(item.permission)) && featureOn(item.feature))
                 .map((item) =>
                     item.href === '/admin/notifikasi' ? { ...item, badge: unread } : item,
                 );

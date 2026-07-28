@@ -8,9 +8,15 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
+        // `bg-card` supaya alert tetap terbedakan saat diletakkan di atas
+        // halaman ber-`bg-background`.
+        default: "bg-card text-card-foreground",
+        // `--destructive-foreground` bernilai putih murni di kedua tema — warna
+        // itu untuk teks DI ATAS latar merah. Varian ini tidak pernah memasang
+        // latarnya, jadi hasilnya putih di atas putih dan pesan galat login
+        // maupun peringatan halaman admin tidak terbaca sama sekali.
         destructive:
-          "text-destructive-foreground [&>svg]:text-current *:data-[slot=alert-description]:text-destructive-foreground/80",
+          "border-destructive/30 bg-destructive/10 text-destructive [&>svg]:text-current *:data-[slot=alert-description]:text-destructive/90",
       },
     },
     defaultVariants: {

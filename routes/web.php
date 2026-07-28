@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\NotificationGatewayController;
 use App\Http\Controllers\Admin\NotifikasiController;
 use App\Http\Controllers\Admin\OrangTuaController;
+use App\Http\Controllers\Admin\PanduanController;
 use App\Http\Controllers\Admin\PengaturanController;
 use App\Http\Controllers\Admin\PhotoSheetController;
 use App\Http\Controllers\Admin\RolePermissionController;
@@ -84,6 +85,12 @@ Route::middleware(['auth'])->post('admin/switch-school', function (Request $requ
 // Admin routes — akses ditentukan per modul lewat permission `<modul>.access`.
 // SUPER_ADMIN lolos semua lewat Gate::before (AppServiceProvider).
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
+    // Panduan sengaja tanpa `permission:` — ia bukan modul, dan setiap pengguna
+    // yang bisa masuk berhak tahu cara memakai bagian yang boleh dia buka.
+    // Penyaringan isinya terjadi di klien memakai permission dan fitur yang
+    // sudah dibagikan lewat shared props.
+    Route::get('panduan', [PanduanController::class, 'index'])->name('admin.panduan');
+
     Route::middleware('permission:dashboard.access')
         ->get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
