@@ -1,4 +1,6 @@
+import { BellRing, ScanLine, ShieldCheck } from 'lucide-react';
 import { Bullets, Menu, Note, Para, Pitfall, Steps } from '@/components/panduan/guide-section';
+import { HighlightCards } from '@/components/panduan/highlight-cards';
 
 export function ApaIni() {
     return (
@@ -9,6 +11,26 @@ export function ApaIni() {
                 absen sholat berjamaah, pencetakan kartu, dan laporan kehadiran.
             </Para>
             <Para>Satu aplikasi melayani banyak sekolah sekaligus. Data tiap sekolah terpisah penuh.</Para>
+
+            <HighlightCards
+                items={[
+                    {
+                        icon: ScanLine,
+                        title: 'Scan di Gerbang',
+                        description: 'Siswa menempelkan QR; masuk atau pulang ditentukan sendiri dari jam.',
+                    },
+                    {
+                        icon: BellRing,
+                        title: 'Kabar ke Orang Tua',
+                        description: 'WhatsApp, Telegram, atau email terkirim otomatis tiap kali siswa scan.',
+                    },
+                    {
+                        icon: ShieldCheck,
+                        title: 'Data Terpisah',
+                        description: 'Tiap sekolah hanya bisa melihat datanya sendiri, tanpa kecuali.',
+                    },
+                ]}
+            />
 
             <Bullets>
                 <li>

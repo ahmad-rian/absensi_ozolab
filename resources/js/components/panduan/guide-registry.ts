@@ -14,6 +14,12 @@ export type GuideTopic = {
     superAdminOnly?: boolean;
 };
 
+/** Topik yang sudah disaring dan diberi nomor urut untuk navigasi bertahap. */
+export type FlatTopic = GuideTopic & {
+    chapterTitle: string;
+    step: number;
+};
+
 export type GuideChapter = {
     id: string;
     title: string;

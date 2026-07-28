@@ -1,7 +1,9 @@
 import { Head, usePage } from '@inertiajs/react';
-import { BookOpen, Search } from 'lucide-react';
-import { useMemo, useState, type ReactNode } from 'react';
-import { GUIDE_CHAPTERS, type GuideTopic } from '@/components/panduan/guide-registry';
+import { Search } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { GuideNav } from '@/components/panduan/guide-nav';
+import { GUIDE_CHAPTERS, type FlatTopic, type GuideTopic } from '@/components/panduan/guide-registry';
+import { GuideToc } from '@/components/panduan/guide-toc';
 import { AbsenSholat, AbsensiHarian, ImporSiswa, KenaikanKelas, SekolahBaru, TahunAjaran } from '@/components/panduan/sections/alur';
 import { DaftarFitur, KeluhanUmum, TeksOrangTua } from '@/components/panduan/sections/lainnya';
 import {
@@ -23,9 +25,7 @@ import {
     ModulWhatsapp,
 } from '@/components/panduan/sections/modul';
 import { ApaIni, LangkahPertama } from '@/components/panduan/sections/mulai';
-import { PageHeader } from '@/components/shared/page-header';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { dashboard } from '@/routes';
 import type { SchoolFeatureKey, SchoolFeatureMap } from '@/types';
@@ -62,20 +62,22 @@ const CONTENT: Record<string, ReactNode> = {
 };
 
 export default function PanduanIndex() {
-    const { auth, features } = usePage().props as unknown as {
+    const page = usePage();
+    const { auth, features } = page.props as unknown as {
         auth: { user: { roles?: string[]; permissions?: string[] } | null };
         features?: Partial<SchoolFeatureMap>;
     };
 
-    const [query, setQuery] = useState('');
-
     const isSuperAdmin = (auth?.user?.roles ?? []).includes('SUPER_ADMIN');
     const granted = auth?.user?.permissions ?? [];
 
-    const chapters = useMemo(() => {
+    /**
+     * Topik diratakan dan dinomori SETELAH disaring, jadi "Langkah 3 dari 12"
+     * selalu sesuai dengan yang benar-benar terlihat pembacanya.
+     */
+    const topics = useMemo<FlatTopic[]>(() => {
         // Aturan penyaringan PERSIS sama dengan app-sidebar.tsx: super admin
-        // melompati cek permission tapi TIDAK melompati cek fitur, sejalan
-        // dengan middleware `feature:`.
+        // melompati cek permission tapi TIDAK melompati cek fitur.
         const featureOn = (key?: SchoolFeatureKey) =>
             key === undefined || features === undefined || features[key] !== false;
 
@@ -91,86 +93,142 @@ export default function PanduanIndex() {
             return featureOn(topic.feature);
         };
 
-        const needle = query.trim().toLowerCase();
+        let step = 0;
 
-        const matches = (topic: GuideTopic) =>
-            needle === '' ||
-            topic.title.toLowerCase().includes(needle) ||
-            topic.summary.toLowerCase().includes(needle) ||
-            topic.keywords.some((keyword) => keyword.includes(needle));
+        return GUIDE_CHAPTERS.flatMap((chapter) =>
+            chapter.topics.filter(allowed).map((topic) => {
+                step += 1;
 
-        return GUIDE_CHAPTERS.map((chapter) => ({
-            ...chapter,
-            topics: chapter.topics.filter((topic) => allowed(topic) && matches(topic)),
-        })).filter((chapter) => chapter.topics.length > 0);
-    }, [features, granted, isSuperAdmin, query]);
+                return { ...topic, chapterTitle: chapter.title, step };
+            }),
+        );
+    }, [features, granted, isSuperAdmin]);
 
-    const total = chapters.reduce((sum, chapter) => sum + chapter.topics.length, 0);
+    const [activeId, setActiveId] = useState(() => initialTopic(page.url, topics));
+    const [query, setQuery] = useState('');
+
+    const active = topics.find((topic) => topic.id === activeId) ?? topics[0];
+
+    const select = useCallback((id: string) => {
+        setActiveId(id);
+
+        // Topik disimpan di query string supaya bisa dibagikan dan tidak hilang
+        // saat halaman dimuat ulang. replaceState, bukan push: berpindah langkah
+        // bukan navigasi, dan tombol Back harus keluar dari Panduan.
+        const url = new URL(window.location.href);
+        url.searchParams.set('topik', id);
+        window.history.replaceState({}, '', url.toString());
+    }, []);
+
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [activeId]);
+
+    const needle = query.trim().toLowerCase();
+    const visible =
+        needle === ''
+            ? topics
+            : topics.filter(
+                  (topic) =>
+                      topic.title.toLowerCase().includes(needle) ||
+                      topic.summary.toLowerCase().includes(needle) ||
+                      topic.keywords.some((keyword) => keyword.includes(needle)),
+              );
 
     return (
         <>
             <Head title="Panduan" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
-                <PageHeader
-                    title="Panduan"
-                    description="Petunjuk pemakaian aplikasi, disesuaikan dengan hak akses dan fitur sekolah Anda."
-                />
+            <div className="flex h-full flex-1 flex-col gap-8 p-4 md:p-6">
+                <header className="max-w-3xl space-y-3">
+                    <p className="text-primary text-xs font-semibold tracking-[0.2em] uppercase">
+                        Pusat Bantuan
+                    </p>
+                    <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+                        Panduan Absensi Ozolab
+                    </h1>
+                    <p className="text-muted-foreground leading-relaxed">
+                        Pelajari setiap fitur dan alur kerja aplikasi secara berurutan — dari menyiapkan
+                        sekolah, mencatat kehadiran harian, sampai membaca laporan. Isinya menyesuaikan hak
+                        akses dan fitur yang aktif di sekolah Anda.
+                    </p>
+                </header>
 
-                <div className="relative max-w-md">
-                    <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                    <Input
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Cari topik, misal: impor, sholat, notifikasi"
-                        className="pl-9"
-                    />
-                </div>
-
-                {total === 0 ? (
+                {topics.length === 0 ? (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Tidak ada topik yang cocok</CardTitle>
-                            <CardDescription>
-                                Coba kata kunci lain, atau kosongkan pencarian untuk melihat semua topik.
-                            </CardDescription>
+                            <CardTitle>Belum ada topik untuk akun ini</CardTitle>
                         </CardHeader>
+                        <CardContent className="text-muted-foreground text-sm">
+                            Hubungi admin sekolah Anda untuk meminta hak akses.
+                        </CardContent>
                     </Card>
                 ) : (
-                    chapters.map((chapter) => (
-                        <Card key={chapter.id}>
+                    <div className="grid gap-6 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+                        <div className="space-y-3">
+                            <div className="relative">
+                                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                                <Input
+                                    value={query}
+                                    onChange={(event) => setQuery(event.target.value)}
+                                    placeholder="Cari topik…"
+                                    className="pl-9"
+                                />
+                            </div>
+
+                            {visible.length === 0 ? (
+                                <Card>
+                                    <CardContent className="text-muted-foreground p-4 text-sm">
+                                        Tidak ada topik yang cocok.
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <GuideToc topics={visible} activeId={active.id} onSelect={select} />
+                            )}
+                        </div>
+
+                        <Card>
                             <CardHeader>
-                                <div className="flex items-center gap-2">
-                                    <BookOpen className="size-5 text-blue-600" />
-                                    <CardTitle>{chapter.title}</CardTitle>
-                                </div>
-                                <CardDescription>{chapter.description}</CardDescription>
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                                    {active.chapterTitle}
+                                </p>
+                                <CardTitle className="text-xl">
+                                    {active.step}. {active.title}
+                                </CardTitle>
+                                <p className="text-muted-foreground text-sm">{active.summary}</p>
                             </CardHeader>
-                            <CardContent>
-                                <Accordion type="single" collapsible className="w-full">
-                                    {chapter.topics.map((topic) => (
-                                        <AccordionItem key={topic.id} value={topic.id}>
-                                            <AccordionTrigger>
-                                                <span className="flex flex-col items-start gap-0.5 text-left">
-                                                    <span>{topic.title}</span>
-                                                    <span className="text-muted-foreground text-xs font-normal">
-                                                        {topic.summary}
-                                                    </span>
-                                                </span>
-                                            </AccordionTrigger>
-                                            <AccordionContent>
-                                                {CONTENT[topic.id] ?? null}
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ))}
-                                </Accordion>
+                            <CardContent className="space-y-6">
+                                {CONTENT[active.id] ?? null}
+
+                                <GuideNav
+                                    step={active.step}
+                                    total={topics.length}
+                                    onPrev={() => {
+                                        const prev = topics[active.step - 2];
+                                        if (prev) {
+                                            select(prev.id);
+                                        }
+                                    }}
+                                    onNext={() => {
+                                        const next = topics[active.step];
+                                        if (next) {
+                                            select(next.id);
+                                        }
+                                    }}
+                                />
                             </CardContent>
                         </Card>
-                    ))
+                    </div>
                 )}
             </div>
         </>
     );
+}
+
+function initialTopic(url: string, topics: FlatTopic[]): string {
+    const requested = new URL(url, 'http://localhost').searchParams.get('topik');
+
+    return topics.some((topic) => topic.id === requested) ? (requested as string) : (topics[0]?.id ?? '');
 }
 
 PanduanIndex.layout = {
