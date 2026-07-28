@@ -108,6 +108,16 @@ class StudentRegistrationController extends Controller
 
         $service->downloadFile($driveFileId, $fullPath);
 
+        // Berkas ini dipakai dua kali: ditampilkan di kotak crop dan jadi sumber
+        // pas foto akhir. Dikecilkan ke batas yang sama dengan yang dipakai
+        // PhotoCropService sebelum memotong, jadi tampilannya cepat muncul tanpa
+        // mengubah hasil akhir.
+        try {
+            (new PhotoCropService)->normalizeForPreview($fullPath);
+        } catch (\Throwable $e) {
+            Log::warning('Preview normalize failed, memakai berkas asli', ['error' => $e->getMessage()]);
+        }
+
         cache()->put('registration-preview:'.$key, $path, now()->addHour());
 
         return [

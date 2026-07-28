@@ -161,6 +161,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
     const [previewError, setPreviewError] = useState('');
     const [photoPreview, setPhotoPreview] = useState<{ url: string; filename: string } | null>(null);
     const [autoCrop, setAutoCrop] = useState<AutoCrop | null>(null);
+    // Gambar preview sudah selesai dimuat di browser (bukan sekadar respons server).
+    const [photoReady, setPhotoReady] = useState(false);
 
     const { data, setData, processing, errors } = useForm<FormData>(persistedRef.current.data);
 
@@ -199,7 +201,7 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
             // ini setelah halaman dimuat ulang tidak membuat user terkunci.
             if (!data.photo_drive_filename.trim()) {
                 e.photo_drive_filename = 'Nama file foto wajib diisi.';
-            } else if (!data.photo_key) {
+            } else if (!data.photo_key || !photoReady) {
                 e.photo_drive_filename = 'Tunggu sampai foto muncul sebelum lanjut.';
             }
         } else if (current === 3) {
@@ -284,6 +286,9 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
     function err(key: string): string | undefined {
         return stepErrors[key] || (errors as Record<string, string>)[key] || formErrors[key];
     }
+
+    // Identitas stabil — CropReposition memakainya sebagai dependency efek pemuat gambar.
+    const handlePhotoReady = useCallback((ready: boolean) => setPhotoReady(ready), []);
 
     function handleFinalSubmit() {
         // Validate all input steps defensively before submit.
@@ -399,6 +404,7 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
         setPreviewError('');
         setPhotoPreview(null);
         setAutoCrop(null);
+        setPhotoReady(false);
         setData((prev) => ({ ...prev, manual_crop: null, photo_key: '' }));
 
         try {
@@ -955,6 +961,7 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                                 }));
                                                 setPhotoPreview(null);
                                                 setAutoCrop(null);
+                                                setPhotoReady(false);
                                                 setPreviewError('');
                                             }}
                                             placeholder="Contoh: FIC_0008.JPG atau IMG_0234.png"
@@ -968,7 +975,7 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                         Ketik nama file foto yang sudah diupload ke folder Foto Siswa di Google Drive — foto muncul otomatis untuk atur posisi crop wajah.
                                     </p>
 
-                                    {!data.photo_key && !previewError && (
+                                    {(!data.photo_key || !photoReady) && !previewError && (
                                         <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
                                             Foto wajib. Tombol Lanjut aktif setelah foto muncul di bawah.
                                         </p>
@@ -996,9 +1003,11 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                         auto={autoCrop}
                                         guide={photoGuide}
                                         onChange={(rect) => setData('manual_crop', rect)}
+                                        onReady={handlePhotoReady}
                                         onClose={() => {
                                             setPhotoPreview(null);
                                             setAutoCrop(null);
+                                            setPhotoReady(false);
                                             setData((prev) => ({ ...prev, manual_crop: null, photo_key: '' }));
                                         }}
                                     />
@@ -1095,7 +1104,7 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                         <Button
                             type="button"
                             onClick={goNext}
-                            disabled={step === 2 && (previewLoading || !data.photo_key)}
+                            disabled={step === 2 && (previewLoading || !data.photo_key || !photoReady)}
                             className="h-11 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
                         >
                             {step === 2 && previewLoading && <Loader2 className="size-4 animate-spin" />}
@@ -1180,6 +1189,7 @@ function CropReposition({
     guide,
     onChange,
     onClose,
+    onReady,
 }: {
     imageUrl: string;
     filename: string;
@@ -1187,6 +1197,7 @@ function CropReposition({
     guide: CropGuide;
     onChange: (rect: CropRect) => void;
     onClose: () => void;
+    onReady: (ready: boolean) => void;
 }) {
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
@@ -1196,12 +1207,19 @@ function CropReposition({
     // 1600-capped, so it can't be used to seed the crop box — scale would mismatch).
     const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
 
+    // `onReady` menjaga tombol Lanjut tetap mati sampai gambarnya benar-benar
+    // terlihat — respons crop-preview saja belum cukup, karena berkasnya masih
+    // dalam perjalanan ke browser saat itu.
     useEffect(() => {
         setNatural(null);
+        onReady(false);
         const img = new Image();
-        img.onload = () => setNatural({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onload = () => {
+            setNatural({ w: img.naturalWidth, h: img.naturalHeight });
+            onReady(true);
+        };
         img.src = imageUrl;
-    }, [imageUrl]);
+    }, [imageUrl, onReady]);
 
     // Seed the crop box at the smart-detected face position, using the real image
     // dimensions × the scale-independent normalized rect from the backend.

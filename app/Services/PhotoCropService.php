@@ -123,6 +123,32 @@ class PhotoCropService
     }
 
     /**
+     * Tulis ulang berkas di tempat sebagai JPEG dengan sisi terpanjang maksimal 1600px
+     * dan orientasi EXIF sudah diperbaiki.
+     *
+     * Foto studio mentah bisa 5 MB, dan itu dikirim apa adanya ke browser hanya untuk
+     * ditampilkan di kotak crop — lambat muncul. 1600px adalah batas yang sama dengan
+     * yang dipakai `cropAndStore()` sebelum memotong, jadi hasil pas foto akhirnya
+     * tidak berubah sedikit pun.
+     */
+    public function normalizeForPreview(string $path, int $maxDim = 1600, int $quality = 85): void
+    {
+        $this->ensureMemoryLimit(512);
+
+        $info = getimagesize($path);
+        if (! $info) {
+            throw new \RuntimeException('Cannot read image file.');
+        }
+
+        $image = $this->loadImage($path, $info[2]);
+        $image = $this->fixExifOrientation($image, $path, $info[2]);
+        [$image] = $this->capTo($image, imagesx($image), imagesy($image), $maxDim);
+
+        imagejpeg($image, $path, $quality);
+        imagedestroy($image);
+    }
+
+    /**
      * Inspect detection metrics for a stored image without cropping (QA / tests).
      * Percentages are relative to the (EXIF-fixed, 1600-capped) working image.
      *

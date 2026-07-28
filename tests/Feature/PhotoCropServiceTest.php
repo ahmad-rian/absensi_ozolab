@@ -268,3 +268,38 @@ it('throws a clear error on an unreadable / unsupported file', function () {
         ->toThrow(RuntimeException::class);
     @unlink($txt);
 });
+
+it('shrinks a preview to the same 1600px cap used before cropping', function () {
+    $src = dirname(__DIR__).'/fixtures/photos/reference.jpg';
+    $work = tempnam(sys_get_temp_dir(), 'preview').'.jpg';
+    copy($src, $work);
+
+    [$srcW, $srcH] = getimagesize($src);
+    $srcBytes = filesize($work);
+
+    (new PhotoCropService)->normalizeForPreview($work);
+
+    [$w, $h, $type] = getimagesize($work);
+
+    expect($type)->toBe(IMAGETYPE_JPEG);
+    expect(max($w, $h))->toBeLessThanOrEqual(1600);
+    // Rasio asli dipertahankan supaya rect crop ternormalisasi tetap cocok.
+    expect($w / $h)->toBeBetween($srcW / $srcH * 0.99, $srcW / $srcH * 1.01);
+    expect(filesize($work))->toBeLessThan($srcBytes);
+
+    @unlink($work);
+});
+
+it('leaves a preview that is already small enough alone', function () {
+    $work = tempnam(sys_get_temp_dir(), 'preview').'.jpg';
+    $img = imagecreatetruecolor(400, 525);
+    imagejpeg($img, $work, 85);
+    imagedestroy($img);
+
+    (new PhotoCropService)->normalizeForPreview($work);
+
+    [$w, $h] = getimagesize($work);
+    expect([$w, $h])->toBe([400, 525]);
+
+    @unlink($work);
+});
