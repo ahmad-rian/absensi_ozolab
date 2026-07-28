@@ -341,10 +341,10 @@ class StudentRegistrationController extends Controller
         }
 
         try {
-            $files = $service['client']->findFileByName($validated['filename'], $service['folder']);
+            $files = $service['client']->findPhotoByName($validated['filename'], $service['folder']);
 
             if (empty($files)) {
-                return response()->json(['found' => false, 'message' => 'Foto tidak ditemukan di folder Foto Siswa.']);
+                return response()->json(['found' => false, 'message' => 'Foto tidak ditemukan di Google Drive. Periksa lagi nama filenya.']);
             }
 
             $preview = $this->storePreview($service['client'], $files[0]['id']);
@@ -408,10 +408,10 @@ class StudentRegistrationController extends Controller
         }
 
         try {
-            $files = $service['client']->findFileByName($validated['filename'], $service['folder']);
+            $files = $service['client']->findPhotoByName($validated['filename'], $service['folder']);
 
             if (empty($files)) {
-                return response()->json(['found' => false, 'message' => 'Foto tidak ditemukan di folder Foto Siswa.']);
+                return response()->json(['found' => false, 'message' => 'Foto tidak ditemukan di Google Drive. Periksa lagi nama filenya.']);
             }
 
             $preview = $this->storePreview($service['client'], $files[0]['id']);

@@ -17,10 +17,16 @@ class GoogleDriveService
 {
     public const PLATFORM_ROOT_SETTING_KEY = 'drive_platform_root_folder_id';
 
+    /** Panjang minimal nama sebelum pencarian sebagian diizinkan. */
+    private const PHOTO_SEARCH_MIN_LENGTH = 4;
+
     private GoogleDrive $drive;
 
     /** @var array<string, string> Cache folder per instance supaya batch tidak menembak Drive berulang kali. */
     private array $folderCache = [];
+
+    /** @var array<string, string|null> Cache `id => parent` untuk penelusuran leluhur. */
+    private array $parentCache = [];
 
     public function __construct(private SchoolDriveConfig $config)
     {
@@ -331,6 +337,173 @@ class GoogleDriveService
             'id' => $f->getId(),
             'name' => $f->getName(),
         ])->all();
+    }
+
+    /**
+     * Cari foto yang diketik orang tua/operator, yang seringkali tanpa ekstensi
+     * dan belum tentu tersimpan di folder sekolahnya sendiri.
+     *
+     * Urutannya: nama persis di folder sekolah → basename di folder sekolah →
+     * basename di seluruh isi root platform. Berhenti di hasil pertama.
+     *
+     * `name contains` hanya dipakai untuk menjaring kandidat; yang menentukan
+     * tetap perbandingan basename persis di PHP, jadi mengetik satu-dua huruf
+     * tidak bisa dipakai memanen berkas orang lain.
+     *
+     * @return array<int, array{id: string, name: string}>
+     */
+    public function findPhotoByName(string $name, ?string $preferredFolderId = null): array
+    {
+        $name = trim($name);
+
+        if ($name === '') {
+            return [];
+        }
+
+        if ($preferredFolderId) {
+            $exact = $this->findFileByName($name, $preferredFolderId);
+
+            if ($exact) {
+                return $exact;
+            }
+        }
+
+        // Yang dicari adalah nama tanpa ekstensi, dari kedua sisi: orang mengetik
+        // `DSC_0012` untuk berkas `DSC_0012.JPG`, dan sebaliknya mengetik
+        // `_DSC0019.JPG` untuk berkas yang di Drive tersimpan sebagai `_DSC0019`.
+        $stem = pathinfo($name, PATHINFO_FILENAME);
+
+        // Di bawah ambang ini `contains` menjaring terlalu banyak untuk disebut
+        // pencarian — dan itulah bentuk penyalahgunaan yang ingin dihindari.
+        if (mb_strlen($stem) < self::PHOTO_SEARCH_MIN_LENGTH) {
+            return [];
+        }
+
+        if ($preferredFolderId) {
+            $match = self::pickPhotoCandidate($this->searchImagesByPartialName($stem, $preferredFolderId), $name);
+
+            if ($match) {
+                return [$match];
+            }
+        }
+
+        $platformRootId = self::platformRootFolderId();
+
+        if (! $platformRootId) {
+            return [];
+        }
+
+        $candidates = collect($this->searchImagesByPartialName($stem))
+            ->filter(fn (array $file) => $this->isInsideFolder($file['id'], $platformRootId))
+            ->values()
+            ->all();
+
+        $match = self::pickPhotoCandidate($candidates, $name);
+
+        return $match ? [$match] : [];
+    }
+
+    /**
+     * Pilih kandidat terbaik: nama tanpa ekstensi harus sama persis, cocok penuh
+     * menang atas yang hanya sama basename-nya, sisanya yang paling baru diubah.
+     *
+     * @param  array<int, array{id: string, name: string, modifiedTime?: string|null}>  $files
+     * @return array{id: string, name: string}|null
+     */
+    public static function pickPhotoCandidate(array $files, string $name): ?array
+    {
+        $wanted = mb_strtolower(trim($name));
+        $wantedStem = mb_strtolower(pathinfo(trim($name), PATHINFO_FILENAME));
+
+        $matches = array_values(array_filter($files, function (array $file) use ($wanted, $wantedStem) {
+            $stem = mb_strtolower(pathinfo($file['name'], PATHINFO_FILENAME));
+
+            return $stem === $wantedStem || mb_strtolower($file['name']) === $wanted;
+        }));
+
+        if (! $matches) {
+            return null;
+        }
+
+        usort($matches, function (array $a, array $b) use ($wanted) {
+            $exactA = mb_strtolower($a['name']) === $wanted ? 0 : 1;
+            $exactB = mb_strtolower($b['name']) === $wanted ? 0 : 1;
+
+            if ($exactA !== $exactB) {
+                return $exactA <=> $exactB;
+            }
+
+            return strcmp((string) ($b['modifiedTime'] ?? ''), (string) ($a['modifiedTime'] ?? ''));
+        });
+
+        return ['id' => $matches[0]['id'], 'name' => $matches[0]['name']];
+    }
+
+    /**
+     * @return array<int, array{id: string, name: string, modifiedTime: string|null}>
+     */
+    private function searchImagesByPartialName(string $name, ?string $folderId = null): array
+    {
+        $escapedName = str_replace(['\\', "'"], ['\\\\', "\\'"], $name);
+
+        $clauses = ["name contains '{$escapedName}'", "mimeType contains 'image/'", 'trashed = false'];
+
+        if ($folderId) {
+            array_unshift($clauses, "'{$folderId}' in parents");
+        }
+
+        $result = $this->drive->files->listFiles([
+            'q' => implode(' and ', $clauses),
+            'pageSize' => 25,
+            'fields' => 'files(id, name, modifiedTime)',
+            'orderBy' => 'modifiedTime desc',
+            'supportsAllDrives' => true,
+            'includeItemsFromAllDrives' => true,
+        ]);
+
+        return collect($result->getFiles())->map(fn (DriveFile $f) => [
+            'id' => $f->getId(),
+            'name' => $f->getName(),
+            'modifiedTime' => $f->getModifiedTime(),
+        ])->all();
+    }
+
+    /**
+     * Telusuri rantai induk ke atas untuk memastikan berkas benar-benar berada di
+     * dalam folder tertentu. Drive tidak punya pencarian rekursif, jadi ini yang
+     * menjaga pencarian global tetap terkurung di root platform.
+     */
+    private function isInsideFolder(string $fileId, string $ancestorId, int $maxDepth = 6): bool
+    {
+        $currentId = $fileId;
+
+        for ($depth = 0; $depth < $maxDepth; $depth++) {
+            if (! array_key_exists($currentId, $this->parentCache)) {
+                try {
+                    $file = $this->drive->files->get($currentId, [
+                        'fields' => 'parents',
+                        'supportsAllDrives' => true,
+                    ]);
+                    $this->parentCache[$currentId] = ($file->getParents() ?: [null])[0];
+                } catch (\Throwable $e) {
+                    $this->parentCache[$currentId] = null;
+                }
+            }
+
+            $parentId = $this->parentCache[$currentId];
+
+            if ($parentId === null) {
+                return false;
+            }
+
+            if ($parentId === $ancestorId) {
+                return true;
+            }
+
+            $currentId = $parentId;
+        }
+
+        return false;
     }
 
     /**

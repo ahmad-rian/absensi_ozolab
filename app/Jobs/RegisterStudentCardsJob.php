@@ -153,8 +153,10 @@ class RegisterStudentCardsJob implements ShouldQueue
 
         try {
             $service = GoogleDriveService::forSchool($driveConfig);
+            // Harus memakai pencarian yang sama dengan pratinjau, kalau tidak foto
+            // yang tadi ketemu di form justru hilang saat job berjalan.
             $searchFolderId = $driveConfig->parents_folder_id ?: $driveConfig->root_folder_id;
-            $files = $searchFolderId ? $service->findFileByName($filename, $searchFolderId) : [];
+            $files = $service->findPhotoByName($filename, $searchFolderId);
             if (empty($files)) {
                 return false;
             }

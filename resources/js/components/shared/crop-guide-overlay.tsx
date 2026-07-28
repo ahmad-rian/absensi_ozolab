@@ -11,16 +11,19 @@ export type CropGuide = {
 /**
  * Sketsa panduan pas foto yang ditumpuk di atas area cropper.
  *
- * SVG memakai preserveAspectRatio bawaan (xMidYMid meet) sehingga viewBox-nya
- * menempel persis pada kotak crop react-easy-crop, yang juga di-center di dalam
- * container dengan rasio yang sama. Jadi tidak perlu mengukur DOM.
+ * Ukuran kotak crop dikirim lewat `style` oleh pemanggil (react-easy-crop
+ * melaporkannya via `onCropSizeChange`). Tanpa itu SVG hanya mengandalkan
+ * preserveAspectRatio bawaan, dan sketsanya meleset begitu media hasil
+ * `objectFit="contain"` lebih kecil daripada containernya.
  */
 export function CropGuideOverlay({
     guide,
     className = '',
+    style,
 }: {
     guide: CropGuide;
     className?: string;
+    style?: React.CSSProperties;
 }) {
     // Koordinat viewBox: tinggi 100 unit, jadi setiap pecahan panduan langsung jadi angka.
     const h = 100;
@@ -41,7 +44,9 @@ export function CropGuideOverlay({
     return (
         <svg
             viewBox={`0 0 ${w} ${h}`}
-            className={`pointer-events-none absolute inset-0 size-full ${className}`}
+            preserveAspectRatio="none"
+            style={style}
+            className={`pointer-events-none absolute ${style ? '' : 'inset-0 size-full'} ${className}`}
             aria-hidden="true"
             focusable="false"
         >

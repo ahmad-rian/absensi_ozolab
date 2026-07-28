@@ -163,6 +163,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
     const [autoCrop, setAutoCrop] = useState<AutoCrop | null>(null);
     // Gambar preview sudah selesai dimuat di browser (bukan sekadar respons server).
     const [photoReady, setPhotoReady] = useState(false);
+    // Nomor urut pencarian foto — hanya respons terbaru yang boleh menulis state.
+    const photoRequestRef = useRef(0);
 
     const { data, setData, processing, errors } = useForm<FormData>(persistedRef.current.data);
 
@@ -400,6 +402,13 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
             return;
         }
 
+        // Pencarian jalan tiap kali user berhenti mengetik, jadi beberapa permintaan
+        // bisa terbang bersamaan. Tanpa penanda ini, respons lama yang gagal tiba
+        // belakangan dan memunculkan banner "tidak ditemukan" di atas foto yang
+        // sudah berhasil tampil.
+        const requestId = ++photoRequestRef.current;
+        const isStale = () => requestId !== photoRequestRef.current;
+
         setPreviewLoading(true);
         setPreviewError('');
         setPhotoPreview(null);
@@ -424,7 +433,12 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
 
             const json = await res.json();
 
+            if (isStale()) {
+                return;
+            }
+
             if (json.found) {
+                setPreviewError('');
                 setPhotoPreview({ url: json.preview_url, filename: data.photo_drive_filename.trim() });
                 setData('photo_key', json.photo_key ?? '');
 
@@ -442,9 +456,13 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                 setPreviewError(json.message || 'File tidak ditemukan.');
             }
         } catch {
-            setPreviewError('Gagal menghubungi server.');
+            if (!isStale()) {
+                setPreviewError('Gagal menghubungi server.');
+            }
         } finally {
-            setPreviewLoading(false);
+            if (!isStale()) {
+                setPreviewLoading(false);
+            }
         }
     }, [data.photo_drive_filename, data.school_id, csrfToken, registrationToken, setData]);
 
@@ -1203,15 +1221,22 @@ function CropReposition({
     const [zoom, setZoom] = useState(1);
     const [resetKey, setResetKey] = useState(0);
     const [showGuide, setShowGuide] = useState(false);
-    // Actual natural size of the FULL-RES preview image (backend auto.natW/natH is
-    // 1600-capped, so it can't be used to seed the crop box — scale would mismatch).
+    // Ukuran alami gambar pratinjau — dipakai menormalkan rect hasil geser/zoom.
     const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
+    // Ukuran kotak crop sebenarnya, supaya sketsa panduan berimpit dengannya dan
+    // tidak sekadar menebak lewat rasio container.
+    const [cropBox, setCropBox] = useState<{ width: number; height: number } | null>(null);
+    // react-easy-crop menembakkan onCropComplete sekali SEBELUM menerapkan rect
+    // awal, dengan zoom 1 dan seluruh gambar. Kalau emisi itu ikut ditulis, hasil
+    // deteksi wajah dari server langsung tertimpa bingkai penuh.
+    const initializedRef = useRef(false);
 
     // `onReady` menjaga tombol Lanjut tetap mati sampai gambarnya benar-benar
     // terlihat — respons crop-preview saja belum cukup, karena berkasnya masih
     // dalam perjalanan ke browser saat itu.
     useEffect(() => {
         setNatural(null);
+        initializedRef.current = false;
         onReady(false);
         const img = new Image();
         img.onload = () => {
@@ -1221,20 +1246,18 @@ function CropReposition({
         img.src = imageUrl;
     }, [imageUrl, onReady]);
 
-    // Seed the crop box at the smart-detected face position, using the real image
-    // dimensions × the scale-independent normalized rect from the backend.
-    const initialArea = natural
-        ? {
-              x: auto.sx * natural.w,
-              y: auto.sy * natural.h,
-              width: auto.sw * natural.w,
-              height: auto.sh * natural.h,
-          }
-        : undefined;
+    // Rect dari server sudah ternormalisasi 0..1, jadi versi persen adalah jalur
+    // yang tepat — tidak lewat pembulatan piksel seperti varian *Pixels.
+    const initialArea = {
+        x: auto.sx * 100,
+        y: auto.sy * 100,
+        width: auto.sw * 100,
+        height: auto.sh * 100,
+    };
 
     const handleComplete = useCallback(
         (_area: unknown, px: { x: number; y: number; width: number; height: number }) => {
-            if (!natural) {
+            if (!natural || !initializedRef.current) {
                 return;
             }
             onChange({
@@ -1248,6 +1271,7 @@ function CropReposition({
     );
 
     function reset() {
+        initializedRef.current = false;
         setCrop({ x: 0, y: 0 });
         setZoom(1);
         setResetKey((k) => k + 1);
@@ -1272,7 +1296,7 @@ function CropReposition({
                     Geser & zoom foto untuk atur posisi wajah
                 </p>
                 <div className="relative mx-auto h-80 w-full max-w-sm overflow-hidden rounded-lg bg-zinc-900">
-                    {natural && initialArea ? (
+                    {natural ? (
                         <Cropper
                             key={resetKey}
                             image={imageUrl}
@@ -1283,10 +1307,14 @@ function CropReposition({
                             maxZoom={5}
                             restrictPosition
                             objectFit="contain"
-                            initialCroppedAreaPixels={initialArea}
+                            initialCroppedAreaPercentages={initialArea}
                             onCropChange={setCrop}
                             onZoomChange={setZoom}
                             onCropComplete={handleComplete}
+                            onCropSizeChange={setCropBox}
+                            onMediaLoaded={() => {
+                                initializedRef.current = true;
+                            }}
                             showGrid={false}
                         />
                     ) : (
@@ -1294,7 +1322,13 @@ function CropReposition({
                             <Loader2 className="size-6 animate-spin text-white/70" />
                         </div>
                     )}
-                    {natural && initialArea && <CropGuideOverlay guide={guide} />}
+                    {natural && cropBox && (
+                        <CropGuideOverlay
+                            guide={guide}
+                            style={{ width: cropBox.width, height: cropBox.height }}
+                            className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                        />
+                    )}
                 </div>
 
                 {/* Zoom control — kept right under the cropper */}
