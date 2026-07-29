@@ -1354,6 +1354,9 @@ function CropReposition({
 
                 {/* Panduan crop */}
                 <div className="mt-4 rounded-lg border border-green-200 bg-white/70 p-3 dark:border-green-800 dark:bg-zinc-900/40">
+                    <p className="mb-3 text-sm font-bold text-green-900 dark:text-green-100">
+                        Mohon croping seperti contoh foto di bawah.
+                    </p>
                     <p className="mb-2 text-xs font-semibold text-green-800 dark:text-green-200">Cara mengatur foto:</p>
 
                     {/* Poster panduan */}
