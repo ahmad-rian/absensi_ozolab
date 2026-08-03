@@ -160,7 +160,7 @@ enum SchoolFeature: string
             self::InboxNotifikasi => [AppModule::Notifikasi],
             self::KartuAlbum => [
                 AppModule::Frames, AppModule::CardLayouts, AppModule::CardGeneration,
-                AppModule::AlbumLayouts, AppModule::AlbumGeneration,
+                AppModule::AlbumLayouts, AppModule::AlbumGeneration, AppModule::PhotoSheets,
             ],
             self::ManajemenPengguna => [AppModule::Users],
             self::IntegrasiDrive => [AppModule::DriveConfig],

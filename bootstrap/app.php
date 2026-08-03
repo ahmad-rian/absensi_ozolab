@@ -85,4 +85,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // sebagian tenant. Command sendiri yang memutuskan apakah jendela hari
         // ini sudah benar-benar tutup.
         $schedule->command('prayer:notify-absence')->hourly()->withoutOverlapping();
+
+        // PDF lembar pas foto hanya alat cetak — dibuang setelah seminggu supaya
+        // tidak menumpuk di disk.
+        $schedule->command('photo-sheets:prune')->dailyAt('02:30');
     })->create();

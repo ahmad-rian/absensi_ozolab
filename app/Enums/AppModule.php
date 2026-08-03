@@ -23,6 +23,7 @@ enum AppModule: string
     case CardGeneration = 'card-generation';
     case AlbumLayouts = 'album-layouts';
     case AlbumGeneration = 'album-generation';
+    case PhotoSheets = 'photo-sheets';
     case Pengaturan = 'pengaturan';
     case Users = 'users';
     case DriveConfig = 'drive-config';
@@ -55,6 +56,7 @@ enum AppModule: string
             self::CardGeneration => 'Generate Kartu',
             self::AlbumLayouts => 'Layout Album',
             self::AlbumGeneration => 'Generate Album',
+            self::PhotoSheets => 'Generate Pas Foto',
             self::Pengaturan => 'Pengaturan Sekolah',
             self::Users => 'Pengguna',
             self::DriveConfig => 'Google Drive',
@@ -76,7 +78,7 @@ enum AppModule: string
             self::Notifikasi => 'Akademik',
 
             self::Frames, self::CardLayouts, self::CardGeneration,
-            self::AlbumLayouts, self::AlbumGeneration => 'Kartu & Album',
+            self::AlbumLayouts, self::AlbumGeneration, self::PhotoSheets => 'Kartu & Album',
 
             self::Pengaturan, self::Users, self::DriveConfig,
             self::WaConfig => 'Administrasi',
@@ -108,8 +110,8 @@ enum AppModule: string
                 self::Dashboard, self::Siswa, self::OrangTua, self::Kelas,
                 self::JadwalAbsensi, self::Absensi, self::Laporan,
                 self::Notifikasi, self::Frames, self::CardLayouts, self::CardGeneration,
-                self::AlbumLayouts, self::AlbumGeneration, self::Pengaturan,
-                self::Users, self::DriveConfig, self::WaConfig,
+                self::AlbumLayouts, self::AlbumGeneration, self::PhotoSheets,
+                self::Pengaturan, self::Users, self::DriveConfig, self::WaConfig,
             ],
 
             UserRole::Guru => [

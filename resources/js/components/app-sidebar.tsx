@@ -13,6 +13,7 @@ import {
     GraduationCap,
     HardDrive,
     History,
+    Images,
     LayoutGrid,
     LayoutTemplate,
     LifeBuoy,
@@ -83,6 +84,7 @@ const sections: NavSection[] = [
             { title: 'Riwayat Kartu', href: '/admin/card-generation', icon: History, permission: 'card-generation.access', feature: 'kartu_album' },
             { title: 'Layout Album', href: '/admin/album-layouts', icon: BookOpen, permission: 'album-layouts.access', feature: 'kartu_album' },
             { title: 'Generate Album', href: '/admin/album-generation', icon: Printer, permission: 'album-generation.access', feature: 'kartu_album' },
+            { title: 'Generate Pas Foto', href: '/admin/pas-foto', icon: Images, permission: 'photo-sheets.access', feature: 'kartu_album' },
         ],
     },
     {

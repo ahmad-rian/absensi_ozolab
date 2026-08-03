@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\NotifikasiController;
 use App\Http\Controllers\Admin\OrangTuaController;
 use App\Http\Controllers\Admin\PanduanController;
 use App\Http\Controllers\Admin\PengaturanController;
+use App\Http\Controllers\Admin\PhotoSheetBatchController;
 use App\Http\Controllers\Admin\PhotoSheetController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SchoolController;
@@ -182,6 +183,12 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::middleware(['permission:album-generation.access', 'feature:kartu_album'])->group(function () {
         Route::get('album-generation', [AlbumGenerationController::class, 'index'])->name('admin.album-generation');
         Route::get('album-generation/download', [AlbumGenerationController::class, 'generate'])->name('admin.album-generation.generate');
+    });
+
+    Route::middleware(['permission:photo-sheets.access', 'feature:kartu_album'])->group(function () {
+        Route::get('pas-foto', [PhotoSheetBatchController::class, 'index'])->name('admin.photo-sheets');
+        Route::post('pas-foto', [PhotoSheetBatchController::class, 'store'])->name('admin.photo-sheets.store');
+        Route::get('pas-foto/{batch}/berkas', [PhotoSheetBatchController::class, 'download'])->name('admin.photo-sheets.download');
     });
 
     // Administrasi
