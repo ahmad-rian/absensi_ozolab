@@ -6,6 +6,7 @@ use App\Models\PhotoSheetBatch;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\PhotoSheetGeneratorService;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
@@ -40,6 +41,41 @@ test('admin can open the photo sheet studio', function () {
             ->has('students', 1)
             ->has('templates')
             ->has('batches')
+        );
+});
+
+test('the page carries the photo url the preview needs', function () {
+    // Nama dipatok karena daftar siswa diurutkan berdasarkan nama.
+    $berfoto = makeStudentWithPhoto($this->school->id, $this->classroom->id);
+    $berfoto->update(['full_name' => 'Ana Berfoto']);
+
+    $tanpaFoto = makeStudentWithPhoto($this->school->id, $this->classroom->id, withPhoto: false);
+    $tanpaFoto->update(['full_name' => 'Budi Tanpa Foto']);
+
+    $this->actingAs($this->admin)->get(route('admin.photo-sheets'))
+        ->assertInertia(fn ($page) => $page
+            ->where('students.0.photo_url', Storage::disk('public')->url($berfoto->photo_path))
+            ->where('students.0.has_photo', true)
+            ->where('students.1.photo_url', null)
+            ->where('students.1.has_photo', false)
+        );
+});
+
+// Pratinjau di layar menggambar lembar dari angka ini. Kalau geometrinya lepas
+// dari TEMPLATES, simulasi dan cetakan diam-diam berbeda.
+test('the page carries the sheet geometry used by the renderer', function () {
+    $config = PhotoSheetGeneratorService::TEMPLATES['4r_3x4'];
+
+    $this->actingAs($this->admin)->get(route('admin.photo-sheets'))
+        ->assertInertia(fn ($page) => $page
+            ->where('templates.0.value', '4r_3x4')
+            ->where('templates.0.cols', $config['cols'])
+            ->where('templates.0.rows', $config['rows'])
+            ->where('templates.0.sheet_w', $config['sheet'][0])
+            ->where('templates.0.sheet_h', $config['sheet'][1])
+            ->where('templates.0.slot_w', $config['slot'][0])
+            ->where('templates.0.slot_h', $config['slot'][1])
+            ->where('templates.0.capacity', $config['cols'] * $config['rows'])
         );
 });
 

@@ -2,6 +2,9 @@ import { Head, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    Eye,
     Images,
     Loader2,
     Minus,
@@ -16,6 +19,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,9 +41,56 @@ type StudentItem = {
     classroom: string | null;
     classroom_id: string | null;
     has_photo: boolean;
+    photo_url: string | null;
 };
 
-type TemplateItem = { value: string; label: string; capacity: number };
+type TemplateItem = {
+    value: string;
+    label: string;
+    capacity: number;
+    cols: number;
+    rows: number;
+    sheet_w: number;
+    sheet_h: number;
+    slot_w: number;
+    slot_h: number;
+    gap: number;
+};
+
+type OrderItem = { student_id: string; quantity: number };
+
+/**
+ * Cerminan PhotoSheetBatchService::paginate() di PHP — service itu yang jadi
+ * sumber kebenaran saat merender PDF; ini hanya untuk pratinjau di layar.
+ * Kalau aturan penyusunan slot berubah, dua-duanya harus ikut berubah.
+ */
+function buildSheetPages(items: OrderItem[], capacity: number): (string | null)[][] {
+    if (capacity < 1) {
+        return [];
+    }
+
+    const slots: string[] = [];
+
+    for (const item of items) {
+        for (let i = 0; i < item.quantity; i++) {
+            slots.push(item.student_id);
+        }
+    }
+
+    const pages: (string | null)[][] = [];
+
+    for (let i = 0; i < slots.length; i += capacity) {
+        const page: (string | null)[] = slots.slice(i, i + capacity);
+
+        while (page.length < capacity) {
+            page.push(null);
+        }
+
+        pages.push(page);
+    }
+
+    return pages;
+}
 
 type BatchItem = {
     id: string;
@@ -70,11 +128,15 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
     const [bulkQuantity, setBulkQuantity] = useState(1);
     const [submitting, setSubmitting] = useState(false);
     const [formError, setFormError] = useState('');
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewPage, setPreviewPage] = useState(0);
 
-    const capacity = useMemo(
-        () => templates.find((t) => t.value === template)?.capacity ?? 1,
+    const activeTemplate = useMemo(
+        () => templates.find((t) => t.value === template),
         [template, templates],
     );
+
+    const capacity = activeTemplate?.capacity ?? 1;
 
     const filtered = useMemo(() => {
         let list = students;
@@ -115,6 +177,18 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
     const tooMany = pages > maxPages;
 
     const studentById = useMemo(() => new Map(students.map((s) => [s.id, s])), [students]);
+
+    const sheetPages = useMemo(() => buildSheetPages(items, capacity), [items, capacity]);
+    const currentPage = sheetPages[previewPage] ?? [];
+    const missingPhotos = useMemo(
+        () => items.filter((item) => !studentById.get(item.student_id)?.photo_url).length,
+        [items, studentById],
+    );
+
+    function openPreview() {
+        setPreviewPage(0);
+        setPreviewOpen(true);
+    }
 
     function setQuantity(studentId: string, quantity: number) {
         setCart((prev) => {
@@ -168,7 +242,10 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                 preserveScroll: true,
                 onStart: () => setSubmitting(true),
                 onFinish: () => setSubmitting(false),
-                onSuccess: () => setCart({}),
+                onSuccess: () => {
+                    setCart({});
+                    setPreviewOpen(false);
+                },
                 onError: (errors) => {
                     // Kegagalan validasi tidak boleh diam — sebelumnya tombol
                     // tampak tidak melakukan apa-apa saat pesanan ditolak.
@@ -417,12 +494,146 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                                 </Alert>
                             )}
 
-                            <Button
-                                type="button"
-                                onClick={handleGenerate}
-                                disabled={submitting || items.length === 0 || tooMany}
-                                className="w-full gap-2 transition-all"
-                            >
+                            <div className="grid gap-2">
+                                <Button
+                                    type="button"
+                                    onClick={openPreview}
+                                    disabled={submitting || items.length === 0 || tooMany}
+                                    className="w-full gap-2 transition-all"
+                                >
+                                    <Eye className="size-4" />
+                                    Periksa foto dulu
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleGenerate}
+                                    disabled={submitting || items.length === 0 || tooMany}
+                                    className="w-full gap-2 transition-all"
+                                >
+                                    {submitting ? (
+                                        <>
+                                            <Loader2 className="size-4 animate-spin" />
+                                            Mengirim…
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Printer className="size-4" />
+                                            Langsung generate
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Pratinjau lembar — simulasi susunan slot sebelum kertas dipakai */}
+                <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+                    <DialogContent className="max-w-3xl">
+                        <DialogHeader>
+                            <DialogTitle>Periksa Lembar Cetak</DialogTitle>
+                            <DialogDescription>
+                                Lembar {previewPage + 1} dari {sheetPages.length} · {activeTemplate?.label}
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        {missingPhotos > 0 && (
+                            <Alert variant="destructive">
+                                <AlertTriangle className="size-4" />
+                                <AlertDescription>
+                                    {missingPhotos} siswa fotonya tidak ditemukan di server — slotnya akan tercetak kosong.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        {activeTemplate && (
+                            <div className="bg-muted/40 rounded-lg border p-4">
+                                <div
+                                    className="mx-auto grid rounded bg-white p-2 shadow-sm dark:bg-zinc-100"
+                                    style={{
+                                        aspectRatio: `${activeTemplate.sheet_w} / ${activeTemplate.sheet_h}`,
+                                        maxWidth: activeTemplate.sheet_w >= activeTemplate.sheet_h ? '32rem' : '22rem',
+                                        gridTemplateColumns: `repeat(${activeTemplate.cols}, 1fr)`,
+                                        gridTemplateRows: `repeat(${activeTemplate.rows}, 1fr)`,
+                                        gap: `${(activeTemplate.gap / activeTemplate.sheet_w) * 100}%`,
+                                    }}
+                                >
+                                    {currentPage.map((studentId, index) => {
+                                        const student = studentId ? studentById.get(studentId) : null;
+
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`relative flex items-center justify-center overflow-hidden rounded-sm border ${
+                                                    studentId === null
+                                                        ? 'border-dashed border-zinc-300 bg-zinc-50'
+                                                        : student?.photo_url
+                                                          ? 'border-zinc-300'
+                                                          : 'border-red-400 bg-red-50'
+                                                }`}
+                                                style={{ aspectRatio: `${activeTemplate.slot_w} / ${activeTemplate.slot_h}` }}
+                                            >
+                                                {studentId === null ? (
+                                                    <span className="text-[9px] text-zinc-400">kosong</span>
+                                                ) : student?.photo_url ? (
+                                                    <>
+                                                        <img
+                                                            src={student.photo_url}
+                                                            alt={student.full_name}
+                                                            className="size-full object-cover"
+                                                        />
+                                                        {/* Nama hanya penanda di layar — cetakannya tetap polos. */}
+                                                        <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1 text-center text-[9px] leading-tight text-white">
+                                                            {student.full_name}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="px-1 text-center text-[9px] text-red-600">
+                                                        foto tidak ditemukan
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {sheetPages.length > 1 && (
+                            <div className="flex items-center justify-center gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={previewPage === 0}
+                                    onClick={() => setPreviewPage((p) => Math.max(0, p - 1))}
+                                >
+                                    <ChevronLeft className="size-4" />
+                                    Sebelumnya
+                                </Button>
+                                <span className="text-muted-foreground text-sm tabular-nums">
+                                    {previewPage + 1} / {sheetPages.length}
+                                </span>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={previewPage >= sheetPages.length - 1}
+                                    onClick={() => setPreviewPage((p) => Math.min(sheetPages.length - 1, p + 1))}
+                                >
+                                    Berikutnya
+                                    <ChevronRight className="size-4" />
+                                </Button>
+                            </div>
+                        )}
+
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setPreviewOpen(false)}>
+                                Kembali
+                            </Button>
+                            <Button type="button" onClick={handleGenerate} disabled={submitting} className="gap-2">
                                 {submitting ? (
                                     <>
                                         <Loader2 className="size-4 animate-spin" />
@@ -431,13 +642,13 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                                 ) : (
                                     <>
                                         <Printer className="size-4" />
-                                        Generate PDF
+                                        Cetak sekarang
                                     </>
                                 )}
                             </Button>
-                        </CardContent>
-                    </Card>
-                </div>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Riwayat */}
                 <Card>

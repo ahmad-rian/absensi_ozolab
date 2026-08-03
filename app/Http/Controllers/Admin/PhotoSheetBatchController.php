@@ -38,13 +38,24 @@ class PhotoSheetBatchController extends Controller
                 'classroom' => $student->classroom?->name,
                 'classroom_id' => $student->classroom_id,
                 'has_photo' => (bool) $student->photo_path,
+                'photo_url' => $student->photo_path ? Storage::disk('public')->url($student->photo_path) : null,
             ]),
             'classrooms' => Classroom::forSchool()->orderBy('name')->get(['id', 'name']),
+            // Geometri ikut dikirim supaya pratinjau di layar memakai angka yang
+            // sama dengan yang dipakai merender PDF, bukan salinan yang bisa
+            // diam-diam berbeda.
             'templates' => collect(PhotoSheetGeneratorService::TEMPLATES)
                 ->map(fn (array $config, string $key) => [
                     'value' => $key,
                     'label' => $config['label'],
                     'capacity' => $config['cols'] * $config['rows'],
+                    'cols' => $config['cols'],
+                    'rows' => $config['rows'],
+                    'sheet_w' => $config['sheet'][0],
+                    'sheet_h' => $config['sheet'][1],
+                    'slot_w' => $config['slot'][0],
+                    'slot_h' => $config['slot'][1],
+                    'gap' => $config['gap'],
                 ])
                 ->values(),
             'maxPages' => self::MAX_PAGES,
