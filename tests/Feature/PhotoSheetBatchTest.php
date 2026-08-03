@@ -82,6 +82,17 @@ test('generating a batch stores the composition and queues the render', function
     Queue::assertPushedOn(config('cards.queue'), GeneratePhotoSheetBatchJob::class);
 });
 
+// Halaman sempat mengirim payload kosong karena salah memakai useForm; yang
+// terlihat operator cuma tombol yang tidak melakukan apa-apa. Pesan error di
+// bawah ini yang sekarang ditampilkan di UI.
+test('an empty order is refused with a readable message', function () {
+    $this->actingAs($this->admin)->post(route('admin.photo-sheets.store'), [
+        'template' => '4r_3x4',
+    ])->assertSessionHasErrors(['items' => 'Pilih minimal satu siswa.']);
+
+    expect(PhotoSheetBatch::withoutGlobalScopes()->count())->toBe(0);
+});
+
 test('students without a photo are refused', function () {
     $tanpaFoto = makeStudentWithPhoto($this->school->id, $this->classroom->id, withPhoto: false);
 

@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     CheckCircle2,
@@ -68,8 +68,8 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
     const [cart, setCart] = useState<Record<string, number>>({});
     const [bulkClassroomId, setBulkClassroomId] = useState('');
     const [bulkQuantity, setBulkQuantity] = useState(1);
-
-    const { post, processing } = useForm();
+    const [submitting, setSubmitting] = useState(false);
+    const [formError, setFormError] = useState('');
 
     const capacity = useMemo(
         () => templates.find((t) => t.value === template)?.capacity ?? 1,
@@ -78,15 +78,18 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
 
     const filtered = useMemo(() => {
         let list = students;
+
         if (classroomId) {
             list = list.filter((s) => s.classroom_id === classroomId);
         }
+
         if (search.trim()) {
             const q = search.toLowerCase();
             list = list.filter(
                 (s) => s.full_name.toLowerCase().includes(q) || (s.nis && s.nis.toLowerCase().includes(q)),
             );
         }
+
         return list;
     }, [students, classroomId, search]);
 
@@ -100,6 +103,7 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
         if (mode === 'massal') {
             return bulkStudents.map((s) => ({ student_id: s.id, quantity: bulkQuantity }));
         }
+
         return Object.entries(cart)
             .filter(([, qty]) => qty > 0)
             .map(([student_id, quantity]) => ({ student_id, quantity }));
@@ -115,11 +119,13 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
     function setQuantity(studentId: string, quantity: number) {
         setCart((prev) => {
             const next = { ...prev };
+
             if (quantity <= 0) {
                 delete next[studentId];
             } else {
                 next[studentId] = Math.min(100, quantity);
             }
+
             return next;
         });
     }
@@ -137,6 +143,7 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
             if (reloading) {
                 return;
             }
+
             reloading = true;
             router.reload({
                 only: ['batches'],
@@ -150,11 +157,25 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
     }, [hasProcessing]);
 
     function handleGenerate() {
-        post('/admin/pas-foto', {
-            data: { template, items },
-            preserveScroll: true,
-            onSuccess: () => setCart({}),
-        } as never);
+        // `router.post` — bukan useForm — karena isinya dirakit dari keranjang,
+        // bukan dari state form yang statis.
+        setFormError('');
+
+        router.post(
+            '/admin/pas-foto',
+            { template, items },
+            {
+                preserveScroll: true,
+                onStart: () => setSubmitting(true),
+                onFinish: () => setSubmitting(false),
+                onSuccess: () => setCart({}),
+                onError: (errors) => {
+                    // Kegagalan validasi tidak boleh diam — sebelumnya tombol
+                    // tampak tidak melakukan apa-apa saat pesanan ditolak.
+                    setFormError(Object.values(errors)[0] ?? 'Gagal membuat lembar. Periksa pilihan siswa.');
+                },
+            },
+        );
     }
 
     return (
@@ -389,14 +410,30 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                                 </Alert>
                             )}
 
+                            {formError && (
+                                <Alert variant="destructive">
+                                    <AlertTriangle className="size-4" />
+                                    <AlertDescription>{formError}</AlertDescription>
+                                </Alert>
+                            )}
+
                             <Button
                                 type="button"
                                 onClick={handleGenerate}
-                                disabled={processing || items.length === 0 || tooMany}
-                                className="w-full gap-2"
+                                disabled={submitting || items.length === 0 || tooMany}
+                                className="w-full gap-2 transition-all"
                             >
-                                {processing ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
-                                Generate PDF
+                                {submitting ? (
+                                    <>
+                                        <Loader2 className="size-4 animate-spin" />
+                                        Mengirim…
+                                    </>
+                                ) : (
+                                    <>
+                                        <Printer className="size-4" />
+                                        Generate PDF
+                                    </>
+                                )}
                             </Button>
                         </CardContent>
                     </Card>
@@ -416,9 +453,15 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                                 {batches.map((batch) => {
                                     const config = statusConfig[batch.status];
                                     const StatusIcon = config.icon;
+                                    const isProcessing = batch.status === 'processing';
 
                                     return (
-                                        <div key={batch.id} className="flex flex-wrap items-center gap-3 py-3">
+                                        <div
+                                            key={batch.id}
+                                            className={`flex flex-wrap items-center gap-3 py-3 transition-colors duration-500 ${
+                                                isProcessing ? 'animate-pulse' : ''
+                                            }`}
+                                        >
                                             <Badge className={config.className}>
                                                 <StatusIcon
                                                     className={`mr-1 size-3 ${batch.status === 'processing' ? 'animate-spin' : ''}`}
@@ -437,12 +480,16 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                                                 )}
                                             </div>
 
+                                            {isProcessing && (
+                                                <span className="text-muted-foreground text-xs">Merender lembar…</span>
+                                            )}
+
                                             {batch.status === 'completed' && (
                                                 <a
                                                     href={`/admin/pas-foto/${batch.id}/berkas`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                                                    className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700"
                                                 >
                                                     <Printer className="size-3.5" />
                                                     Buka & Cetak
