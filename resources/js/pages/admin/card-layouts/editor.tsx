@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { AlignVerticalJustifyCenter, Eye, Image as ImageIcon, Loader2, Minus, Plus, QrCode, RectangleHorizontal, RectangleVertical, Redo2, Save, Type, Undo2, User } from 'lucide-react';
+import { AlignVerticalJustifyCenter, Eye, Image as ImageIcon, Loader2, Minus, Plus, QrCode, Ratio, RectangleHorizontal, RectangleVertical, Redo2, Save, Type, Undo2, User } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Rnd } from 'react-rnd';
 import InputError from '@/components/input-error';
@@ -205,6 +205,27 @@ function CardPreview({
     const elNodeRefs = useRef<Record<string, HTMLElement | null>>({});
 
     const isMulti = selectedIds.length > 1;
+
+    // Shift ditahan = proporsi dikunci saat menarik, kebiasaan yang dibawa dari
+    // Photoshop. Dipantau di window karena react-rnd butuh nilainya sudah benar
+    // sebelum tarikan dimulai, bukan saat event resize-nya tiba.
+    const [shiftHeld, setShiftHeld] = useState(false);
+
+    useEffect(() => {
+        const syncShift = (e: KeyboardEvent) => setShiftHeld(e.shiftKey);
+        const clearShift = () => setShiftHeld(false);
+
+        window.addEventListener('keydown', syncShift);
+        window.addEventListener('keyup', syncShift);
+        // Berpindah tab sambil menahan Shift tidak memancarkan keyup.
+        window.addEventListener('blur', clearShift);
+
+        return () => {
+            window.removeEventListener('keydown', syncShift);
+            window.removeEventListener('keyup', syncShift);
+            window.removeEventListener('blur', clearShift);
+        };
+    }, []);
 
     function beginMarquee(e: React.PointerEvent<HTMLDivElement>) {
         if (e.target !== e.currentTarget) {
@@ -418,6 +439,7 @@ function CardPreview({
                             position={pos}
                             enableResizing={!isMulti}
                             resizeHandleStyles={selected && !isMulti ? RESIZE_HANDLE_STYLES : undefined}
+                            lockAspectRatio={shiftHeld}
                             minWidth={mm(MIN_MM)}
                             minHeight={mm(MIN_MM)}
                             onDragStop={(_e, d) => dragStop(d)}
@@ -450,6 +472,7 @@ function CardPreview({
                         position={pos}
                         enableResizing={!isMulti}
                         resizeHandleStyles={selected && !isMulti ? RESIZE_HANDLE_STYLES : undefined}
+                        lockAspectRatio={shiftHeld}
                         minWidth={mm(MIN_MM)}
                         minHeight={mm(MIN_MM)}
                         onDragStop={(_e, d) => dragStop(d)}
@@ -828,12 +851,34 @@ export default function CardLayoutEditor({ layout, defaultElements, frames }: Pr
                                         <>
                                             <NumField label="Lebar (mm)" value={selected.w} onChange={(v) => updateElement(soleSelectedId!, { w: v } as Partial<AnyElement>)} />
                                             <NumField label="Tinggi (mm)" value={selected.h} onChange={(v) => updateElement(soleSelectedId!, { h: v } as Partial<AnyElement>)} />
+                                            <ShiftHint />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="col-span-2 h-7 text-xs"
+                                                onClick={() => updateElement(soleSelectedId!, { h: roundMm(selected.w * PHOTO_RATIO) } as Partial<AnyElement>)}
+                                            >
+                                                <Ratio className="mr-1.5 size-3.5" />
+                                                Kembalikan proporsi 3:4
+                                            </Button>
                                         </>
                                     )}
                                     {selected.type === 'qr' && (
                                         <>
                                             <NumField label="Lebar (mm)" value={selected.w ?? selected.size} onChange={(v) => updateElement(soleSelectedId!, { w: v } as Partial<AnyElement>)} />
                                             <NumField label="Tinggi (mm)" value={selected.h ?? selected.size} onChange={(v) => updateElement(soleSelectedId!, { h: v } as Partial<AnyElement>)} />
+                                            <ShiftHint />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="col-span-2 h-7 text-xs"
+                                                onClick={() => updateElement(soleSelectedId!, { h: selected.w ?? selected.size } as Partial<AnyElement>)}
+                                            >
+                                                <Ratio className="mr-1.5 size-3.5" />
+                                                Jadikan persegi
+                                            </Button>
                                             {isQrStretched(selected) && (
                                                 <p className="col-span-2 text-[11px] text-amber-600 dark:text-amber-500">
                                                     QR tidak persegi — berisiko gagal dipindai. Samakan lebar dan tingginya bila kartu akan dipakai untuk absensi.
@@ -856,6 +901,21 @@ export default function CardLayoutEditor({ layout, defaultElements, frames }: Pr
                 </div>
             </form>
         </>
+    );
+}
+
+/** Perbandingan pas foto baku 3:4 — tinggi = lebar × 4/3. */
+const PHOTO_RATIO = 4 / 3;
+
+function roundMm(value: number): number {
+    return Math.round(value * 10) / 10;
+}
+
+function ShiftHint() {
+    return (
+        <p className="text-muted-foreground col-span-2 text-[11px]">
+            Tahan <kbd className="bg-muted rounded border px-1 font-sans text-[10px]">Shift</kbd> saat menarik supaya proporsinya terkunci dan gambarnya tidak peang.
+        </p>
     );
 }
 
