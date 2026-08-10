@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\PrayerType;
+use App\Enums\SchoolFeature;
 use App\Http\Controllers\Controller;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
@@ -10,7 +11,9 @@ use App\Models\ParentProfile;
 use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
 use App\Services\PhotoSheetGeneratorService;
+use App\Services\Student\StudentDrivePhotoLocator;
 use App\Services\Student\StudentStatsBuilder;
+use App\Support\SchoolFeatures;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -51,7 +54,7 @@ class SiswaController extends Controller
         ]);
     }
 
-    public function show(Request $request, Student $siswa, QrTokenGenerator $qrGenerator, StudentStatsBuilder $stats): Response
+    public function show(Request $request, Student $siswa, QrTokenGenerator $qrGenerator, StudentStatsBuilder $stats, StudentDrivePhotoLocator $locator): Response
     {
         $siswa->load(['classroom', 'parentProfile.user']);
 
@@ -107,7 +110,41 @@ class SiswaController extends Controller
             'prayerDzuhur' => Inertia::optional(
                 fn () => $stats->prayerFor($siswa, $range['start'], $range['end'], PrayerType::Dzuhur),
             ),
+            // Menembak API Drive dua kali, jadi baru dijalankan ketika operator
+            // benar-benar menekan tombolnya — bukan di setiap kunjungan halaman.
+            'drivePhoto' => Inertia::optional(fn () => $this->drivePhotoPayload($siswa, $locator)),
         ]);
+    }
+
+    /**
+     * Tautan berkas pas foto siswa di Google Drive.
+     *
+     * `found` dipisah dari isinya supaya frontend bisa membedakan "belum dicari"
+     * (prop belum ada) dari "sudah dicari, tidak ketemu".
+     *
+     * @return array<string, mixed>
+     */
+    private function drivePhotoPayload(Student $siswa, StudentDrivePhotoLocator $locator): array
+    {
+        $enabled = SchoolFeatures::for($siswa->school)->enabled(SchoolFeature::IntegrasiDrive);
+
+        return [
+            'feature_enabled' => $enabled,
+            'file' => $enabled ? $locator->locate($siswa) : null,
+            'expected_file_name' => StudentDrivePhotoLocator::expectedFileName($siswa),
+            'expected_folder' => StudentDrivePhotoLocator::expectedFolderName($siswa),
+        ];
+    }
+
+    /**
+     * Cari ulang pas foto di Drive setelah operator menaruhnya di sana — tanpa ini
+     * hasil "tidak ketemu" bertahan sampai cache-nya kedaluwarsa.
+     */
+    public function refreshDrivePhoto(Student $siswa, StudentDrivePhotoLocator $locator): RedirectResponse
+    {
+        $locator->forget($siswa);
+
+        return back();
     }
 
     /**

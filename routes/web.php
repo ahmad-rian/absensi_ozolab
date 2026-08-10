@@ -107,6 +107,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::get('siswa/{siswa}/qr', [SiswaController::class, 'qrCode'])->name('admin.siswa.qr');
         Route::post('siswa/{siswa}/photo-sheet', [PhotoSheetController::class, 'generate'])->name('admin.siswa.photo-sheet');
         Route::patch('siswa/{siswa}/prayer-opt-in', [SiswaController::class, 'updatePrayerOptIn'])->name('admin.siswa.prayer-opt-in');
+        Route::post('siswa/{siswa}/drive-photo/refresh', [SiswaController::class, 'refreshDrivePhoto'])->name('admin.siswa.drive-photo.refresh');
         Route::get('siswa/{siswa}/laporan/absensi/csv', [StudentReportController::class, 'attendanceCsv'])->name('admin.siswa.laporan.absensi.csv');
         Route::get('siswa/{siswa}/laporan/absensi/pdf', [StudentReportController::class, 'attendancePdf'])->name('admin.siswa.laporan.absensi.pdf');
         Route::get('siswa/{siswa}/laporan/sholat/csv', [StudentReportController::class, 'prayerCsv'])->name('admin.siswa.laporan.sholat.csv');

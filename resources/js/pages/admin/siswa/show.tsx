@@ -12,11 +12,13 @@ import {
     MoonStar,
     Percent,
     Printer,
+    Search,
     User,
     UserCheck,
     UserX,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { refreshDrivePhoto as refreshDrivePhotoRoute } from '@/actions/App/Http/Controllers/Admin/SiswaController';
 import { ATTENDANCE_SERIES, PRAYER_SERIES } from '@/components/student/daily-bar-chart';
 import { PrayerMembershipCard } from '@/components/student/prayer-membership-card';
 import { reportExports } from '@/components/student/range-bar';
@@ -95,6 +97,21 @@ type GeneratedCard = {
     created_at: string;
 };
 
+type DrivePhotoFile = {
+    file_id: string;
+    name: string;
+    view_url: string;
+    download_url: string;
+};
+
+type DrivePhoto = {
+    feature_enabled: boolean;
+    /** null berarti sudah dicari tapi tidak ketemu — beda dari prop yang belum ada. */
+    file: DrivePhotoFile | null;
+    expected_file_name: string;
+    expected_folder: string;
+};
+
 type PageProps = {
     student: Student;
     qrSvg: string;
@@ -107,6 +124,8 @@ type PageProps = {
     /** Opsional — hanya diambil saat tab jenisnya benar-benar dibuka. */
     prayerDhuha?: PrayerStats;
     prayerDzuhur?: PrayerStats;
+    /** Opsional — menembak API Drive, jadi baru diminta saat tombolnya ditekan. */
+    drivePhoto?: DrivePhoto;
 };
 
 const CARD_TYPES: { value: string; label: string }[] = [
@@ -165,6 +184,7 @@ export default function SiswaShow({
     attendance,
     prayerDhuha,
     prayerDzuhur,
+    drivePhoto,
 }: PageProps) {
     const { features } = usePage().props as unknown as { features?: Partial<SchoolFeatureMap> };
 
@@ -181,6 +201,7 @@ export default function SiswaShow({
     const [template, setTemplate] = useState(photoSheetTemplates[0]?.value ?? '');
     const [caption, setCaption] = useState('');
     const [generating, setGenerating] = useState(false);
+    const [drivePhotoLoading, setDrivePhotoLoading] = useState(false);
     const [tab, setTab] = useState(() => initialTab(allowedTabs));
     const [startDate, setStartDate] = useState(filters.start);
     const [endDate, setEndDate] = useState(filters.end);
@@ -228,6 +249,30 @@ export default function SiswaShow({
 
     function handlePrint() {
         window.print();
+    }
+
+    function loadDrivePhoto() {
+        router.reload({
+            only: ['drivePhoto'],
+            onStart: () => setDrivePhotoLoading(true),
+            onFinish: () => setDrivePhotoLoading(false),
+        });
+    }
+
+    // Hasil pencarian ditahan di server selama beberapa jam, jadi mencari ulang
+    // harus membuang cache-nya dulu — kalau tidak, foto yang baru diunggah ke
+    // Drive tetap dilaporkan tidak ada.
+    function researchDrivePhoto() {
+        setDrivePhotoLoading(true);
+        router.post(
+            refreshDrivePhotoRoute.url(student.id),
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => loadDrivePhoto(),
+                onError: () => setDrivePhotoLoading(false),
+            },
+        );
     }
 
     function handleGenerateSheet() {
@@ -400,6 +445,63 @@ export default function SiswaShow({
                                         </Button>
                                     </div>
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Pas foto asli di Drive — dicari saat diminta, tidak disimpan di DB */}
+                        <Card className="print:hidden">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <HardDrive className="size-4" /> Pas Foto di Google Drive
+                                </CardTitle>
+                                <CardDescription>Buka atau unduh berkas aslinya tanpa mencari manual di Drive.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {drivePhotoLoading ? (
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-3/4 animate-pulse" />
+                                        <Skeleton className="h-9 w-full animate-pulse" />
+                                    </div>
+                                ) : !drivePhoto ? (
+                                    <Button variant="outline" className="w-full" onClick={loadDrivePhoto}>
+                                        <Search className="mr-2 size-4" />
+                                        Cari di Drive
+                                    </Button>
+                                ) : !drivePhoto.feature_enabled ? (
+                                    <p className="text-muted-foreground text-xs">Integrasi Google Drive dimatikan untuk sekolah ini.</p>
+                                ) : drivePhoto.file ? (
+                                    <>
+                                        <p className="text-muted-foreground truncate text-xs" title={drivePhoto.file.name}>
+                                            {drivePhoto.file.name}
+                                        </p>
+                                        <div className="flex flex-col gap-2">
+                                            <Button variant="outline" className="w-full" asChild>
+                                                <a href={drivePhoto.file.view_url} target="_blank" rel="noreferrer">
+                                                    <HardDrive className="mr-2 size-4" />
+                                                    Buka di Drive
+                                                </a>
+                                            </Button>
+                                            <Button variant="outline" className="w-full" asChild>
+                                                <a href={drivePhoto.file.download_url} target="_blank" rel="noreferrer">
+                                                    <Download className="mr-2 size-4" />
+                                                    Unduh Langsung
+                                                </a>
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-muted-foreground text-xs">
+                                            Tidak ditemukan. Dicari berkas bernama{' '}
+                                            <span className="text-foreground font-medium">{drivePhoto.expected_file_name}</span> di folder{' '}
+                                            <span className="text-foreground font-medium">{drivePhoto.expected_folder}</span>.
+                                        </p>
+                                        <Button variant="outline" className="w-full" onClick={researchDrivePhoto}>
+                                            <Search className="mr-2 size-4" />
+                                            Cari Ulang
+                                        </Button>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
 

@@ -623,6 +623,109 @@ class GoogleDriveService
         return $this->findOrCreateFolder(self::studentFolderName($student), $classFolderId);
     }
 
+    /**
+     * Folder siswa tanpa efek samping: mengembalikan null ketika salah satu folder
+     * belum ada, alih-alih membuatnya seperti studentFolderId(). Dipakai jalur baca
+     * seperti pencarian pas foto, yang jalan tiap kali halaman siswa dibuka dan tidak
+     * boleh menaburi Drive dengan folder kosong.
+     */
+    public function findStudentFolderId(Student $student): ?string
+    {
+        $schoolRootId = $this->findSchoolRoot();
+
+        if (! $schoolRootId) {
+            return null;
+        }
+
+        $student->loadMissing('classroom');
+
+        $classFolderId = $this->findFolder(self::classFolderName($student), $schoolRootId);
+
+        if (! $classFolderId) {
+            return null;
+        }
+
+        return $this->findFolder(self::studentFolderName($student), $classFolderId);
+    }
+
+    /**
+     * Root sekolah apa adanya — tidak membuat folder, tidak menulis root_folder_id.
+     */
+    private function findSchoolRoot(): ?string
+    {
+        if ($this->config->root_folder_id) {
+            return $this->config->root_folder_id;
+        }
+
+        $platformRootId = self::platformRootFolderId();
+
+        if (! $platformRootId) {
+            return null;
+        }
+
+        $schoolName = $this->config->school?->name ?: 'Sekolah '.$this->config->school_id;
+
+        return $this->findFolder($schoolName, $platformRootId);
+    }
+
+    /**
+     * Cari folder berdasarkan nama persis di dalam satu induk. Null bila tidak ada.
+     */
+    public function findFolder(string $name, string $parentId): ?string
+    {
+        $cacheKey = $parentId.'|'.$name;
+
+        if (isset($this->folderCache[$cacheKey])) {
+            return $this->folderCache[$cacheKey];
+        }
+
+        $escapedName = str_replace(['\\', "'"], ['\\\\', "\\'"], $name);
+
+        $result = $this->drive->files->listFiles([
+            'q' => "'{$parentId}' in parents and name = '{$escapedName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+            'pageSize' => 1,
+            'fields' => 'files(id)',
+            'supportsAllDrives' => true,
+            'includeItemsFromAllDrives' => true,
+        ]);
+
+        $files = $result->getFiles();
+
+        if (count($files) === 0) {
+            return null;
+        }
+
+        return $this->folderCache[$cacheKey] = $files[0]->getId();
+    }
+
+    /**
+     * Semua gambar di dalam satu folder, terbaru dulu.
+     *
+     * Sengaja tidak menerima kata kunci: pemanggilnya sudah memegang folder milik
+     * satu siswa, jadi pencocokan nama dikerjakan di PHP lewat pickPhotoCandidate()
+     * dan pencarian tidak pernah keluar dari folder itu — beda dengan
+     * findPhotoByName() yang boleh menyapu seluruh root platform.
+     *
+     * @return array<int, array{id: string, name: string, modifiedTime: string|null}>
+     */
+    public function imagesInFolder(string $folderId): array
+    {
+        $result = $this->drive->files->listFiles([
+            'q' => "'{$folderId}' in parents and mimeType contains 'image/' and trashed = false",
+            'pageSize' => 50,
+            'fields' => 'files(id, name, modifiedTime)',
+            'orderBy' => 'modifiedTime desc',
+            'supportsAllDrives' => true,
+            'includeItemsFromAllDrives' => true,
+        ]);
+
+        return collect($result->getFiles())->map(fn (DriveFile $f) => [
+            'id' => $f->getId(),
+            'name' => $f->getName(),
+            'modifiedTime' => $f->getModifiedTime(),
+        ])->all();
+    }
+
     public static function classFolderName(Student $student): string
     {
         return $student->classroom?->name ?: 'Tanpa Kelas';

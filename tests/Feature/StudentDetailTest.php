@@ -3,6 +3,8 @@
 use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
 use App\Enums\Religion;
+use App\Enums\SchoolFeature;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
 use App\Models\CardGenerationLog;
@@ -10,9 +12,12 @@ use App\Models\PrayerAttendance;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Models\Student;
+use App\Services\GoogleDriveService;
 use App\Services\Student\StudentStatsBuilder;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Testing\TestResponse;
 
 beforeEach(function () {
     $this->admin = createAdminUser();
@@ -192,6 +197,93 @@ test('a non-muslim student is flagged as not covered', function () {
 
     expect($prayer['enabled'])->toBeTrue()
         ->and($prayer['covered'])->toBeFalse();
+});
+
+/**
+ * Prop `drivePhoto` bersifat optional, jadi ia hanya ikut pada partial reload yang
+ * memintanya — persis seperti yang dilakukan tombol "Cari di Drive" di halaman.
+ */
+function requestDrivePhoto(): TestResponse
+{
+    return test()->get(route('admin.siswa.show', test()->student), [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
+        'X-Inertia-Partial-Component' => 'admin/siswa/show',
+        'X-Inertia-Partial-Data' => 'drivePhoto',
+    ]);
+}
+
+test('the drive photo is not looked up on a plain page visit', function () {
+    $this->actingAs($this->admin)
+        ->get(route('admin.siswa.show', $this->student))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->missing('drivePhoto'));
+});
+
+test('a located drive photo is exposed with view and download links', function () {
+    Cache::put('student-drive-photo:'.$this->student->id, [
+        'file_id' => 'FILE123',
+        'name' => 'ahmad-rian-0012-foto.png',
+        'view_url' => 'https://drive.google.com/file/d/FILE123/view',
+        'download_url' => 'https://drive.google.com/uc?export=download&id=FILE123',
+    ], 600);
+
+    $this->actingAs($this->admin);
+
+    requestDrivePhoto()
+        ->assertOk()
+        ->assertJsonPath('props.drivePhoto.feature_enabled', true)
+        ->assertJsonPath('props.drivePhoto.file.name', 'ahmad-rian-0012-foto.png')
+        ->assertJsonPath('props.drivePhoto.file.view_url', 'https://drive.google.com/file/d/FILE123/view')
+        ->assertJsonPath('props.drivePhoto.file.download_url', 'https://drive.google.com/uc?export=download&id=FILE123');
+});
+
+test('a school without drive configured gets a null file plus the name it looked for', function () {
+    $this->actingAs($this->admin);
+
+    requestDrivePhoto()
+        ->assertOk()
+        ->assertJsonPath('props.drivePhoto.feature_enabled', true)
+        ->assertJsonPath('props.drivePhoto.file', null)
+        ->assertJsonPath('props.drivePhoto.expected_file_name', GoogleDriveService::studentPhotoFileName($this->student->fresh()))
+        ->assertJsonStructure(['props' => ['drivePhoto' => ['expected_folder']]]);
+});
+
+test('the drive lookup is skipped entirely when the feature is off', function () {
+    $this->admin->school->setSetting(SchoolFeature::IntegrasiDrive->settingKey(), false);
+
+    Cache::put('student-drive-photo:'.$this->student->id, [
+        'file_id' => 'FILE123',
+        'name' => 'seharusnya-tidak-terpakai.png',
+        'view_url' => 'https://drive.google.com/file/d/FILE123/view',
+        'download_url' => 'https://drive.google.com/uc?export=download&id=FILE123',
+    ], 600);
+
+    $this->actingAs($this->admin);
+
+    requestDrivePhoto()
+        ->assertOk()
+        ->assertJsonPath('props.drivePhoto.feature_enabled', false)
+        ->assertJsonPath('props.drivePhoto.file', null);
+});
+
+test('refreshing drops the cached lookup so the next search hits drive again', function () {
+    $key = 'student-drive-photo:'.$this->student->id;
+    Cache::put($key, ['file_id' => 'FILE123'], 600);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.siswa.drive-photo.refresh', $this->student))
+        ->assertRedirect();
+
+    expect(Cache::has($key))->toBeFalse();
+});
+
+test('the drive photo of another school student is not reachable', function () {
+    $other = Student::factory()->create(['school_id' => School::factory()->create()->id]);
+
+    $this->actingAs($this->admin)
+        ->post(route('admin.siswa.drive-photo.refresh', $other))
+        ->assertNotFound();
 });
 
 test('a student from another school is not reachable', function () {
