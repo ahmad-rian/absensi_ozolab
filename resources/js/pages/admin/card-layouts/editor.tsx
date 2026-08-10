@@ -23,7 +23,9 @@ type FrameItem = {
 
 type FieldElement = { type: 'field'; label: string; source: string; x: number; y: number; width: number; labelWidth: number; fontSize: number; enabled: boolean };
 type PhotoElement = { type: 'photo'; x: number; y: number; w: number; h: number; enabled: boolean };
-type QrElement = { type: 'qr'; x: number; y: number; size: number; enabled: boolean };
+// `size` predates independent w/h and is kept so configs saved before the resize
+// feature still render; the server derives w/h from it in normalizedConfig().
+type QrElement = { type: 'qr'; x: number; y: number; size: number; w?: number; h?: number; enabled: boolean };
 type AnyElement = FieldElement | PhotoElement | QrElement;
 type Elements = Record<string, AnyElement>;
 
@@ -76,8 +78,41 @@ function boxPx(el: AnyElement): { w: number; h: number } {
     if (el.type === 'photo') {
         return { w: mm(el.w), h: mm(el.h) };
     }
-    return { w: mm(el.size), h: mm(el.size) };
+    return { w: mm(el.w ?? el.size), h: mm(el.h ?? el.size) };
 }
+
+// Smallest an element may be dragged down to — below this the resize handles
+// overlap and the element becomes impossible to grab again.
+const MIN_MM = 4;
+
+/** A QR stretched more than 10% off square starts risking scan failures. */
+function isQrStretched(el: QrElement): boolean {
+    const w = el.w ?? el.size;
+    const h = el.h ?? el.size;
+
+    return Math.abs(w - h) / Math.max(w, h) > 0.1;
+}
+
+const HANDLE_DOT: React.CSSProperties = {
+    width: 9,
+    height: 9,
+    borderRadius: 9999,
+    background: '#fff',
+    border: '1.5px solid #0ea5e9',
+    boxShadow: '0 1px 2px rgb(0 0 0 / 0.25)',
+};
+
+/** Canva-style dots on the eight resize handles, shown only while the element is selected. */
+const RESIZE_HANDLE_STYLES: Record<string, React.CSSProperties> = {
+    topLeft: { ...HANDLE_DOT, top: -5, left: -5 },
+    top: { ...HANDLE_DOT, top: -5, left: 'calc(50% - 4.5px)' },
+    topRight: { ...HANDLE_DOT, top: -5, right: -5 },
+    right: { ...HANDLE_DOT, top: 'calc(50% - 4.5px)', right: -5 },
+    bottomRight: { ...HANDLE_DOT, bottom: -5, right: -5 },
+    bottom: { ...HANDLE_DOT, bottom: -5, left: 'calc(50% - 4.5px)' },
+    bottomLeft: { ...HANDLE_DOT, bottom: -5, left: -5 },
+    left: { ...HANDLE_DOT, top: 'calc(50% - 4.5px)', left: -5 },
+};
 
 const SNAP_TH = 5; // px
 
@@ -381,8 +416,14 @@ function CardPreview({
                             {...common}
                             size={{ width: mm(el.w), height: mm(el.h) }}
                             position={pos}
-                            enableResizing={false}
+                            enableResizing={!isMulti}
+                            resizeHandleStyles={selected && !isMulti ? RESIZE_HANDLE_STYLES : undefined}
+                            minWidth={mm(MIN_MM)}
+                            minHeight={mm(MIN_MM)}
                             onDragStop={(_e, d) => dragStop(d)}
+                            onResizeStop={(_e, _dir, ref, _delta, p) =>
+                                onUpdate(id, { w: toMm(ref.offsetWidth), h: toMm(ref.offsetHeight), x: toMm(p.x), y: toMm(p.y) })
+                            }
                         >
                             <div
                                 ref={(n) => {
@@ -394,7 +435,7 @@ function CardPreview({
                                     selected ? 'outline outline-1 outline-sky-500' : 'outline-dashed outline-1 outline-zinc-400/60',
                                 )}
                             >
-                                <User style={{ width: mm(el.w) * 0.4, height: mm(el.w) * 0.4 }} />
+                                <User style={{ width: mm(Math.min(el.w, el.h)) * 0.4, height: mm(Math.min(el.w, el.h)) * 0.4 }} />
                             </div>
                         </Rnd>
                     );
@@ -405,10 +446,16 @@ function CardPreview({
                     <Rnd
                         key={id}
                         {...common}
-                        size={{ width: mm(el.size), height: mm(el.size) }}
+                        size={{ width: mm(el.w ?? el.size), height: mm(el.h ?? el.size) }}
                         position={pos}
-                        enableResizing={false}
+                        enableResizing={!isMulti}
+                        resizeHandleStyles={selected && !isMulti ? RESIZE_HANDLE_STYLES : undefined}
+                        minWidth={mm(MIN_MM)}
+                        minHeight={mm(MIN_MM)}
                         onDragStop={(_e, d) => dragStop(d)}
+                        onResizeStop={(_e, _dir, ref, _delta, p) =>
+                            onUpdate(id, { w: toMm(ref.offsetWidth), h: toMm(ref.offsetHeight), x: toMm(p.x), y: toMm(p.y) })
+                        }
                     >
                         <div
                             ref={(n) => {
@@ -777,8 +824,22 @@ export default function CardLayoutEditor({ layout, defaultElements, frames }: Pr
                                             <FontControl value={selected.fontSize} onChange={(v) => updateElement(soleSelectedId!, { fontSize: v } as Partial<AnyElement>)} />
                                         </>
                                     )}
-                                    {(selected.type === 'photo' || selected.type === 'qr') && (
-                                        <p className="text-muted-foreground col-span-2 text-[11px]">Ukuran {selected.type === 'photo' ? 'foto' : 'QR'} tetap — hanya bisa digeser posisinya.</p>
+                                    {selected.type === 'photo' && (
+                                        <>
+                                            <NumField label="Lebar (mm)" value={selected.w} onChange={(v) => updateElement(soleSelectedId!, { w: v } as Partial<AnyElement>)} />
+                                            <NumField label="Tinggi (mm)" value={selected.h} onChange={(v) => updateElement(soleSelectedId!, { h: v } as Partial<AnyElement>)} />
+                                        </>
+                                    )}
+                                    {selected.type === 'qr' && (
+                                        <>
+                                            <NumField label="Lebar (mm)" value={selected.w ?? selected.size} onChange={(v) => updateElement(soleSelectedId!, { w: v } as Partial<AnyElement>)} />
+                                            <NumField label="Tinggi (mm)" value={selected.h ?? selected.size} onChange={(v) => updateElement(soleSelectedId!, { h: v } as Partial<AnyElement>)} />
+                                            {isQrStretched(selected) && (
+                                                <p className="col-span-2 text-[11px] text-amber-600 dark:text-amber-500">
+                                                    QR tidak persegi — berisiko gagal dipindai. Samakan lebar dan tingginya bila kartu akan dipakai untuk absensi.
+                                                </p>
+                                            )}
+                                        </>
                                     )}
                                 </CardContent>
                             </Card>

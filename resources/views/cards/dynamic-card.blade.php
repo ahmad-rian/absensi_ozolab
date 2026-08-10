@@ -72,7 +72,7 @@ body {
                 @endif
             </div>
         @elseif($type === 'qr' && !empty($qrSvg))
-            <div class="el el-qr" style="left: calc({{ $el['x'] }} * var(--mm)); top: calc({{ $el['y'] }} * var(--mm)); width: calc({{ $el['size'] ?? 15 }} * var(--mm)); height: calc({{ $el['size'] ?? 15 }} * var(--mm));">{!! $qrSvg !!}</div>
+            <div class="el el-qr" style="left: calc({{ $el['x'] }} * var(--mm)); top: calc({{ $el['y'] }} * var(--mm)); width: calc({{ $el['w'] ?? $el['size'] ?? 15 }} * var(--mm)); height: calc({{ $el['h'] ?? $el['size'] ?? 15 }} * var(--mm));">{!! $qrSvg !!}</div>
         @endif
     @endforeach
     <script>

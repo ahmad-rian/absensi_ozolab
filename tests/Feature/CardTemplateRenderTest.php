@@ -83,3 +83,45 @@ test('card template swaps dimensions for portrait and hides disabled elements', 
     expect($html)->toContain('height: calc(85.6 * var(--mm))');
     expect($html)->not->toContain('class="el el-qr"');
 });
+
+test('photo and qr are printed at the size stored in the layout', function () {
+    $school = School::factory()->create();
+    $student = Student::factory()->create(['school_id' => $school->id]);
+
+    $elements = SchoolCardLayout::defaultElements();
+    $elements['photo'] = array_merge($elements['photo'], ['w' => 24.5, 'h' => 30.0]);
+    $elements['qr'] = array_merge($elements['qr'], ['w' => 18.0, 'h' => 11.0]);
+
+    $layout = SchoolCardLayout::create([
+        'school_id' => $school->id,
+        'name' => 'Ukuran Bebas',
+        'type' => 'osis',
+        'layout_config' => ['elements' => $elements],
+    ]);
+
+    $html = renderCard($layout, $student);
+
+    expect($html)->toContain('width: calc(24.5 * var(--mm)); height: calc(30 * var(--mm));')
+        ->and($html)->toContain('width: calc(18 * var(--mm)); height: calc(11 * var(--mm));');
+});
+
+test('a qr saved before the resize feature keeps its own size', function () {
+    $school = School::factory()->create();
+    $student = Student::factory()->create(['school_id' => $school->id]);
+
+    // Konfigurasi lama: QR hanya punya `size`, belum punya w/h. Tanpa penurunan
+    // di normalizedConfig() ia akan terlempar balik ke 15mm bawaan.
+    $layout = SchoolCardLayout::create([
+        'school_id' => $school->id,
+        'name' => 'Warisan',
+        'type' => 'osis',
+        'layout_config' => ['elements' => ['qr' => ['type' => 'qr', 'x' => 22.0, 'y' => 32.0, 'size' => 21.0, 'enabled' => true]]],
+    ]);
+
+    $qr = $layout->normalizedConfig()['elements']['qr'];
+
+    expect($qr['w'])->toBe(21.0)
+        ->and($qr['h'])->toBe(21.0);
+
+    expect(renderCard($layout, $student))->toContain('width: calc(21 * var(--mm)); height: calc(21 * var(--mm));');
+});

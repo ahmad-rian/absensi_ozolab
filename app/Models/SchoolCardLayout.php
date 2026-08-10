@@ -54,7 +54,7 @@ class SchoolCardLayout extends Model
             'field_jk' => ['type' => 'field', 'label' => 'JENIS KELAMIN', 'source' => 'gender', 'x' => 3.0, 'y' => 38.4, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => false],
             'field_telp' => ['type' => 'field', 'label' => 'NO. HP', 'source' => 'parent_phone', 'x' => 3.0, 'y' => 41.6, 'width' => 55.0, 'labelWidth' => 16.0, 'fontSize' => 2.0, 'enabled' => false],
             'photo' => ['type' => 'photo', 'x' => 2.5, 'y' => 32.0, 'w' => 16.0, 'h' => 21.0, 'enabled' => true],
-            'qr' => ['type' => 'qr', 'x' => 22.0, 'y' => 32.0, 'size' => 15.0, 'enabled' => true],
+            'qr' => ['type' => 'qr', 'x' => 22.0, 'y' => 32.0, 'size' => 15.0, 'w' => 15.0, 'h' => 15.0, 'enabled' => true],
         ];
     }
 
@@ -75,6 +75,7 @@ class SchoolCardLayout extends Model
             foreach ($defaults as $key => $default) {
                 $elements[$key] = array_merge($default, $config['elements'][$key] ?? []);
             }
+            $elements['qr'] = static::withQrDimensions($elements['qr'], $config['elements']['qr'] ?? []);
         } else {
             $elements = $this->deriveElementsFromLegacy($defaults, $config);
         }
@@ -86,6 +87,28 @@ class SchoolCardLayout extends Model
             'frame_id' => $config['frame_id'] ?? null,
             'elements' => $elements,
         ]);
+    }
+
+    /**
+     * The QR element used to carry a single `size` (always square). It now carries
+     * independent `w`/`h`, so a config saved before that change would otherwise keep
+     * the 15mm default while its real `size` is ignored. Derive the missing pair from
+     * `size`, and keep `size` in step with the width for anything still reading it.
+     *
+     * @param  array<string, mixed>  $merged
+     * @param  array<string, mixed>  $stored
+     * @return array<string, mixed>
+     */
+    private static function withQrDimensions(array $merged, array $stored): array
+    {
+        if (! isset($stored['w']) && ! isset($stored['h']) && isset($stored['size'])) {
+            $merged['w'] = (float) $stored['size'];
+            $merged['h'] = (float) $stored['size'];
+        }
+
+        $merged['size'] = (float) ($merged['w'] ?? $merged['size']);
+
+        return $merged;
     }
 
     /**
@@ -124,10 +147,14 @@ class SchoolCardLayout extends Model
             'enabled' => true,
         ]);
 
+        $qrSize = (float) ($config['frame_qr_size'] ?? 15);
+
         $elements['qr'] = array_merge($elements['qr'], [
             'x' => (float) ($config['frame_qr_left'] ?? 22),
             'y' => (float) ($config['frame_qr_top'] ?? 32),
-            'size' => (float) ($config['frame_qr_size'] ?? 15),
+            'size' => $qrSize,
+            'w' => $qrSize,
+            'h' => $qrSize,
             'enabled' => (bool) ($config['show_qr'] ?? true),
         ]);
 
