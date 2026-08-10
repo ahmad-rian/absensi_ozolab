@@ -102,16 +102,20 @@ const HANDLE_DOT: React.CSSProperties = {
     boxShadow: '0 1px 2px rgb(0 0 0 / 0.25)',
 };
 
-/** Canva-style dots on the eight resize handles, shown only while the element is selected. */
+/**
+ * Foto dan QR hanya bisa ditarik dari empat sudut.
+ *
+ * Pegangan sisi sengaja dimatikan: menarik sisi berarti mengubah satu dimensi
+ * saja, dan itulah satu-satunya cara gambar jadi peang. Dengan sudut saja,
+ * lebar dan tinggi selalu bergerak bersama.
+ */
+const CORNER_HANDLES = { topLeft: true, topRight: true, bottomLeft: true, bottomRight: true } as const;
+
 const RESIZE_HANDLE_STYLES: Record<string, React.CSSProperties> = {
     topLeft: { ...HANDLE_DOT, top: -5, left: -5 },
-    top: { ...HANDLE_DOT, top: -5, left: 'calc(50% - 4.5px)' },
     topRight: { ...HANDLE_DOT, top: -5, right: -5 },
-    right: { ...HANDLE_DOT, top: 'calc(50% - 4.5px)', right: -5 },
     bottomRight: { ...HANDLE_DOT, bottom: -5, right: -5 },
-    bottom: { ...HANDLE_DOT, bottom: -5, left: 'calc(50% - 4.5px)' },
     bottomLeft: { ...HANDLE_DOT, bottom: -5, left: -5 },
-    left: { ...HANDLE_DOT, top: 'calc(50% - 4.5px)', left: -5 },
 };
 
 const SNAP_TH = 5; // px
@@ -437,9 +441,9 @@ function CardPreview({
                             {...common}
                             size={{ width: mm(el.w), height: mm(el.h) }}
                             position={pos}
-                            enableResizing={!isMulti}
+                            enableResizing={!isMulti ? CORNER_HANDLES : false}
                             resizeHandleStyles={selected && !isMulti ? RESIZE_HANDLE_STYLES : undefined}
-                            lockAspectRatio={shiftHeld}
+                            lockAspectRatio={!shiftHeld}
                             minWidth={mm(MIN_MM)}
                             minHeight={mm(MIN_MM)}
                             onDragStop={(_e, d) => dragStop(d)}
@@ -470,9 +474,9 @@ function CardPreview({
                         {...common}
                         size={{ width: mm(el.w ?? el.size), height: mm(el.h ?? el.size) }}
                         position={pos}
-                        enableResizing={!isMulti}
+                        enableResizing={!isMulti ? CORNER_HANDLES : false}
                         resizeHandleStyles={selected && !isMulti ? RESIZE_HANDLE_STYLES : undefined}
-                        lockAspectRatio={shiftHeld}
+                        lockAspectRatio={!shiftHeld}
                         minWidth={mm(MIN_MM)}
                         minHeight={mm(MIN_MM)}
                         onDragStop={(_e, d) => dragStop(d)}
@@ -914,7 +918,8 @@ function roundMm(value: number): number {
 function ShiftHint() {
     return (
         <p className="text-muted-foreground col-span-2 text-[11px]">
-            Tahan <kbd className="bg-muted rounded border px-1 font-sans text-[10px]">Shift</kbd> saat menarik supaya proporsinya terkunci dan gambarnya tidak peang.
+            Tarik dari sudutnya — proporsi terjaga sendiri. Tahan{' '}
+            <kbd className="bg-muted rounded border px-1 font-sans text-[10px]">Shift</kbd> hanya bila memang ingin mengubah perbandingannya.
         </p>
     );
 }
