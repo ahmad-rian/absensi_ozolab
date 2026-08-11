@@ -4,6 +4,7 @@ use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 
 uses(RefreshDatabase::class);
 
@@ -92,6 +93,78 @@ test('a student can be registered with all optional fields', function () {
         ->and($student->parent_phone)->toBe('812345678')
         ->and($student->religion->value)->toBe('ISLAM')
         ->and($student->birth_place)->toBe('Jakarta');
+});
+
+/**
+ * NISN dipegang siswa sekolah lain, atau siswa yang sudah dihapus, tidak boleh
+ * menghalangi pendaftaran. Aturan global yang dipakai sebelumnya menolak keduanya,
+ * dan operator yang mencari di sekolahnya sendiri tidak menemukan apa pun —
+ * pesannya benar tapi mustahil ditindaklanjuti.
+ */
+function registerStudent(School $school, Classroom $classroom, array $overrides = []): TestResponse
+{
+    return test()->post('/daftar', array_merge([
+        'school_id' => $school->id,
+        'full_name' => 'Siswa Uji',
+        'no_absen' => '7',
+        'nisn' => '0148651992',
+        'gender' => 'LAKI_LAKI',
+        'religion' => 'ISLAM',
+        'classroom_id' => $classroom->id,
+        'birth_place' => 'Purwokerto',
+        'birth_date' => '2012-01-01',
+        'address' => 'Jl. Kenanga No. 2',
+        'parent_name' => 'Bapak Uji',
+        'parent_phone' => '081234567890',
+        'parent_relation' => 'AYAH',
+    ], $overrides));
+}
+
+test('a nisn held by another school does not block registration', function () {
+    $lain = School::factory()->create(['is_active' => true]);
+    Student::factory()->create([
+        'school_id' => $lain->id,
+        'classroom_id' => Classroom::factory()->create(['school_id' => $lain->id])->id,
+        'nisn' => '0148651992',
+        'nis' => '20250001',
+    ]);
+
+    $school = School::factory()->create(['is_active' => true]);
+    $classroom = Classroom::factory()->create(['school_id' => $school->id]);
+
+    registerStudent($school, $classroom, ['nis' => '20250001'])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    expect(Student::where('school_id', $school->id)->where('nisn', '0148651992')->exists())->toBeTrue();
+});
+
+test('a nisn freed by a deleted student can be registered again', function () {
+    $school = School::factory()->create(['is_active' => true]);
+    $classroom = Classroom::factory()->create(['school_id' => $school->id]);
+
+    Student::factory()->create([
+        'school_id' => $school->id,
+        'classroom_id' => $classroom->id,
+        'nisn' => '0148651992',
+    ])->delete();
+
+    registerStudent($school, $classroom)
+        ->assertOk()
+        ->assertJson(['success' => true]);
+});
+
+test('a nisn already used in the same school is still rejected', function () {
+    $school = School::factory()->create(['is_active' => true]);
+    $classroom = Classroom::factory()->create(['school_id' => $school->id]);
+
+    Student::factory()->create([
+        'school_id' => $school->id,
+        'classroom_id' => $classroom->id,
+        'nisn' => '0148651992',
+    ]);
+
+    registerStudent($school, $classroom)->assertSessionHasErrors('nisn');
 });
 
 test('student registration validates required fields', function () {

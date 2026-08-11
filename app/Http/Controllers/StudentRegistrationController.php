@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -146,9 +147,14 @@ class StudentRegistrationController extends Controller
             // Nama & NIS dari form publik ini berakhir di export CSV dan header
             // HTTP, jadi karakternya dibatasi di sumbernya.
             'full_name' => ['required', 'string', 'max:255', "regex:/^[\p{L}\p{N} .,'\-]+$/u"],
-            'nis' => ['nullable', 'string', 'max:50', 'alpha_num', 'unique:students,nis'],
+            // Dibatasi ke sekolah yang dituju dan mengabaikan baris yang sudah
+            // dihapus, mengikuti indeks `students_school_nis_unique`. Aturan
+            // global yang dipakai sebelumnya menolak NISN yang ternyata dipegang
+            // siswa sekolah LAIN — operator lalu mencari di sekolahnya sendiri
+            // dan tidak menemukan apa pun, jadi pesannya mustahil ditindaklanjuti.
+            'nis' => ['nullable', 'string', 'max:50', 'alpha_num', $this->uniquePerSchool('nis', $request->school_id)],
             'no_absen' => ['required', 'string', 'max:10', 'alpha_num'],
-            'nisn' => ['required', 'string', 'max:20', 'alpha_num', 'unique:students,nisn'],
+            'nisn' => ['required', 'string', 'max:20', 'alpha_num', $this->uniquePerSchool('nisn', $request->school_id)],
             'gender' => ['required', Rule::enum(Gender::class)],
             'religion' => ['required', Rule::enum(Religion::class)],
             'classroom_id' => ['required', Rule::exists('classrooms', 'id')->where('school_id', $request->school_id)],
@@ -367,6 +373,21 @@ class StudentRegistrationController extends Controller
      *
      * @return array{client: GoogleDriveService, folder: string}|null
      */
+    /**
+     * Cermin dari indeks `students_school_nis_unique` / `students_school_nisn_unique`:
+     * unik per sekolah, dan baris yang sudah dihapus tidak ikut menahan nomornya.
+     *
+     * `$schoolId` datang dari input, tapi aturan `school_id` di ruleset yang sama
+     * sudah mengharuskannya ada di tabel schools — dan pola ini persis yang dipakai
+     * aturan `classroom_id` di bawahnya.
+     */
+    private function uniquePerSchool(string $column, mixed $schoolId): Unique
+    {
+        return Rule::unique('students', $column)
+            ->where('school_id', $schoolId)
+            ->whereNull('deleted_at');
+    }
+
     private function driveFor(string $schoolId): ?array
     {
         $driveConfig = School::with('driveConfig')->findOrFail($schoolId)->driveConfig;
