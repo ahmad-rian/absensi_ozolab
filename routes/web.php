@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\PhotoSheetController;
 use App\Http\Controllers\Admin\RfidCardController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\SemuaSekolahController;
 use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\StudentImportController;
 use App\Http\Controllers\Admin\StudentReportController;
@@ -113,6 +114,12 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::get('siswa/{siswa}/laporan/absensi/pdf', [StudentReportController::class, 'attendancePdf'])->name('admin.siswa.laporan.absensi.pdf');
         Route::get('siswa/{siswa}/laporan/sholat/csv', [StudentReportController::class, 'prayerCsv'])->name('admin.siswa.laporan.sholat.csv');
         Route::get('siswa/{siswa}/laporan/sholat/pdf', [StudentReportController::class, 'prayerPdf'])->name('admin.siswa.laporan.sholat.pdf');
+    });
+
+    // Modul grup Sistem: lintas tenant, jadi `super-admin` wajib ikut — permission
+    // saja tidak cukup karena global scope tidak menjaga apa pun di sini.
+    Route::middleware(['permission:semua-sekolah.access', 'super-admin'])->group(function () {
+        Route::get('semua-sekolah', [SemuaSekolahController::class, 'index'])->name('admin.semua-sekolah');
     });
 
     Route::middleware(['permission:rfid-cards.access', 'feature:absensi_rfid'])->group(function () {

@@ -189,6 +189,7 @@ test('every system-module route is guarded by the super-admin middleware', funct
         'card-forms.access',
         'kartu-bebas.access',
         'impersonate.access',
+        'semua-sekolah.access',
     ];
 
     $unguarded = collect(app('router')->getRoutes()->getRoutes())

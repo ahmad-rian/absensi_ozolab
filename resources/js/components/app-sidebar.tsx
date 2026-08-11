@@ -11,6 +11,7 @@ import {
     FileSpreadsheet,
     FileText,
     Frame,
+    Globe,
     GraduationCap,
     HardDrive,
     History,
@@ -107,6 +108,7 @@ const sections: NavSection[] = [
         label: 'Sekolah',
         items: [
             { title: 'Sekolah', href: '/admin/schools', icon: Building2, permission: 'schools.access' },
+            { title: 'Semua Sekolah', href: '/admin/semua-sekolah', icon: Globe, permission: 'semua-sekolah.access' },
             { title: 'Kartu Bebas / Haji', href: '/kartu-bebas', icon: FileText, newTab: true, permission: 'kartu-bebas.access' },
         ],
     },

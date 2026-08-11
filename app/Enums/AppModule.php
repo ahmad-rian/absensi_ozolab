@@ -35,6 +35,7 @@ enum AppModule: string
     case CardForms = 'card-forms';
     case KartuBebas = 'kartu-bebas';
     case Impersonate = 'impersonate';
+    case SemuaSekolah = 'semua-sekolah';
 
     public function permission(): string
     {
@@ -69,6 +70,7 @@ enum AppModule: string
             self::CardForms => 'Form Kartu Dinamis',
             self::KartuBebas => 'Kartu Bebas',
             self::Impersonate => 'Masuk Sebagai Pengguna',
+            self::SemuaSekolah => 'Semua Sekolah',
         };
     }
 
@@ -86,7 +88,8 @@ enum AppModule: string
             self::WaConfig => 'Administrasi',
 
             self::Roles, self::Schools, self::NotificationGateways,
-            self::CardForms, self::KartuBebas, self::Impersonate => 'Sistem',
+            self::CardForms, self::KartuBebas, self::Impersonate,
+            self::SemuaSekolah => 'Sistem',
         };
     }
 
