@@ -16,6 +16,7 @@ enum AppModule: string
     case Kelas = 'kelas';
     case JadwalAbsensi = 'jadwal-absensi';
     case Absensi = 'absensi';
+    case RfidCards = 'rfid-cards';
     case Laporan = 'laporan';
     case Notifikasi = 'notifikasi';
     case Frames = 'frames';
@@ -49,6 +50,7 @@ enum AppModule: string
             self::Kelas => 'Kelas',
             self::JadwalAbsensi => 'Jadwal Absensi',
             self::Absensi => 'Absensi',
+            self::RfidCards => 'Kartu RFID',
             self::Laporan => 'Laporan',
             self::Notifikasi => 'Notifikasi',
             self::Frames => 'Frame & Bingkai',
@@ -74,7 +76,7 @@ enum AppModule: string
     {
         return match ($this) {
             self::Dashboard, self::Siswa, self::OrangTua, self::Kelas,
-            self::JadwalAbsensi, self::Absensi, self::Laporan,
+            self::JadwalAbsensi, self::Absensi, self::RfidCards, self::Laporan,
             self::Notifikasi => 'Akademik',
 
             self::Frames, self::CardLayouts, self::CardGeneration,
@@ -108,7 +110,7 @@ enum AppModule: string
 
             UserRole::Admin => [
                 self::Dashboard, self::Siswa, self::OrangTua, self::Kelas,
-                self::JadwalAbsensi, self::Absensi, self::Laporan,
+                self::JadwalAbsensi, self::Absensi, self::RfidCards, self::Laporan,
                 self::Notifikasi, self::Frames, self::CardLayouts, self::CardGeneration,
                 self::AlbumLayouts, self::AlbumGeneration, self::PhotoSheets,
                 self::Pengaturan, self::Users, self::DriveConfig, self::WaConfig,

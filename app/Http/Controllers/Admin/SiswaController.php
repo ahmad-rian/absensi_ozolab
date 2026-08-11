@@ -32,7 +32,8 @@ class SiswaController extends Controller
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('nis', 'like', "%{$search}%");
+                        ->orWhere('nis', 'like', "%{$search}%")
+                        ->orWhere('nisn', 'like', "%{$search}%");
                 });
             })
             ->when($request->classroom_id, function ($query, $classroomId) {

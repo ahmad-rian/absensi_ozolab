@@ -38,6 +38,8 @@ class Student extends Model
         'qr_token',
         'qr_issued_at',
         'qr_rotated_at',
+        'rfid_uid',
+        'rfid_registered_at',
         'is_active',
     ];
 
@@ -50,6 +52,7 @@ class Student extends Model
             'birth_date' => 'date',
             'qr_issued_at' => 'datetime',
             'qr_rotated_at' => 'datetime',
+            'rfid_registered_at' => 'datetime',
             'is_active' => 'boolean',
         ];
     }

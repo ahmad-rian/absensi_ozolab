@@ -7,6 +7,7 @@ import {
     Building2,
     CalendarCheck,
     Clock,
+    CreditCard,
     FileSpreadsheet,
     FileText,
     Frame,
@@ -74,6 +75,7 @@ const sections: NavSection[] = [
         items: [
             { title: 'Absensi', href: '/admin/absensi', icon: CalendarCheck, permission: 'absensi.access', feature: 'absensi_sekolah' },
             { title: 'Jadwal Absensi', href: '/admin/jadwal-absensi', icon: Clock, permission: 'jadwal-absensi.access', feature: 'absensi_sekolah' },
+            { title: 'Kartu RFID', href: '/admin/rfid-cards', icon: CreditCard, permission: 'rfid-cards.access', feature: 'absensi_rfid' },
         ],
     },
     {

@@ -28,4 +28,31 @@ class StudentLookup
             ->with('classroom')
             ->first();
     }
+
+    /**
+     * UID kartu RFID, dinormalkan ke huruf besar tanpa pemisah.
+     *
+     * Pembaca kartu mengetikkan UID dalam bentuk yang berbeda-beda — ada yang
+     * memakai titik dua, ada yang huruf kecil — sedangkan yang tersimpan satu
+     * bentuk saja. Normalisasi yang sama dipakai saat pendaftaran kartu.
+     */
+    public function findByRfidUid(string $uid, string $schoolId): ?Student
+    {
+        $uid = self::normalizeRfidUid($uid);
+
+        if ($uid === '') {
+            return null;
+        }
+
+        return Student::where('rfid_uid', $uid)
+            ->where('school_id', $schoolId)
+            ->where('is_active', true)
+            ->with('classroom')
+            ->first();
+    }
+
+    public static function normalizeRfidUid(string $uid): string
+    {
+        return mb_strtoupper(preg_replace('/[^A-Za-z0-9]/', '', trim($uid)) ?? '');
+    }
 }

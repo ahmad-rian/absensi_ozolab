@@ -62,10 +62,19 @@ class PublicScannerController extends Controller
 
         $student = $this->studentLookup->findByQrToken($request->token, $school->id);
 
+        // Pembaca RFID mode HID mengetik UID lalu Enter, persis seperti pemindai
+        // QR — konsol scan tidak bisa membedakan keduanya, jadi server yang
+        // mencoba UID kartu setelah token QR tidak cocok. Hanya saat fiturnya
+        // dinyalakan: UID kartu jauh lebih pendek daripada qr_token, jadi jangan
+        // membuka jalur tebakan itu di sekolah yang tidak memakai RFID.
+        if (! $student && SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiRfid)) {
+            $student = $this->studentLookup->findByRfidUid($request->token, $school->id);
+        }
+
         if (! $student) {
             return response()->json([
                 'success' => false,
-                'message' => 'QR Code tidak dikenali atau siswa tidak ditemukan.',
+                'message' => 'Kartu atau QR Code tidak dikenali.',
             ], 404);
         }
 

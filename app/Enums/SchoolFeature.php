@@ -23,6 +23,7 @@ enum SchoolFeature: string
     // --- Akademik ---
     case MasterSiswa = 'master_siswa';
     case AbsensiSekolah = 'absensi_sekolah';
+    case AbsensiRfid = 'absensi_rfid';
     case SholatDzuhur = 'sholat_dzuhur';
     case SholatDhuha = 'sholat_dhuha';
     case Laporan = 'laporan';
@@ -83,6 +84,9 @@ enum SchoolFeature: string
             // Cocok dengan default di DispatchAttendanceNotifications.
             self::NotifAbsensi => true,
             self::NotifAlpaSholat => false,
+            // Butuh pembaca kartu fisik. Sekolah yang belum punya alatnya tidak
+            // perlu melihat menunya sama sekali.
+            self::AbsensiRfid => false,
             default => true,
         };
     }
@@ -92,6 +96,7 @@ enum SchoolFeature: string
         return match ($this) {
             self::MasterSiswa => 'Master Data Siswa',
             self::AbsensiSekolah => 'Absensi Sekolah',
+            self::AbsensiRfid => 'Absensi Kartu RFID',
             self::SholatDzuhur => 'Absen Sholat Dzuhur',
             self::SholatDhuha => 'Absen Sholat Dhuha',
             self::Laporan => 'Laporan',
@@ -112,6 +117,7 @@ enum SchoolFeature: string
         return match ($this) {
             self::MasterSiswa => 'Menu Siswa, Orang Tua, dan Kelas. Mematikannya juga menutup API siswa.',
             self::AbsensiSekolah => 'Menu Absensi & Jadwal Absensi, plus halaman scan gerbang.',
+            self::AbsensiRfid => 'Menu Kartu RFID dan penerimaan tap kartu di halaman scan gerbang.',
             self::SholatDzuhur => 'Absen sholat dzuhur di mushola lewat halaman scan sholat.',
             self::SholatDhuha => 'Absen sholat dhuha pagi. Jendela waktunya terpisah dari dzuhur.',
             self::Laporan => 'Menu Laporan beserta export CSV dan PDF.',
@@ -130,8 +136,8 @@ enum SchoolFeature: string
     public function group(): string
     {
         return match ($this) {
-            self::MasterSiswa, self::AbsensiSekolah, self::SholatDzuhur,
-            self::SholatDhuha, self::Laporan => 'Akademik',
+            self::MasterSiswa, self::AbsensiSekolah, self::AbsensiRfid,
+            self::SholatDzuhur, self::SholatDhuha, self::Laporan => 'Akademik',
 
             self::NotifAbsensi, self::NotifAlpaSholat,
             self::InboxNotifikasi => 'Notifikasi',
@@ -156,6 +162,7 @@ enum SchoolFeature: string
         return match ($this) {
             self::MasterSiswa => [AppModule::Siswa, AppModule::OrangTua, AppModule::Kelas],
             self::AbsensiSekolah => [AppModule::Absensi, AppModule::JadwalAbsensi],
+            self::AbsensiRfid => [AppModule::RfidCards],
             self::Laporan => [AppModule::Laporan],
             self::InboxNotifikasi => [AppModule::Notifikasi],
             self::KartuAlbum => [

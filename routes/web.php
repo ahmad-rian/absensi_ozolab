@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\PanduanController;
 use App\Http\Controllers\Admin\PengaturanController;
 use App\Http\Controllers\Admin\PhotoSheetBatchController;
 use App\Http\Controllers\Admin\PhotoSheetController;
+use App\Http\Controllers\Admin\RfidCardController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SiswaController;
@@ -112,6 +113,12 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::get('siswa/{siswa}/laporan/absensi/pdf', [StudentReportController::class, 'attendancePdf'])->name('admin.siswa.laporan.absensi.pdf');
         Route::get('siswa/{siswa}/laporan/sholat/csv', [StudentReportController::class, 'prayerCsv'])->name('admin.siswa.laporan.sholat.csv');
         Route::get('siswa/{siswa}/laporan/sholat/pdf', [StudentReportController::class, 'prayerPdf'])->name('admin.siswa.laporan.sholat.pdf');
+    });
+
+    Route::middleware(['permission:rfid-cards.access', 'feature:absensi_rfid'])->group(function () {
+        Route::get('rfid-cards', [RfidCardController::class, 'index'])->name('admin.rfid-cards');
+        Route::post('rfid-cards/{siswa}', [RfidCardController::class, 'store'])->name('admin.rfid-cards.store');
+        Route::delete('rfid-cards/{siswa}', [RfidCardController::class, 'destroy'])->name('admin.rfid-cards.destroy');
     });
 
     Route::middleware(['permission:orang-tua.access', 'feature:master_siswa'])->group(function () {
