@@ -145,7 +145,9 @@ class SiswaController extends Controller
     {
         $locator->forget($siswa);
 
-        return back();
+        // Bukan back(): rute ini hanya menerima POST, jadi mengalihkan ke Referer
+        // berisiko mendarat di URL tanpa rute GET dan menghasilkan 404.
+        return to_route('admin.siswa.show', $siswa);
     }
 
     /**

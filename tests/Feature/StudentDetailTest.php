@@ -271,9 +271,12 @@ test('refreshing drops the cached lookup so the next search hits drive again', f
     $key = 'student-drive-photo:'.$this->student->id;
     Cache::put($key, ['file_id' => 'FILE123'], 600);
 
+    // Rute ini hanya menerima POST, jadi tujuan pengalihannya harus halaman
+    // detail — bukan Referer, yang bisa menunjuk ke URL tanpa rute GET.
     $this->actingAs($this->admin)
+        ->from(route('admin.siswa.drive-photo.refresh', $this->student))
         ->post(route('admin.siswa.drive-photo.refresh', $this->student))
-        ->assertRedirect();
+        ->assertRedirect(route('admin.siswa.show', $this->student));
 
     expect(Cache::has($key))->toBeFalse();
 });

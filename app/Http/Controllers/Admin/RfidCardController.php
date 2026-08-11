@@ -103,15 +103,35 @@ class RfidCardController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => sprintf('Kartu %s didaftarkan untuk %s.', $uid, $siswa->full_name)]);
 
-        return back();
+        return $this->backToList($request);
     }
 
-    public function destroy(Student $siswa): RedirectResponse
+    public function destroy(Request $request, Student $siswa): RedirectResponse
     {
         $siswa->update(['rfid_uid' => null, 'rfid_registered_at' => null]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => sprintf('Kartu %s dilepas.', $siswa->full_name)]);
 
-        return back();
+        return $this->backToList($request);
+    }
+
+    /**
+     * Sengaja BUKAN back().
+     *
+     * back() mengikuti header Referer, dan URL ini hanya punya rute POST/DELETE.
+     * Begitu satu kegagalan membuat Inertia menaruh URL POST di bilah alamat
+     * (itulah yang terjadi saat penangan galat merender halaman error), setiap
+     * pengalihan berikutnya menembak URL yang tidak punya rute GET — satu
+     * gangguan sesaat berubah jadi rentetan 404 sampai halaman dimuat ulang.
+     *
+     * Filter ikut dibawa supaya operator tidak terlempar ke halaman pertama
+     * setiap kali menyimpan satu kartu.
+     */
+    private function backToList(Request $request): RedirectResponse
+    {
+        return to_route('admin.rfid-cards', array_filter(
+            $request->only('search', 'classroom_id', 'status', 'page'),
+            fn ($value) => $value !== null && $value !== '',
+        ));
     }
 }

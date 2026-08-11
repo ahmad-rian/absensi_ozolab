@@ -102,6 +102,31 @@ test('a card can be released', function () {
         ->and($fresh->rfid_registered_at)->toBeNull();
 });
 
+/**
+ * Rute simpan/lepas hanya menerima POST dan DELETE. Mengalihkan dengan back()
+ * membuat tujuannya ikut header Referer, dan begitu bilah alamat pernah berisi
+ * URL POST itu, setiap pengalihan berikutnya menembak URL tanpa rute GET —
+ * satu kegagalan sesaat berubah jadi rentetan 404. Dua test berikut mengunci
+ * tujuannya ke halaman daftar.
+ */
+test('saving a card lands back on the list, never on the post-only url', function () {
+    $this->actingAs($this->admin)
+        ->from(route('admin.rfid-cards.store', $this->student))
+        ->post(route('admin.rfid-cards.store', $this->student), ['rfid_uid' => 'A1B2C3D4'])
+        ->assertRedirect(route('admin.rfid-cards'));
+
+    $this->actingAs($this->admin)
+        ->from(route('admin.rfid-cards.destroy', $this->student))
+        ->delete(route('admin.rfid-cards.destroy', $this->student))
+        ->assertRedirect(route('admin.rfid-cards'));
+});
+
+test('the active filters survive a save', function () {
+    $this->actingAs($this->admin)
+        ->post(route('admin.rfid-cards.store', $this->student).'?status=belum&search=budi', ['rfid_uid' => 'A1B2C3D4'])
+        ->assertRedirect(route('admin.rfid-cards', ['search' => 'budi', 'status' => 'belum']));
+});
+
 test('a student from another school cannot be given a card', function () {
     $other = Student::factory()->create(['school_id' => School::factory()->create()->id]);
 

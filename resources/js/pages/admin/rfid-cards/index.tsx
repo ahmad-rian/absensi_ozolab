@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { CreditCard, Search, Trash2, Wifi } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { destroy as destroyCard, store as storeCard } from '@/actions/App/Http/Controllers/Admin/RfidCardController';
 import InputError from '@/components/input-error';
 import {
     AlertDialog,
@@ -61,7 +62,12 @@ type PageProps = {
 
 export default function RfidCardsIndex({ students, classrooms, filters, summary }: PageProps) {
     const [search, setSearch] = useState(filters.search);
-    const [target, setTarget] = useState<StudentRow | null>(null);
+    const [targetId, setTargetId] = useState<string | null>(null);
+
+    // Diturunkan ulang dari prop, bukan disimpan sebagai objek. Setiap simpan
+    // mengalihkan halaman dan mengganti isi `students`, jadi baris yang disimpan
+    // di state akan menampilkan UID versi sebelum perubahan.
+    const target = targetId ? (students.data.find((student) => student.id === targetId) ?? null) : null;
 
     function applyFilters(next: Partial<{ search: string; classroom_id: string; status: string }>) {
         const merged = { ...filters, ...next };
@@ -78,7 +84,7 @@ export default function RfidCardsIndex({ students, classrooms, filters, summary 
     }
 
     function unregister(student: StudentRow) {
-        router.delete(`/admin/rfid-cards/${student.id}`, { preserveScroll: true });
+        router.delete(destroyCard.url(student.id), { preserveScroll: true });
     }
 
     return (
@@ -186,7 +192,7 @@ export default function RfidCardsIndex({ students, classrooms, filters, summary 
                                         <TableCell className="text-muted-foreground text-xs">{student.rfid_registered_at ?? '-'}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-1">
-                                                <Button variant="outline" size="sm" onClick={() => setTarget(student)}>
+                                                <Button variant="outline" size="sm" onClick={() => setTargetId(student.id)}>
                                                     <CreditCard className="mr-1.5 size-4" />
                                                     {student.rfid_uid ? 'Ganti' : 'Daftarkan'}
                                                 </Button>
@@ -252,7 +258,7 @@ export default function RfidCardsIndex({ students, classrooms, filters, summary 
                 )}
             </div>
 
-            <RegisterCardDialog student={target} onClose={() => setTarget(null)} />
+            <RegisterCardDialog student={target} onClose={() => setTargetId(null)} />
         </>
     );
 }
@@ -282,13 +288,19 @@ function RegisterCardDialog({ student, onClose }: { student: StudentRow | null; 
     function submit(e: FormEvent) {
         e.preventDefault();
 
-        if (!student) {
+        // Sebagian pembaca RFID mengirim Enter lebih dari sekali, atau membaca
+        // ulang selama kartu masih menempel. Tanpa kunci ini satu tap bisa
+        // melahirkan beberapa permintaan sekaligus.
+        if (!student || form.processing) {
             return;
         }
 
-        form.post(`/admin/rfid-cards/${student.id}`, {
+        form.post(storeCard.url(student.id), {
             preserveScroll: true,
             onSuccess: () => onClose(),
+            // Simpan gagal berarti operator akan menempelkan kartu lagi —
+            // kolomnya harus siap menerima, bukan kehilangan fokus.
+            onError: () => inputRef.current?.focus(),
         });
     }
 
