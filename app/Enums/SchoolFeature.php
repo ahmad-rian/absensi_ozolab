@@ -24,6 +24,7 @@ enum SchoolFeature: string
     case MasterSiswa = 'master_siswa';
     case AbsensiSekolah = 'absensi_sekolah';
     case AbsensiRfid = 'absensi_rfid';
+    case KunjunganPerpustakaan = 'kunjungan_perpustakaan';
     case SholatDzuhur = 'sholat_dzuhur';
     case SholatDhuha = 'sholat_dhuha';
     case Laporan = 'laporan';
@@ -87,6 +88,8 @@ enum SchoolFeature: string
             // Butuh pembaca kartu fisik. Sekolah yang belum punya alatnya tidak
             // perlu melihat menunya sama sekali.
             self::AbsensiRfid => false,
+            // Butuh perangkat scan sendiri di perpustakaan.
+            self::KunjunganPerpustakaan => false,
             default => true,
         };
     }
@@ -97,6 +100,7 @@ enum SchoolFeature: string
             self::MasterSiswa => 'Master Data Siswa',
             self::AbsensiSekolah => 'Absensi Sekolah',
             self::AbsensiRfid => 'Absensi Kartu RFID',
+            self::KunjunganPerpustakaan => 'Kunjungan Perpustakaan',
             self::SholatDzuhur => 'Absen Sholat Dzuhur',
             self::SholatDhuha => 'Absen Sholat Dhuha',
             self::Laporan => 'Laporan',
@@ -118,6 +122,7 @@ enum SchoolFeature: string
             self::MasterSiswa => 'Menu Siswa, Orang Tua, dan Kelas. Mematikannya juga menutup API siswa.',
             self::AbsensiSekolah => 'Menu Absensi & Jadwal Absensi, plus halaman scan gerbang.',
             self::AbsensiRfid => 'Menu Kartu RFID dan penerimaan tap kartu di halaman scan gerbang.',
+            self::KunjunganPerpustakaan => 'Menu Kunjungan Perpus dan halaman scan masuk/keluar perpustakaan.',
             self::SholatDzuhur => 'Absen sholat dzuhur di mushola lewat halaman scan sholat.',
             self::SholatDhuha => 'Absen sholat dhuha pagi. Jendela waktunya terpisah dari dzuhur.',
             self::Laporan => 'Menu Laporan beserta export CSV dan PDF.',
@@ -137,7 +142,8 @@ enum SchoolFeature: string
     {
         return match ($this) {
             self::MasterSiswa, self::AbsensiSekolah, self::AbsensiRfid,
-            self::SholatDzuhur, self::SholatDhuha, self::Laporan => 'Akademik',
+            self::KunjunganPerpustakaan, self::SholatDzuhur,
+            self::SholatDhuha, self::Laporan => 'Akademik',
 
             self::NotifAbsensi, self::NotifAlpaSholat,
             self::InboxNotifikasi => 'Notifikasi',
@@ -163,6 +169,7 @@ enum SchoolFeature: string
             self::MasterSiswa => [AppModule::Siswa, AppModule::OrangTua, AppModule::Kelas],
             self::AbsensiSekolah => [AppModule::Absensi, AppModule::JadwalAbsensi],
             self::AbsensiRfid => [AppModule::RfidCards],
+            self::KunjunganPerpustakaan => [AppModule::KunjunganPerpus],
             self::Laporan => [AppModule::Laporan],
             self::InboxNotifikasi => [AppModule::Notifikasi],
             self::KartuAlbum => [

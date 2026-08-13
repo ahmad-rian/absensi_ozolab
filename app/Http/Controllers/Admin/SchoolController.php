@@ -8,6 +8,7 @@ use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Services\Attendance\ScheduleProvisioner;
 use App\Support\PrayerSchedule;
+use App\Support\SchoolFeatures;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -40,6 +41,7 @@ class SchoolController extends Controller
             // Penanda "sekolah ini memakai absen sholat" — cukup salah satu
             // jenis aktif, karena tautan scan-nya memang satu untuk keduanya.
             'prayer_enabled' => PrayerSchedule::for($school)->anyEnabled(),
+            'library_enabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::KunjunganPerpustakaan),
             'users_count' => $school->users_count,
             'students_count' => $school->students_count,
             'classrooms_count' => $school->classrooms_count,

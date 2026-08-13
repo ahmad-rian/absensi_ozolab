@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\DriveConfigController;
 use App\Http\Controllers\Admin\FrameController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\KelasController;
+use App\Http\Controllers\Admin\KunjunganPerpusController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\NotificationGatewayController;
 use App\Http\Controllers\Admin\NotifikasiController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\KartuBebas\GenerateController;
 use App\Http\Controllers\KartuBebas\LayoutController;
 use App\Http\Controllers\KartuBebas\RecordController;
 use App\Http\Controllers\KartuBebas\RiwayatController;
+use App\Http\Controllers\LibraryScannerController;
 use App\Http\Controllers\ParentTelegramController;
 use App\Http\Controllers\PrayerScannerController;
 use App\Http\Controllers\Public\CardFormController;
@@ -52,6 +54,11 @@ Route::post('scan/{school:scanner_token}', [PublicScannerController::class, 'sca
 // Absen sholat dzuhur — URL terpisah supaya device mushola tidak bisa salah mode.
 Route::get('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'index'])->name('public.prayer-scanner');
 Route::post('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.prayer-scanner.scan');
+
+// Kunjungan perpustakaan — URL terpisah, alasan yang sama seperti sholat: tablet
+// di perpustakaan tidak boleh bisa salah mode.
+Route::get('scan/{school:scanner_token}/perpustakaan', [LibraryScannerController::class, 'index'])->name('public.library-scanner');
+Route::post('scan/{school:scanner_token}/perpustakaan', [LibraryScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.library-scanner.scan');
 
 Route::get('daftar', [StudentRegistrationController::class, 'index'])->name('student.register');
 Route::post('daftar', [StudentRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('student.register.store');
@@ -120,6 +127,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // saja tidak cukup karena global scope tidak menjaga apa pun di sini.
     Route::middleware(['permission:semua-sekolah.access', 'super-admin'])->group(function () {
         Route::get('semua-sekolah', [SemuaSekolahController::class, 'index'])->name('admin.semua-sekolah');
+    });
+
+    Route::middleware(['permission:kunjungan-perpus.access', 'feature:kunjungan_perpustakaan'])->group(function () {
+        Route::get('kunjungan-perpus', [KunjunganPerpusController::class, 'index'])->name('admin.kunjungan-perpus');
     });
 
     Route::middleware(['permission:rfid-cards.access', 'feature:absensi_rfid'])->group(function () {

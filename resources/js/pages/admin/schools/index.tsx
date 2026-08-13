@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Building2, Edit, Mail, MapPin, MoonStar, Phone, Plus, ScanLine, Search, Trash2 } from 'lucide-react';
+import { BookOpen, Building2, Edit, Mail, MapPin, MoonStar, Phone, Plus, ScanLine, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -25,6 +25,7 @@ type School = {
     is_active: boolean;
     scanner_token: string;
     prayer_enabled: boolean;
+    library_enabled: boolean;
     users_count: number;
     students_count: number;
     classrooms_count: number;
@@ -41,11 +42,18 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
         router.get('/admin/schools', { search: value || undefined }, { preserveState: true, replace: true });
     }
 
-    async function copyScanLink(token: string, kind: 'absensi' | 'sholat') {
-        const url = `${window.location.origin}/scan/${token}${kind === 'sholat' ? '/sholat' : ''}`;
+    const SCAN_LINKS = {
+        absensi: { path: '', label: 'Link absensi disalin.' },
+        sholat: { path: '/sholat', label: 'Link absen sholat disalin.' },
+        perpustakaan: { path: '/perpustakaan', label: 'Link kunjungan perpustakaan disalin.' },
+    } as const;
+
+    async function copyScanLink(token: string, kind: keyof typeof SCAN_LINKS) {
+        const url = `${window.location.origin}/scan/${token}${SCAN_LINKS[kind].path}`;
+
         try {
             await navigator.clipboard.writeText(url);
-            toast.success(kind === 'sholat' ? 'Link absen sholat disalin.' : 'Link absensi disalin.');
+            toast.success(SCAN_LINKS[kind].label);
         } catch {
             toast.error('Gagal menyalin link.');
         }
@@ -144,6 +152,18 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
                                                 <span className="flex flex-col items-start">
                                                     Salin link absen sholat
                                                     {!school.prayer_enabled && (
+                                                        <span className="text-muted-foreground text-xs">Belum diaktifkan</span>
+                                                    )}
+                                                </span>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                disabled={!school.library_enabled}
+                                                onClick={() => copyScanLink(school.scanner_token, 'perpustakaan')}
+                                            >
+                                                <BookOpen className="mr-2 size-4" />
+                                                <span className="flex flex-col items-start">
+                                                    Salin link kunjungan perpustakaan
+                                                    {!school.library_enabled && (
                                                         <span className="text-muted-foreground text-xs">Belum diaktifkan</span>
                                                     )}
                                                 </span>

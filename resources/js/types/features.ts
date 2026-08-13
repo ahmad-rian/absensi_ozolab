@@ -9,6 +9,7 @@ export type SchoolFeatureKey =
     | 'master_siswa'
     | 'absensi_sekolah'
     | 'absensi_rfid'
+    | 'kunjungan_perpustakaan'
     | 'sholat_dzuhur'
     | 'sholat_dhuha'
     | 'laporan'

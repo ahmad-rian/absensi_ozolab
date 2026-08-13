@@ -1,5 +1,6 @@
 import { Html5Qrcode } from 'html5-qrcode';
 import {
+    BookOpen,
     Camera,
     CheckCircle2,
     Clock,
@@ -569,6 +570,9 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
 function resultBadge(type?: string) {
     if (type === 'PRAYER') {
         return { Icon: MoonStar, className: 'bg-emerald-600' };
+    }
+    if (type === 'LIBRARY') {
+        return { Icon: BookOpen, className: 'bg-indigo-600' };
     }
     if (type === 'CHECK_OUT') {
         return { Icon: LogOut, className: 'bg-orange-500' };

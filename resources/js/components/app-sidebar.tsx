@@ -77,6 +77,7 @@ const sections: NavSection[] = [
             { title: 'Absensi', href: '/admin/absensi', icon: CalendarCheck, permission: 'absensi.access', feature: 'absensi_sekolah' },
             { title: 'Jadwal Absensi', href: '/admin/jadwal-absensi', icon: Clock, permission: 'jadwal-absensi.access', feature: 'absensi_sekolah' },
             { title: 'Kartu RFID', href: '/admin/rfid-cards', icon: CreditCard, permission: 'rfid-cards.access', feature: 'absensi_rfid' },
+            { title: 'Kunjungan Perpus', href: '/admin/kunjungan-perpus', icon: BookOpen, permission: 'kunjungan-perpus.access', feature: 'kunjungan_perpustakaan' },
         ],
     },
     {
