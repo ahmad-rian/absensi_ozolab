@@ -7,10 +7,13 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCurrentSchool;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,9 +43,35 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
             SetCurrentSchool::class,
         ]);
+
+        // Konteks sekolah HARUS ditetapkan sebelum route model binding.
+        //
+        // Middleware yang ditambahkan lewat `web(append:)` mendarat di belakang
+        // `SubstituteBindings`, sedangkan binding memakai global scope `school`
+        // yang membaca konteks tenant. Tanpa pengurutan ini, binding menilai
+        // memakai konteks request SEBELUMNYA: daftar tampil benar (dirender di
+        // controller, setelah middleware jalan) tetapi tautan di dalamnya 404
+        // (di-bind pada request berikutnya, sebelum middleware jalan).
+        $middleware->prependToPriorityList(SubstituteBindings::class, SetCurrentSchool::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->respond(function (Response $response, Throwable $exception) {
+            // Binding yang gagal terlihat sama saja dengan URL ngawur: dua-duanya
+            // 404 telanjang. Dicatat supaya laporan "404 lagi" berikutnya bisa
+            // dibuktikan dari log, bukan ditebak. Sengaja di sini dan bukan lewat
+            // report(): ModelNotFoundException ada di daftar dontReport bawaan.
+            if ($exception instanceof HttpExceptionInterface
+                && $exception->getStatusCode() === 404
+                && ($missing = $exception->getPrevious()) instanceof ModelNotFoundException) {
+                Log::warning('Route model binding tidak menemukan record', [
+                    'model' => $missing->getModel(),
+                    'ids' => $missing->getIds(),
+                    'url' => request()->fullUrl(),
+                    'user_id' => auth()->id(),
+                    'current_school_id' => app()->bound('currentSchool') ? app('currentSchool')?->id : null,
+                ]);
+            }
+
             if ($exception instanceof HttpExceptionInterface) {
                 $status = $exception->getStatusCode();
                 $page = match ($status) {

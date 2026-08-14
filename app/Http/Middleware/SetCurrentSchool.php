@@ -37,11 +37,16 @@ class SetCurrentSchool
 
         session(['current_school_id' => $school->id]);
 
-        // Kolom users.school_id ikut disinkronkan hanya untuk SUPER_ADMIN,
-        // karena global scope sekolah membacanya.
+        // Global scope sekolah membaca users.school_id, jadi nilainya diselaraskan
+        // untuk SUPER_ADMIN — tapi HANYA di memori, tidak disimpan.
+        //
+        // Sekolah yang sedang dibuka adalah pilihan per-browser dan tempatnya di
+        // session. Menuliskannya ke kolom akun membuat dua browser pada satu akun
+        // saling menggeser konteks tiap request, dan yang kalah balapan mendapat
+        // 404 atas datanya sendiri. Kolomnya tetap dipakai sebagai sekolah asal,
+        // yaitu nilai awal ketika session belum punya pilihan.
         if ($user->isSuperAdmin() && $user->school_id !== $school->id) {
             $user->school_id = $school->id;
-            $user->saveQuietly(); // no events, just sync
         }
 
         app()->instance('currentSchool', $school);

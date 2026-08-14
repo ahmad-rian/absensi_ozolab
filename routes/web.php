@@ -86,8 +86,10 @@ Route::middleware(['auth'])->post('admin/switch-school', function (Request $requ
 
     abort_unless($user->isSuperAdmin(), 403, 'Anda tidak memiliki akses ke sekolah ini.');
 
+    // Hanya ke session. Kolom users.school_id sengaja tidak disentuh: ia milik
+    // akun dan dipakai bersama semua perangkat, sedangkan sekolah yang sedang
+    // dibuka adalah pilihan per-browser. Lihat SetCurrentSchool.
     session(['current_school_id' => $request->school_id]);
-    $user->update(['school_id' => $request->school_id]);
 
     return Inertia\Inertia::location(route('dashboard'));
 })->name('admin.switch-school');
