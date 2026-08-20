@@ -6,6 +6,7 @@ use App\Enums\Gender;
 use App\Enums\Religion;
 use App\Models\Concerns\BelongsToSchool;
 use Database\Factories\StudentFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -55,6 +56,42 @@ class Student extends Model
             'rfid_registered_at' => 'datetime',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Nama siswa disimpan huruf besar.
+     *
+     * Kapitalisasinya masuk campur dari impor tiap sekolah, dan nama yang sama
+     * bisa datang lewat delapan jalur tulis berbeda (form admin, pendaftaran
+     * publik, pendaftaran orang tua, impor, seeder, factory). Semuanya lewat
+     * mass-assignment atau `fill()`, jadi mutator di sini menangkap semuanya —
+     * termasuk jalur baru yang belum ada.
+     */
+    protected function fullName(): Attribute
+    {
+        return Attribute::make(set: fn (?string $value): ?string => $this->toUpperName($value));
+    }
+
+    /**
+     * Nama orang tua pada data pendaftaran, diseragamkan bersama nama siswa.
+     *
+     * Ini BUKAN nama akun login orang tua (`users.name`), yang sengaja
+     * dibiarkan apa adanya: itu identitas akun mereka sendiri dan muncul di
+     * halaman profil, email, serta notifikasi.
+     */
+    protected function parentName(): Attribute
+    {
+        return Attribute::make(set: fn (?string $value): ?string => $this->toUpperName($value));
+    }
+
+    /**
+     * `mb_strtoupper`, bukan `strtoupper`, supaya huruf beraksen tidak rusak.
+     * Null diteruskan apa adanya — kolomnya nullable, dan string kosong bukan
+     * hal yang sama dengan "belum diisi".
+     */
+    private function toUpperName(?string $value): ?string
+    {
+        return $value === null ? null : mb_strtoupper(trim($value));
     }
 
     public function parentProfile(): BelongsTo

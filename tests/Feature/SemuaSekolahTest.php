@@ -88,7 +88,7 @@ test('the student tab can be narrowed to one school', function () {
         ->get(route('admin.semua-sekolah', ['tab' => 'siswa', 'school_id' => $this->dua->id]))
         ->assertInertia(fn ($page) => $page
             ->has('students.data', 1)
-            ->where('students.data.0.full_name', 'Siswa Sekolah Dua')
+            ->where('students.data.0.full_name', 'SISWA SEKOLAH DUA')
         );
 });
 

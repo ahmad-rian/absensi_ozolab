@@ -157,7 +157,7 @@ test('M-4: a formula-looking name is neutralised in the CSV export', function ()
         ->get(route('admin.siswa.laporan.absensi.csv', $student))
         ->streamedContent();
 
-    expect($body)->toContain('Budi Santoso');
+    expect($body)->toContain('BUDI SANTOSO');
 });
 
 // ---------------------------------------------------------------- Hardening

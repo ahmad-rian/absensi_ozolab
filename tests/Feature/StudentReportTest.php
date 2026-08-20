@@ -57,7 +57,7 @@ test('the attendance csv contains the identity, summary and rows', function () {
     $body = $response->streamedContent();
 
     expect($body)->toStartWith("\xEF\xBB\xBF")
-        ->and($body)->toContain('Siti Rahmawati')
+        ->and($body)->toContain('SITI RAHMAWATI')
         ->and($body)->toContain('Terlambat')
         ->and($body)->toContain('% Kehadiran');
 });
@@ -77,7 +77,7 @@ test('the prayer csv only reports prayer rows', function () {
     $body = $response->streamedContent();
 
     expect($body)->toContain('Ikut Sholat')
-        ->and($body)->toContain('Siti Rahmawati')
+        ->and($body)->toContain('SITI RAHMAWATI')
         // Kolom khas laporan absensi sekolah tidak boleh bocor ke laporan sholat.
         ->and($body)->not->toContain('Terlambat');
 });

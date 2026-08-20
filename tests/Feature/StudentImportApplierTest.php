@@ -80,7 +80,7 @@ it('tidak mengosongkan kolom yang tidak ada di berkas saat memperbarui', functio
     $student->refresh();
 
     expect($result['updated'])->toBe(1)
-        ->and($student->full_name)->toBe('Nama Diperbarui')
+        ->and($student->full_name)->toBe('NAMA DIPERBARUI')
         ->and($student->birth_place)->toBe('Bandung');
 });
 
@@ -100,7 +100,7 @@ it('menolak memperbarui siswa milik sekolah lain', function () {
 
     expect($result['updated'])->toBe(0)
         ->and($result['failed'])->toBe(1)
-        ->and($student->fresh()->full_name)->toBe('Tetap Utuh');
+        ->and($student->fresh()->full_name)->toBe('TETAP UTUH');
 });
 
 it('menghitung baris tolakan parser sebagai gagal', function () {

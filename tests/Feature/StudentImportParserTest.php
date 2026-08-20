@@ -294,7 +294,7 @@ it('menolak baris ber-NISN baru yang memakai NIS milik siswa lain', function () 
     expect($result['summary']['create'])->toBe(0)
         ->and($result['summary']['reject'])->toBe(1)
         ->and($result['rows'][0]['reason'])->toContain('2025010')
-        ->and($result['rows'][0]['reason'])->toContain('Siswa Lama');
+        ->and($result['rows'][0]['reason'])->toContain('SISWA LAMA');
 });
 
 it('menolak baris ber-NIS baru yang memakai NISN milik siswa lain', function () {

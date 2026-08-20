@@ -179,7 +179,11 @@ export default function SiswaIndex({ students, classrooms, filters }: PageProps)
                                         <TableCell className="uppercase">{student.full_name}</TableCell>
                                         <TableCell>{student.classroom?.name ?? '-'}</TableCell>
                                         <TableCell>{genderLabel(student.gender)}</TableCell>
-                                        <TableCell>{student.parent_profile?.user?.name ?? '-'}</TableCell>
+                                        {/* Kolom ini membaca nama AKUN LOGIN orang tua, bukan
+                                            students.parent_name. Nama akun sengaja tidak diubah di
+                                            database — itu identitas mereka sendiri, muncul di profil,
+                                            email, dan notifikasi. Jadi diseragamkan lewat CSS saja. */}
+                                        <TableCell className="uppercase">{student.parent_profile?.user?.name ?? '-'}</TableCell>
                                         <TableCell>
                                             <Badge variant={student.is_active ? 'default' : 'secondary'}>
                                                 {student.is_active ? 'Aktif' : 'Nonaktif'}

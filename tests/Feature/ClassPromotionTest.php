@@ -226,7 +226,7 @@ it('tidak mengubah siswa yang tidak ada di berkas dan menampilkannya terpisah', 
             ->where('preview.summary.promote', 1)
             ->where('preview.summary.missing', 1)
             ->where('preview.missing.0.nisn', '4444444444')
-            ->where('preview.missing.0.full_name', 'Siswa Terlewat')
+            ->where('preview.missing.0.full_name', 'SISWA TERLEWAT')
         );
 
     $this->actingAs($user)

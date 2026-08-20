@@ -31,7 +31,7 @@ test('registration with parent data creates a parent profile', function () {
     $response->assertOk();
     $response->assertJson(['success' => true]);
 
-    $student = Student::where('full_name', 'Anak Pertama')->first();
+    $student = Student::where('full_name', 'ANAK PERTAMA')->first();
     expect($student->parent_profile_id)->not->toBeNull();
 
     $parentProfile = ParentProfile::find($student->parent_profile_id);
@@ -81,7 +81,7 @@ test('registration with same parent phone reuses existing parent profile', funct
         'parent_relation' => 'WALI',
     ]);
 
-    $students = Student::whereIn('full_name', ['Anak Pertama', 'Anak Kedua'])->get();
+    $students = Student::whereIn('full_name', ['ANAK PERTAMA', 'ANAK KEDUA'])->get();
     expect($students)->toHaveCount(2);
 
     // Both should link to the same parent profile
@@ -108,6 +108,6 @@ test('registration without parent data is rejected', function () {
         'address' => 'Jl. Melati No. 1',
     ])->assertSessionHasErrors(['parent_name', 'parent_phone', 'parent_relation']);
 
-    expect(Student::where('full_name', 'Anak Tanpa Ortu')->exists())->toBeFalse()
+    expect(Student::where('full_name', 'ANAK TANPA ORTU')->exists())->toBeFalse()
         ->and(ParentProfile::count())->toBe(0);
 });

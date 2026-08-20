@@ -54,7 +54,7 @@ test('a student can be registered via the form', function () {
     $response->assertOk();
     $response->assertJson(['success' => true]);
 
-    $student = Student::where('full_name', 'Ahmad Fauzi')->first();
+    $student = Student::where('full_name', 'AHMAD FAUZI')->first();
     expect($student)->not->toBeNull()
         ->and($student->school_id)->toBe($school->id)
         ->and($student->classroom_id)->toBe($classroom->id)
@@ -87,9 +87,9 @@ test('a student can be registered with all optional fields', function () {
     $response->assertOk();
     $response->assertJson(['success' => true]);
 
-    $student = Student::where('full_name', 'Siti Aminah')->first();
+    $student = Student::where('full_name', 'SITI AMINAH')->first();
     expect($student)->not->toBeNull()
-        ->and($student->parent_name)->toBe('Budi Santoso')
+        ->and($student->parent_name)->toBe('BUDI SANTOSO')
         ->and($student->parent_phone)->toBe('812345678')
         ->and($student->religion->value)->toBe('ISLAM')
         ->and($student->birth_place)->toBe('Jakarta');

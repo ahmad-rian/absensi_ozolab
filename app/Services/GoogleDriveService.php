@@ -542,9 +542,59 @@ class GoogleDriveService
 
         $files = $result->getFiles();
 
-        return $this->folderCache[$cacheKey] = count($files) > 0
-            ? $files[0]->getId()
-            : $this->createFolder($name, $parentId);
+        if (count($files) > 0) {
+            return $this->folderCache[$cacheKey] = $files[0]->getId();
+        }
+
+        if ($existing = $this->findFolderIgnoringCase($name, $parentId)) {
+            return $this->folderCache[$cacheKey] = $existing;
+        }
+
+        return $this->folderCache[$cacheKey] = $this->createFolder($name, $parentId);
+    }
+
+    /**
+     * Cari folder tanpa mempedulikan huruf besar/kecil.
+     *
+     * Query Drive `name = '...'` membedakan huruf besar dan kecil, sedangkan
+     * nama folder siswa dibentuk dari `full_name` yang sejak sekarang disimpan
+     * huruf besar. Tanpa jaring ini, siswa yang foldernya sudah lama ada
+     * sebagai "12345 - Ahmad Rian" akan mendapat folder KEDUA bernama
+     * "12345 - AHMAD RIAN", dan foto lamanya jadi tidak terlihat aplikasi.
+     *
+     * Hanya dijalankan ketika pencarian persis gagal, jadi jalur normal tetap
+     * satu panggilan seperti sebelumnya.
+     */
+    private function findFolderIgnoringCase(string $name, string $parentId): ?string
+    {
+        $result = $this->drive->files->listFiles([
+            'q' => "'{$parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+            'pageSize' => 1000,
+            'fields' => 'files(id, name)',
+            'supportsAllDrives' => true,
+            'includeItemsFromAllDrives' => true,
+        ]);
+
+        $folders = array_map(
+            static fn ($file): array => ['id' => $file->getId(), 'name' => $file->getName()],
+            $result->getFiles(),
+        );
+
+        return self::pickFolderIgnoringCase($folders, $name);
+    }
+
+    /**
+     * @param  array<int, array{id: string, name: string}>  $folders
+     */
+    public static function pickFolderIgnoringCase(array $folders, string $wanted): ?string
+    {
+        foreach ($folders as $folder) {
+            if (mb_strtolower($folder['name']) === mb_strtolower($wanted)) {
+                return $folder['id'];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -692,7 +742,11 @@ class GoogleDriveService
         $files = $result->getFiles();
 
         if (count($files) === 0) {
-            return null;
+            // Folder lama bisa saja masih memakai kapitalisasi campur; lihat
+            // findFolderIgnoringCase().
+            $existing = $this->findFolderIgnoringCase($name, $parentId);
+
+            return $existing ? $this->folderCache[$cacheKey] = $existing : null;
         }
 
         return $this->folderCache[$cacheKey] = $files[0]->getId();

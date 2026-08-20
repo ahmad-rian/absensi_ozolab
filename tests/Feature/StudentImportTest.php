@@ -55,7 +55,7 @@ test('unggah csv menghasilkan pratinjau tiga kelompok', function () {
             ->has('preview.groups.reject', 1)
             ->where('preview.summary.total', 3)
             ->where('preview.groups.create.0.classroom_name', '7A')
-            ->where('preview.groups.update.0.existing_name', 'Siti Lama')
+            ->where('preview.groups.update.0.existing_name', 'SITI LAMA')
             ->where('preview.groups.reject.0.reason', fn (string $reason) => str_contains($reason, '9Z'))
         );
 });

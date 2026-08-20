@@ -31,7 +31,7 @@ test('students can be found by nisn', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->has('students.data', 1)
-            ->where('students.data.0.full_name', 'Budi Santoso')
+            ->where('students.data.0.full_name', 'BUDI SANTOSO')
         );
 });
 
