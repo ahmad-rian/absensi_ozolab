@@ -48,6 +48,24 @@ test('searching by name and nis keeps working', function () {
     searchStudents('10021001')->assertInertia(fn ($page) => $page->has('students.data', 1));
 });
 
+/**
+ * Kolom NISN di tabel daftar siswa membaca `students.data.*.nisn` apa adanya.
+ * Test ini menjaga kontrak datanya: kalau suatu saat controller diberi
+ * `->select([...])` demi menghemat query, kolomnya akan kosong senyap tanpa
+ * error apa pun. Bukan menguji JSX-nya.
+ */
+test('the listing carries nisn for the column to render', function () {
+    $this->actingAs($this->admin)
+        ->get(route('admin.siswa.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('students.data', 2)
+            // Diurutkan berdasarkan full_name, jadi Budi lebih dulu dari Siti.
+            ->where('students.data.0.nisn', '0079876543')
+            ->where('students.data.1.nisn', '0071234567')
+        );
+});
+
 test('a nisn from another school is not reachable', function () {
     $outsider = Student::factory()->create(['nisn' => '0070000001']);
 

@@ -152,6 +152,7 @@ export default function SiswaIndex({ students, classrooms, filters }: PageProps)
                         <TableHeader>
                             <TableRow>
                                 <TableHead>NIS</TableHead>
+                                <TableHead>NISN</TableHead>
                                 <TableHead>Nama</TableHead>
                                 <TableHead>Kelas</TableHead>
                                 <TableHead>Jenis Kelamin</TableHead>
@@ -163,7 +164,7 @@ export default function SiswaIndex({ students, classrooms, filters }: PageProps)
                         <TableBody>
                             {students.data.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
+                                    <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
                                         Tidak ada data siswa ditemukan.
                                     </TableCell>
                                 </TableRow>
@@ -171,6 +172,7 @@ export default function SiswaIndex({ students, classrooms, filters }: PageProps)
                                 students.data.map((student) => (
                                     <TableRow key={student.id}>
                                         <TableCell className="font-medium">{student.nis ?? '-'}</TableCell>
+                                        <TableCell>{student.nisn ?? '-'}</TableCell>
                                         <TableCell>{student.full_name}</TableCell>
                                         <TableCell>{student.classroom?.name ?? '-'}</TableCell>
                                         <TableCell>{genderLabel(student.gender)}</TableCell>
