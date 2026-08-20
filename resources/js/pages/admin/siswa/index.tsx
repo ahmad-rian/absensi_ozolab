@@ -173,7 +173,10 @@ export default function SiswaIndex({ students, classrooms, filters }: PageProps)
                                     <TableRow key={student.id}>
                                         <TableCell className="font-medium">{student.nis ?? '-'}</TableCell>
                                         <TableCell>{student.nisn ?? '-'}</TableCell>
-                                        <TableCell>{student.full_name}</TableCell>
+                                        {/* Data nama masuk campur kapitalisasinya dari impor sekolah.
+                                            Diseragamkan lewat CSS saja — nilai aslinya tetap utuh di
+                                            database, jadi kartu, album, dan ekspor tidak ikut berubah. */}
+                                        <TableCell className="uppercase">{student.full_name}</TableCell>
                                         <TableCell>{student.classroom?.name ?? '-'}</TableCell>
                                         <TableCell>{genderLabel(student.gender)}</TableCell>
                                         <TableCell>{student.parent_profile?.user?.name ?? '-'}</TableCell>
