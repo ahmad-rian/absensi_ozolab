@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Enums\Gender;
 use App\Enums\Religion;
 use App\Models\Concerns\BelongsToSchool;
+use App\Observers\StudentObserver;
 use Database\Factories\StudentFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+#[ObservedBy(StudentObserver::class)]
 class Student extends Model
 {
     /** @use HasFactory<StudentFactory> */
@@ -36,6 +39,9 @@ class Student extends Model
         'parent_name',
         'parent_phone',
         'photo_path',
+        'photo_drive_filename',
+        'photo_drive_file_id',
+        'drive_folder_id',
         'qr_token',
         'qr_issued_at',
         'qr_rotated_at',

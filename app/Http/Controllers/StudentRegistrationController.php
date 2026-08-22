@@ -64,6 +64,119 @@ class StudentRegistrationController extends Controller
     }
 
     /**
+     * Form pendaftaran pendek — nama, NIS/NISN, nomor foto, kelas, nomor absen.
+     *
+     * Dipakai saat sesi foto sekolah, ketika yang tersedia cuma daftar hadir dan
+     * nomor foto: menagih tempat & tanggal lahir, alamat, dan data orang tua di
+     * situ membuat antrean berhenti. Kolom yang tidak ditanya sudah `nullable` di
+     * tabel `students`, jadi tidak ada yang perlu diubah di skema.
+     *
+     * NIS dan NISN tetap ada dan NISN tetap wajib: `QrTokenGenerator` membangun
+     * token QR dari NISN, jadi siswa tanpa NISN tidak akan bisa absen sama sekali.
+     */
+    public function quick(): Response
+    {
+        $schools = School::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'logo_path', 'settings'])
+            ->filter(fn (School $school) => SchoolFeatures::for($school)->enabled(SchoolFeature::PendaftaranPublik))
+            ->values();
+
+        $classrooms = Classroom::whereIn('school_id', $schools->pluck('id'))
+            ->orderBy('name')
+            ->get(['id', 'school_id', 'name', 'grade_level']);
+
+        return Inertia::render('student-register-quick', [
+            'schools' => $schools->map(fn (School $school) => [
+                'id' => $school->id,
+                'name' => $school->name,
+                'logo_path' => $school->logo_path,
+            ]),
+            'classrooms' => $classrooms,
+            'registrationToken' => $this->issueRegistrationToken(),
+        ]);
+    }
+
+    /**
+     * Simpan pendaftaran pendek.
+     *
+     * Empat isian, dan hanya itu: nama, nomor foto, kelas, nomor absen. Tidak ada
+     * NIS/NISN yang ditanyakan, tidak ada token QR yang diterbitkan, dan tidak
+     * ada kartu yang dirender — form ini murni mencatat siapa yang difoto dan
+     * dengan nomor berapa.
+     *
+     * Aturan validasinya terpisah dari `store()` — bukan `store()` yang
+     * dilonggarkan — supaya form panjang tetap menagih semua yang selama ini
+     * ditagihnya, berikut QR dan kartunya.
+     */
+    public function storeQuick(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'school_id' => ['required', 'exists:schools,id', new SchoolFeatureEnabled(SchoolFeature::PendaftaranPublik)],
+            'full_name' => ['required', 'string', 'max:255', "regex:/^[\p{L}\p{N} .,'\-]+$/u"],
+            'classroom_id' => ['required', Rule::exists('classrooms', 'id')->where('school_id', $request->school_id)],
+            'no_absen' => ['required', 'string', 'max:10', 'alpha_num'],
+            'photo_drive_filename' => ['required', 'string', 'max:500'],
+            'photo_key' => ['nullable', 'string', 'alpha_num', 'size:32'],
+        ], [
+            'school_id.required' => 'Pilih sekolah terlebih dahulu.',
+            'full_name.required' => 'Nama lengkap wajib diisi.',
+            'classroom_id.required' => 'Pilih kelas terlebih dahulu.',
+            'classroom_id.exists' => 'Kelas tidak ditemukan di sekolah ini.',
+            'no_absen.required' => 'No. absen wajib diisi.',
+            'photo_drive_filename.required' => 'Nama file foto wajib diisi.',
+        ]);
+
+        $student = Student::create([
+            'school_id' => $validated['school_id'],
+            'full_name' => $validated['full_name'],
+            // `students.nis` NOT NULL dan unik per sekolah, jadi ia harus berisi
+            // sesuatu meski tidak ditanyakan. Pola yang sama dipakai `/daftar`
+            // ketika pendaftar mengosongkan kolomnya; admin bisa menimpanya nanti.
+            'nis' => $this->placeholderNis(),
+            'classroom_id' => $validated['classroom_id'],
+            'no_absen' => $validated['no_absen'],
+            'photo_drive_filename' => $validated['photo_drive_filename'],
+            'is_active' => true,
+        ]);
+
+        $previewPath = ! empty($validated['photo_key'])
+            ? cache()->get('registration-preview:'.$validated['photo_key'])
+            : null;
+
+        // Hanya fotonya. `generateCards: false` menghentikan job sebelum kartu,
+        // lembar pas foto, dan unggahan Drive — pendaftaran cepat tidak
+        // menghasilkan berkas apa pun, cuma menambatkan foto ke siswanya.
+        RegisterStudentCardsJob::dispatch(
+            studentId: $student->id,
+            photoFilename: $validated['photo_drive_filename'],
+            photoTemp: $previewPath,
+            generateCards: false,
+            outputs: [RegisterStudentCardsJob::OUTPUT_PHOTO],
+        );
+
+        $student->load('classroom');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data siswa tersimpan.',
+            'student' => [
+                'id' => $student->id,
+                'full_name' => $student->full_name,
+                'classroom' => $student->classroom?->name,
+                'no_absen' => $student->no_absen,
+                'photo_drive_filename' => $student->photo_drive_filename,
+            ],
+        ]);
+    }
+
+    /** NIS sementara untuk siswa yang mendaftar tanpa nomor induk. */
+    private function placeholderNis(): string
+    {
+        return now()->format('Y').str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * Token sesi pendaftaran — dipakai endpoint pratinjau foto.
      */
     private function issueRegistrationToken(): string
@@ -196,7 +309,7 @@ class StudentRegistrationController extends Controller
         ]);
 
         if (empty($validated['nis'])) {
-            $validated['nis'] = now()->format('Y').str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT);
+            $validated['nis'] = $this->placeholderNis();
         }
 
         $school = School::with('driveConfig')->findOrFail($validated['school_id']);
@@ -216,6 +329,10 @@ class StudentRegistrationController extends Controller
                 'address' => $validated['address'] ?? null,
                 'parent_name' => $validated['parent_name'] ?? null,
                 'parent_phone' => $validated['parent_phone'] ?? null,
+                // Nama berkas yang diketik pendaftar. Dulu hanya dioper ke job
+                // lalu hilang, sehingga foto tidak pernah bisa diambil ulang
+                // tanpa bertanya lagi ke orang tuanya.
+                'photo_drive_filename' => $validated['photo_drive_filename'] ?? null,
                 'is_active' => true,
             ]);
 

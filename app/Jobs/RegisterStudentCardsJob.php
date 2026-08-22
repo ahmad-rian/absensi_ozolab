@@ -31,7 +31,21 @@ class RegisterStudentCardsJob implements ShouldQueue
     public int $timeout = 180;
 
     /**
+     * Keluaran yang dihasilkan job ini. Pendaftaran memakai ketiganya; tombol
+     * "generate ulang" di halaman siswa memilih satu, supaya menghasilkan ulang
+     * kartu tidak ikut mengunduh foto dan merender lembar 4R yang sudah benar.
+     */
+    public const OUTPUT_PHOTO = 'photo';
+
+    public const OUTPUT_CARDS = 'cards';
+
+    public const OUTPUT_SHEET = 'sheet';
+
+    public const ALL_OUTPUTS = [self::OUTPUT_PHOTO, self::OUTPUT_CARDS, self::OUTPUT_SHEET];
+
+    /**
      * @param  array{sx: float, sy: float, sw: float, sh: float}|null  $manualCrop
+     * @param  array<int, string>  $outputs
      */
     public function __construct(
         public string $studentId,
@@ -39,6 +53,8 @@ class RegisterStudentCardsJob implements ShouldQueue
         public ?string $photoTemp = null,
         public ?array $manualCrop = null,
         public bool $generateCards = true,
+        public array $outputs = self::ALL_OUTPUTS,
+        public string $generatedBy = 'registration',
     ) {
         $this->onQueue(config('cards.queue'));
     }
@@ -55,7 +71,9 @@ class RegisterStudentCardsJob implements ShouldQueue
             return;
         }
 
-        $this->processPhoto($student, $school);
+        if ($this->wants(self::OUTPUT_PHOTO)) {
+            $this->processPhoto($student, $school);
+        }
 
         if (! $this->generateCards) {
             return;
@@ -63,46 +81,65 @@ class RegisterStudentCardsJob implements ShouldQueue
 
         $folderId = $this->resolveStudentDriveFolder($student, $school);
 
+        if ($folderId) {
+            // Disimpan supaya jalur baca tidak perlu menyusun ulang nama folder
+            // dari kelas dan nama siswa, yang keduanya berubah seiring waktu.
+            $student->update(['drive_folder_id' => $folderId]);
+        }
+
         // Result #3 — the cropped photo (already produced above). Log + upload.
-        if ($student->photo_path) {
-            $driveUrl = $folderId
+        if ($this->wants(self::OUTPUT_PHOTO) && $student->photo_path) {
+            $upload = $folderId
                 ? $this->uploadToFolder($student->photo_path, $folderId, $school, GoogleDriveService::studentPhotoFileName($student))
                 : null;
+
+            if ($upload) {
+                // Id berkas tidak ikut berubah saat berkasnya dipindah atau diganti
+                // nama — inilah tautan yang tetap, dan sampai sekarang dibuang.
+                $student->update(['photo_drive_file_id' => $upload['id']]);
+            }
+
             CardGenerationLog::create([
                 'school_id' => $school->id,
                 'student_id' => $student->id,
                 'type' => 'photo',
                 'status' => 'completed',
                 'file_path' => $student->photo_path,
-                'drive_url' => $driveUrl,
-                'generated_by' => 'registration',
+                'drive_file_id' => $upload['id'] ?? null,
+                'drive_url' => $upload['url'] ?? null,
+                'generated_by' => $this->generatedBy,
             ]);
         }
 
         // Results #1 & #2 — OSIS + Perpustakaan cards (render in parallel).
-        foreach ($this->resolveLayouts($school) as $layout) {
+        foreach ($this->wants(self::OUTPUT_CARDS) ? $this->resolveLayouts($school) : [] as $layout) {
             $log = CardGenerationLog::create([
                 'school_id' => $school->id,
                 'student_id' => $student->id,
                 'school_card_layout_id' => $layout->id,
                 'type' => 'card',
                 'status' => 'processing',
-                'generated_by' => 'registration',
+                'generated_by' => $this->generatedBy,
             ]);
             GenerateRegistrationCardJob::dispatch($log->id, $folderId);
         }
 
         // Result #4 — pas-foto sheet (4R), only when a photo exists.
-        if ($student->photo_path) {
+        if ($this->wants(self::OUTPUT_SHEET) && $student->photo_path) {
             $sheetLog = CardGenerationLog::create([
                 'school_id' => $school->id,
                 'student_id' => $student->id,
                 'type' => 'photo_sheet',
                 'status' => 'processing',
-                'generated_by' => 'registration',
+                'generated_by' => $this->generatedBy,
             ]);
             GenerateRegistrationCardJob::dispatch($sheetLog->id, $folderId);
         }
+    }
+
+    private function wants(string $output): bool
+    {
+        return in_array($output, $this->outputs, true);
     }
 
     /**
@@ -123,7 +160,9 @@ class RegisterStudentCardsJob implements ShouldQueue
         if ($this->photoTemp && Storage::disk('local')->exists($this->photoTemp)) {
             try {
                 $storagePath = $this->photoStoragePath($school, $student);
-                (new PhotoCropService)->cropAndStore(Storage::disk('local')->path($this->photoTemp), $storagePath, 9, $this->manualCrop);
+                // `crop: false` — pendaftaran memakai foto Drive apa adanya sejak
+                // klien meminta croping dibuang. Lihat PhotoCropService::cropAndStore().
+                (new PhotoCropService)->cropAndStore(Storage::disk('local')->path($this->photoTemp), $storagePath, 9, $this->manualCrop, crop: false);
                 Storage::disk('local')->delete($this->photoTemp);
                 $student->update(['photo_path' => $storagePath]);
 
@@ -165,7 +204,7 @@ class RegisterStudentCardsJob implements ShouldQueue
             $service->downloadFile($files[0]['id'], $tempPath);
 
             $storagePath = $this->photoStoragePath($school, $student);
-            (new PhotoCropService)->cropAndStore($tempPath, $storagePath, 9, $manualCrop);
+            (new PhotoCropService)->cropAndStore($tempPath, $storagePath, 9, $manualCrop, crop: false);
 
             @unlink($tempPath);
             $student->update(['photo_path' => $storagePath]);
@@ -223,13 +262,23 @@ class RegisterStudentCardsJob implements ShouldQueue
         }
     }
 
-    private function uploadToFolder(string $storagePath, string $folderId, School $school, ?string $fileName = null): ?string
+    /**
+     * Id berkas ikut dikembalikan, bukan hanya URL-nya.
+     *
+     * URL berbagi bisa berubah bentuk dan izinnya bisa dicabut; id berkas tidak
+     * berubah selama berkasnya belum dihapus, termasuk ketika ia dipindah folder
+     * atau diganti nama. Itu yang disimpan ke siswa supaya tautannya berhenti
+     * bergeser setiap kali kelas atau namanya berubah.
+     *
+     * @return array{id: string, url: string}|null
+     */
+    private function uploadToFolder(string $storagePath, string $folderId, School $school, ?string $fileName = null): ?array
     {
         try {
             $service = GoogleDriveService::forSchool($school->driveConfig);
             $driveFile = $service->uploadFile(Storage::disk('public')->path($storagePath), $fileName ?: basename($storagePath), $folderId, 'image/png');
 
-            return $service->makePublic($driveFile->getId());
+            return ['id' => $driveFile->getId(), 'url' => $service->makePublic($driveFile->getId())];
         } catch (\Throwable $e) {
             Log::warning('Photo Drive upload failed', ['student_id' => $school->id, 'error' => $e->getMessage()]);
 

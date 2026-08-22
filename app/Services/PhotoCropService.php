@@ -40,9 +40,10 @@ class PhotoCropService
      *
      * @param  string  $inputPath  Full path to input image
      * @param  string  $storagePath  Relative path for storage
+     * @param  bool  $crop  Potong ke rasio pas foto. Lihat catatan di bawah.
      * @return string Storage path of the cropped photo
      */
-    public function cropAndStore(string $inputPath, string $storagePath, int $quality = 9, ?array $manualCrop = null): string
+    public function cropAndStore(string $inputPath, string $storagePath, int $quality = 9, ?array $manualCrop = null, bool $crop = true): string
     {
         // Large studio JPEGs (e.g. 6000px+) decode to ~100MB of truecolor before
         // we downscale — raise the limit so cropping never OOMs mid-request.
@@ -64,11 +65,20 @@ class PhotoCropService
         // Step 1: Resize to max 1600px (keep enough detail for analysis)
         [$image, $w, $h] = $this->capTo($image, $w, $h, 1600);
 
-        // Step 2: Crop to card slot ratio (16:21). Manual rect (drag-to-reposition) wins.
-        if ($manualCrop !== null) {
-            $image = $this->cropToNormalizedRect($image, $w, $h, $manualCrop);
-        } else {
-            $image = $this->smartCropForCard($image, $w, $h);
+        /*
+         | Step 2: Crop to card slot ratio (16:21). Manual rect wins.
+         |
+         | Dilewati untuk pendaftaran siswa sejak 21 Agustus 2026: klien meminta
+         | croping dibuang, foto Drive dipakai apa adanya. Jalur kartu bebas
+         | (Public\CardFormController) tetap memotong — makanya ini sebuah flag,
+         | bukan kode yang dihapus.
+         */
+        if ($crop) {
+            if ($manualCrop !== null) {
+                $image = $this->cropToNormalizedRect($image, $w, $h, $manualCrop);
+            } else {
+                $image = $this->smartCropForCard($image, $w, $h);
+            }
         }
 
         // Step 3: Ensure minimum output resolution

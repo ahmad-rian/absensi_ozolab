@@ -12,6 +12,7 @@ use Google\Service\Drive\Permission;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class GoogleDriveService
 {
@@ -157,7 +158,7 @@ class GoogleDriveService
             ]);
 
             return true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('Google Drive connection test failed', [
                 'school_id' => $this->config->school_id,
                 'error' => $e->getMessage(),
@@ -277,7 +278,7 @@ class GoogleDriveService
                 'supportsAllDrives' => true,
                 'sendNotificationEmail' => false,
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::warning('Failed to transfer file ownership', [
                 'fileId' => $fileId,
                 'email' => $ownerEmail,
@@ -485,7 +486,7 @@ class GoogleDriveService
                         'supportsAllDrives' => true,
                     ]);
                     $this->parentCache[$currentId] = ($file->getParents() ?: [null])[0];
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     $this->parentCache[$currentId] = null;
                 }
             }
@@ -617,6 +618,22 @@ class GoogleDriveService
     }
 
     /**
+     * Ganti nama berkas/folder tanpa menyentuh isinya.
+     *
+     * Folder siswa dinamai `{NIS} - {Nama}`. Ketika salah satunya berubah, folder
+     * itu harus ikut berganti nama — kalau tidak, generate berikutnya membuat
+     * folder KEDUA dan berkas lama tertinggal di folder yang tidak dilihat siapa
+     * pun.
+     */
+    public function renameFile(string $fileId, string $name): void
+    {
+        $this->drive->files->update($fileId, new DriveFile(['name' => $name]), [
+            'fields' => 'id',
+            'supportsAllDrives' => true,
+        ]);
+    }
+
+    /**
      * Delete a file or folder.
      */
     public function delete(string $fileId): void
@@ -716,6 +733,35 @@ class GoogleDriveService
         $schoolName = $this->config->school?->name ?: 'Sekolah '.$this->config->school_id;
 
         return $this->findFolder($schoolName, $platformRootId);
+    }
+
+    /**
+     * Satu berkas dari id-nya, atau null bila ia sudah tidak ada / masuk sampah.
+     *
+     * Jalan pintas untuk pemanggil yang sudah menyimpan id-nya: tidak perlu
+     * menyusun ulang jalur folder dari nama kelas dan nama siswa, yang keduanya
+     * berubah dan membuat pencarian menunjuk folder lain.
+     *
+     * @return array{id: string, name: string}|null
+     */
+    public function fileById(string $fileId): ?array
+    {
+        try {
+            $file = $this->drive->files->get($fileId, [
+                'fields' => 'id, name, trashed',
+                'supportsAllDrives' => true,
+            ]);
+        } catch (Throwable) {
+            // 404 dan 403 sama saja bagi pemanggil: id ini tidak bisa dipakai
+            // lagi, jadi ia harus jatuh ke pencarian nama.
+            return null;
+        }
+
+        if ($file->getTrashed()) {
+            return null;
+        }
+
+        return ['id' => $file->getId(), 'name' => $file->getName()];
     }
 
     /**

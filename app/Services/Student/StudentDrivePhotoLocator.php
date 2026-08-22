@@ -2,6 +2,7 @@
 
 namespace App\Services\Student;
 
+use App\Models\SchoolDriveConfig;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
 use Illuminate\Support\Facades\Cache;
@@ -42,6 +43,20 @@ class StudentDrivePhotoLocator
     }
 
     /**
+     * Sama seperti locate(), tapi tanpa cache dan tanpa menulis apa pun.
+     *
+     * Dipakai `drive:audit-siswa`, yang harus bisa dijalankan sebagai laporan
+     * murni: kalau ia ikut mengisi id yang ketemu, laporan "belum ada id
+     * tersimpan" akan hilang tepat pada saat ia dicetak.
+     *
+     * @return array{file_id: string, name: string, view_url: string, download_url: string}|null
+     */
+    public function inspect(Student $student): ?array
+    {
+        return $this->search($student, persist: false);
+    }
+
+    /**
      * Buang hasil yang tersimpan supaya pencarian berikutnya menembak Drive lagi.
      * Dipakai setelah operator baru menaruh fotonya di sana.
      */
@@ -71,7 +86,7 @@ class StudentDrivePhotoLocator
     /**
      * @return array{file_id: string, name: string, view_url: string, download_url: string}|null
      */
-    private function search(Student $student): ?array
+    private function search(Student $student, bool $persist = true): ?array
     {
         $config = $student->school?->driveConfig;
 
@@ -84,14 +99,41 @@ class StudentDrivePhotoLocator
         }
 
         try {
-            $drive = GoogleDriveService::forSchool($config);
-            $folderId = $drive->findStudentFolderId($student);
+            $drive = $this->driveFor($config);
+
+            /*
+             | Id yang tersimpan lebih dulu.
+             |
+             | Jalur di bawah menyusun ulang nama folder dari kelas dan `{NIS} -
+             | {Nama}`. Ketiganya berubah — naik kelas, NIS diperbaiki, nama
+             | diseragamkan huruf besar — dan begitu berubah, pencarian menunjuk
+             | folder lain: foto siswa "hilang" dan tautannya seolah berganti
+             | sendiri. Id berkas Drive tidak ikut berubah.
+             */
+            if ($student->photo_drive_file_id) {
+                $known = $drive->fileById($student->photo_drive_file_id);
+
+                if ($known) {
+                    return $this->payload($known);
+                }
+            }
+
+            $folderId = $student->drive_folder_id ?: $drive->findStudentFolderId($student);
 
             if (! $folderId) {
                 return null;
             }
 
             $file = $this->matchInFolder($drive, $folderId, $student);
+
+            if ($file && $persist) {
+                // Sekali ketemu, tidak perlu ditebak lagi. Tanpa ini setiap
+                // perubahan kelas berikutnya mengulang masalah yang sama.
+                $student->forceFill([
+                    'photo_drive_file_id' => $file['id'],
+                    'drive_folder_id' => $folderId,
+                ])->saveQuietly();
+            }
         } catch (Throwable $e) {
             Log::warning('Gagal mencari pas foto siswa di Drive', [
                 'student_id' => $student->id,
@@ -105,6 +147,15 @@ class StudentDrivePhotoLocator
             return null;
         }
 
+        return $this->payload($file);
+    }
+
+    /**
+     * @param  array{id: string, name: string}  $file
+     * @return array{file_id: string, name: string, view_url: string, download_url: string}
+     */
+    private function payload(array $file): array
+    {
         return [
             'file_id' => $file['id'],
             'name' => $file['name'],
@@ -144,6 +195,18 @@ class StudentDrivePhotoLocator
         }
 
         return null;
+    }
+
+    /**
+     * Klien Drive untuk satu sekolah.
+     *
+     * Dipisah supaya urutan pencarian di kelas ini bisa diuji tanpa memukul API
+     * Google: `GoogleDriveService::forSchool()` membangun klien HTTP di
+     * konstruktornya, jadi tidak ada tempat lain untuk menyisipkan pengganti.
+     */
+    protected function driveFor(SchoolDriveConfig $config): GoogleDriveService
+    {
+        return GoogleDriveService::forSchool($config);
     }
 
     private static function cacheKey(Student $student): string
