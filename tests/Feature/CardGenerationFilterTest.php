@@ -21,7 +21,13 @@ use Carbon\CarbonImmutable;
 beforeEach(function () {
     $this->admin = createAdminUser();
     $this->schoolId = $this->admin->school_id;
-    $this->student = Student::factory()->create(['school_id' => $this->schoolId]);
+    // Namanya dipatok, tidak diacak faker: test pencarian di bawah mencari
+    // "BUDI", dan faker Indonesia cukup sering mengeluarkan nama itu — siswa ini
+    // ikut cocok dan hitungannya meleset tanpa ada yang berubah di kodenya.
+    $this->student = Student::factory()->create([
+        'school_id' => $this->schoolId,
+        'full_name' => 'SITI AMINAH',
+    ]);
 
     $this->layout = SchoolCardLayout::create([
         'school_id' => $this->schoolId,
