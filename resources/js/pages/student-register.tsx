@@ -1,9 +1,14 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Download, Loader2, User, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import type { CropGuide } from '@/components/shared/crop-guide-overlay';
+import {
+    RegistrationFooter as Footer,
+    RegistrationSection as FormSection,
+    RegistrationHeader,
+    RegistrationShell,
+} from '@/components/shared/registration-shell';
 import { SimpleCaptcha } from '@/components/simple-captcha';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -648,24 +653,12 @@ export default function StudentRegister({ schools, classrooms, registrationToken
     return (
         <PageWrapper>
             <div className="mx-auto max-w-2xl px-4 py-8 sm:py-12">
-                {/* Header */}
-                <div className="mb-6 text-center">
-                    {selectedSchool?.logo_path ? (
-                        <img
-                            src={`/storage/${selectedSchool.logo_path}`}
-                            alt={selectedSchool.name}
-                            className="mx-auto mb-4 size-16 rounded-xl object-contain"
-                        />
-                    ) : (
-                        <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600">
-                            <AppLogoIcon className="size-8 fill-current text-white" />
-                        </div>
-                    )}
-                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Pendaftaran Data Siswa Baru</h1>
-                    <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-                        Lengkapi data siswa untuk didaftarkan ke sistem absensi sekolah.
-                    </p>
-                </div>
+                <RegistrationHeader
+                    logoPath={selectedSchool?.logo_path}
+                    schoolName={selectedSchool?.name}
+                    title="Pendaftaran Data Siswa Baru"
+                    subtitle="Lengkapi data siswa untuk didaftarkan ke sistem absensi sekolah."
+                />
 
                 {/* Progress indicator */}
                 <StepProgress current={step} />
@@ -1358,48 +1351,5 @@ function ResultTile({ item }: { item: StatusItem }) {
 }
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
-    return (
-        <>
-            <Head title="Pendaftaran Data Siswa Baru" />
-            <div className="relative flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
-                {/* Grid pattern + gradient glow background */}
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-                    <div
-                        className="absolute inset-0 opacity-[0.05] dark:opacity-[0.08] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_0%,black,transparent)]"
-                        style={{
-                            backgroundImage:
-                                'linear-gradient(to right, var(--foreground) 1px, transparent 1px), linear-gradient(to bottom, var(--foreground) 1px, transparent 1px)',
-                            backgroundSize: '40px 40px',
-                        }}
-                    />
-                    <div className="absolute -top-32 left-1/2 size-[42rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[120px] dark:bg-blue-500/15" />
-                </div>
-                <div className="relative z-10 flex flex-1 flex-col">{children}</div>
-            </div>
-        </>
-    );
-}
-
-function FormSection({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
-    return (
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="mb-5 flex items-center gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-sm font-bold text-white">
-                    {number}
-                </span>
-                <h2 className="text-lg font-semibold">{title}</h2>
-            </div>
-            {children}
-        </div>
-    );
-}
-
-function Footer() {
-    return (
-        <footer className="mt-auto border-t border-zinc-200 py-6 text-center dark:border-zinc-800">
-            <p className="text-muted-foreground text-sm">
-                Powered by <span className="font-semibold">Tyas Photo</span>
-            </p>
-        </footer>
-    );
+    return <RegistrationShell title="Pendaftaran Data Siswa Baru">{children}</RegistrationShell>;
 }

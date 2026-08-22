@@ -71,11 +71,11 @@ Route::get('daftar/preview/{key}', [StudentRegistrationController::class, 'previ
 Route::get('daftar/status/{student}', [StudentRegistrationController::class, 'status'])->middleware('throttle:120,1')->name('student.register.status');
 Route::get('daftar/{student}/hasil', [StudentRegistrationController::class, 'result'])->name('student.register.result');
 
-// Form pendek untuk sesi foto sekolah: nama, NIS/NISN, nomor foto, kelas, absen.
+// Form pendek untuk sesi foto sekolah: nama, kelas, nomor absen, nomor foto.
 // Rute terpisah, bukan mode di /daftar — operator membagikan tautannya apa adanya
 // dan tidak boleh bisa salah membuka versi panjang.
-Route::get('daftar-cepat', [StudentRegistrationController::class, 'quick'])->name('student.register.quick');
-Route::post('daftar-cepat', [StudentRegistrationController::class, 'storeQuick'])->middleware('throttle:10,1')->name('student.register.quick.store');
+Route::get('quick-regis', [StudentRegistrationController::class, 'quick'])->name('student.register.quick');
+Route::post('quick-regis', [StudentRegistrationController::class, 'storeQuick'])->middleware('throttle:10,1')->name('student.register.quick.store');
 
 Route::get('daftar-telegram', [ParentTelegramController::class, 'index'])->name('parent.telegram');
 Route::post('daftar-telegram', [ParentTelegramController::class, 'store'])->middleware('throttle:10,1')->name('parent.telegram.store');

@@ -1,8 +1,12 @@
-import { Head } from '@inertiajs/react';
 import { AlertTriangle, CheckCircle2, Loader2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
+import {
+    RegistrationFooter,
+    RegistrationHeader,
+    RegistrationSection,
+    RegistrationShell,
+} from '@/components/shared/registration-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -162,7 +166,7 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
         setErrors({});
 
         try {
-            const res = await fetch('/daftar-cepat', {
+            const res = await fetch('/quick-regis', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -220,24 +224,21 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
         photoReady;
 
     return (
-        <>
-            <Head title="Pendaftaran Cepat" />
+        <RegistrationShell title="Pendaftaran Data Siswa">
+            <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:py-12">
+                <RegistrationHeader
+                    logoPath={selectedSchool?.logo_path}
+                    schoolName={selectedSchool?.name}
+                    title="Pendaftaran Data Siswa"
+                    subtitle={
+                        selectedSchool
+                            ? selectedSchool.name
+                            : 'Empat isian saja: nama, kelas, nomor absen, dan nomor foto.'
+                    }
+                />
 
-            <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
-                <header className="border-b border-zinc-200 bg-white py-5 dark:border-zinc-800 dark:bg-zinc-900">
-                    <div className="mx-auto flex max-w-xl items-center gap-3 px-4">
-                        <AppLogoIcon className="size-9" />
-                        <div>
-                            <h1 className="text-lg font-bold">Pendaftaran Cepat</h1>
-                            <p className="text-muted-foreground text-xs">
-                                {selectedSchool ? selectedSchool.name : 'Empat isian: nama, nomor foto, kelas, nomor absen.'}
-                            </p>
-                        </div>
-                    </div>
-                </header>
-
-                <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6">
-                    <div className="space-y-5 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+                <RegistrationSection number={1} title="Data Siswa">
+                    <div className="space-y-5">
                         <div className="grid gap-2">
                             <Label htmlFor="school_id" required>
                                 Sekolah
@@ -389,31 +390,27 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
                             Simpan
                         </Button>
                     </div>
+                </RegistrationSection>
 
-                    {saved && (
-                        <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
-                            <p className="flex items-center gap-2 text-sm font-semibold text-green-900 dark:text-green-100">
-                                <CheckCircle2 className="size-4 shrink-0" />
-                                {saved.full_name} tersimpan.
-                            </p>
-                            <p className="mt-1 text-xs text-green-800 dark:text-green-200">
-                                {[saved.classroom, saved.no_absen && `absen ${saved.no_absen}`, saved.photo_drive_filename]
-                                    .filter(Boolean)
-                                    .join(' · ')}
-                            </p>
-                            <p className="mt-2 text-xs text-green-700 dark:text-green-300">
-                                Sekolah dan kelas dibiarkan terisi — langsung ketik siswa berikutnya.
-                            </p>
-                        </div>
-                    )}
-                </main>
-
-                <footer className="border-t border-zinc-200 py-6 text-center dark:border-zinc-800">
-                    <p className="text-muted-foreground text-sm">
-                        Powered by <span className="font-semibold">Tyas Photo</span>
-                    </p>
-                </footer>
+                {saved && (
+                    <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+                        <p className="flex items-center gap-2 text-sm font-semibold text-green-900 dark:text-green-100">
+                            <CheckCircle2 className="size-4 shrink-0" />
+                            {saved.full_name} tersimpan.
+                        </p>
+                        <p className="mt-1 text-xs text-green-800 dark:text-green-200">
+                            {[saved.classroom, saved.no_absen && `absen ${saved.no_absen}`, saved.photo_drive_filename]
+                                .filter(Boolean)
+                                .join(' · ')}
+                        </p>
+                        <p className="mt-2 text-xs text-green-700 dark:text-green-300">
+                            Sekolah dan kelas dibiarkan terisi — langsung ketik siswa berikutnya.
+                        </p>
+                    </div>
+                )}
             </div>
-        </>
+
+            <RegistrationFooter />
+        </RegistrationShell>
     );
 }

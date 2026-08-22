@@ -39,7 +39,7 @@ function quickPayload(array $overrides = []): array
 
 function postQuick(array $overrides = [])
 {
-    return test()->postJson('/daftar-cepat', quickPayload(array_merge([
+    return test()->postJson('/quick-regis', quickPayload(array_merge([
         'school_id' => test()->school->id,
         'classroom_id' => test()->classroom->id,
     ], $overrides)));
@@ -153,7 +153,7 @@ test('two students in a row get different auto NIS values', function () {
 });
 
 test('the page itself loads with its schools and classrooms', function () {
-    $this->get('/daftar-cepat')
+    $this->get('/quick-regis')
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('student-register-quick')

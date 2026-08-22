@@ -11,9 +11,13 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
+        // Kelompok pertama adalah halaman publik. Tanpa disebut di sini sebuah
+        // halaman jatuh ke `default` dan dirender di dalam sidebar admin —
+        // tautan publik yang memamerkan menu internal.
         switch (true) {
             case name === 'welcome':
             case name === 'student-register':
+            case name === 'student-register-quick':
             case name === 'student-register-result':
             case name === 'scan/public':
             case name === 'parent-telegram':
