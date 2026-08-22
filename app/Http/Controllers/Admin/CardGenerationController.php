@@ -8,6 +8,9 @@ use App\Models\CardGenerationLog;
 use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use App\Services\CardGeneratorService;
+use App\Support\SchoolTime;
+use Carbon\CarbonImmutable;
+use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,14 +19,28 @@ use Inertia\Response;
 
 class CardGenerationController extends Controller
 {
+    /** Rentang siap pakai untuk `?range=`; `custom` memakai start_date/end_date. */
+    private const RANGES = ['today', 'week', 'month', 'all', 'custom'];
+
     public function index(Request $request): Response
     {
+        $filters = $this->filters($request);
+        [$start, $end] = $this->window($filters);
+
         $logs = CardGenerationLog::forSchool()
             ->with(['student:id,full_name,nis', 'cardLayout:id,name'])
+            ->when($start, fn ($q) => $q->where('created_at', '>=', $start))
+            ->when($end, fn ($q) => $q->where('created_at', '<=', $end))
+            ->when($filters['status'], fn ($q, $status) => $q->where('status', $status))
+            ->when($filters['type'], fn ($q, $type) => $q->where('type', $type))
+            ->when($filters['search'], fn ($q, $search) => $q->whereHas(
+                'student',
+                fn ($s) => $s->where('full_name', 'like', "%{$search}%")->orWhere('nis', 'like', "%{$search}%"),
+            ))
             ->latest()
-            ->take(50)
-            ->get()
-            ->map(fn (CardGenerationLog $log) => [
+            ->paginate(50)
+            ->withQueryString()
+            ->through(fn (CardGenerationLog $log) => [
                 'id' => $log->id,
                 'type' => $log->type,
                 'student_name' => $log->student?->full_name ?? '-',
@@ -34,12 +51,75 @@ class CardGenerationController extends Controller
                 'drive_url' => $log->drive_url,
                 'generated_by' => $log->generated_by,
                 'error_message' => $log->error_message,
-                'created_at' => $log->created_at->format('d M Y H:i'),
+                'created_at' => SchoolTime::display($log->created_at),
             ]);
 
         return Inertia::render('admin/card-generation/index', [
             'logs' => $logs,
+            'filters' => $filters,
         ]);
+    }
+
+    /**
+     * @return array{range: string, start_date: string, end_date: string, status: string, type: string, search: string}
+     */
+    private function filters(Request $request): array
+    {
+        $range = (string) $request->query('range', 'all');
+
+        return [
+            'range' => in_array($range, self::RANGES, true) ? $range : 'all',
+            'start_date' => (string) $request->query('start_date', ''),
+            'end_date' => (string) $request->query('end_date', ''),
+            'status' => (string) $request->query('status', ''),
+            'type' => (string) $request->query('type', ''),
+            'search' => (string) $request->query('search', ''),
+        ];
+    }
+
+    /**
+     * Batas rentang sebagai waktu UTC, karena `created_at` diisi Eloquent pada
+     * `config('app.timezone')` yang di sini UTC.
+     *
+     * Batas harinya sendiri dihitung di jam sekolah: "hari ini" bagi operator
+     * berakhir tengah malam WIB, bukan tengah malam UTC yang jatuh pukul 07.00
+     * pagi. `whereDate()` akan melakukan persis kesalahan itu — ia membandingkan
+     * tanggal UTC yang tersimpan, sehingga generate sore hari terhitung besok.
+     *
+     * @param  array{range: string, start_date: string, end_date: string, ...}  $filters
+     * @return array{0: ?CarbonImmutable, 1: ?CarbonImmutable}
+     */
+    private function window(array $filters): array
+    {
+        $tz = SchoolTime::timezone();
+        $today = CarbonImmutable::now($tz)->startOfDay();
+
+        return match ($filters['range']) {
+            'today' => [$today->utc(), $today->endOfDay()->utc()],
+            'week' => [$today->startOfWeek()->utc(), $today->endOfWeek()->utc()],
+            'month' => [$today->startOfMonth()->utc(), $today->endOfMonth()->utc()],
+            'custom' => [
+                $this->boundary($filters['start_date'], $tz, false),
+                $this->boundary($filters['end_date'], $tz, true),
+            ],
+            default => [null, null],
+        };
+    }
+
+    /** Tanggal yang diketik operator, atau null bila kosong / tidak terbaca. */
+    private function boundary(string $date, string $tz, bool $endOfDay): ?CarbonImmutable
+    {
+        if ($date === '') {
+            return null;
+        }
+
+        try {
+            $parsed = CarbonImmutable::parse($date, $tz);
+        } catch (InvalidFormatException) {
+            return null;
+        }
+
+        return ($endOfDay ? $parsed->endOfDay() : $parsed->startOfDay())->utc();
     }
 
     public function preview(Request $request): Response
