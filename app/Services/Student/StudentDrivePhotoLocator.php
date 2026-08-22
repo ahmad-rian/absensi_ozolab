@@ -28,6 +28,9 @@ class StudentDrivePhotoLocator
     /** Hasil ditahan selama ini, termasuk hasil "tidak ketemu". */
     private const CACHE_TTL_SECONDS = 6 * 3600;
 
+    /** @var array<string, GoogleDriveService> Satu klien per sekolah, lihat driveFor(). */
+    private array $clients = [];
+
     /**
      * @return array{file_id: string, name: string, view_url: string, download_url: string}|null
      */
@@ -165,19 +168,25 @@ class StudentDrivePhotoLocator
     }
 
     /**
-     * Nama baku dulu, karena itu yang ditulis sistem sendiri. Kalau operator
-     * mengunggahnya manual dengan nama lain, cocokkan gambar di folder yang sama
-     * terhadap NIS lalu nama lengkap — perbandingannya tetap persis (tanpa ekstensi),
-     * jadi berkas kartu dan lembar pas foto di folder itu tidak ikut terambil.
+     * Cari pas foto di dalam satu folder siswa, dari kandidat terkuat ke terlemah.
+     *
+     * `photo_drive_filename` duluan: itu nama yang benar-benar diketik operator
+     * saat mendaftar, jadi ia menunjuk berkas aslinya. Lalu nama baku, karena itu
+     * yang ditulis sistem sendiri. Lalu NIS dan nama lengkap, untuk berkas yang
+     * diunggah manual dengan nama yang mengikuti siswanya — perbandingannya tetap
+     * persis (tanpa ekstensi), jadi kartu dan lembar pas foto di folder itu tidak
+     * ikut terambil.
      *
      * @return array{id: string, name: string}|null
      */
     private function matchInFolder(GoogleDriveService $drive, string $folderId, Student $student): ?array
     {
-        $exact = $drive->findFileByName(self::expectedFileName($student), $folderId);
+        foreach (array_filter([$student->photo_drive_filename, self::expectedFileName($student)]) as $name) {
+            $exact = $drive->findFileByName((string) $name, $folderId);
 
-        if ($exact) {
-            return $exact[0];
+            if ($exact) {
+                return $exact[0];
+            }
         }
 
         $images = $drive->imagesInFolder($folderId);
@@ -186,7 +195,7 @@ class StudentDrivePhotoLocator
             return null;
         }
 
-        foreach (array_filter([$student->nis, $student->full_name]) as $candidateName) {
+        foreach (array_filter([$student->photo_drive_filename, $student->nis, $student->full_name]) as $candidateName) {
             $match = GoogleDriveService::pickPhotoCandidate($images, (string) $candidateName);
 
             if ($match) {
@@ -194,17 +203,68 @@ class StudentDrivePhotoLocator
             }
         }
 
-        return null;
+        return self::loneUploadedImage($images, $student);
     }
 
     /**
-     * Klien Drive untuk satu sekolah.
+     * Satu-satunya gambar di folder yang bukan tulisan sistem sendiri.
      *
-     * Dipisah supaya urutan pencarian di kelas ini bisa diuji tanpa memukul API
-     * Google: `GoogleDriveService::forSchool()` membangun klien HTTP di
-     * konstruktornya, jadi tidak ada tempat lain untuk menyisipkan pengganti.
+     * Pas foto, kartu, dan lembar 4R semuanya lahir dengan awalan
+     * `{slug nama}-{nis}-` (lihat GoogleDriveService::studentFilePrefix). Apa pun
+     * yang tersisa setelah awalan itu dibuang adalah berkas yang ditaruh manusia
+     * — dan foto asli memang datang dengan nama keluaran kamera seperti
+     * `FIC_0008.JPG`, bukan nama siswanya. Tanpa jaring ini seluruh foto yang
+     * belum pernah lewat jalur generate terbaca sebagai "tidak ada".
+     *
+     * Hanya diambil bila tersisa PERSIS satu. Dua gambar asing berarti dua sesi
+     * foto atau salah taruh, dan memilih salah satunya berisiko memasang wajah
+     * anak lain di kartunya — persis keluhan yang sedang diperbaiki.
+     *
+     * @param  array<int, array{id: string, name: string, modifiedTime?: string|null}>  $images
+     * @return array{id: string, name: string}|null
      */
-    protected function driveFor(SchoolDriveConfig $config): GoogleDriveService
+    private static function loneUploadedImage(array $images, Student $student): ?array
+    {
+        $prefix = mb_strtolower(GoogleDriveService::studentFilePrefix($student));
+
+        $uploaded = array_values(array_filter(
+            $images,
+            static fn (array $file): bool => ! str_starts_with(mb_strtolower($file['name']), $prefix),
+        ));
+
+        if (count($uploaded) !== 1) {
+            return null;
+        }
+
+        return ['id' => $uploaded[0]['id'], 'name' => $uploaded[0]['name']];
+    }
+
+    /**
+     * Klien Drive untuk satu sekolah, dibangun sekali saja.
+     *
+     * Konstruktor GoogleDriveService memanggil fetchAccessTokenWithRefreshToken()
+     * — satu HTTP round-trip ke OAuth Google. Tanpa memoisasi ini, memeriksa satu
+     * sekolah berisi 600 siswa berarti 600 penyegaran token, dan `folderCache`
+     * milik klien lahir kosong tiap kali sehingga folder kelas yang sama dicari
+     * ulang untuk setiap siswa di dalamnya.
+     *
+     * Public karena `drive:audit-siswa` memakai klien yang sama untuk menelusuri
+     * folder per level — dua klien untuk satu sekolah berarti dua cache folder
+     * yang saling tidak tahu.
+     */
+    public function driveFor(SchoolDriveConfig $config): GoogleDriveService
+    {
+        return $this->clients[$config->id] ??= $this->buildDrive($config);
+    }
+
+    /**
+     * Dipisah dari driveFor() supaya urutan pencarian di kelas ini bisa diuji
+     * tanpa memukul API Google: `GoogleDriveService::forSchool()` membangun klien
+     * HTTP di konstruktornya, jadi tidak ada tempat lain untuk menyisipkan
+     * pengganti. Menimpa yang ini, bukan driveFor(), membuat test ikut melewati
+     * memoisasinya.
+     */
+    protected function buildDrive(SchoolDriveConfig $config): GoogleDriveService
     {
         return GoogleDriveService::forSchool($config);
     }

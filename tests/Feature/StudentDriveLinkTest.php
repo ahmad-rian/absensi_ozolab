@@ -32,15 +32,24 @@ beforeEach(function () {
     ]);
 });
 
-/** Locator yang memakai klien Drive palsu, bukan API Google. */
+/**
+ * Locator yang memakai klien Drive palsu, bukan API Google.
+ *
+ * Menimpa buildDrive(), bukan driveFor(), supaya memoisasi klien per sekolah
+ * ikut dijalani seperti di produksi — dan bisa dihitung lewat `$built`.
+ */
 function locatorUsing(GoogleDriveService $drive): StudentDrivePhotoLocator
 {
     return new class($drive) extends StudentDrivePhotoLocator
     {
+        public int $built = 0;
+
         public function __construct(private GoogleDriveService $fake) {}
 
-        protected function driveFor(SchoolDriveConfig $config): GoogleDriveService
+        protected function buildDrive(SchoolDriveConfig $config): GoogleDriveService
         {
+            $this->built++;
+
             return $this->fake;
         }
     };
@@ -120,6 +129,84 @@ test('inspect looks without writing, so the audit stays read-only', function () 
 
     expect($found['file_id'])->toBe('ketemu')
         ->and($this->student->fresh()->photo_drive_file_id)->toBeNull();
+});
+
+test('the filename typed at registration is tried before anything else', function () {
+    // Itu nama berkas aslinya. Nama baku `{slug}-{nis}-foto.png` hanya ada kalau
+    // siswa ini pernah lewat jalur generate; yang diketik operator selalu ada.
+    activeDriveConfig($this->schoolId);
+    $this->student->forceFill(['photo_drive_filename' => 'FIC_0008.JPG'])->saveQuietly();
+
+    $drive = mock(GoogleDriveService::class, function (MockInterface $mock) {
+        $mock->shouldReceive('findStudentFolderId')->andReturn('folder-siswa');
+        $mock->shouldReceive('findFileByName')->once()->with('FIC_0008.JPG', 'folder-siswa')
+            ->andReturn([['id' => 'asli', 'name' => 'FIC_0008.JPG']]);
+        $mock->shouldNotReceive('imagesInFolder');
+    });
+
+    expect(locatorUsing($drive)->inspect($this->student->fresh())['file_id'])->toBe('asli');
+});
+
+test('a camera-named photo is found once the system files are set aside', function () {
+    // Foto asli memang bernama keluaran kamera, bukan nama siswanya. Semua berkas
+    // yang sistem tulis sendiri berawalan `{slug}-{nis}-`, jadi yang tersisa
+    // setelah awalan itu dibuang adalah berkas yang ditaruh manusia.
+    activeDriveConfig($this->schoolId);
+
+    $prefix = GoogleDriveService::studentFilePrefix($this->student);
+
+    $drive = mock(GoogleDriveService::class, function (MockInterface $mock) use ($prefix) {
+        $mock->shouldReceive('findStudentFolderId')->andReturn('folder-siswa');
+        $mock->shouldReceive('findFileByName')->andReturn([]);
+        $mock->shouldReceive('imagesInFolder')->andReturn([
+            ['id' => 'kartu', 'name' => $prefix.'osis.png', 'modifiedTime' => null],
+            ['id' => 'lembar', 'name' => $prefix.'4r.png', 'modifiedTime' => null],
+            ['id' => 'asli', 'name' => 'FIC_0008.JPG', 'modifiedTime' => null],
+        ]);
+    });
+
+    expect(locatorUsing($drive)->inspect($this->student->fresh())['file_id'])->toBe('asli');
+});
+
+test('two loose images are never guessed between', function () {
+    // Dua foto asing berarti dua sesi atau salah taruh. Memilih salah satunya
+    // berisiko memasang wajah anak lain di kartunya — persis keluhan yang sedang
+    // diperbaiki, jadi lebih baik dilaporkan tidak ketemu.
+    activeDriveConfig($this->schoolId);
+
+    $drive = mock(GoogleDriveService::class, function (MockInterface $mock) {
+        $mock->shouldReceive('findStudentFolderId')->andReturn('folder-siswa');
+        $mock->shouldReceive('findFileByName')->andReturn([]);
+        $mock->shouldReceive('imagesInFolder')->andReturn([
+            ['id' => 'satu', 'name' => 'FIC_0008.JPG', 'modifiedTime' => '2026-08-01T00:00:00Z'],
+            ['id' => 'dua', 'name' => 'FIC_0009.JPG', 'modifiedTime' => '2026-08-02T00:00:00Z'],
+        ]);
+    });
+
+    expect(locatorUsing($drive)->inspect($this->student->fresh()))->toBeNull();
+});
+
+test('one Drive client is built per school, not per student', function () {
+    // Konstruktor GoogleDriveService menyegarkan token OAuth lewat HTTP. Satu
+    // klien per siswa berarti 1853 penyegaran token untuk satu kali audit, dan
+    // folderCache miliknya lahir kosong tiap kali.
+    activeDriveConfig($this->schoolId);
+
+    $lain = Student::factory()->create([
+        'school_id' => $this->schoolId,
+        'classroom_id' => $this->classroom->id,
+    ]);
+
+    $drive = mock(GoogleDriveService::class, function (MockInterface $mock) {
+        $mock->shouldReceive('findStudentFolderId')->andReturn('folder-siswa');
+        $mock->shouldReceive('findFileByName')->andReturn([['id' => 'ketemu', 'name' => 'foto.png']]);
+    });
+
+    $locator = locatorUsing($drive);
+    $locator->inspect($this->student->fresh());
+    $locator->inspect($lain->fresh());
+
+    expect($locator->built)->toBe(1);
 });
 
 test('moving a student to another class moves the Drive folder rather than making a new one', function () {

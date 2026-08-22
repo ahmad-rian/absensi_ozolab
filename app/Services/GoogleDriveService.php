@@ -717,8 +717,13 @@ class GoogleDriveService
 
     /**
      * Root sekolah apa adanya — tidak membuat folder, tidak menulis root_folder_id.
+     *
+     * Public supaya `drive:audit-siswa` bisa turun satu level demi satu level dan
+     * menyebut mana yang hilang: root sekolah, folder kelas, atau folder siswa.
+     * findStudentFolderId() melebur ketiganya jadi satu `null` yang tidak bisa
+     * dibedakan, dan laporan "folder tidak ditemukan" jadi tidak bisa ditindak.
      */
-    private function findSchoolRoot(): ?string
+    public function findSchoolRoot(): ?string
     {
         if ($this->config->root_folder_id) {
             return $this->config->root_folder_id;
@@ -837,6 +842,20 @@ class GoogleDriveService
     }
 
     /**
+     * Awalan nama untuk semua berkas yang sistem tulis sendiri ke folder siswa.
+     *
+     * Tiga penulis memakainya: pas foto di bawah ini, kartu
+     * (CardGeneratorService), dan lembar 4R (PhotoSheetGeneratorService). Keduanya
+     * menyusun sendiri dengan sprintf yang sama — kalau pola ini diubah, keduanya
+     * harus ikut, karena StudentDrivePhotoLocator memakai awalan ini untuk
+     * membedakan berkas keluaran sistem dari foto yang ditaruh manusia.
+     */
+    public static function studentFilePrefix(Student $student): string
+    {
+        return sprintf('%s-%s-', Str::slug($student->full_name), $student->nis ?: $student->id);
+    }
+
+    /**
      * Nama foto siswa di Drive.
      *
      * Nama berkas lokalnya sengaja acak supaya tidak bisa ditebak dari nama siswa
@@ -845,7 +864,7 @@ class GoogleDriveService
      */
     public static function studentPhotoFileName(Student $student): string
     {
-        return sprintf('%s-%s-foto.png', Str::slug($student->full_name), $student->nis ?: $student->id);
+        return self::studentFilePrefix($student).'foto.png';
     }
 
     /**
