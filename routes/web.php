@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SemuaSekolahController;
 use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\StudentImportController;
+use App\Http\Controllers\Admin\StudentRegenerateController;
 use App\Http\Controllers\Admin\StudentReportController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
@@ -69,6 +70,12 @@ Route::get('daftar/preview/{key}', [StudentRegistrationController::class, 'previ
     ->name('student.register.preview-file');
 Route::get('daftar/status/{student}', [StudentRegistrationController::class, 'status'])->middleware('throttle:120,1')->name('student.register.status');
 Route::get('daftar/{student}/hasil', [StudentRegistrationController::class, 'result'])->name('student.register.result');
+
+// Form pendek untuk sesi foto sekolah: nama, NIS/NISN, nomor foto, kelas, absen.
+// Rute terpisah, bukan mode di /daftar — operator membagikan tautannya apa adanya
+// dan tidak boleh bisa salah membuka versi panjang.
+Route::get('daftar-cepat', [StudentRegistrationController::class, 'quick'])->name('student.register.quick');
+Route::post('daftar-cepat', [StudentRegistrationController::class, 'storeQuick'])->middleware('throttle:10,1')->name('student.register.quick.store');
 
 Route::get('daftar-telegram', [ParentTelegramController::class, 'index'])->name('parent.telegram');
 Route::post('daftar-telegram', [ParentTelegramController::class, 'store'])->middleware('throttle:10,1')->name('parent.telegram.store');
@@ -119,6 +126,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::post('siswa/{siswa}/photo-sheet', [PhotoSheetController::class, 'generate'])->name('admin.siswa.photo-sheet');
         Route::patch('siswa/{siswa}/prayer-opt-in', [SiswaController::class, 'updatePrayerOptIn'])->name('admin.siswa.prayer-opt-in');
         Route::post('siswa/{siswa}/drive-photo/refresh', [SiswaController::class, 'refreshDrivePhoto'])->name('admin.siswa.drive-photo.refresh');
+
+        // Generate ulang per keluaran. Dipisah karena merender kartu memanggil
+        // headless Chrome dan mengambil foto memukul Drive — memperbaiki satu
+        // berkas tidak boleh menjalankan keempatnya.
+        Route::post('siswa/{siswa}/regenerate/kartu', [StudentRegenerateController::class, 'cards'])->name('admin.siswa.regenerate.cards');
+        Route::post('siswa/{siswa}/regenerate/pas-foto', [StudentRegenerateController::class, 'photoSheet'])->name('admin.siswa.regenerate.photo-sheet');
+        Route::post('siswa/{siswa}/regenerate/foto', [StudentRegenerateController::class, 'photo'])->name('admin.siswa.regenerate.photo');
         Route::get('siswa/{siswa}/laporan/absensi/csv', [StudentReportController::class, 'attendanceCsv'])->name('admin.siswa.laporan.absensi.csv');
         Route::get('siswa/{siswa}/laporan/absensi/pdf', [StudentReportController::class, 'attendancePdf'])->name('admin.siswa.laporan.absensi.pdf');
         Route::get('siswa/{siswa}/laporan/sholat/csv', [StudentReportController::class, 'prayerCsv'])->name('admin.siswa.laporan.sholat.csv');

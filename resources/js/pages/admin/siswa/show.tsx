@@ -12,6 +12,7 @@ import {
     MoonStar,
     Percent,
     Printer,
+    RefreshCw,
     Search,
     User,
     UserCheck,
@@ -68,6 +69,8 @@ type Student = {
     birth_date: string | null;
     address: string | null;
     photo_url: string | null;
+    /** Nama berkas foto di Drive, dari form pendaftaran. Null untuk siswa lama. */
+    photo_drive_filename: string | null;
     parent_name: string | null;
     parent_phone: string | null;
     classroom: Classroom | null;
@@ -118,6 +121,8 @@ type PageProps = {
     photoSheets: PhotoSheet[];
     photoSheetTemplates: PhotoSheetTemplate[];
     cards: GeneratedCard[];
+    /** Ada kartu yang sedang dirender — `cards` sendiri hanya berisi yang selesai. */
+    cardsProcessing: boolean;
     filters: RangeFilters;
     /** Ditunda — tab absensi paling sering dibuka, jadi dihangatkan lebih dulu. */
     attendance?: AttendanceStats;
@@ -180,6 +185,7 @@ export default function SiswaShow({
     photoSheets,
     photoSheetTemplates,
     cards,
+    cardsProcessing,
     filters,
     attendance,
     prayerDhuha,
@@ -202,6 +208,7 @@ export default function SiswaShow({
     const [caption, setCaption] = useState('');
     const [generating, setGenerating] = useState(false);
     const [drivePhotoLoading, setDrivePhotoLoading] = useState(false);
+    const [regenerating, setRegenerating] = useState<'kartu' | 'pas-foto' | 'foto' | null>(null);
     const [tab, setTab] = useState(() => initialTab(allowedTabs));
     const [startDate, setStartDate] = useState(filters.start);
     const [endDate, setEndDate] = useState(filters.end);
@@ -247,8 +254,51 @@ export default function SiswaShow({
         return () => window.clearInterval(interval);
     }, [hasProcessingSheet]);
 
+    // Kartu yang sedang dirender tidak muncul di `cards` sampai selesai, jadi
+    // tanpa polling ini tombolnya terasa tidak melakukan apa-apa.
+    useEffect(() => {
+        if (!cardsProcessing) {
+            return;
+        }
+
+        let reloading = false;
+        const interval = window.setInterval(() => {
+            if (reloading) {
+                return;
+            }
+            reloading = true;
+            router.reload({
+                only: ['cards', 'cardsProcessing'],
+                onFinish: () => {
+                    reloading = false;
+                },
+            });
+        }, 3000);
+
+        return () => window.clearInterval(interval);
+    }, [cardsProcessing]);
+
     function handlePrint() {
         window.print();
+    }
+
+    /**
+     * Generate ulang satu keluaran saja.
+     *
+     * Dipisah per keluaran karena merender kartu memanggil headless Chrome dan
+     * mengambil foto memukul Drive: memperbaiki satu berkas tidak boleh
+     * menjalankan semuanya di antrean yang dipakai bersama seluruh sekolah.
+     */
+    function regenerate(what: 'kartu' | 'pas-foto' | 'foto') {
+        setRegenerating(what);
+        router.post(
+            `/admin/siswa/${student.id}/regenerate/${what}`,
+            {},
+            {
+                preserveScroll: true,
+                onFinish: () => setRegenerating(null),
+            },
+        );
     }
 
     function loadDrivePhoto() {
@@ -502,6 +552,29 @@ export default function SiswaShow({
                                         </Button>
                                     </>
                                 )}
+
+                                {/* Nama berkas yang diketik saat mendaftar baru
+                                    disimpan sejak migrasi kolom Drive; siswa lama
+                                    belum punya, jadi tombolnya dimatikan dan
+                                    alasannya ditulis, bukan menebak nama. */}
+                                <Button
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => regenerate('foto')}
+                                    disabled={regenerating !== null || !student.photo_drive_filename}
+                                    title={
+                                        student.photo_drive_filename
+                                            ? `Ambil ulang ${student.photo_drive_filename} dari Drive`
+                                            : 'Nama berkas foto di Drive tidak tersimpan untuk siswa ini.'
+                                    }
+                                >
+                                    {regenerating === 'foto' ? (
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="mr-2 size-4" />
+                                    )}
+                                    Ambil Ulang Foto
+                                </Button>
                             </CardContent>
                         </Card>
 
@@ -542,6 +615,21 @@ export default function SiswaShow({
                                     <Button className="w-full" onClick={handleGenerateSheet} disabled={generating || !student.photo_url || !template}>
                                         {generating ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Images className="mr-2 size-4" />}
                                         Generate
+                                    </Button>
+                                    {/* Lembar 4R bawaan, sama dengan yang keluar saat
+                                        siswa mendaftar — tanpa memilih template lagi. */}
+                                    <Button
+                                        variant="outline"
+                                        className="w-full"
+                                        onClick={() => regenerate('pas-foto')}
+                                        disabled={regenerating !== null || !student.photo_url}
+                                    >
+                                        {regenerating === 'pas-foto' ? (
+                                            <Loader2 className="mr-2 size-4 animate-spin" />
+                                        ) : (
+                                            <RefreshCw className="mr-2 size-4" />
+                                        )}
+                                        Ulangi Lembar Bawaan (4R)
                                     </Button>
                                     {!student.photo_url && (
                                         <p className="text-muted-foreground text-xs">Siswa belum memiliki foto. Unggah foto terlebih dahulu.</p>
@@ -624,6 +712,20 @@ export default function SiswaShow({
                                         </div>
                                     );
                                 })}
+
+                                <Button
+                                    variant="outline"
+                                    className="mt-2 w-full print:hidden"
+                                    onClick={() => regenerate('kartu')}
+                                    disabled={regenerating !== null || cardsProcessing}
+                                >
+                                    {cardsProcessing ? (
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="mr-2 size-4" />
+                                    )}
+                                    {cardsProcessing ? 'Sedang dibuat…' : 'Generate Ulang Kartu'}
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>

@@ -60,8 +60,11 @@ class StudentApiController extends Controller
             'nis' => $student->nis,
             'nisn' => $student->nisn,
             'full_name' => $student->full_name,
-            'gender' => $student->gender->value,
-            'gender_label' => $student->gender->label(),
+            // Boleh kosong sejak `/daftar-cepat` ada — form itu tidak menanyakan
+            // jenis kelamin, dan menurunkan nilainya tanpa penjagaan akan
+            // meruntuhkan endpoint ini untuk siswa yang mendaftar lewat sana.
+            'gender' => $student->gender?->value,
+            'gender_label' => $student->gender?->label(),
             'religion' => $student->religion?->value,
             'religion_label' => $student->religion?->label(),
             'birth_place' => $student->birth_place,
@@ -174,7 +177,7 @@ class StudentApiController extends Controller
                 'nis' => $s->nis,
                 'nisn' => $s->nisn,
                 'full_name' => $s->full_name,
-                'gender' => $s->gender->value,
+                'gender' => $s->gender?->value,
                 'classroom' => $s->classroom?->name,
                 'grade_level' => $s->classroom?->grade_level,
             ]);

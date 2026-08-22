@@ -1,11 +1,9 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Crop, Download, Loader2, Move, RotateCcw, User, X, ZoomIn } from 'lucide-react';
+import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Download, Loader2, User, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Cropper from 'react-easy-crop';
 import AppLogoIcon from '@/components/app-logo-icon';
 import InputError from '@/components/input-error';
 import type { CropGuide } from '@/components/shared/crop-guide-overlay';
-import { CropGuideOverlay } from '@/components/shared/crop-guide-overlay';
 import { SimpleCaptcha } from '@/components/simple-captcha';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,7 +47,6 @@ type StatusItem = {
 
 /** Normalized crop rect (0..1) relative to the natural image. */
 type CropRect = { sx: number; sy: number; sw: number; sh: number };
-type AutoCrop = CropRect & { natW: number; natH: number; ratio: number };
 
 const religions = [
     { value: 'ISLAM', label: 'Islam' },
@@ -139,7 +136,7 @@ function readPersisted(): { data: FormData; step: number } {
     return { data: INITIAL_DATA, step: 1 };
 }
 
-export default function StudentRegister({ schools, classrooms, photoGuide, registrationToken }: Props) {
+export default function StudentRegister({ schools, classrooms, registrationToken }: Props) {
     const { flash } = usePage().props as unknown as { flash: { success?: string } };
 
     // Restore persisted wizard state once, synchronously, via lazy initializers.
@@ -160,7 +157,9 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState('');
     const [photoPreview, setPhotoPreview] = useState<{ url: string; filename: string } | null>(null);
-    const [autoCrop, setAutoCrop] = useState<AutoCrop | null>(null);
+    // Croping dimatikan — dulu di sini ada `autoCrop`, rect hasil deteksi kepala
+    // dari server yang jadi posisi awal kotak crop. Lihat catatan di
+    // `components/shared/registration-crop-reposition.tsx`.
     // Gambar preview sudah selesai dimuat di browser (bukan sekadar respons server).
     const [photoReady, setPhotoReady] = useState(false);
     // Nomor urut pencarian foto — hanya respons terbaru yang boleh menulis state.
@@ -289,9 +288,6 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
         return stepErrors[key] || (errors as Record<string, string>)[key] || formErrors[key];
     }
 
-    // Identitas stabil — CropReposition memakainya sebagai dependency efek pemuat gambar.
-    const handlePhotoReady = useCallback((ready: boolean) => setPhotoReady(ready), []);
-
     function handleFinalSubmit() {
         // Validate all input steps defensively before submit.
         for (let s = 1; s <= 5; s++) {
@@ -412,12 +408,14 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
         setPreviewLoading(true);
         setPreviewError('');
         setPhotoPreview(null);
-        setAutoCrop(null);
         setPhotoReady(false);
-        setData((prev) => ({ ...prev, manual_crop: null, photo_key: '' }));
+        setData((prev) => ({ ...prev, photo_key: '' }));
 
         try {
-            const res = await fetch('/daftar/crop-preview', {
+            // `preview-photo`, bukan `crop-preview`: yang kedua ikut menjalankan
+            // deteksi kepala untuk memposisikan kotak crop, dan kotak itu sudah
+            // tidak ada. Endpoint-nya sengaja dibiarkan hidup di server.
+            const res = await fetch('/daftar/preview-photo', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -441,17 +439,6 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                 setPreviewError('');
                 setPhotoPreview({ url: json.preview_url, filename: data.photo_drive_filename.trim() });
                 setData('photo_key', json.photo_key ?? '');
-
-                if (json.crop) {
-                    setAutoCrop(json.crop);
-                    // Seed manual_crop with the auto rect so a non-dragging user still crops correctly.
-                    setData('manual_crop', {
-                        sx: json.crop.sx,
-                        sy: json.crop.sy,
-                        sw: json.crop.sw,
-                        sh: json.crop.sh,
-                    });
-                }
             } else {
                 setPreviewError(json.message || 'File tidak ditemukan.');
             }
@@ -469,12 +456,15 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
     // Auto-search the Drive photo as the user types (debounced) — no button needed.
     useEffect(() => {
         const name = data.photo_drive_filename.trim();
+
         if (!name || !data.school_id) {
             return;
         }
+
         const t = setTimeout(() => {
             handleLoadPhoto();
         }, 650);
+
         return () => clearTimeout(t);
     }, [data.photo_drive_filename, data.school_id, handleLoadPhoto]);
 
@@ -494,6 +484,7 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
             if (inFlight) {
                 return;
             }
+
             inFlight = true;
 
             try {
@@ -537,7 +528,6 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
         setStatusDone(false);
         setCaptchaVerified(false);
         setPhotoPreview(null);
-        setAutoCrop(null);
     }
 
     // Success page with async generation results
@@ -684,8 +674,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                     {step === 1 && (
                         <FormSection number={1} title="Pilih Sekolah">
                             <div className="grid gap-2">
-                                <Label htmlFor="school_id" className="text-sm font-medium">
-                                    Sekolah <span className="text-red-500">*</span>
+                                <Label htmlFor="school_id" className="text-sm font-medium" required>
+                                    Sekolah
                                 </Label>
                                 <Select
                                     value={data.school_id}
@@ -713,8 +703,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                         <FormSection number={3} title="Data Siswa">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="full_name" className="text-sm font-medium">
-                                        Nama Lengkap <span className="text-red-500">*</span>
+                                    <Label htmlFor="full_name" className="text-sm font-medium" required>
+                                        Nama Lengkap
                                     </Label>
                                     <Input
                                         id="full_name"
@@ -741,8 +731,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                         <InputError message={err('nis')} />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="no_absen" className="text-sm font-medium">
-                                            No. Absen <span className="text-red-500">*</span>
+                                        <Label htmlFor="no_absen" className="text-sm font-medium" required>
+                                            No. Absen
                                         </Label>
                                         <Input
                                             id="no_absen"
@@ -754,8 +744,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                         <InputError message={err('no_absen')} />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="nisn" className="text-sm font-medium">
-                                            NISN <span className="text-red-500">*</span>
+                                        <Label htmlFor="nisn" className="text-sm font-medium" required>
+                                            NISN
                                         </Label>
                                         <Input
                                             id="nisn"
@@ -769,8 +759,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label className="text-sm font-medium">
-                                        Jenis Kelamin <span className="text-red-500">*</span>
+                                    <Label className="text-sm font-medium" required>
+                                        Jenis Kelamin
                                     </Label>
                                     <RadioGroup value={data.gender} onValueChange={(v) => setData('gender', v)} className="flex gap-4">
                                         <label
@@ -790,8 +780,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="religion" className="text-sm font-medium">
-                                        Agama <span className="text-red-500">*</span>
+                                    <Label htmlFor="religion" className="text-sm font-medium" required>
+                                        Agama
                                     </Label>
                                     <Select value={data.religion} onValueChange={(val) => setData('religion', val)}>
                                         <SelectTrigger className="h-11 w-full">
@@ -809,8 +799,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="classroom_id" className="text-sm font-medium">
-                                        Kelas <span className="text-red-500">*</span>
+                                    <Label htmlFor="classroom_id" className="text-sm font-medium" required>
+                                        Kelas
                                     </Label>
                                     <Select
                                         value={data.classroom_id}
@@ -839,8 +829,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                             <div className="grid gap-5">
                                 <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="birth_place" className="text-sm font-medium">
-                                            Tempat Lahir <span className="text-red-500">*</span>
+                                        <Label htmlFor="birth_place" className="text-sm font-medium" required>
+                                            Tempat Lahir
                                         </Label>
                                         <Input
                                             id="birth_place"
@@ -852,8 +842,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                         <InputError message={err('birth_place')} />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="birth_date" className="text-sm font-medium">
-                                            Tanggal Lahir <span className="text-red-500">*</span>
+                                        <Label htmlFor="birth_date" className="text-sm font-medium" required>
+                                            Tanggal Lahir
                                         </Label>
                                         <Input
                                             id="birth_date"
@@ -866,8 +856,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                     </div>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="address" className="text-sm font-medium">
-                                        Alamat <span className="text-red-500">*</span>
+                                    <Label htmlFor="address" className="text-sm font-medium" required>
+                                        Alamat
                                     </Label>
                                     <Textarea
                                         id="address"
@@ -890,8 +880,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                         <FormSection number={5} title="Data Orang Tua/Wali">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="parent_name" className="text-sm font-medium">
-                                        Nama Orang Tua/Wali <span className="text-red-500">*</span>
+                                    <Label htmlFor="parent_name" className="text-sm font-medium" required>
+                                        Nama Orang Tua/Wali
                                     </Label>
                                     <Input
                                         id="parent_name"
@@ -903,8 +893,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                     <InputError message={err('parent_name')} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="text-sm font-medium">
-                                        Hubungan <span className="text-red-500">*</span>
+                                    <Label className="text-sm font-medium" required>
+                                        Hubungan
                                     </Label>
                                     <Select value={data.parent_relation} onValueChange={(v) => setData('parent_relation', v)}>
                                         <SelectTrigger className="h-11">
@@ -919,8 +909,8 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                     <InputError message={err('parent_relation')} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="parent_phone" className="text-sm font-medium">
-                                        No. WhatsApp <span className="text-red-500">*</span>
+                                    <Label htmlFor="parent_phone" className="text-sm font-medium" required>
+                                        No. WhatsApp
                                     </Label>
                                     <div className="flex">
                                         <span className="border-input bg-muted/50 text-muted-foreground inline-flex items-center rounded-l-md border border-r-0 px-3.5 text-sm font-medium">
@@ -963,7 +953,9 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                         <FormSection number={2} title="Foto Siswa">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="photo_drive_filename" className="text-sm font-medium">
+                                    {/* Wajib sejak dulu — langkah 2 menolak tanpa foto —
+                                        tapi bintangnya belum pernah ikut dipasang. */}
+                                    <Label htmlFor="photo_drive_filename" className="text-sm font-medium" required>
                                         Nama File Foto di Google Drive
                                     </Label>
                                     <div className="relative">
@@ -974,11 +966,9 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                                 setData((prev) => ({
                                                     ...prev,
                                                     photo_drive_filename: e.target.value,
-                                                    manual_crop: null,
                                                     photo_key: '',
                                                 }));
                                                 setPhotoPreview(null);
-                                                setAutoCrop(null);
                                                 setPhotoReady(false);
                                                 setPreviewError('');
                                             }}
@@ -1013,22 +1003,51 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                     )}
                                 </div>
 
-                                {/* Crop reposition */}
-                                {photoPreview && autoCrop && (
-                                    <CropReposition
-                                        imageUrl={photoPreview.url}
-                                        filename={photoPreview.filename}
-                                        auto={autoCrop}
-                                        guide={photoGuide}
-                                        onChange={(rect) => setData('manual_crop', rect)}
-                                        onReady={handlePhotoReady}
-                                        onClose={() => {
-                                            setPhotoPreview(null);
-                                            setAutoCrop(null);
-                                            setPhotoReady(false);
-                                            setData((prev) => ({ ...prev, manual_crop: null, photo_key: '' }));
-                                        }}
-                                    />
+                                {/*
+                                    Pratinjau foto Drive, apa adanya.
+
+                                    Kotak croping dimatikan atas permintaan klien:
+                                    pendaftar cukup mengetik nama berkas lalu melihat
+                                    fotonya. Komponennya masih utuh di
+                                    `components/shared/registration-crop-reposition.tsx`
+                                    — menghidupkannya kembali berarti mengembalikan
+                                    blok ini beserta state `autoCrop`.
+
+                                    `onLoad` yang menyalakan tombol Lanjut, bukan
+                                    respons server: berkasnya masih dalam perjalanan
+                                    ke browser saat JSON-nya tiba.
+                                */}
+                                {photoPreview && (
+                                    <div className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                                        <img
+                                            src={photoPreview.url}
+                                            alt={photoPreview.filename}
+                                            onLoad={() => setPhotoReady(true)}
+                                            onError={() => {
+                                                setPhotoReady(false);
+                                                setPreviewError('Foto gagal dimuat. Coba ketik ulang nama berkasnya.');
+                                            }}
+                                            className="mx-auto max-h-80 w-auto rounded-lg object-contain"
+                                        />
+                                        <div className="mt-3 flex items-center justify-between gap-2">
+                                            <p className="text-muted-foreground truncate text-xs" title={photoPreview.filename}>
+                                                {photoPreview.filename}
+                                            </p>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setPhotoPreview(null);
+                                                    setPhotoReady(false);
+                                                    setData((prev) => ({ ...prev, photo_drive_filename: '', photo_key: '' }));
+                                                }}
+                                            >
+                                                <X className="mr-1 size-4" />
+                                                Ganti
+                                            </Button>
+                                        </div>
+                                    </div>
                                 )}
 
                                 <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
@@ -1078,7 +1097,6 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
                                 </ReviewGroup>
                                 <ReviewGroup title="Foto & Kartu">
                                     <ReviewRow label="File Foto" value={data.photo_drive_filename || '(tidak ada)'} />
-                                    <ReviewRow label="Crop Manual" value={data.manual_crop ? 'Ya (posisi diatur)' : data.photo_drive_filename ? 'Otomatis' : '—'} />
                                     <ReviewRow label="Generate Kartu" value={data.generate_cards ? 'Ya (OSIS & Perpustakaan)' : 'Tidak'} />
                                 </ReviewGroup>
 
@@ -1199,232 +1217,6 @@ export default function StudentRegister({ schools, classrooms, photoGuide, regis
     );
 }
 
-/** Canva-style crop: fixed 16:21 frame, image pans + zooms behind it. */
-function CropReposition({
-    imageUrl,
-    filename,
-    auto,
-    guide,
-    onChange,
-    onClose,
-    onReady,
-}: {
-    imageUrl: string;
-    filename: string;
-    auto: AutoCrop;
-    guide: CropGuide;
-    onChange: (rect: CropRect) => void;
-    onClose: () => void;
-    onReady: (ready: boolean) => void;
-}) {
-    const [crop, setCrop] = useState({ x: 0, y: 0 });
-    const [zoom, setZoom] = useState(1);
-    const [resetKey, setResetKey] = useState(0);
-    const [showGuide, setShowGuide] = useState(false);
-    // Ukuran alami gambar pratinjau — dipakai menormalkan rect hasil geser/zoom.
-    const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
-    // Ukuran kotak crop sebenarnya, supaya sketsa panduan berimpit dengannya dan
-    // tidak sekadar menebak lewat rasio container.
-    const [cropBox, setCropBox] = useState<{ width: number; height: number } | null>(null);
-    // react-easy-crop menembakkan onCropComplete sekali SEBELUM menerapkan rect
-    // awal, dengan zoom 1 dan seluruh gambar. Kalau emisi itu ikut ditulis, hasil
-    // deteksi wajah dari server langsung tertimpa bingkai penuh.
-    const initializedRef = useRef(false);
-
-    // `onReady` menjaga tombol Lanjut tetap mati sampai gambarnya benar-benar
-    // terlihat — respons crop-preview saja belum cukup, karena berkasnya masih
-    // dalam perjalanan ke browser saat itu.
-    useEffect(() => {
-        setNatural(null);
-        initializedRef.current = false;
-        onReady(false);
-        const img = new Image();
-        img.onload = () => {
-            setNatural({ w: img.naturalWidth, h: img.naturalHeight });
-            onReady(true);
-        };
-        img.src = imageUrl;
-    }, [imageUrl, onReady]);
-
-    // Rect dari server sudah ternormalisasi 0..1, jadi versi persen adalah jalur
-    // yang tepat — tidak lewat pembulatan piksel seperti varian *Pixels.
-    const initialArea = {
-        x: auto.sx * 100,
-        y: auto.sy * 100,
-        width: auto.sw * 100,
-        height: auto.sh * 100,
-    };
-
-    const handleComplete = useCallback(
-        (_area: unknown, px: { x: number; y: number; width: number; height: number }) => {
-            if (!natural || !initializedRef.current) {
-                return;
-            }
-            onChange({
-                sx: Math.max(0, Math.min(1, px.x / natural.w)),
-                sy: Math.max(0, Math.min(1, px.y / natural.h)),
-                sw: Math.max(0, Math.min(1, px.width / natural.w)),
-                sh: Math.max(0, Math.min(1, px.height / natural.h)),
-            });
-        },
-        [natural, onChange],
-    );
-
-    function reset() {
-        initializedRef.current = false;
-        setCrop({ x: 0, y: 0 });
-        setZoom(1);
-        setResetKey((k) => k + 1);
-    }
-
-    return (
-        <div className="overflow-hidden rounded-xl border-2 border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-950">
-            <div className="flex items-center justify-between border-b border-green-200 px-3 py-2 dark:border-green-800">
-                <span className="flex items-center gap-1.5 text-sm font-medium text-green-800 dark:text-green-200">
-                    <CheckCircle2 className="size-4" /> {filename}
-                </span>
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="rounded-md p-1 text-green-600 hover:bg-green-200 dark:hover:bg-green-800"
-                >
-                    <X className="size-4" />
-                </button>
-            </div>
-            <div className="p-4">
-                <p className="mb-3 text-center text-xs font-medium text-green-700 dark:text-green-300">
-                    Geser & zoom foto untuk atur posisi wajah
-                </p>
-                <div className="relative mx-auto h-80 w-full max-w-sm overflow-hidden rounded-lg bg-zinc-900">
-                    {natural ? (
-                        <Cropper
-                            key={resetKey}
-                            image={imageUrl}
-                            crop={crop}
-                            zoom={zoom}
-                            aspect={16 / 21}
-                            minZoom={1}
-                            maxZoom={5}
-                            restrictPosition
-                            objectFit="contain"
-                            initialCroppedAreaPercentages={initialArea}
-                            onCropChange={setCrop}
-                            onZoomChange={setZoom}
-                            onCropComplete={handleComplete}
-                            onCropSizeChange={setCropBox}
-                            onMediaLoaded={() => {
-                                initializedRef.current = true;
-                            }}
-                            showGrid={false}
-                        />
-                    ) : (
-                        <div className="flex size-full items-center justify-center">
-                            <Loader2 className="size-6 animate-spin text-white/70" />
-                        </div>
-                    )}
-                    {natural && cropBox && (
-                        <CropGuideOverlay
-                            guide={guide}
-                            style={{ width: cropBox.width, height: cropBox.height }}
-                            className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                        />
-                    )}
-                </div>
-
-                {/* Zoom control — kept right under the cropper */}
-                <div className="mt-3 flex items-center gap-3">
-                    <span className="text-muted-foreground text-xs">Zoom</span>
-                    <input
-                        type="range"
-                        min={1}
-                        max={5}
-                        step={0.05}
-                        value={zoom}
-                        onChange={(e) => setZoom(Number(e.target.value))}
-                        className="h-1.5 flex-1 cursor-pointer accent-green-600"
-                    />
-                    <button
-                        type="button"
-                        onClick={reset}
-                        className="rounded-md border border-green-300 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900"
-                    >
-                        Reset
-                    </button>
-                </div>
-
-                {/* Panduan crop */}
-                <div className="mt-4 rounded-lg border border-green-200 bg-white/70 p-3 dark:border-green-800 dark:bg-zinc-900/40">
-                    <p className="mb-3 text-sm font-bold text-green-900 dark:text-green-100">
-                        Mohon croping seperti contoh foto di bawah.
-                    </p>
-                    <p className="mb-2 text-xs font-semibold text-green-800 dark:text-green-200">Cara mengatur foto:</p>
-
-                    {/* Poster panduan */}
-                    <button type="button" onClick={() => setShowGuide(true)} className="mb-3 block w-full" title="Ketuk untuk perbesar">
-                        <img
-                            src="/images/panduan-foto.webp"
-                            alt="Panduan atur foto: geser, zoom in, zoom out"
-                            className="w-full rounded-lg border border-green-200 dark:border-green-800"
-                            loading="lazy"
-                        />
-                        <span className="text-muted-foreground mt-1 block text-center text-[11px]">Ketuk gambar untuk perbesar</span>
-                    </button>
-
-                    <ul className="space-y-1.5 text-xs text-green-700 dark:text-green-300">
-                        <li className="flex items-start gap-2">
-                            <Move className="mt-0.5 size-3.5 shrink-0" />
-                            <span>
-                                <b>Geser foto:</b> tahan lalu tarik foto untuk atur posisi wajah.
-                            </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <ZoomIn className="mt-0.5 size-3.5 shrink-0" />
-                            <span>
-                                <b>Perbesar/perkecil:</b> pakai slider <b>Zoom</b> di atas.
-                            </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <Crop className="mt-0.5 size-3.5 shrink-0" />
-                            <span>
-                                <b>Pastikan wajah penuh</b> di dalam kotak — rasio pas foto 3×4 (16:21). Ikuti garis bantu di atas foto: mata
-                                di garis hijau, bahu terlihat.
-                            </span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <RotateCcw className="mt-0.5 size-3.5 shrink-0" />
-                            <span>
-                                <b>Reset:</b> kembalikan ke posisi otomatis.
-                            </span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            {showGuide && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-                    onClick={() => setShowGuide(false)}
-                    role="button"
-                    tabIndex={0}
-                >
-                    <img
-                        src="/images/panduan-foto.webp"
-                        alt="Panduan atur foto"
-                        className="max-h-full max-w-full rounded-lg object-contain"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowGuide(false)}
-                        className="absolute top-4 right-4 rounded-full bg-white/90 p-2 text-zinc-800 shadow"
-                        aria-label="Tutup"
-                    >
-                        <X className="size-5" />
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-}
 
 function StepProgress({ current }: { current: number }) {
     return (

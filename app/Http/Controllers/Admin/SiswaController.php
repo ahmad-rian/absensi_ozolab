@@ -14,6 +14,7 @@ use App\Services\PhotoSheetGeneratorService;
 use App\Services\Student\StudentDrivePhotoLocator;
 use App\Services\Student\StudentStatsBuilder;
 use App\Support\SchoolFeatures;
+use App\Support\SchoolTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -76,7 +77,7 @@ class SiswaController extends Controller
                 'status' => $log->status,
                 'file_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
                 'drive_url' => $log->drive_url,
-                'created_at' => $log->created_at->format('d M Y H:i'),
+                'created_at' => SchoolTime::display($log->created_at),
             ]);
 
         $photoSheetTemplates = collect(PhotoSheetGeneratorService::TEMPLATES)
@@ -96,6 +97,14 @@ class SiswaController extends Controller
             'photoSheets' => $photoSheets,
             'photoSheetTemplates' => $photoSheetTemplates,
             'cards' => $this->generatedCards($siswa),
+            // Kartu yang masih dirender tidak muncul di `cards` — daftar itu hanya
+            // berisi yang sudah selesai supaya tautan lama tetap bisa dibuka
+            // selama yang baru dibuat. Tanpa penanda ini tombol "generate ulang"
+            // tidak memberi tanda apa pun bahwa ia berhasil ditekan.
+            'cardsProcessing' => CardGenerationLog::where('student_id', $siswa->id)
+                ->where('type', 'card')
+                ->where('status', 'processing')
+                ->exists(),
             'filters' => [
                 ...$range,
                 'label' => $stats->rangeLabel($range['start'], $range['end']),
@@ -189,7 +198,7 @@ class SiswaController extends Controller
                 'layout_name' => $log->cardLayout->name,
                 'drive_url' => $log->drive_url,
                 'file_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
-                'created_at' => $log->created_at->format('d M Y H:i'),
+                'created_at' => SchoolTime::display($log->created_at),
             ])
             ->all();
     }
