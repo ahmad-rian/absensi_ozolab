@@ -9,6 +9,7 @@ use App\Models\PhotoSheetBatch;
 use App\Models\Student;
 use App\Services\PhotoSheetBatchService;
 use App\Services\PhotoSheetGeneratorService;
+use App\Support\SchoolTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -160,7 +161,7 @@ class PhotoSheetBatchController extends Controller
                     ->map(fn (array $item) => ($item['name'] ?? '?').' ('.($item['quantity'] ?? 0).')')
                     ->implode(', '),
                 'error_message' => $batch->error_message,
-                'created_at' => $batch->created_at->format('d M Y H:i'),
+                'created_at' => SchoolTime::display($batch->created_at),
             ]);
     }
 }

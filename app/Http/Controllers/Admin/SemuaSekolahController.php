@@ -197,7 +197,7 @@ class SemuaSekolahController extends Controller
                 'status' => $log->status,
                 'drive_url' => $log->drive_url,
                 'file_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
-                'created_at' => $log->created_at->format('d M Y H:i'),
+                'created_at' => SchoolTime::display($log->created_at),
             ]);
     }
 

@@ -8,6 +8,7 @@ use App\Models\Classroom;
 use App\Models\Student;
 use App\Models\StudentImportJob;
 use App\Services\Import\StudentImportParser;
+use App\Support\SchoolTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -231,7 +232,7 @@ class StudentImportController extends Controller
                 'failed_count' => $job->failed_count,
                 'errors' => array_slice($job->errors ?? [], 0, 20),
                 'created_by' => $job->creator?->name ?? '-',
-                'created_at' => $job->created_at?->format('d M Y H:i'),
+                'created_at' => SchoolTime::display($job->created_at),
             ])
             ->all();
     }

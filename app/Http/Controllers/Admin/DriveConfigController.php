@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\SchoolDriveConfig;
 use App\Services\GoogleDriveService;
+use App\Support\SchoolTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +28,7 @@ class DriveConfigController extends Controller
                 'albums_folder_id' => $config->albums_folder_id,
                 'parents_folder_id' => $config->parents_folder_id,
                 'is_active' => $config->is_active,
-                'last_tested_at' => $config->last_tested_at?->format('d M Y H:i'),
+                'last_tested_at' => SchoolTime::display($config->last_tested_at),
             ] : null,
             'hasGlobalCredentials' => GoogleDriveService::hasGlobalCredentials(),
             'isSuperAdmin' => auth()->user()->isSuperAdmin(),
