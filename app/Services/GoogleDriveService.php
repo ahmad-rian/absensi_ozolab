@@ -691,6 +691,60 @@ class GoogleDriveService
     }
 
     /**
+     * Kembalikan berkas dari sampah ke folder asalnya.
+     *
+     * Id dan tautan berbaginya tidak berubah, jadi apa pun yang sudah menunjuk
+     * ke berkas itu langsung hidup lagi.
+     */
+    public function untrashFile(string $fileId): void
+    {
+        $this->drive->files->update($fileId, new DriveFile(['trashed' => false]), [
+            'fields' => 'id',
+            'supportsAllDrives' => true,
+        ]);
+    }
+
+    /**
+     * Seluruh isi sampah Drive, berikut waktu pembuangannya.
+     *
+     * `trashedTime` yang menentukan: berkas yang dibuang satu perintah punya
+     * stempel waktu berdekatan, jadi pemulihan bisa menyasar tepat satu
+     * kejadian tanpa ikut menghidupkan berkas yang memang sengaja dibuang
+     * orang jauh sebelumnya.
+     *
+     * @return array<int, array{id: string, name: string, trashedTime: string|null, parents: array<int, string>}>
+     */
+    public function trashedFiles(): array
+    {
+        $files = [];
+        $pageToken = null;
+
+        do {
+            $result = $this->drive->files->listFiles([
+                'q' => 'trashed = true and mimeType != \'application/vnd.google-apps.folder\'',
+                'pageSize' => 1000,
+                'fields' => 'nextPageToken, files(id, name, trashedTime, parents)',
+                'supportsAllDrives' => true,
+                'includeItemsFromAllDrives' => true,
+                'pageToken' => $pageToken,
+            ]);
+
+            foreach ($result->getFiles() as $file) {
+                $files[] = [
+                    'id' => $file->getId(),
+                    'name' => $file->getName(),
+                    'trashedTime' => $file->getTrashedTime(),
+                    'parents' => $file->getParents() ?: [],
+                ];
+            }
+
+            $pageToken = $result->getNextPageToken();
+        } while ($pageToken);
+
+        return $files;
+    }
+
+    /**
      * Pastikan sekolah punya folder sendiri di dalam root platform.
      *
      * Sekolah tidak mengatur ini lewat UI: folder dibuat otomatis dengan nama
