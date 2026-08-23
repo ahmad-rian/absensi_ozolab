@@ -8,6 +8,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
 use App\Models\CardGenerationLog;
+use App\Models\Classroom;
 use App\Models\PrayerAttendance;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
@@ -55,6 +56,23 @@ function makeCardLog(string $schoolId, Student $student, string $type, string $n
 
     return $log;
 }
+
+/**
+ * Setelah menyimpan, operator ingin memeriksa hasilnya. Kembali ke daftar
+ * memaksanya mencari ulang siswa yang barusan diubah.
+ */
+test('menyimpan perubahan mendarat di halaman detail, bukan daftar', function () {
+    $kelas = Classroom::factory()->create(['school_id' => $this->schoolId]);
+
+    $this->actingAs($this->admin)
+        ->put(route('admin.siswa.update', $this->student), [
+            'full_name' => 'Nama Diperbarui',
+            'gender' => 'LAKI_LAKI',
+            'classroom_id' => $kelas->id,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('admin.siswa.show', $this->student));
+});
 
 test('the detail page renders with the new tabs payload', function () {
     $this->actingAs($this->admin)

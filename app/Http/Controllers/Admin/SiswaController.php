@@ -319,7 +319,13 @@ class SiswaController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data siswa berhasil diperbarui.']);
 
-        return to_route('admin.siswa.index');
+        // Ke halaman detail, bukan kembali ke daftar: operator baru saja mengubah
+        // satu siswa dan hal pertama yang ingin dilakukannya adalah memeriksa
+        // hasilnya. Daftar memaksanya mencari ulang siswa yang sama.
+        //
+        // `store()` sengaja tetap ke daftar — setelah menambah satu siswa,
+        // yang biasanya menyusul adalah menambah siswa berikutnya.
+        return to_route('admin.siswa.show', $siswa);
     }
 
     public function destroy(Student $siswa): RedirectResponse
