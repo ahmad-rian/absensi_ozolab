@@ -192,12 +192,38 @@ class GoogleDriveService
     }
 
     /**
-     * Upload a file from a local path.
+     * Upload a file from a local path, replacing any file of the same name.
+     *
+     * Drive mengizinkan beberapa berkas bernama persis sama dalam satu folder,
+     * jadi `files->create` yang polos membuat berkas kedua setiap kali kartu
+     * digenerate ulang. Nama berkas kartu, pas-foto, dan foto siswa semuanya
+     * deterministik, jadi nama yang sama berarti berkas yang sama.
+     *
+     * Isinya diganti lewat `files->update`, bukan hapus-lalu-buat, supaya id
+     * berkasnya tidak bergeser. `card_generation_logs.drive_url` dan
+     * `students.photo_drive_file_id` sudah menyimpan id lama, dan tautan yang
+     * terlanjur dibagikan ke orang tua harus tetap hidup.
      */
     public function uploadFile(string $localPath, string $fileName, ?string $folderId = null, ?string $mimeType = null): DriveFile
     {
         $folderId = $folderId ?: $this->config->root_folder_id ?: 'root';
         $mimeType = $mimeType ?: mime_content_type($localPath) ?: 'application/octet-stream';
+        $contents = file_get_contents($localPath);
+
+        // Sisa duplikat lama bisa membuat pencarian mengembalikan lebih dari
+        // satu. Timpa yang pertama saja; merapikan sisanya tugas perintah
+        // `drive:bersihkan-duplikat`, bukan tugas jalur unggah.
+        $existingId = $this->findFileByName($fileName, $folderId)[0]['id'] ?? null;
+
+        if ($existingId !== null) {
+            return $this->drive->files->update($existingId, new DriveFile, [
+                'data' => $contents,
+                'mimeType' => $mimeType,
+                'uploadType' => 'media',
+                'fields' => 'id, name, webViewLink, webContentLink',
+                'supportsAllDrives' => true,
+            ]);
+        }
 
         $file = new DriveFile([
             'name' => $fileName,
@@ -205,13 +231,15 @@ class GoogleDriveService
         ]);
 
         $created = $this->drive->files->create($file, [
-            'data' => file_get_contents($localPath),
+            'data' => $contents,
             'mimeType' => $mimeType,
             'uploadType' => 'multipart',
             'fields' => 'id, name, webViewLink, webContentLink',
             'supportsAllDrives' => true,
         ]);
 
+        // Hanya untuk berkas baru — kepemilikan berkas lama sudah diatur saat
+        // ia pertama kali dibuat.
         $this->transferOwnershipIfConfigured($created->getId());
 
         return $created;
@@ -235,7 +263,7 @@ class GoogleDriveService
     /**
      * List files in a folder.
      *
-     * @return array<int, array{id: string, name: string, mimeType: string, webViewLink: string|null}>
+     * @return array<int, array{id: string, name: string, mimeType: string, webViewLink: string|null, createdTime: string|null}>
      */
     public function listFiles(?string $folderId = null, int $pageSize = 100): array
     {
@@ -255,6 +283,10 @@ class GoogleDriveService
             'name' => $f->getName(),
             'mimeType' => $f->getMimeType(),
             'webViewLink' => $f->getWebViewLink(),
+            // Sudah diminta di `fields` sejak awal tapi tidak pernah ikut
+            // dikembalikan. Dipakai `drive:bersihkan-duplikat` untuk memutuskan
+            // berkas mana yang paling baru di antara yang bernama sama.
+            'createdTime' => $f->getCreatedTime(),
         ])->all();
     }
 
@@ -639,6 +671,21 @@ class GoogleDriveService
     public function delete(string $fileId): void
     {
         $this->drive->files->delete($fileId, [
+            'supportsAllDrives' => true,
+        ]);
+    }
+
+    /**
+     * Buang berkas ke sampah Drive, bukan hapus permanen.
+     *
+     * Dipakai `drive:bersihkan-duplikat`. Sampah Drive menyimpan berkas 30 hari,
+     * jadi salah sasaran masih bisa dipulihkan sendiri oleh pemilik Drive —
+     * `delete()` tidak memberi kesempatan itu.
+     */
+    public function trashFile(string $fileId): void
+    {
+        $this->drive->files->update($fileId, new DriveFile(['trashed' => true]), [
+            'fields' => 'id',
             'supportsAllDrives' => true,
         ]);
     }
