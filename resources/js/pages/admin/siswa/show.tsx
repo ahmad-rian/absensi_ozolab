@@ -115,9 +115,22 @@ type DrivePhoto = {
     expected_folder: string;
 };
 
+/**
+ * `uploaded` dibaca dari `drive_file_id`, bukan dari `status`. Unggahan yang
+ * gagal dulu tetap tercatat selesai, jadi status saja bisa menipu.
+ */
+type PhotoStatus = {
+    status: string;
+    uploaded: boolean;
+    drive_url: string | null;
+    created_at: string;
+};
+
 type PageProps = {
     student: Student;
     qrSvg: string;
+    /** null berarti fotonya belum pernah sekalipun diproses. */
+    photoStatus: PhotoStatus | null;
     photoSheets: PhotoSheet[];
     photoSheetTemplates: PhotoSheetTemplate[];
     cards: GeneratedCard[];
@@ -155,6 +168,34 @@ const sheetStatusConfig: Record<string, { label: string; className: string }> = 
     },
 };
 
+/**
+ * Penanda keadaan pas foto siswa.
+ *
+ * Yang menentukan hijau adalah `uploaded`, bukan `status`: unggahan yang gagal
+ * dulu tetap tercatat selesai, sehingga status saja bisa menipu. `completed`
+ * tanpa berkas Drive berarti fotonya tersimpan di server sementara integrasi
+ * Drive sekolahnya mati — itu bukan kegagalan, jadi tidak diberi warna merah.
+ */
+function photoStatusBadge(status: PhotoStatus | null): { label: string; className: string } {
+    const netral = 'border-muted bg-muted text-muted-foreground';
+
+    if (!status) {
+        return { label: 'Belum pernah diproses', className: netral };
+    }
+
+    if (status.status === 'processing') {
+        return { label: 'Sedang diunggah', className: sheetStatusConfig.processing.className };
+    }
+
+    if (status.status === 'failed') {
+        return { label: 'Gagal diunggah', className: sheetStatusConfig.failed.className };
+    }
+
+    return status.uploaded
+        ? { label: 'Tersimpan di Drive', className: sheetStatusConfig.completed.className }
+        : { label: 'Hanya di server', className: netral };
+}
+
 function genderLabel(gender: string): string {
     return gender === 'LAKI_LAKI' ? 'Laki-laki' : 'Perempuan';
 }
@@ -182,6 +223,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 export default function SiswaShow({
     student,
     qrSvg,
+    photoStatus,
     photoSheets,
     photoSheetTemplates,
     cards,
@@ -230,6 +272,8 @@ export default function SiswaShow({
         );
     }
 
+    const photoBadge = photoStatusBadge(photoStatus);
+
     const hasProcessingSheet = photoSheets.some((sheet) => sheet.status === 'processing');
 
     useEffect(() => {
@@ -253,6 +297,31 @@ export default function SiswaShow({
 
         return () => window.clearInterval(interval);
     }, [hasProcessingSheet]);
+
+    // Unggahan foto ke Drive jalan di antrean bersama seluruh sekolah, jadi
+    // jedanya bisa lama. Tanpa polling ini penandanya diam di "sedang diunggah"
+    // sampai halamannya dimuat ulang dengan tangan.
+    useEffect(() => {
+        if (photoStatus?.status !== 'processing') {
+            return;
+        }
+
+        let reloading = false;
+        const interval = window.setInterval(() => {
+            if (reloading) {
+                return;
+            }
+            reloading = true;
+            router.reload({
+                only: ['photoStatus'],
+                onFinish: () => {
+                    reloading = false;
+                },
+            });
+        }, 3000);
+
+        return () => window.clearInterval(interval);
+    }, [photoStatus?.status]);
 
     // Kartu yang sedang dirender tidak muncul di `cards` sampai selesai, jadi
     // tanpa polling ini tombolnya terasa tidak melakukan apa-apa.
@@ -507,6 +576,18 @@ export default function SiswaShow({
                                 <CardDescription>Buka atau unduh berkas aslinya tanpa mencari manual di Drive.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
+                                {/* Dibaca dari riwayat generate, bukan dari Drive —
+                                    memukul API Drive di tiap kunjungan halaman
+                                    terlalu mahal. Pencarian sungguhannya ada di
+                                    tombol "Cari di Drive" di bawah. */}
+                                <div className="flex items-center justify-between gap-2">
+                                    <Badge variant="outline" className={`gap-1 ${photoBadge.className}`}>
+                                        {photoStatus?.status === 'processing' && <Loader2 className="size-3 animate-spin" />}
+                                        {photoBadge.label}
+                                    </Badge>
+                                    {photoStatus && <span className="text-muted-foreground text-xs">{photoStatus.created_at}</span>}
+                                </div>
+
                                 {drivePhotoLoading ? (
                                     <div className="space-y-2">
                                         <Skeleton className="h-4 w-3/4 animate-pulse" />

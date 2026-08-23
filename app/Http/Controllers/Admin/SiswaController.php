@@ -94,6 +94,7 @@ class SiswaController extends Controller
                     : null,
             ]),
             'qrSvg' => $qrSvg,
+            'photoStatus' => $this->photoStatus($siswa),
             'photoSheets' => $photoSheets,
             'photoSheetTemplates' => $photoSheetTemplates,
             'cards' => $this->generatedCards($siswa),
@@ -124,6 +125,36 @@ class SiswaController extends Controller
             // benar-benar menekan tombolnya — bukan di setiap kunjungan halaman.
             'drivePhoto' => Inertia::optional(fn () => $this->drivePhotoPayload($siswa, $locator)),
         ]);
+    }
+
+    /**
+     * Keadaan pas foto siswa di Drive, untuk penanda di halaman detail.
+     *
+     * Dibaca dari riwayat generate, bukan dari Drive — memukul API Drive di
+     * setiap kunjungan halaman terlalu mahal, dan itu sebabnya `drivePhoto`
+     * dibuat opsional. Yang menentukan `berhasil` adalah `drive_file_id`, bukan
+     * status log: unggahan yang gagal dulu tetap tercatat `completed` dan tidak
+     * terlihat siapa pun sampai ada yang membuka foldernya di Drive.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function photoStatus(Student $siswa): ?array
+    {
+        $log = CardGenerationLog::where('student_id', $siswa->id)
+            ->where('type', 'photo')
+            ->latest()
+            ->first();
+
+        if (! $log) {
+            return null;
+        }
+
+        return [
+            'status' => $log->status,
+            'uploaded' => $log->drive_file_id !== null,
+            'drive_url' => $log->drive_url,
+            'created_at' => SchoolTime::display($log->created_at),
+        ];
     }
 
     /**

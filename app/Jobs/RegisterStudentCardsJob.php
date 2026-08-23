@@ -89,6 +89,19 @@ class RegisterStudentCardsJob implements ShouldQueue
 
         // Result #3 — the cropped photo (already produced above). Log + upload.
         if ($this->wants(self::OUTPUT_PHOTO) && $student->photo_path) {
+            // Baris dibuat SEBELUM unggahan, berstatus `processing`, supaya
+            // halaman siswa punya sesuatu untuk ditampilkan selama job berjalan.
+            // Sebelumnya baris baru muncul setelah semuanya selesai, jadi menekan
+            // tombolnya tidak meninggalkan jejak apa pun sampai entah kapan.
+            $log = CardGenerationLog::create([
+                'school_id' => $school->id,
+                'student_id' => $student->id,
+                'type' => 'photo',
+                'status' => 'processing',
+                'file_path' => $student->photo_path,
+                'generated_by' => $this->generatedBy,
+            ]);
+
             $upload = $folderId
                 ? $this->uploadToFolder($student->photo_path, $folderId, $school, GoogleDriveService::studentPhotoFileName($student))
                 : null;
@@ -99,15 +112,14 @@ class RegisterStudentCardsJob implements ShouldQueue
                 $student->update(['photo_drive_file_id' => $upload['id']]);
             }
 
-            CardGenerationLog::create([
-                'school_id' => $school->id,
-                'student_id' => $student->id,
-                'type' => 'photo',
-                'status' => 'completed',
-                'file_path' => $student->photo_path,
+            // Drive yang memang tidak aktif untuk sekolah ini bukan kegagalan —
+            // fotonya tetap tersimpan di server. Yang gagal adalah ketika folder
+            // tujuannya ada tapi unggahannya tidak menghasilkan apa-apa; dulu
+            // keadaan itu ikut dicatat `completed` dan tidak terlihat siapa pun.
+            $log->update([
+                'status' => ($folderId === null || $upload) ? 'completed' : 'failed',
                 'drive_file_id' => $upload['id'] ?? null,
                 'drive_url' => $upload['url'] ?? null,
-                'generated_by' => $this->generatedBy,
             ]);
         }
 
