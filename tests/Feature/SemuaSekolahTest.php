@@ -83,6 +83,19 @@ test('a search reaches a student of another school', function () {
         );
 });
 
+/**
+ * Tombol buka cepat perlu tahu ke sekolah mana konteks sesi dipindahkan. Kalau
+ * `school_id` hilang dari payload, tombolnya tidak error — cuma diam saja.
+ */
+test('the listing carries school_id for the quick-open button', function () {
+    $this->actingAs($this->superAdmin)
+        ->get(route('admin.semua-sekolah', ['tab' => 'siswa', 'search' => '0148651992']))
+        ->assertInertia(fn ($page) => $page
+            ->has('students.data', 1)
+            ->where('students.data.0.school_id', $this->satu->id)
+        );
+});
+
 test('the student tab can be narrowed to one school', function () {
     $this->actingAs($this->superAdmin)
         ->get(route('admin.semua-sekolah', ['tab' => 'siswa', 'school_id' => $this->dua->id]))

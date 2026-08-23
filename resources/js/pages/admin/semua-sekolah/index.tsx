@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Building2, GraduationCap, HardDrive, Search, Users } from 'lucide-react';
+import { Building2, Edit, Eye, GraduationCap, HardDrive, Search, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ type StudentRow = {
     nisn: string | null;
     classroom: string | null;
     school: string | null;
+    school_id: string;
     is_active: boolean;
 };
 
@@ -102,6 +103,15 @@ export default function SemuaSekolahIndex({ tab, filters, schools, totals, summa
             },
             { preserveState: true, replace: true },
         );
+    }
+
+    /**
+     * Memindahkan sekolah aktif di sesi ke sekolah siswa ini, lalu membuka
+     * halamannya. Perpindahannya diumumkan lewat toast dari server — sesudah ini
+     * pemilih sekolah di kepala halaman ikut berganti, dan itu memang disengaja.
+     */
+    function bukaSiswa(id: string, tujuan: 'show' | 'edit') {
+        router.post(`/admin/siswa/${id}/buka`, { tujuan });
     }
 
     return (
@@ -193,12 +203,13 @@ export default function SemuaSekolahIndex({ tab, filters, schools, totals, summa
                                         <TableHead>Nama</TableHead>
                                         <TableHead>Kelas</TableHead>
                                         <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Aksi</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {students.data.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+                                            <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
                                                 Tidak ada siswa yang cocok.
                                             </TableCell>
                                         </TableRow>
@@ -214,6 +225,30 @@ export default function SemuaSekolahIndex({ tab, filters, schools, totals, summa
                                                     <Badge variant={student.is_active ? 'default' : 'secondary'}>
                                                         {student.is_active ? 'Aktif' : 'Nonaktif'}
                                                     </Badge>
+                                                </TableCell>
+                                                {/* POST, bukan <Link>: siswa di sini bisa milik sekolah mana pun,
+                                                    sedangkan route siswa terkunci ke sekolah yang sedang aktif di
+                                                    sesi. Tautan biasa akan 404. Route ini memindahkan konteks
+                                                    sekolahnya lebih dulu, baru membuka halamannya. */}
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-1">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            title={`Buka detail di ${student.school ?? 'sekolahnya'}`}
+                                                            onClick={() => bukaSiswa(student.id, 'show')}
+                                                        >
+                                                            <Eye className="size-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            title={`Ubah data di ${student.school ?? 'sekolahnya'}`}
+                                                            onClick={() => bukaSiswa(student.id, 'edit')}
+                                                        >
+                                                            <Edit className="size-4" />
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))

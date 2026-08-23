@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SemuaSekolahController;
 use App\Http\Controllers\Admin\SiswaController;
 use App\Http\Controllers\Admin\StudentImportController;
+use App\Http\Controllers\Admin\StudentQuickOpenController;
 use App\Http\Controllers\Admin\StudentRegenerateController;
 use App\Http\Controllers\Admin\StudentReportController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -100,6 +101,15 @@ Route::middleware(['auth'])->post('admin/switch-school', function (Request $requ
 
     return Inertia\Inertia::location(route('dashboard'));
 })->name('admin.switch-school');
+
+// Buka cepat siswa dari pandangan lintas sekolah: pindah tenant lalu langsung ke
+// halamannya. Di luar grup `permission:siswa.access` + `feature:master_siswa`
+// dengan sengaja — super admin harus tetap bisa membukanya walau modul siswa
+// sedang dimatikan untuk sekolah itu. Juga di luar prefix `admin/semua-sekolah`,
+// supaya modul itu tetap benar-benar hanya-baca.
+Route::middleware(['auth', 'verified', 'super-admin'])
+    ->post('admin/siswa/{siswa}/buka', StudentQuickOpenController::class)
+    ->name('admin.siswa.buka');
 
 // Admin routes — akses ditentukan per modul lewat permission `<modul>.access`.
 // SUPER_ADMIN lolos semua lewat Gate::before (AppServiceProvider).

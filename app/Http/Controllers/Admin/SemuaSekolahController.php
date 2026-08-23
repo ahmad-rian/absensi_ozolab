@@ -25,6 +25,12 @@ use Inertia\Response;
  * Menaruh tombol ubah di sini berarti satu salah klik bisa mengenai sekolah yang
  * bahkan tidak sedang dibuka operator, tanpa jejak tenant di sesinya.
  *
+ * Satu pengecualian: tombol buka cepat di tab siswa (`admin.siswa.buka`). Ia
+ * navigasi, bukan mutasi — dan justru menutup celah yang dikhawatirkan di atas,
+ * karena ia MEMINDAHKAN konteks sekolah di sesi secara terang-terangan sebelum
+ * membuka halaman siswanya, alih-alih membiarkan operator bekerja di sekolah
+ * yang tidak sedang dibukanya. Route-nya sendiri hidup di luar modul ini.
+ *
  * Datanya berat, jadi hanya tab yang sedang dibuka yang dihitung.
  */
 class SemuaSekolahController extends Controller
@@ -131,7 +137,10 @@ class SemuaSekolahController extends Controller
                 'nis' => $student->nis,
                 'nisn' => $student->nisn,
                 'classroom' => $student->classroom?->name,
+                // Nama sekolah untuk dibaca, id-nya untuk tombol buka cepat:
+                // tombol itu harus tahu ke sekolah mana konteks sesi dipindahkan.
                 'school' => $student->school?->name,
+                'school_id' => $student->school_id,
                 'is_active' => $student->is_active,
             ]);
     }
