@@ -54,6 +54,12 @@ class MergeStudentDriveFoldersCommand extends Command
         $dipindah = 0;
         $diganti = 0;
 
+        // Sapuan berkas mencakup SELURUH Drive, bukan satu sekolah. Selama
+        // sekolah-sekolah memakai kredensial global yang sama, mereka melihat
+        // Drive yang sama juga — mengulang sapuan itu per sekolah berarti
+        // membaca puluhan ribu berkas yang sama berulang kali.
+        $sapuanBersama = null;
+
         foreach ($schools as $school) {
             $config = $school->driveConfig;
 
@@ -65,21 +71,42 @@ class MergeStudentDriveFoldersCommand extends Command
                 continue;
             }
 
+            $akunBersama = GoogleDriveService::hasGlobalCredentials() && ! $config->service_account_json;
+
+            // Wajib: tanpa ini `$isiPerFolder` masih terikat sebagai referensi ke
+            // $sapuanBersama dari putaran sebelumnya, dan sekolah berikutnya yang
+            // memakai akun sendiri akan menimpa sapuan bersama itu.
+            unset($isiPerFolder);
+
             try {
                 $drive = GoogleDriveService::forSchool($config);
+
+                $this->line("<comment>{$school->name}</comment>: membaca daftar folder…");
                 $folders = $this->folderSiswa($drive);
+
+                if ($folders === []) {
+                    continue;
+                }
 
                 // Isi seluruh folder diambil satu kali di sini. Sebelumnya tiap
                 // siswa memanggil Drive sendiri-sendiri, dan dua ribu panggilan
                 // berurutan membuat perintah ini praktis tidak bisa dijalankan.
-                $isiPerFolder = $folders === [] ? [] : $drive->filesByParent();
+                if ($akunBersama && $sapuanBersama !== null) {
+                    $isiPerFolder = &$sapuanBersama;
+                } else {
+                    $this->line("<comment>{$school->name}</comment>: menyapu berkas Drive…");
+                    $sapuan = $drive->filesByParent();
+
+                    if ($akunBersama) {
+                        $sapuanBersama = $sapuan;
+                        $isiPerFolder = &$sapuanBersama;
+                    } else {
+                        $isiPerFolder = $sapuan;
+                    }
+                }
             } catch (Throwable $e) {
                 $this->error("{$school->name}: gagal membaca folder Drive — {$e->getMessage()}");
 
-                continue;
-            }
-
-            if ($folders === []) {
                 continue;
             }
 
