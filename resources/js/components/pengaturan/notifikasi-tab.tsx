@@ -33,7 +33,8 @@ type NotifikasiData = {
 // mengiklankan {parent_name} dan kawan-kawan yang tidak pernah diganti kode
 // mana pun.
 const ATTENDANCE_VARS = '{nama_siswa}, {kelas}, {waktu}, {tanggal}, {status}, {jenis}, {aktivitas}, {nama_sekolah}';
-const ALERT_VARS = '{nama_siswa}, {kelas}, {waktu}, {tanggal}, {status}, {nama_sekolah}';
+const ALERT_VARS =
+    '{daftar_anak}, {jumlah_anak}, {tanggal}, {nama_sekolah}, {nama_siswa}, {kelas}, {waktu}, {status}';
 const ABSENCE_VARS =
     '{nama_siswa}, {kelas}, {nama_sekolah}, {jenis_sholat}, {jumlah_hari}, {ambang}, {tanggal_mulai}, {tanggal_terakhir}, {daftar_tanggal}';
 
@@ -202,6 +203,10 @@ export function NotifikasiTab({
                             rows={5}
                             disabled={!data.whatsapp_enabled}
                         />
+                        <p className="text-muted-foreground text-xs">
+                            Satu pesan per nomor. Orang tua dengan beberapa anak menerima satu pesan berisi
+                            semuanya lewat {'{daftar_anak}'}; empat variabel terakhir menunjuk anak pertama.
+                        </p>
                         <p className="text-muted-foreground text-xs">Variabel: {ALERT_VARS}</p>
                         <InputError message={errors.whatsapp_template_attendance_alert} />
                     </div>

@@ -32,6 +32,7 @@ class AttendanceAlert extends Model
         'attendance_id',
         'alert_date',
         'kind',
+        'combined_children',
         'notified_at',
         'delivered_at',
     ];
@@ -41,6 +42,7 @@ class AttendanceAlert extends Model
         return [
             'kind' => AttendanceAlertKind::class,
             'alert_date' => 'date',
+            'combined_children' => 'array',
             'notified_at' => 'datetime',
             'delivered_at' => 'datetime',
         ];

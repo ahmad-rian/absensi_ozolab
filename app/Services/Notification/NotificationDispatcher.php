@@ -485,22 +485,50 @@ class NotificationDispatcher
      * dilaporkan, dan mengosongkannya membuat template bawaan berisi baris
      * "Waktu : , 24 Agustus 2026".
      *
+     * `{daftar_anak}` memuat SELURUH anak di nomor yang sama; `{nama_siswa}`
+     * dan kawan-kawan menunjuk anak pertama supaya template lama yang sudah
+     * ditulis admin tetap menghasilkan sesuatu yang masuk akal.
+     *
      * @return array<string, string>
      */
     private function buildAlertVariables(AttendanceAlert $alert): array
     {
         $student = $alert->student;
 
-        return [
-            'nama_siswa' => $student->full_name,
+        $daftar = $alert->combined_children ?: [[
+            'nama' => $student->full_name,
             'kelas' => $student->classroom?->name ?? '-',
+            'status' => $alert->kind->label(),
             'waktu' => $alert->kind === AttendanceAlertKind::Terlambat
                 ? ($alert->attendance?->recorded_at?->format('H:i') ?? '-')
                 : '-',
+        ]];
+
+        return [
+            'nama_siswa' => $daftar[0]['nama'],
+            'kelas' => $daftar[0]['kelas'],
+            'waktu' => $daftar[0]['waktu'],
+            'status' => $daftar[0]['status'],
+            'jumlah_anak' => (string) count($daftar),
+            'daftar_anak' => $this->formatChildren($daftar),
             'tanggal' => $alert->alert_date->translatedFormat('d F Y'),
-            'status' => $alert->kind->label(),
             'nama_sekolah' => $student->school?->name ?? 'Sekolah',
         ];
+    }
+
+    /**
+     * Satu baris per anak. Jam scan hanya ditulis kalau ada — "Terlambat, absen
+     * -" lebih membingungkan daripada tidak menyebutkan jam sama sekali.
+     *
+     * @param  array<int, array<string, string>>  $daftar
+     */
+    private function formatChildren(array $daftar): string
+    {
+        return implode("\n", array_map(function (array $anak) {
+            $jam = ($anak['waktu'] ?? '-') !== '-' ? ', absen '.$anak['waktu'] : '';
+
+            return "- {$anak['nama']} ({$anak['kelas']}) : {$anak['status']}{$jam}";
+        }, $daftar));
     }
 
     /**

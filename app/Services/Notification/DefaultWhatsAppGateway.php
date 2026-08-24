@@ -14,7 +14,7 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
 
     private const DEFAULT_TEMPLATE = "Assalamualaikum Bapak/Ibu,\n\nBerikut informasi kehadiran putra/putri Anda:\n\nNama  : {nama_siswa}\nKelas : {kelas}\nStatus : {status}\nWaktu : {tanggal}, {waktu}\nSekolah : {nama_sekolah}\n\nTerima kasih atas perhatiannya.\n\n_Pesan otomatis dari sistem absensi {nama_sekolah}_";
 
-    private const DEFAULT_ALERT_TEMPLATE = "Assalamualaikum Bapak/Ibu,\n\nKami sampaikan catatan kehadiran putra/putri Anda hari ini:\n\nNama  : {nama_siswa}\nKelas : {kelas}\nStatus : {status}\nWaktu : {tanggal}, {waktu}\nSekolah : {nama_sekolah}\n\nMohon bantuan Bapak/Ibu untuk mengingatkan ananda. Bila ada alasan tertentu (sakit, izin, atau kendala lain), silakan menghubungi wali kelas.\n\n_Pesan otomatis dari sistem absensi {nama_sekolah}_";
+    private const DEFAULT_ALERT_TEMPLATE = "Assalamualaikum Bapak/Ibu,\n\nKami sampaikan catatan kehadiran putra/putri Anda pada {tanggal}:\n\n{daftar_anak}\n\nSekolah : {nama_sekolah}\n\nMohon bantuan Bapak/Ibu untuk mengingatkan ananda. Bila ada alasan tertentu (sakit, izin, atau kendala lain), silakan menghubungi wali kelas.\n\n_Pesan otomatis dari sistem absensi {nama_sekolah}_";
 
     private const DEFAULT_PRAYER_ABSENCE_TEMPLATE = "Assalamualaikum Bapak/Ibu,\n\nKami sampaikan bahwa putra/putri Anda belum tercatat mengikuti sholat {jenis_sholat} di sekolah selama {jumlah_hari} hari sekolah berturut-turut.\n\nNama    : {nama_siswa}\nKelas   : {kelas}\nPeriode : {tanggal_mulai} s/d {tanggal_terakhir}\nSekolah : {nama_sekolah}\n\nMohon bantuan Bapak/Ibu untuk mengingatkan ananda. Bila ada alasan tertentu (sakit, izin, atau kendala lain), silakan menghubungi wali kelas.\n\nPesan otomatis dari sistem absensi {nama_sekolah}";
 
