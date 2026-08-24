@@ -563,7 +563,11 @@ class GoogleDriveService
             return $this->folderCache[$cacheKey];
         }
 
-        $escapedName = str_replace("'", "\\'", $name);
+        // Backslash ikut di-escape, sama seperti findFolder() dan
+        // findFileByName(). Sebelumnya hanya apostrof yang ditangani di sini,
+        // sehingga nama berisi backslash menghasilkan query berbeda antara
+        // jalur baca dan jalur tulis — dan jalur tulis membuat folder kedua.
+        $escapedName = self::escapeForQuery($name);
 
         $result = $this->drive->files->listFiles([
             'q' => "'{$parentId}' in parents and name = '{$escapedName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
@@ -600,20 +604,53 @@ class GoogleDriveService
      */
     private function findFolderIgnoringCase(string $name, string $parentId): ?string
     {
-        $result = $this->drive->files->listFiles([
-            'q' => "'{$parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
-            'pageSize' => 1000,
-            'fields' => 'files(id, name)',
-            'supportsAllDrives' => true,
-            'includeItemsFromAllDrives' => true,
-        ]);
+        return self::pickFolderIgnoringCase($this->subfolders($parentId), $name);
+    }
 
-        $folders = array_map(
-            static fn ($file): array => ['id' => $file->getId(), 'name' => $file->getName()],
-            $result->getFiles(),
-        );
+    /**
+     * Semua subfolder di dalam satu induk, seluruh halaman.
+     *
+     * Berhalaman, bukan sekadar `pageSize` besar: folder kelas berisi lebih dari
+     * seribu subfolder membuat folder siswa yang sudah ada tidak terlihat, dan
+     * pemanggilnya menyimpulkan foldernya belum ada lalu membuat yang kedua.
+     *
+     * @return array<int, array{id: string, name: string}>
+     */
+    public function subfolders(string $parentId): array
+    {
+        $folders = [];
+        $pageToken = null;
 
-        return self::pickFolderIgnoringCase($folders, $name);
+        do {
+            $result = $this->drive->files->listFiles([
+                'q' => "'{$parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+                'pageSize' => 1000,
+                'fields' => 'nextPageToken, files(id, name)',
+                'supportsAllDrives' => true,
+                'includeItemsFromAllDrives' => true,
+                'pageToken' => $pageToken,
+            ]);
+
+            foreach ($result->getFiles() as $file) {
+                $folders[] = ['id' => $file->getId(), 'name' => $file->getName()];
+            }
+
+            $pageToken = $result->getNextPageToken();
+        } while ($pageToken);
+
+        return $folders;
+    }
+
+    /**
+     * Escape nilai yang masuk ke query Drive.
+     *
+     * Backslash lebih dulu, kalau tidak escape apostrof yang baru ditambahkan
+     * ikut ter-escape dua kali. Nilai yang tidak di-escape bisa memutus string
+     * query dan mengubah artinya.
+     */
+    private static function escapeForQuery(string $value): string
+    {
+        return str_replace(['\\', "'"], ['\\\\', "\\'"], $value);
     }
 
     /**
@@ -771,6 +808,29 @@ class GoogleDriveService
     }
 
     /**
+     * Folder tujuan siswa: id yang tersimpan lebih dulu, nama sebagai cadangan.
+     *
+     * `studentFolderId()` menurunkan letak folder dari nama kelas dan nama
+     * siswa, dan membuat foldernya begitu namanya tidak ketemu. Nama itu
+     * bergeser karena hal-hal biasa — kelas diganti nama, siswa naik kelas, NIS
+     * diisi belakangan — dan setiap pergeseran melahirkan folder KEDUA. Hasil
+     * generate berikutnya mendarat di sana dan folder berisi kartu serta pas
+     * foto sebelumnya menjadi yatim: utuh di Drive, tapi tidak bisa ditemukan
+     * kode mana pun lagi.
+     *
+     * `drive_folder_id` disimpan justru supaya letaknya berhenti bergantung
+     * pada nama. Di sinilah ia dihormati.
+     */
+    public function resolveStudentFolder(Student $student): ?string
+    {
+        if ($student->drive_folder_id && $this->folderExists($student->drive_folder_id)) {
+            return $student->drive_folder_id;
+        }
+
+        return $this->studentFolderId($student);
+    }
+
+    /**
      * Folder tujuan semua hasil generate milik satu siswa:
      * `{Root Platform}/{Sekolah}/{Kelas}/{NIS - Nama}`.
      *
@@ -868,6 +928,18 @@ class GoogleDriveService
         }
 
         return ['id' => $file->getId(), 'name' => $file->getName()];
+    }
+
+    /**
+     * Apakah id folder yang tersimpan masih bisa dipakai.
+     *
+     * Dipakai jalur generate untuk memutuskan apakah `students.drive_folder_id`
+     * masih sahih sebelum ia jatuh ke penurunan letak dari nama. Id yang mati,
+     * tidak boleh diakses, atau sudah di sampah semuanya dijawab `false`.
+     */
+    public function folderExists(string $folderId): bool
+    {
+        return $this->fileById($folderId) !== null;
     }
 
     /**

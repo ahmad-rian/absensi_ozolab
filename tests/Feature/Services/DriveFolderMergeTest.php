@@ -1,0 +1,81 @@
+<?php
+
+use App\Console\Commands\MergeStudentDriveFoldersCommand;
+use App\Models\Student;
+
+/**
+ * Folder siswa terbelah karena letaknya dulu selalu diturunkan dari nama, dan
+ * nama itu bergeser tiap kali kelas diganti nama, siswa naik kelas, atau NIS
+ * diisi belakangan. Keputusan "folder mana milik siapa" dan "mana yang jadi
+ * tujuan" diuji langsung di sini, tanpa menyentuh Drive.
+ */
+$folders = [
+    ['id' => 'lama', 'name' => '17357 - R Wastu Yuga Wibowo'],
+    ['id' => 'baru', 'name' => '17357 - R WASTU YUGA WIBOWO'],
+    ['id' => 'lain', 'name' => '17358 - Siswa Lain'],
+    ['id' => 'mirip', 'name' => '173570 - NIS Kepanjangan'],
+];
+
+test('folder milik satu siswa dikumpulkan tanpa peduli huruf besar kecil', function () use ($folders) {
+    expect(array_column(MergeStudentDriveFoldersCommand::folderMilik($folders, '17357 - '), 'id'))
+        ->toBe(['lama', 'baru']);
+});
+
+/**
+ * Tanpa pemisah ` - ` ikut dibawa, awalan `17357` akan menyambar folder milik
+ * siswa ber-NIS `173570` dan memindahkan berkas orang lain.
+ */
+test('NIS yang berawalan sama tidak ikut tersambar', function () use ($folders) {
+    $hasil = MergeStudentDriveFoldersCommand::folderMilik($folders, '17357 - ');
+
+    expect(array_column($hasil, 'id'))->not->toContain('mirip')
+        ->and(array_column($hasil, 'id'))->not->toContain('lain');
+});
+
+test('siswa yang foldernya cuma satu tidak menghasilkan apa-apa', function () {
+    expect(MergeStudentDriveFoldersCommand::folderMilik([
+        ['id' => 'satu', 'name' => '17357 - R Wastu'],
+    ], '17357 - '))->toHaveCount(1);
+});
+
+/**
+ * Yang ditunjuk `drive_folder_id` menang: di sanalah aplikasi mencari dan hasil
+ * generate berikutnya mendarat.
+ */
+test('folder yang sedang ditunjuk jadi tujuan walau isinya lebih sedikit', function () use ($folders) {
+    $milikDia = MergeStudentDriveFoldersCommand::folderMilik($folders, '17357 - ');
+
+    expect(MergeStudentDriveFoldersCommand::pilihTujuan($milikDia, 'baru', ['lama' => 3, 'baru' => 2]))
+        ->toBe('baru');
+});
+
+test('tanpa penunjuk, yang isinya terbanyak yang jadi tujuan', function () use ($folders) {
+    $milikDia = MergeStudentDriveFoldersCommand::folderMilik($folders, '17357 - ');
+
+    expect(MergeStudentDriveFoldersCommand::pilihTujuan($milikDia, null, ['lama' => 3, 'baru' => 2]))
+        ->toBe('lama');
+});
+
+/**
+ * Penunjuk bisa menggantung ke folder yang sudah tidak ada. Ia harus diabaikan,
+ * bukan dipakai lalu memindahkan semua berkas ke folder yang tidak ada.
+ */
+test('penunjuk yang menggantung diabaikan', function () use ($folders) {
+    $milikDia = MergeStudentDriveFoldersCommand::folderMilik($folders, '17357 - ');
+
+    expect(MergeStudentDriveFoldersCommand::pilihTujuan($milikDia, 'folder-sudah-mati', ['lama' => 3, 'baru' => 2]))
+        ->toBe('lama');
+});
+
+test('awalan disusun dari NIS, dan jatuh ke ULID saat NIS kosong', function () {
+    $berNis = Student::factory()->make(['nis' => '17357']);
+    $tanpaNis = Student::factory()->make(['nis' => null]);
+
+    expect(MergeStudentDriveFoldersCommand::awalan($berNis))->toBe('17357 - ')
+        ->and(MergeStudentDriveFoldersCommand::awalan($tanpaNis))->toBe($tanpaNis->id.' - ');
+});
+
+test('perintahnya jalan walau belum ada sekolah yang siap', function () {
+    $this->artisan('drive:satukan-folder-siswa', ['--dry-run' => true])
+        ->assertSuccessful();
+});

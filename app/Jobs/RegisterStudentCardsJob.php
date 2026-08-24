@@ -255,6 +255,21 @@ class RegisterStudentCardsJob implements ShouldQueue
         return $layouts;
     }
 
+    /**
+     * Folder tujuan siswa: id yang tersimpan lebih dulu, nama sebagai cadangan.
+     *
+     * Dulu method ini SELALU menurunkan letak folder dari nama kelas dan nama
+     * siswa, dan `findOrCreateFolder()` membuat folder baru begitu namanya tidak
+     * ketemu. Nama itu bergeser karena banyak hal biasa — kelas diganti nama,
+     * siswa naik kelas, NIS diisi belakangan — dan setiap pergeseran melahirkan
+     * folder KEDUA. Hasil generate berikutnya mendarat di sana, penunjuk lama
+     * ditimpa, dan folder berisi kartu serta pas foto sebelumnya menjadi yatim:
+     * masih utuh di Drive, tapi tidak bisa ditemukan kode mana pun lagi.
+     *
+     * Id folder sudah disimpan sejak `add_drive_identifiers_to_students_table`
+     * justru supaya letaknya berhenti bergantung pada nama. Jalur tulis ini
+     * satu-satunya yang masih mengabaikannya.
+     */
     private function resolveStudentDriveFolder(Student $student, School $school): ?string
     {
         $driveConfig = $school->driveConfig;
@@ -266,7 +281,9 @@ class RegisterStudentCardsJob implements ShouldQueue
         }
 
         try {
-            return GoogleDriveService::forSchool($driveConfig)->studentFolderId($student);
+            // Nama folder boleh berubah sesukanya; selama id-nya masih hidup,
+            // di sanalah berkas siswa ini berkumpul.
+            return GoogleDriveService::forSchool($driveConfig)->resolveStudentFolder($student);
         } catch (\Throwable $e) {
             Log::warning('Failed to create student Drive folder', ['error' => $e->getMessage()]);
 

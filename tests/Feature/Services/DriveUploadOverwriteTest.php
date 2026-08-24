@@ -2,6 +2,7 @@
 
 use App\Console\Commands\CleanDriveDuplicatesCommand;
 use App\Models\SchoolDriveConfig;
+use App\Models\Student;
 use App\Services\GoogleDriveService;
 use Google\Service\Drive as GoogleDrive;
 use Google\Service\Drive\DriveFile;
@@ -16,7 +17,7 @@ use Google\Service\Drive\Resource\Files as DriveFiles;
  * Klien Drive dipasang lewat refleksi karena konstruktornya membangun sendiri
  * koneksi ke Google. Yang diuji di sini murni keputusan create-atau-update.
  */
-function driveServiceDenganKlien(DriveFiles $files): GoogleDriveService
+function driveServiceDenganKlien(DriveFiles $files, ?string $rootFolderId = null): GoogleDriveService
 {
     $drive = Mockery::mock(GoogleDrive::class);
     $drive->files = $files;
@@ -24,7 +25,8 @@ function driveServiceDenganKlien(DriveFiles $files): GoogleDriveService
     $service = (new ReflectionClass(GoogleDriveService::class))->newInstanceWithoutConstructor();
 
     (new ReflectionProperty(GoogleDriveService::class, 'drive'))->setValue($service, $drive);
-    (new ReflectionProperty(GoogleDriveService::class, 'config'))->setValue($service, new SchoolDriveConfig);
+    (new ReflectionProperty(GoogleDriveService::class, 'config'))
+        ->setValue($service, new SchoolDriveConfig(['root_folder_id' => $rootFolderId]));
 
     return $service;
 }
@@ -153,4 +155,54 @@ test('berkas tanpa createdTime tidak pernah menang', function () {
 test('perintah pembersih jalan walau belum ada sekolah yang siap', function () {
     $this->artisan('drive:bersihkan-duplikat', ['--dry-run' => true])
         ->assertSuccessful();
+});
+
+/**
+ * Inti perbaikan folder terbelah. Letak folder siswa dulu SELALU diturunkan dari
+ * nama kelas dan nama siswa, dan folder baru dibuat begitu namanya tidak ketemu
+ * — padahal nama itu bergeser tiap kali kelas diganti nama, siswa naik kelas,
+ * atau NIS diisi belakangan. Selama id yang tersimpan masih hidup, dialah yang
+ * dipakai, dan Drive tidak ditanya soal nama sama sekali.
+ */
+test('id folder yang tersimpan dipakai apa adanya, tanpa mencari nama', function () {
+    $files = Mockery::mock(DriveFiles::class);
+
+    $files->shouldReceive('get')
+        ->once()
+        ->with('folder-tersimpan', Mockery::type('array'))
+        ->andReturn(new DriveFile(['id' => 'folder-tersimpan', 'name' => '17357 - R WASTU', 'trashed' => false]));
+    $files->shouldNotReceive('listFiles');
+    $files->shouldNotReceive('create');
+
+    $siswa = Student::factory()->make(['drive_folder_id' => 'folder-tersimpan']);
+
+    expect(driveServiceDenganKlien($files)->resolveStudentFolder($siswa))->toBe('folder-tersimpan');
+});
+
+test('folder tersimpan yang sudah di sampah tidak dipakai', function () {
+    $files = Mockery::mock(DriveFiles::class);
+
+    $files->shouldReceive('get')
+        ->once()
+        ->andReturn(new DriveFile(['id' => 'folder-tersimpan', 'name' => 'lama', 'trashed' => true]));
+
+    // Jatuh ke penurunan dari nama: folder kelas lalu folder siswa.
+    $files->shouldReceive('listFiles')->andReturn(daftarBerkas([['id' => 'folder-dari-nama']]));
+
+    $siswa = Student::factory()->make(['drive_folder_id' => 'folder-tersimpan']);
+
+    expect(driveServiceDenganKlien($files, 'root-sekolah')->resolveStudentFolder($siswa))
+        ->toBe('folder-dari-nama');
+});
+
+test('tanpa id tersimpan, letaknya tetap diturunkan dari nama seperti dulu', function () {
+    $files = Mockery::mock(DriveFiles::class);
+
+    $files->shouldNotReceive('get');
+    $files->shouldReceive('listFiles')->andReturn(daftarBerkas([['id' => 'folder-dari-nama']]));
+
+    $siswa = Student::factory()->make(['drive_folder_id' => null]);
+
+    expect(driveServiceDenganKlien($files, 'root-sekolah')->resolveStudentFolder($siswa))
+        ->toBe('folder-dari-nama');
 });
