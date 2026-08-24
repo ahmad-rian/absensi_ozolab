@@ -69,6 +69,19 @@ test('status selesai tanpa berkas Drive tidak dianggap terunggah', function () {
     );
 });
 
+/**
+ * `drive:satukan-folder-siswa` mengisi `students.photo_drive_file_id` saat
+ * memindahkan berkas dari folder yatim, tanpa membuat riwayat baru. Kalau
+ * penanda hanya membaca id di baris riwayat, foto yang sudah kembali terjangkau
+ * tetap dilaporkan belum ada di Drive.
+ */
+test('kolom di siswa ikut dihitung, bukan hanya id di riwayat', function () {
+    photoLog($this->student, 'completed', null);
+    $this->student->forceFill(['photo_drive_file_id' => 'berkas-hasil-pemindahan'])->saveQuietly();
+
+    bukaSiswa()->assertInertia(fn ($page) => $page->where('photoStatus.uploaded', true));
+});
+
 test('unggahan yang gagal dilaporkan gagal', function () {
     photoLog($this->student, 'failed', null);
 

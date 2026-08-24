@@ -6,6 +6,7 @@ use App\Models\School;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -31,14 +32,18 @@ class MergeStudentDriveFoldersCommand extends Command
     protected $signature = 'drive:satukan-folder-siswa
                             {--dry-run : Laporkan saja, tidak menyentuh Drive}
                             {--school= : Batasi ke satu school_id}
-                            {--nis= : Batasi ke satu siswa}';
+                            {--nis= : Batasi ke satu siswa}
+                            {--paksa : Ikut memindahkan folder yang namanya tidak beririsan}';
 
     protected $description = 'Pindahkan isi folder Drive siswa yang terbelah ke folder yang sedang dipakai';
+
+    private bool $paksa = false;
 
     public function handle(): int
     {
         $dryRun = (bool) $this->option('dry-run');
         $prefix = $dryRun ? '[dry-run] ' : '';
+        $this->paksa = (bool) $this->option('paksa');
 
         $schools = School::with('driveConfig')
             ->when($this->option('school'), fn ($query, $id) => $query->where('id', $id))
@@ -155,11 +160,41 @@ class MergeStudentDriveFoldersCommand extends Command
                 continue;
             }
 
+            // NIS yang salah ketik lalu dibetulkan meninggalkan folder milik
+            // SISWA LAIN di bawah NIS yang kini dipegang orang ini. Memindahkan
+            // isinya berarti mencampur berkas dua anak, dan memisahkannya lagi
+            // harus dengan tangan. Nama yang sama sekali tidak beririsan adalah
+            // tanda paling jelas untuk keadaan itu.
+            if (! $this->paksa && ! self::namaMirip($folder['name'], $student->full_name)) {
+                $this->warn("  ! {$schoolName} / {$student->full_name}: folder \"{$folder['name']}\" namanya tidak beririsan — dilewati. Periksa manual, atau pakai --paksa.");
+
+                continue;
+            }
+
             foreach ($isi[$folder['id']] as $berkas) {
-                $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} ← {$folder['name']}");
+                // Nama berkas ikut diturunkan dari nama siswa, jadi berkas lama
+                // tetap tidak terjangkau pencarian walau sudah berada di folder
+                // yang benar: halaman siswa mencari `{slug-nama-sekarang}-...`
+                // dan yang ada di sana `{slug-nama-lama}-...`.
+                $namaBaru = self::namaSelaras($berkas['name'], self::awalanBerkas($student));
+                $bentrok = $namaBaru !== null && in_array($namaBaru, array_column($isi[$tujuan], 'name'), true);
+
+                $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} ← {$folder['name']}"
+                    .($namaBaru !== null && ! $bentrok ? " (jadi {$namaBaru})" : ''));
 
                 if (! $dryRun) {
                     $drive->moveFile($berkas['id'], $tujuan);
+
+                    // Kalau nama barunya sudah dipakai berkas lain di folder
+                    // tujuan, biarkan nama lamanya. Menimpa bukan tugas perintah
+                    // pemulihan, dan tidak ada yang hilang karena dibiarkan.
+                    if ($namaBaru !== null && ! $bentrok) {
+                        $drive->renameFile($berkas['id'], $namaBaru);
+                    }
+
+                    if (str_ends_with($namaBaru ?? $berkas['name'], '-foto.png')) {
+                        $student->forceFill(['photo_drive_file_id' => $berkas['id']])->saveQuietly();
+                    }
                 }
 
                 $dipindah++;
@@ -204,6 +239,73 @@ class MergeStudentDriveFoldersCommand extends Command
             $folders,
             static fn (array $folder): bool => str_starts_with(mb_strtolower($folder['name']), $awalan),
         ));
+    }
+
+    /**
+     * Awalan nama berkas milik satu siswa, mis. `r-wastu-yuga-wibowo-17357-`.
+     *
+     * Keempat keluaran memakai bentuk yang sama — kartu (`CardGeneratorService`),
+     * lembar pas foto (`PhotoSheetGeneratorService`), dan foto siswa
+     * (`GoogleDriveService::studentPhotoFileName`) semuanya
+     * `{slug-nama}-{nis}-{jenis}.png`.
+     */
+    public static function awalanBerkas(Student $student): string
+    {
+        return Str::slug($student->full_name).'-'.($student->nis ?: $student->id).'-';
+    }
+
+    /**
+     * Nama berkas yang sudah diselaraskan dengan nama siswa sekarang.
+     *
+     * `null` berarti tidak perlu diubah. Jenis keluarannya diambil dari potongan
+     * setelah tanda hubung terakhir — `osis.png`, `perpustakaan.png`,
+     * `foto.png`, `4r_3x4.png`. Template `4r_3x4` memakai garis bawah, bukan
+     * tanda hubung, jadi ia tetap utuh.
+     */
+    public static function namaSelaras(string $namaLama, string $awalanBaru): ?string
+    {
+        $pisah = mb_strrpos($namaLama, '-');
+
+        if ($pisah === false) {
+            return null;
+        }
+
+        $namaBaru = $awalanBaru.mb_substr($namaLama, $pisah + 1);
+
+        return $namaBaru === $namaLama ? null : $namaBaru;
+    }
+
+    /**
+     * Apakah nama folder ini masuk akal milik siswa tersebut.
+     *
+     * Nama orang berubah dengan berbagai cara yang masih menyisakan jejak —
+     * "RADEN WASTU YUGA WIBOWO" jadi "R WASTU YUGA WIBOWO", kapitalisasi
+     * diseragamkan, gelar dibuang. Semuanya tetap berbagi kata. Yang TIDAK
+     * berbagi satu kata pun hampir pasti orang lain, dan biasanya lahir dari
+     * NIS salah ketik yang kemudian dibetulkan sehingga NIS itu berpindah
+     * tangan.
+     *
+     * Kata sepanjang dua huruf atau kurang diabaikan: "R", "AL", dan "DE"
+     * beririsan terlalu mudah untuk bisa dipercaya. Kalau salah satu sisi tidak
+     * menyisakan kata yang bisa dinilai, jawabannya `true` — perintah ini tidak
+     * boleh menolak bekerja hanya karena namanya pendek.
+     */
+    public static function namaMirip(string $namaFolder, string $namaSiswa): bool
+    {
+        $kata = static function (string $teks): array {
+            $bagian = preg_split('/[^\p{L}]+/u', mb_strtolower($teks), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+            return array_filter($bagian, static fn (string $k): bool => mb_strlen($k) > 2);
+        };
+
+        $folder = $kata($namaFolder);
+        $siswa = $kata($namaSiswa);
+
+        if ($folder === [] || $siswa === []) {
+            return true;
+        }
+
+        return array_intersect($folder, $siswa) !== [];
     }
 
     /**

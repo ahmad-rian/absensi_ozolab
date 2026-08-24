@@ -75,6 +75,83 @@ test('awalan disusun dari NIS, dan jatuh ke ULID saat NIS kosong', function () {
         ->and(MergeStudentDriveFoldersCommand::awalan($tanpaNis))->toBe($tanpaNis->id.' - ');
 });
 
+/**
+ * NIS salah ketik lalu dibetulkan membuat NIS itu berpindah tangan, dan folder
+ * milik siswa LAIN tertinggal di bawahnya. Terjadi sungguhan: folder
+ * "17346 - Ibrahim sabian alghifari" ikut terkumpul untuk siswa ber-NIS 17346
+ * yang sekarang bernama Hyacintha Althafah Calluella — dua anak berbeda.
+ */
+test('nama yang sama sekali tidak beririsan ditolak', function () {
+    expect(MergeStudentDriveFoldersCommand::namaMirip('17346 - Ibrahim sabian alghifari', 'HYACINTHA ALTHAFAH CALLUELLA'))
+        ->toBeFalse();
+});
+
+test('nama yang disingkat tetap dianggap orang yang sama', function () {
+    expect(MergeStudentDriveFoldersCommand::namaMirip('17357 - RADEN WASTU YUGA WIBOWO', 'R WASTU YUGA WIBOWO'))
+        ->toBeTrue();
+});
+
+test('beda kapitalisasi saja jelas orang yang sama', function () {
+    expect(MergeStudentDriveFoldersCommand::namaMirip('1685 - Tiara Tri Rahayu', 'TIARA TRI RAHAYU'))
+        ->toBeTrue();
+});
+
+/**
+ * NIS-nya ikut terbaca sebagai teks, tapi angka bukan kata — kalau ikut
+ * dihitung, setiap folder akan beririsan dengan setiap siswa lewat NIS-nya
+ * sendiri dan pengaman ini tidak menjaga apa pun.
+ */
+test('angka NIS tidak dihitung sebagai kesamaan nama', function () {
+    expect(MergeStudentDriveFoldersCommand::namaMirip('17346 - Ibrahim', '17346'))->toBeTrue()
+        ->and(MergeStudentDriveFoldersCommand::namaMirip('17346 - Ibrahim', 'HYACINTHA CALLUELLA'))->toBeFalse();
+});
+
+/**
+ * Kata dua huruf beririsan terlalu mudah untuk bisa dipercaya sebagai bukti.
+ */
+test('kata pendek tidak cukup jadi bukti', function () {
+    expect(MergeStudentDriveFoldersCommand::namaMirip('1 - AL FATIH', 'DE SANTOS'))->toBeFalse();
+});
+
+test('nama yang terlalu pendek untuk dinilai tidak diblokir', function () {
+    expect(MergeStudentDriveFoldersCommand::namaMirip('1685 - ', 'TIARA'))->toBeTrue();
+});
+
+/**
+ * Nama berkas juga diturunkan dari nama siswa. Memindahkannya saja tidak cukup:
+ * halaman siswa mencari `{slug-nama-sekarang}-{nis}-foto.png` sementara yang
+ * ada di folder itu masih memakai slug nama lama, dan pencariannya tetap nihil.
+ */
+test('nama berkas diselaraskan dengan nama siswa sekarang', function () {
+    expect(MergeStudentDriveFoldersCommand::namaSelaras('raden-wastu-yuga-wibowo-17357-foto.png', 'r-wastu-yuga-wibowo-17357-'))
+        ->toBe('r-wastu-yuga-wibowo-17357-foto.png');
+});
+
+/**
+ * Template `4r_3x4` memakai garis bawah, bukan tanda hubung. Kalau pemisahnya
+ * salah, jenis keluarannya terpotong jadi `3x4.png` dan berkasnya jadi tidak
+ * dikenali lagi.
+ */
+test('jenis keluaran yang mengandung garis bawah tidak terpotong', function () {
+    expect(MergeStudentDriveFoldersCommand::namaSelaras('raden-wastu-17357-4r_3x4.png', 'r-wastu-17357-'))
+        ->toBe('r-wastu-17357-4r_3x4.png');
+});
+
+test('berkas yang namanya sudah benar tidak diubah', function () {
+    expect(MergeStudentDriveFoldersCommand::namaSelaras('r-wastu-17357-osis.png', 'r-wastu-17357-'))
+        ->toBeNull();
+});
+
+test('nama tanpa tanda hubung dibiarkan apa adanya', function () {
+    expect(MergeStudentDriveFoldersCommand::namaSelaras('scan.png', 'r-wastu-17357-'))->toBeNull();
+});
+
+test('awalan berkas mengikuti slug nama dan NIS', function () {
+    $siswa = Student::factory()->make(['full_name' => 'R WASTU YUGA WIBOWO', 'nis' => '17357']);
+
+    expect(MergeStudentDriveFoldersCommand::awalanBerkas($siswa))->toBe('r-wastu-yuga-wibowo-17357-');
+});
+
 test('perintahnya jalan walau belum ada sekolah yang siap', function () {
     $this->artisan('drive:satukan-folder-siswa', ['--dry-run' => true])
         ->assertSuccessful();

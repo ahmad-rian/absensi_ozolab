@@ -151,7 +151,11 @@ class SiswaController extends Controller
 
         return [
             'status' => $log->status,
-            'uploaded' => $log->drive_file_id !== null,
+            // Kolom di siswa ikut dibaca, bukan hanya id di baris riwayat:
+            // berkas yang dipindahkan `drive:satukan-folder-siswa` mengisi kolom
+            // itu tanpa membuat riwayat baru, dan riwayat lama memang tidak
+            // pernah menyimpan id-nya.
+            'uploaded' => $log->drive_file_id !== null || $siswa->photo_drive_file_id !== null,
             'drive_url' => $log->drive_url,
             'created_at' => SchoolTime::display($log->created_at),
         ];
