@@ -2,6 +2,7 @@
 
 use App\Console\Commands\MergeStudentDriveFoldersCommand;
 use App\Models\Student;
+use App\Services\PhotoSheetGeneratorService;
 
 /**
  * Folder siswa terbelah karena letaknya dulu selalu diturunkan dari nama, dan
@@ -144,6 +145,23 @@ test('berkas yang namanya sudah benar tidak diubah', function () {
 
 test('nama tanpa tanda hubung dibiarkan apa adanya', function () {
     expect(MergeStudentDriveFoldersCommand::namaSelaras('scan.png', 'r-wastu-17357-'))->toBeNull();
+});
+
+/**
+ * Folder siswa juga bisa berisi berkas yang ditaruh fotografer dengan nama
+ * bebas. Mengganti namanya berdasarkan pola tebakan akan merusak berkas yang
+ * tidak ada hubungannya dengan aplikasi.
+ */
+test('berkas di luar keluaran aplikasi tidak disentuh', function () {
+    expect(MergeStudentDriveFoldersCommand::namaSelaras('foto-anak-bagus.png', 'r-wastu-17357-'))->toBeNull()
+        ->and(MergeStudentDriveFoldersCommand::namaSelaras('DSC_0012-edit.JPG', 'r-wastu-17357-'))->toBeNull();
+});
+
+test('setiap template pas foto dikenali', function () {
+    foreach (array_keys(PhotoSheetGeneratorService::TEMPLATES) as $template) {
+        expect(MergeStudentDriveFoldersCommand::namaSelaras("lama-17357-{$template}.png", 'baru-17357-'))
+            ->toBe("baru-17357-{$template}.png");
+    }
 });
 
 test('awalan berkas mengikuti slug nama dan NIS', function () {

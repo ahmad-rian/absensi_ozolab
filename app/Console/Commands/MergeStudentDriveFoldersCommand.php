@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\School;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
+use App\Services\PhotoSheetGeneratorService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use Throwable;
@@ -51,6 +52,7 @@ class MergeStudentDriveFoldersCommand extends Command
 
         $terbelah = 0;
         $dipindah = 0;
+        $diganti = 0;
 
         foreach ($schools as $school) {
             $config = $school->driveConfig;
@@ -85,17 +87,25 @@ class MergeStudentDriveFoldersCommand extends Command
             foreach ($students as $student) {
                 $milikDia = self::folderMilik($folders, self::awalan($student));
 
-                if (count($milikDia) < 2) {
+                if ($milikDia === []) {
                     continue;
                 }
 
-                $terbelah++;
-                $dipindah += $this->satukan($drive, $student, $milikDia, $school->name, $dryRun, $prefix);
+                if (count($milikDia) > 1) {
+                    $terbelah++;
+                    $dipindah += $this->satukan($drive, $student, $milikDia, $school->name, $dryRun, $prefix);
+                }
+
+                // Berlaku juga untuk folder yang tidak pernah terbelah: nama
+                // berkas ikut diturunkan dari nama siswa, jadi siapa pun yang
+                // namanya pernah diubah punya berkas yang tidak terjangkau
+                // pencarian walau letaknya sudah benar sejak awal.
+                $diganti += $this->selaraskanNama($drive, $student, $school->name, $dryRun, $prefix);
             }
         }
 
         $this->newLine();
-        $this->info("{$prefix}Siswa dengan folder terbelah: {$terbelah}, berkas dipindah: {$dipindah}.");
+        $this->info("{$prefix}Siswa dengan folder terbelah: {$terbelah}, berkas dipindah: {$dipindah}, nama diselaraskan: {$diganti}.");
 
         if ($dipindah > 0 && ! $dryRun) {
             $this->line('Berkas bernama sama kini berkumpul di satu folder. Jalankan `drive:bersihkan-duplikat --dry-run` untuk merapikannya.');
@@ -172,29 +182,10 @@ class MergeStudentDriveFoldersCommand extends Command
             }
 
             foreach ($isi[$folder['id']] as $berkas) {
-                // Nama berkas ikut diturunkan dari nama siswa, jadi berkas lama
-                // tetap tidak terjangkau pencarian walau sudah berada di folder
-                // yang benar: halaman siswa mencari `{slug-nama-sekarang}-...`
-                // dan yang ada di sana `{slug-nama-lama}-...`.
-                $namaBaru = self::namaSelaras($berkas['name'], self::awalanBerkas($student));
-                $bentrok = $namaBaru !== null && in_array($namaBaru, array_column($isi[$tujuan], 'name'), true);
-
-                $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} ← {$folder['name']}"
-                    .($namaBaru !== null && ! $bentrok ? " (jadi {$namaBaru})" : ''));
+                $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} ← {$folder['name']}");
 
                 if (! $dryRun) {
                     $drive->moveFile($berkas['id'], $tujuan);
-
-                    // Kalau nama barunya sudah dipakai berkas lain di folder
-                    // tujuan, biarkan nama lamanya. Menimpa bukan tugas perintah
-                    // pemulihan, dan tidak ada yang hilang karena dibiarkan.
-                    if ($namaBaru !== null && ! $bentrok) {
-                        $drive->renameFile($berkas['id'], $namaBaru);
-                    }
-
-                    if (str_ends_with($namaBaru ?? $berkas['name'], '-foto.png')) {
-                        $student->forceFill(['photo_drive_file_id' => $berkas['id']])->saveQuietly();
-                    }
                 }
 
                 $dipindah++;
@@ -242,6 +233,82 @@ class MergeStudentDriveFoldersCommand extends Command
     }
 
     /**
+     * Selaraskan nama berkas di folder siswa dengan namanya sekarang.
+     *
+     * Dipisah dari penyatuan folder dan dijalankan untuk setiap siswa, bukan
+     * hanya yang foldernya terbelah: nama berkas ikut diturunkan dari nama
+     * siswa, jadi siapa pun yang namanya pernah diubah punya berkas yang tidak
+     * terjangkau pencarian walau letaknya sudah benar sejak awal.
+     *
+     * @return int jumlah berkas yang diganti namanya
+     */
+    private function selaraskanNama(
+        GoogleDriveService $drive,
+        Student $student,
+        string $schoolName,
+        bool $dryRun,
+        string $prefix,
+    ): int {
+        try {
+            $folderId = $student->drive_folder_id ?: $drive->findStudentFolderId($student);
+        } catch (Throwable) {
+            return 0;
+        }
+
+        if (! $folderId) {
+            return 0;
+        }
+
+        $isi = $drive->listFiles($folderId, 1000);
+        $namaTerpakai = array_column($isi, 'name');
+        $awalan = self::awalanBerkas($student);
+        $diganti = 0;
+
+        foreach ($isi as $berkas) {
+            $namaBaru = self::namaSelaras($berkas['name'], $awalan);
+
+            // Nama barunya sudah dipakai berkas lain di folder ini — biarkan
+            // nama lamanya. Menimpa bukan tugas perintah pemulihan, dan tidak
+            // ada yang hilang karena dibiarkan.
+            if ($namaBaru === null || in_array($namaBaru, $namaTerpakai, true)) {
+                continue;
+            }
+
+            $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} → {$namaBaru}");
+
+            if (! $dryRun) {
+                $drive->renameFile($berkas['id'], $namaBaru);
+
+                if (str_ends_with($namaBaru, '-foto.png')) {
+                    $student->forceFill(['photo_drive_file_id' => $berkas['id']])->saveQuietly();
+                }
+            }
+
+            $namaTerpakai[] = $namaBaru;
+            $diganti++;
+        }
+
+        return $diganti;
+    }
+
+    /**
+     * Jenis keluaran yang namanya boleh diselaraskan.
+     *
+     * Daftar tertutup dengan sengaja. Folder siswa juga bisa berisi berkas yang
+     * ditaruh fotografer dengan nama bebas — mengganti namanya berdasarkan pola
+     * tebakan akan merusak berkas yang tidak ada hubungannya dengan aplikasi.
+     *
+     * @return array<int, string>
+     */
+    public static function jenisDikenal(): array
+    {
+        return array_merge(
+            ['osis', 'perpustakaan', 'identitas', 'foto'],
+            array_keys(PhotoSheetGeneratorService::TEMPLATES),
+        );
+    }
+
+    /**
      * Awalan nama berkas milik satu siswa, mis. `r-wastu-yuga-wibowo-17357-`.
      *
      * Keempat keluaran memakai bentuk yang sama — kartu (`CardGeneratorService`),
@@ -257,10 +324,11 @@ class MergeStudentDriveFoldersCommand extends Command
     /**
      * Nama berkas yang sudah diselaraskan dengan nama siswa sekarang.
      *
-     * `null` berarti tidak perlu diubah. Jenis keluarannya diambil dari potongan
-     * setelah tanda hubung terakhir — `osis.png`, `perpustakaan.png`,
-     * `foto.png`, `4r_3x4.png`. Template `4r_3x4` memakai garis bawah, bukan
-     * tanda hubung, jadi ia tetap utuh.
+     * `null` berarti tidak perlu — atau tidak boleh — diubah. Jenis keluarannya
+     * diambil dari potongan setelah tanda hubung terakhir dan harus ada di
+     * daftar tertutup `jenisDikenal()`; berkas yang ditaruh fotografer dengan
+     * nama bebas tidak boleh ikut diganti namanya. Template `4r_3x4` memakai
+     * garis bawah, bukan tanda hubung, jadi ia tetap utuh.
      */
     public static function namaSelaras(string $namaLama, string $awalanBaru): ?string
     {
@@ -270,7 +338,13 @@ class MergeStudentDriveFoldersCommand extends Command
             return null;
         }
 
-        $namaBaru = $awalanBaru.mb_substr($namaLama, $pisah + 1);
+        $ekor = mb_substr($namaLama, $pisah + 1);
+
+        if (! in_array(mb_strtolower(pathinfo($ekor, PATHINFO_FILENAME)), self::jenisDikenal(), true)) {
+            return null;
+        }
+
+        $namaBaru = $awalanBaru.$ekor;
 
         return $namaBaru === $namaLama ? null : $namaBaru;
     }
