@@ -164,6 +164,49 @@ test('setiap template pas foto dikenali', function () {
     }
 });
 
+/**
+ * NIS yang berpindah tangan meninggalkan berkas milik siswa LAIN di dalam folder
+ * ini, bukan hanya folder terpisah. Terjadi sungguhan: berkas
+ * `alfian-rifky-maulana-17336-*.png` berada di folder siswa yang sekarang
+ * bernama ALVIAN FAIZ SYAHPUTRA — dua anak berbeda. Mengganti namanya berarti
+ * melabeli foto yang satu dengan nama yang lain.
+ */
+test('bagian nama dari berkas membuang jenis keluarannya', function () {
+    expect(MergeStudentDriveFoldersCommand::bagianNama('alfian-rifky-maulana-17336-osis.png'))
+        ->toBe('alfian-rifky-maulana-17336');
+});
+
+test('berkas milik siswa lain di folder yang sama ditolak', function () {
+    $bagian = MergeStudentDriveFoldersCommand::bagianNama('alfian-rifky-maulana-17336-foto.png');
+
+    expect(MergeStudentDriveFoldersCommand::namaMirip($bagian, 'ALVIAN FAIZ SYAHPUTRA'))->toBeFalse();
+});
+
+/**
+ * Koreksi ejaan dan koreksi NIS harus tetap lolos — itu justru yang perlu
+ * diselaraskan.
+ */
+test('koreksi ejaan dan NIS tetap lolos', function () {
+    $ejaan = MergeStudentDriveFoldersCommand::bagianNama('erza-baron-maheswara-17309-foto.png');
+    $nis = MergeStudentDriveFoldersCommand::bagianNama('fahry-111233020006201673-osis.png');
+
+    expect(MergeStudentDriveFoldersCommand::namaMirip($ejaan, 'EZRA BARON MAHESWARA'))->toBeTrue()
+        ->and(MergeStudentDriveFoldersCommand::namaMirip($nis, 'FAHRY'))->toBeTrue();
+});
+
+/**
+ * Tanpa membuang jenis keluarannya, `osis` dan `foto` muncul di setiap berkas
+ * dan membuat semua nama terlihat beririsan — pengamannya jadi tidak menjaga
+ * apa pun.
+ */
+test('jenis keluaran tidak boleh jadi sumber kesamaan', function () {
+    expect(MergeStudentDriveFoldersCommand::namaMirip('alfian-osis', 'alvian-osis'))->toBeTrue()
+        ->and(MergeStudentDriveFoldersCommand::namaMirip(
+            MergeStudentDriveFoldersCommand::bagianNama('alfian-osis.png'),
+            'ALVIAN',
+        ))->toBeFalse();
+});
+
 test('awalan berkas mengikuti slug nama dan NIS', function () {
     $siswa = Student::factory()->make(['full_name' => 'R WASTU YUGA WIBOWO', 'nis' => '17357']);
 

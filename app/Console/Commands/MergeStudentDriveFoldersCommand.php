@@ -328,6 +328,17 @@ class MergeStudentDriveFoldersCommand extends Command
                 continue;
             }
 
+            // Pengaman yang sama seperti pada folder, dan sama perlunya: NIS
+            // yang berpindah tangan meninggalkan berkas milik SISWA LAIN di
+            // dalam folder ini. Mengganti namanya berarti melabeli foto anak
+            // yang satu dengan nama anak yang lain — lebih buruk daripada
+            // membiarkannya bernama lama.
+            if (! $this->paksa && ! self::namaMirip(self::bagianNama($berkas['name']), $student->full_name)) {
+                $this->warn("  ! {$schoolName} / {$student->full_name}: berkas \"{$berkas['name']}\" namanya tidak beririsan — dilewati. Periksa manual, atau pakai --paksa.");
+
+                continue;
+            }
+
             $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} → {$namaBaru}");
 
             if (! $dryRun) {
@@ -401,6 +412,21 @@ class MergeStudentDriveFoldersCommand extends Command
         $namaBaru = $awalanBaru.$ekor;
 
         return $namaBaru === $namaLama ? null : $namaBaru;
+    }
+
+    /**
+     * Bagian nama orang dari sebuah nama berkas.
+     *
+     * `alfian-rifky-maulana-17336-osis.png` → `alfian-rifky-maulana-17336`.
+     * Jenis keluarannya dibuang karena `osis`, `foto`, dan `perpustakaan` muncul
+     * di setiap berkas dan akan membuat semua nama terlihat beririsan. NIS-nya
+     * boleh ikut: angka tidak dihitung sebagai kata.
+     */
+    public static function bagianNama(string $namaBerkas): string
+    {
+        $pisah = mb_strrpos($namaBerkas, '-');
+
+        return $pisah === false ? $namaBerkas : mb_substr($namaBerkas, 0, $pisah);
     }
 
     /**
