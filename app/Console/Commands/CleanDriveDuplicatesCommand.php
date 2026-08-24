@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Models\School;
-use App\Models\Student;
 use App\Services\GoogleDriveService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -41,8 +40,13 @@ class CleanDriveDuplicatesCommand extends Command
             ->get();
 
         $diperiksa = 0;
-        $dilewati = 0;
         $dibuang = 0;
+
+        // Sama seperti pada drive:satukan-folder-siswa: sapuan berkas mencakup
+        // seluruh Drive, dan sekolah-sekolah yang memakai kredensial global
+        // melihat Drive yang sama. Mengulangnya per sekolah berarti membaca
+        // puluhan ribu berkas yang sama berulang kali.
+        $sapuanBersama = null;
 
         foreach ($schools as $school) {
             $config = $school->driveConfig;
@@ -59,45 +63,51 @@ class CleanDriveDuplicatesCommand extends Command
                 continue;
             }
 
+            $akunBersama = GoogleDriveService::hasGlobalCredentials() && ! $config->service_account_json;
+
             try {
                 $drive = GoogleDriveService::forSchool($config);
+
+                $this->line("<comment>{$school->name}</comment>: membaca daftar folder…");
+                $folders = $drive->studentFolders();
+
+                if ($folders === []) {
+                    continue;
+                }
+
+                if ($akunBersama && $sapuanBersama !== null) {
+                    $isiPerFolder = $sapuanBersama;
+                } else {
+                    $this->line("<comment>{$school->name}</comment>: menyapu berkas Drive…");
+                    $isiPerFolder = $drive->filesByParent();
+
+                    if ($akunBersama) {
+                        $sapuanBersama = $isiPerFolder;
+                    }
+                }
             } catch (Throwable $e) {
                 $this->error("{$school->name}: gagal menyiapkan klien Drive — {$e->getMessage()}");
 
                 continue;
             }
 
-            $students = Student::withoutGlobalScope('school')
-                ->where('school_id', $school->id)
-                ->with('classroom')
-                ->orderBy('nis')
-                ->cursor();
-
-            foreach ($students as $student) {
-                $folderId = $student->drive_folder_id ?: $this->findFolder($drive, $student);
-
-                if (! $folderId) {
-                    $dilewati++;
-
-                    continue;
-                }
-
+            // Berjalan per folder, bukan per siswa. Berkas kembar adalah dua
+            // berkas bernama sama dalam SATU folder, jadi siswanya tidak perlu
+            // diketahui — dan nama foldernya sudah memuat NIS berikut namanya,
+            // yang justru lebih jelas untuk ditindaklanjuti.
+            foreach ($folders as $folder) {
                 $diperiksa++;
 
                 try {
-                    $dibuang += $this->pangkas($drive, $folderId, $school->name, $student, $dryRun, $prefix);
+                    $dibuang += $this->pangkas($drive, $folder, $isiPerFolder, $school->name, $dryRun, $prefix);
                 } catch (Throwable $e) {
-                    $this->error("{$school->name} / {$student->full_name}: gagal diperiksa — {$e->getMessage()}");
+                    $this->error("{$school->name} / {$folder['name']}: gagal diperiksa — {$e->getMessage()}");
                 }
             }
         }
 
         $this->newLine();
-        $this->info("{$prefix}Siswa diperiksa: {$diperiksa}, berkas dibuang: {$dibuang}, siswa dilewati: {$dilewati}.");
-
-        if ($dilewati > 0) {
-            $this->line('Yang dilewati belum punya folder Drive yang bisa ditemukan. Jalankan `drive:audit-siswa` untuk melihat sebabnya.');
-        }
+        $this->info("{$prefix}Folder diperiksa: {$diperiksa}, berkas dibuang: {$dibuang}.");
 
         if ($dryRun) {
             $this->line('Tidak ada berkas yang disentuh. Jalankan tanpa --dry-run untuk menerapkan.');
@@ -107,41 +117,25 @@ class CleanDriveDuplicatesCommand extends Command
     }
 
     /**
-     * Pencarian tanpa efek samping — studentFolderId() akan MEMBUAT folder yang
-     * hilang, dan perintah yang sedang dry-run tidak boleh menulis apa pun.
-     */
-    private function findFolder(GoogleDriveService $drive, Student $student): ?string
-    {
-        try {
-            return $drive->findStudentFolderId($student);
-        } catch (Throwable) {
-            return null;
-        }
-    }
-
-    /**
      * Sisakan berkas terbaru untuk tiap nama, buang sisanya ke sampah.
      *
+     * @param  array{id: string, name: string}  $folder
+     * @param  array<string, array<int, array<string, mixed>>>  $isiPerFolder
      * @return int jumlah berkas yang dibuang
      */
     private function pangkas(
         GoogleDriveService $drive,
-        string $folderId,
+        array $folder,
+        array $isiPerFolder,
         string $schoolName,
-        Student $student,
         bool $dryRun,
         string $prefix,
     ): int {
-        // 1000, bukan bawaan 100: folder yang sudah menumpuk bertahun-tahun bisa
-        // melewati satu halaman, dan yang tidak terbaca akan terlihat seperti
-        // sudah bersih.
-        $files = $drive->listFiles($folderId, 1000);
-
         $dibuang = 0;
 
-        foreach (self::duplikat($files) as $nama => $kembar) {
+        foreach (self::duplikat($isiPerFolder[$folder['id']] ?? []) as $nama => $kembar) {
             $sisa = count($kembar) - 1;
-            $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$nama} × ".count($kembar)." → buang {$sisa}");
+            $this->line("{$prefix}{$schoolName} / {$folder['name']}: {$nama} × ".count($kembar)." → buang {$sisa}");
 
             foreach (array_slice($kembar, 1) as $berkas) {
                 if (! $dryRun) {

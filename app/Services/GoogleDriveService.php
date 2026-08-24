@@ -931,6 +931,33 @@ class GoogleDriveService
     }
 
     /**
+     * Semua folder siswa di sekolah ini: root → folder kelas → folder siswa.
+     *
+     * Dipakai perintah perawatan yang harus menyusuri seluruh sekolah sekaligus,
+     * dan hanya sekali per sekolah — bukan sekali per siswa.
+     *
+     * @return array<int, array{id: string, name: string}>
+     */
+    public function studentFolders(): array
+    {
+        $rootId = $this->findSchoolRoot();
+
+        if (! $rootId) {
+            return [];
+        }
+
+        $hasil = [];
+
+        foreach ($this->subfolders($rootId) as $kelas) {
+            foreach ($this->subfolders($kelas['id']) as $siswa) {
+                $hasil[] = $siswa;
+            }
+        }
+
+        return $hasil;
+    }
+
+    /**
      * Seluruh berkas non-folder di Drive ini, dikelompokkan menurut induknya.
      *
      * Satu sapuan berhalaman, bukan satu panggilan per folder. Perintah yang
@@ -941,7 +968,10 @@ class GoogleDriveService
      * Cakupannya seluruh Drive, termasuk sekolah lain yang berbagi akun yang
      * sama. Pemanggilnya hanya membaca induk yang memang ia urus.
      *
-     * @return array<string, array<int, array{id: string, name: string}>>
+     * `createdTime` ikut dibawa: `drive:bersihkan-duplikat` memakainya untuk
+     * memutuskan berkas mana yang paling baru di antara yang bernama sama.
+     *
+     * @return array<string, array<int, array{id: string, name: string, createdTime: string|null}>>
      */
     public function filesByParent(): array
     {
@@ -952,7 +982,7 @@ class GoogleDriveService
             $result = $this->drive->files->listFiles([
                 'q' => "mimeType != 'application/vnd.google-apps.folder' and trashed = false",
                 'pageSize' => 1000,
-                'fields' => 'nextPageToken, files(id, name, parents)',
+                'fields' => 'nextPageToken, files(id, name, createdTime, parents)',
                 'supportsAllDrives' => true,
                 'includeItemsFromAllDrives' => true,
                 'pageToken' => $pageToken,
@@ -960,7 +990,11 @@ class GoogleDriveService
 
             foreach ($result->getFiles() as $file) {
                 foreach ($file->getParents() ?: [] as $induk) {
-                    $perInduk[$induk][] = ['id' => $file->getId(), 'name' => $file->getName()];
+                    $perInduk[$induk][] = [
+                        'id' => $file->getId(),
+                        'name' => $file->getName(),
+                        'createdTime' => $file->getCreatedTime(),
+                    ];
                 }
             }
 

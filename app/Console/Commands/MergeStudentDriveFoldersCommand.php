@@ -82,7 +82,7 @@ class MergeStudentDriveFoldersCommand extends Command
                 $drive = GoogleDriveService::forSchool($config);
 
                 $this->line("<comment>{$school->name}</comment>: membaca daftar folder…");
-                $folders = $this->folderSiswa($drive);
+                $folders = $drive->studentFolders();
 
                 if ($folders === []) {
                     continue;
@@ -152,30 +152,6 @@ class MergeStudentDriveFoldersCommand extends Command
         }
 
         return self::SUCCESS;
-    }
-
-    /**
-     * Seluruh folder siswa di sekolah ini: root → folder kelas → folder siswa.
-     *
-     * @return array<int, array{id: string, name: string}>
-     */
-    private function folderSiswa(GoogleDriveService $drive): array
-    {
-        $rootId = $drive->findSchoolRoot();
-
-        if (! $rootId) {
-            return [];
-        }
-
-        $hasil = [];
-
-        foreach ($drive->subfolders($rootId) as $kelas) {
-            foreach ($drive->subfolders($kelas['id']) as $siswa) {
-                $hasil[] = $siswa;
-            }
-        }
-
-        return $hasil;
     }
 
     /**
