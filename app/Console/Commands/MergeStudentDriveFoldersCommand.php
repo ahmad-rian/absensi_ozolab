@@ -68,6 +68,11 @@ class MergeStudentDriveFoldersCommand extends Command
             try {
                 $drive = GoogleDriveService::forSchool($config);
                 $folders = $this->folderSiswa($drive);
+
+                // Isi seluruh folder diambil satu kali di sini. Sebelumnya tiap
+                // siswa memanggil Drive sendiri-sendiri, dan dua ribu panggilan
+                // berurutan membuat perintah ini praktis tidak bisa dijalankan.
+                $isiPerFolder = $folders === [] ? [] : $drive->filesByParent();
             } catch (Throwable $e) {
                 $this->error("{$school->name}: gagal membaca folder Drive — {$e->getMessage()}");
 
@@ -91,16 +96,20 @@ class MergeStudentDriveFoldersCommand extends Command
                     continue;
                 }
 
+                $tujuan = count($milikDia) > 1
+                    ? self::pilihTujuan($milikDia, $student->drive_folder_id, $this->jumlahIsi($milikDia, $isiPerFolder))
+                    : $milikDia[0]['id'];
+
                 if (count($milikDia) > 1) {
                     $terbelah++;
-                    $dipindah += $this->satukan($drive, $student, $milikDia, $school->name, $dryRun, $prefix);
+                    $dipindah += $this->satukan($drive, $student, $milikDia, $tujuan, $isiPerFolder, $school->name, $dryRun, $prefix);
                 }
 
                 // Berlaku juga untuk folder yang tidak pernah terbelah: nama
                 // berkas ikut diturunkan dari nama siswa, jadi siapa pun yang
                 // namanya pernah diubah punya berkas yang tidak terjangkau
                 // pencarian walau letaknya sudah benar sejak awal.
-                $diganti += $this->selaraskanNama($drive, $student, $school->name, $dryRun, $prefix);
+                $diganti += $this->selaraskanNama($drive, $student, $tujuan, $isiPerFolder, $school->name, $dryRun, $prefix);
             }
         }
 
@@ -143,26 +152,40 @@ class MergeStudentDriveFoldersCommand extends Command
     }
 
     /**
+     * Berapa berkas di masing-masing folder kandidat.
+     *
+     * @param  array<int, array{id: string, name: string}>  $milikDia
+     * @param  array<string, array<int, array{id: string, name: string}>>  $isiPerFolder
+     * @return array<string, int>
+     */
+    private function jumlahIsi(array $milikDia, array $isiPerFolder): array
+    {
+        $jumlah = [];
+
+        foreach ($milikDia as $folder) {
+            $jumlah[$folder['id']] = count($isiPerFolder[$folder['id']] ?? []);
+        }
+
+        return $jumlah;
+    }
+
+    /**
      * Pindahkan isi folder lain ke folder tujuan.
      *
      * @param  array<int, array{id: string, name: string}>  $milikDia
+     * @param  array<string, array<int, array{id: string, name: string}>>  $isiPerFolder
      * @return int jumlah berkas yang dipindah
      */
     private function satukan(
         GoogleDriveService $drive,
         Student $student,
         array $milikDia,
+        string $tujuan,
+        array &$isiPerFolder,
         string $schoolName,
         bool $dryRun,
         string $prefix,
     ): int {
-        $isi = [];
-
-        foreach ($milikDia as $folder) {
-            $isi[$folder['id']] = $drive->listFiles($folder['id'], 1000);
-        }
-
-        $tujuan = self::pilihTujuan($milikDia, $student->drive_folder_id, array_map('count', $isi));
         $dipindah = 0;
 
         foreach ($milikDia as $folder) {
@@ -181,15 +204,21 @@ class MergeStudentDriveFoldersCommand extends Command
                 continue;
             }
 
-            foreach ($isi[$folder['id']] as $berkas) {
+            foreach ($isiPerFolder[$folder['id']] ?? [] as $berkas) {
                 $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} ← {$folder['name']}");
 
                 if (! $dryRun) {
                     $drive->moveFile($berkas['id'], $tujuan);
                 }
 
+                // Peta diperbarui di tempat supaya penyelarasan nama yang jalan
+                // sesudah ini melihat isi folder tujuan yang sudah lengkap —
+                // termasuk untuk menilai bentrok nama.
+                $isiPerFolder[$tujuan][] = $berkas;
                 $dipindah++;
             }
+
+            $isiPerFolder[$folder['id']] = [];
         }
 
         // Penunjuknya diselaraskan supaya generate berikutnya — yang sekarang
@@ -240,26 +269,24 @@ class MergeStudentDriveFoldersCommand extends Command
      * siswa, jadi siapa pun yang namanya pernah diubah punya berkas yang tidak
      * terjangkau pencarian walau letaknya sudah benar sejak awal.
      *
+     * @param  array<string, array<int, array{id: string, name: string}>>  $isiPerFolder
      * @return int jumlah berkas yang diganti namanya
      */
     private function selaraskanNama(
         GoogleDriveService $drive,
         Student $student,
+        string $folderId,
+        array $isiPerFolder,
         string $schoolName,
         bool $dryRun,
         string $prefix,
     ): int {
-        try {
-            $folderId = $student->drive_folder_id ?: $drive->findStudentFolderId($student);
-        } catch (Throwable) {
+        $isi = $isiPerFolder[$folderId] ?? [];
+
+        if ($isi === []) {
             return 0;
         }
 
-        if (! $folderId) {
-            return 0;
-        }
-
-        $isi = $drive->listFiles($folderId, 1000);
         $namaTerpakai = array_column($isi, 'name');
         $awalan = self::awalanBerkas($student);
         $diganti = 0;

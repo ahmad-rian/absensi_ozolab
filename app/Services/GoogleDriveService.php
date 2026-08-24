@@ -931,6 +931,46 @@ class GoogleDriveService
     }
 
     /**
+     * Seluruh berkas non-folder di Drive ini, dikelompokkan menurut induknya.
+     *
+     * Satu sapuan berhalaman, bukan satu panggilan per folder. Perintah yang
+     * menyusuri ribuan folder siswa jadi belasan panggilan API, bukan ribuan —
+     * dan Drive tidak menyediakan pencarian rekursif, jadi mengelompokkan
+     * sendiri di PHP satu-satunya cara.
+     *
+     * Cakupannya seluruh Drive, termasuk sekolah lain yang berbagi akun yang
+     * sama. Pemanggilnya hanya membaca induk yang memang ia urus.
+     *
+     * @return array<string, array<int, array{id: string, name: string}>>
+     */
+    public function filesByParent(): array
+    {
+        $perInduk = [];
+        $pageToken = null;
+
+        do {
+            $result = $this->drive->files->listFiles([
+                'q' => "mimeType != 'application/vnd.google-apps.folder' and trashed = false",
+                'pageSize' => 1000,
+                'fields' => 'nextPageToken, files(id, name, parents)',
+                'supportsAllDrives' => true,
+                'includeItemsFromAllDrives' => true,
+                'pageToken' => $pageToken,
+            ]);
+
+            foreach ($result->getFiles() as $file) {
+                foreach ($file->getParents() ?: [] as $induk) {
+                    $perInduk[$induk][] = ['id' => $file->getId(), 'name' => $file->getName()];
+                }
+            }
+
+            $pageToken = $result->getNextPageToken();
+        } while ($pageToken);
+
+        return $perInduk;
+    }
+
+    /**
      * Apakah id folder yang tersimpan masih bisa dipakai.
      *
      * Dipakai jalur generate untuk memutuskan apakah `students.drive_folder_id`
