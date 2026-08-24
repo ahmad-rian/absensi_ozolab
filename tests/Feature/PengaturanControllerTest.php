@@ -2,6 +2,36 @@
 
 use App\Models\School;
 
+/**
+ * Payload lengkap tab Notifikasi.
+ *
+ * Setiap saklar di tab ini `required`, dan itu disengaja: checkbox yang tidak
+ * tercentang tetap harus mengirim `false`, kalau tidak kuncinya tidak pernah
+ * ditulis dan `getSetting()` diam-diam kembali ke default. Konsekuensinya tes
+ * tidak bisa mengirim payload separuh.
+ *
+ * @param  array<string, mixed>  $override
+ * @return array<string, mixed>
+ */
+function notifikasiPayload(array $override = []): array
+{
+    return [
+        'section' => 'notifikasi',
+        'whatsapp_enabled' => true,
+        'notify_on_check_in' => true,
+        'notify_on_check_out' => true,
+        'wa_alert_only' => true,
+        'wa_alert_terlambat' => true,
+        'wa_alert_alpa' => true,
+        'feature_notif_alpa_sholat' => false,
+        'wa_verified' => false,
+        'wa_daily_limit' => 50,
+        'prayer_absence_threshold' => 3,
+        'prayer_absence_require_present' => true,
+        ...$override,
+    ];
+}
+
 test('guests are redirected from pengaturan page', function () {
     $this->get(route('admin.pengaturan'))->assertRedirect(route('login'));
 });
@@ -198,30 +228,67 @@ test('a switch sent as null is stored as a real boolean', function () {
     // diatur" dan diam-diam kembali ke default true di listener notifikasi.
     $user = createAdminUser();
 
-    $this->actingAs($user)->put(route('admin.pengaturan.update'), [
-        'section' => 'notifikasi',
+    $this->actingAs($user)->put(route('admin.pengaturan.update'), notifikasiPayload([
         'whatsapp_enabled' => false,
         'notify_on_check_in' => false,
         'notify_on_check_out' => false,
-        'prayer_absence_threshold' => 3,
-        'prayer_absence_require_present' => true,
-    ])->assertSessionHasNoErrors();
+    ]))->assertSessionHasNoErrors();
 
     expect(School::find($user->school_id)->getSetting('whatsapp_enabled'))->toBeFalse();
+});
+
+test('the whatsapp alert switches are stored as real booleans', function () {
+    $user = createAdminUser();
+
+    $this->actingAs($user)->put(route('admin.pengaturan.update'), notifikasiPayload([
+        'wa_alert_only' => false,
+        'wa_alert_terlambat' => false,
+        'wa_alert_alpa' => true,
+        'wa_verified' => true,
+        'wa_daily_limit' => 120,
+    ]))->assertSessionHasNoErrors();
+
+    $school = School::find($user->school_id);
+
+    expect($school->getSetting('wa_alert_only'))->toBeFalse()
+        ->and($school->getSetting('wa_alert_terlambat'))->toBeFalse()
+        ->and($school->getSetting('wa_alert_alpa'))->toBeTrue()
+        ->and($school->getSetting('wa_verified'))->toBeTrue()
+        ->and($school->getSetting('wa_daily_limit'))->toBe(120);
+});
+
+/**
+ * Skenario alpa sholat memakai key fitur yang sudah ada. Kalau tab Notifikasi
+ * menulis ke key kembar, saklar di sini dan saklar di tab Fitur akan saling
+ * membatalkan tanpa ada yang tahu.
+ */
+test('the prayer absence scenario writes the existing feature key', function () {
+    $user = createAdminUser();
+
+    $this->actingAs($user)->put(route('admin.pengaturan.update'), notifikasiPayload([
+        'feature_notif_alpa_sholat' => true,
+    ]))->assertSessionHasNoErrors();
+
+    expect(School::find($user->school_id)->getSetting('feature_notif_alpa_sholat'))->toBeTrue();
+});
+
+test('an absurd daily limit is rejected', function () {
+    $user = createAdminUser();
+
+    foreach ([0, 1001] as $limit) {
+        $this->actingAs($user)
+            ->put(route('admin.pengaturan.update'), notifikasiPayload(['wa_daily_limit' => $limit]))
+            ->assertSessionHasErrors('wa_daily_limit');
+    }
 });
 
 test('the prayer absence threshold is bounded', function () {
     $user = createAdminUser();
 
     foreach ([1, 11] as $threshold) {
-        $this->actingAs($user)->put(route('admin.pengaturan.update'), [
-            'section' => 'notifikasi',
-            'whatsapp_enabled' => true,
-            'notify_on_check_in' => true,
-            'notify_on_check_out' => true,
-            'prayer_absence_threshold' => $threshold,
-            'prayer_absence_require_present' => true,
-        ])->assertSessionHasErrors('prayer_absence_threshold');
+        $this->actingAs($user)
+            ->put(route('admin.pengaturan.update'), notifikasiPayload(['prayer_absence_threshold' => $threshold]))
+            ->assertSessionHasErrors('prayer_absence_threshold');
     }
 });
 

@@ -109,6 +109,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // hourly because each school sets its own check_out_end.
         $schedule->command('attendance:auto-checkout')->hourly()->withoutOverlapping();
 
+        // Peringatan terlambat / tidak hadir ke orang tua lewat WhatsApp.
+        // Hourly dengan alasan yang sama seperti alpa sholat: jam masuk diatur
+        // per sekolah, jadi satu jam tetap pasti salah untuk sebagian tenant.
+        $schedule->command('attendance:notify-absence')->hourly()->withoutOverlapping();
+
         // Peringatan alpa sholat. Hourly, bukan dailyAt(), karena jendela
         // sholat diatur per sekolah — satu jam tetap pasti salah untuk
         // sebagian tenant. Command sendiri yang memutuskan apakah jendela hari

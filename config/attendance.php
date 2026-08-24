@@ -33,6 +33,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tenggang Peringatan Ketidakhadiran
+    |--------------------------------------------------------------------------
+    |
+    | Jeda setelah jendela absensi tutup sebelum `attendance:notify-absence`
+    | menilai hari berjalan, supaya scan di menit terakhir tidak kalah cepat
+    | dari tick penjadwal. Sejajar dengan `prayer.absence_grace_minutes`.
+    |
+    */
+    'absence_grace_minutes' => env('ATTENDANCE_ABSENCE_GRACE_MINUTES', 30),
+
+    /*
+    |--------------------------------------------------------------------------
     | Absen Sholat Dzuhur
     |--------------------------------------------------------------------------
     |

@@ -69,6 +69,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
     SENT: { label: 'Terkirim', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' },
     FAILED: { label: 'Gagal', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' },
     PENDING: { label: 'Menunggu', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' },
+    THROTTLED: { label: 'Dibatasi', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
 };
 
 function formatDateTime(dateStr: string): string {
@@ -167,6 +168,7 @@ export default function NotifikasiIndex() {
                                         <SelectItem value="SENT">Terkirim</SelectItem>
                                         <SelectItem value="FAILED">Gagal</SelectItem>
                                         <SelectItem value="PENDING">Menunggu</SelectItem>
+                                        <SelectItem value="THROTTLED">Dibatasi</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

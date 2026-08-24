@@ -24,6 +24,7 @@ type Props = {
     featureCatalog: FeatureCatalog;
     logoUrl: string;
     faviconUrl: string;
+    waSentToday: number;
 };
 
 export default function PengaturanIndex({
@@ -34,6 +35,7 @@ export default function PengaturanIndex({
     featureCatalog,
     logoUrl,
     faviconUrl,
+    waSentToday,
 }: Props) {
     const page = usePage();
     const [tab, setTab] = useState<SettingsSection>(() => resolveSettingsTab(page.url));
@@ -120,7 +122,7 @@ export default function PengaturanIndex({
                     <TabsContent value="notifikasi">
                         <NotifikasiTab
                             settings={settings}
-                            features={features}
+                            waSentToday={waSentToday}
                             onDirtyChange={markDirty('notifikasi')}
                         />
                     </TabsContent>

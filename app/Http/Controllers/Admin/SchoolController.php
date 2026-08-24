@@ -9,6 +9,7 @@ use App\Models\SchoolCardLayout;
 use App\Services\Attendance\ScheduleProvisioner;
 use App\Support\PrayerSchedule;
 use App\Support\SchoolFeatures;
+use App\Support\WhatsAppQuota;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -80,6 +81,14 @@ class SchoolController extends Controller
             'timezone' => 'Asia/Jakarta',
             'notify_on_check_in' => true,
             'notify_on_check_out' => true,
+            // Kebijakan WhatsApp yang berlaku sekarang: hanya kabar buruk,
+            // dikirim borongan oleh `attendance:notify-absence`. Email dan
+            // Telegram tetap mengabari tiap scan lewat dua key di atas.
+            'wa_alert_only' => true,
+            'wa_alert_terlambat' => true,
+            'wa_alert_alpa' => true,
+            'wa_verified' => false,
+            'wa_daily_limit' => WhatsAppQuota::DEFAULT_LIMIT,
             // Seluruh saklar fitur ditulis eksplisit — termasuk
             // `whatsapp_enabled` dan `prayer_enabled` yang memakai nama lama —
             // supaya sekolah baru tidak pernah punya keadaan "belum diatur".

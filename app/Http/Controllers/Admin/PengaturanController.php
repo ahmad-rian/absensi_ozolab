@@ -12,6 +12,7 @@ use App\Services\ImageConverter;
 use App\Support\PrayerSchedule;
 use App\Support\PrayerSettings;
 use App\Support\SchoolFeatures;
+use App\Support\WhatsAppQuota;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -53,9 +54,20 @@ class PengaturanController extends Controller
             'whatsapp_enabled' => ['required', 'boolean'],
             'notify_on_check_in' => ['required', 'boolean'],
             'notify_on_check_out' => ['required', 'boolean'],
+            'wa_alert_only' => ['required', 'boolean'],
+            'wa_alert_terlambat' => ['required', 'boolean'],
+            'wa_alert_alpa' => ['required', 'boolean'],
+            // Skenario alpa sholat memakai key fitur yang sudah ada, bukan key
+            // kembar — lihat SchoolFeature::settingKey().
+            'feature_notif_alpa_sholat' => ['required', 'boolean'],
+            'wa_verified' => ['required', 'boolean'],
+            // Batas atas 1000 supaya salah ketik satu digit tidak diam-diam
+            // melepas batasnya sama sekali.
+            'wa_daily_limit' => ['required', 'integer', 'between:1,1000'],
             'prayer_absence_threshold' => ['required', 'integer', 'between:2,10'],
             'prayer_absence_require_present' => ['required', 'boolean'],
             'whatsapp_template_attendance' => ['nullable', 'string', 'max:2000'],
+            'whatsapp_template_attendance_alert' => ['nullable', 'string', 'max:2000'],
             'whatsapp_template_prayer_absence' => ['nullable', 'string', 'max:2000'],
         ],
     ];
@@ -97,6 +109,11 @@ class PengaturanController extends Controller
         'whatsapp_enabled',
         'notify_on_check_in',
         'notify_on_check_out',
+        'wa_alert_only',
+        'wa_alert_terlambat',
+        'wa_alert_alpa',
+        'feature_notif_alpa_sholat',
+        'wa_verified',
         'prayer_absence_require_present',
     ];
 
@@ -109,6 +126,7 @@ class PengaturanController extends Controller
             'school_name',
             'timezone',
             'whatsapp_template_attendance',
+            'whatsapp_template_attendance_alert',
             'whatsapp_template_prayer_absence',
         ];
 
@@ -126,6 +144,22 @@ class PengaturanController extends Controller
         $settings['whatsapp_enabled'] = $features->enabled(SchoolFeature::NotifAbsensi);
         $settings['notify_on_check_in'] = (bool) ($school?->getSetting('notify_on_check_in') ?? true);
         $settings['notify_on_check_out'] = (bool) ($school?->getSetting('notify_on_check_out') ?? true);
+
+        // Default `false` cocok dengan DispatchAttendanceNotifications: sekolah
+        // yang belum pernah menyimpan tab ini tetap memakai perilaku lama
+        // (WA tiap scan) sampai admin benar-benar membaliknya.
+        $settings['wa_alert_only'] = (bool) ($school?->getSetting('wa_alert_only') ?? false);
+        $settings['wa_alert_terlambat'] = (bool) ($school?->getSetting('wa_alert_terlambat') ?? true);
+        $settings['wa_alert_alpa'] = (bool) ($school?->getSetting('wa_alert_alpa') ?? true);
+        $settings['feature_notif_alpa_sholat'] = $features->enabled(SchoolFeature::NotifAlpaSholat);
+        $settings['wa_verified'] = (bool) ($school?->getSetting('wa_verified') ?? false);
+        // Dibaca mentah, bukan lewat WhatsAppQuota::limitFor(): saat `wa_verified`
+        // menyala helper itu mengembalikan null (tanpa batas), dan form akan
+        // kehilangan angka yang tersimpan begitu admin mencabut centangnya.
+        $storedLimit = $school?->getSetting('wa_daily_limit');
+        $settings['wa_daily_limit'] = is_numeric($storedLimit) && (int) $storedLimit > 0
+            ? (int) $storedLimit
+            : WhatsAppQuota::DEFAULT_LIMIT;
 
         $settings['prayer_absence_threshold'] = (int) ($school?->getSetting('prayer_absence_threshold') ?? 3);
         $settings['prayer_absence_require_present'] = (bool) ($school?->getSetting('prayer_absence_require_present') ?? true);
@@ -162,6 +196,7 @@ class PengaturanController extends Controller
             'activeAcademicYearId' => $academicYears->firstWhere('is_active', true)?->id,
             'features' => SchoolFeatures::for($school)->toArray(),
             'featureCatalog' => $this->featureCatalog(),
+            'waSentToday' => $school ? WhatsAppQuota::sentToday($school->id) : 0,
             'logoUrl' => $logoPath && Storage::disk('public')->exists($logoPath)
                 ? Storage::disk('public')->url($logoPath)
                 : '',

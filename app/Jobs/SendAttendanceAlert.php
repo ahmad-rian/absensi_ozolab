@@ -2,8 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Enums\NotificationChannel;
-use App\Models\Attendance;
+use App\Models\AttendanceAlert;
 use App\Services\Notification\NotificationDispatcher;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -12,7 +11,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-class SendAttendanceNotifications implements ShouldBeUnique, ShouldQueue
+class SendAttendanceAlert implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -21,24 +20,20 @@ class SendAttendanceNotifications implements ShouldBeUnique, ShouldQueue
     /** @var list<int> */
     public array $backoff = [30, 120, 600];
 
-    /**
-     * @param  array<int, NotificationChannel>  $skipChannels
-     */
     public function __construct(
-        public Attendance $attendance,
-        public array $skipChannels = [],
+        public AttendanceAlert $alert,
     ) {}
 
     public function uniqueId(): string
     {
-        return 'attendance-notify-'.$this->attendance->id;
+        return 'attendance-alert-'.$this->alert->id;
     }
 
     public function handle(NotificationDispatcher $dispatcher): void
     {
-        $allSucceeded = $dispatcher->dispatchAttendance($this->attendance, $this->attempts(), $this->skipChannels);
+        $succeeded = $dispatcher->dispatchAttendanceAlert($this->alert, $this->attempts());
 
-        if (! $allSucceeded && $this->attempts() < $this->tries) {
+        if (! $succeeded && $this->attempts() < $this->tries) {
             $this->release($this->backoff[$this->attempts() - 1] ?? 600);
         }
     }
