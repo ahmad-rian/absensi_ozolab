@@ -97,7 +97,11 @@ class AuditStudentDriveFilesCommand extends Command
                     continue;
                 }
 
-                $temuan = self::periksa($isiPerFolder[$murid->drive_folder_id] ?? [], $murid, $jenisWajib);
+                $temuan = self::periksa(
+                    $isiPerFolder[$murid->drive_folder_id] ?? [],
+                    $murid,
+                    self::jenisWajibSiswa($murid, $jenisWajib),
+                );
 
                 if ($temuan['bermasalah'] === false) {
                     $rapi++;
@@ -144,14 +148,32 @@ class AuditStudentDriveFilesCommand extends Command
      */
     private function jenisWajib(School $school): array
     {
-        $layouts = SchoolCardLayout::withoutGlobalScope('school')
+        return SchoolCardLayout::withoutGlobalScope('school')
             ->where('school_id', $school->id)
             ->where('is_active', true)
             ->whereIn('type', ['osis', 'perpustakaan'])
             ->pluck('type')
+            ->unique()
+            ->values()
             ->all();
+    }
 
-        return array_values(array_unique([...$layouts, 'foto']));
+    /**
+     * Foto hanya wajib untuk siswa yang memang punya fotonya.
+     *
+     * Jalur unggahnya sendiri hanya berjalan ketika `photo_path` terisi
+     * (`RegisterStudentCardsJob`), jadi mewajibkannya untuk semua siswa membuat
+     * setiap anak yang belum difoto dilaporkan sebagai folder rusak — dan itu
+     * menenggelamkan folder yang benar-benar bermasalah.
+     *
+     * @param  array<int, string>  $jenisSekolah
+     * @return array<int, string>
+     */
+    public static function jenisWajibSiswa(Student $student, array $jenisSekolah): array
+    {
+        return $student->photo_path || $student->photo_drive_file_id
+            ? [...$jenisSekolah, 'foto']
+            : $jenisSekolah;
     }
 
     /**

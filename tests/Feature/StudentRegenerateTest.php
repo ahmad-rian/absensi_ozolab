@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\AuditStudentDriveFilesCommand;
 use App\Jobs\GenerateRegistrationCardJob;
 use App\Jobs\RegisterStudentCardsJob;
 use App\Models\Student;
@@ -143,4 +144,32 @@ test('tidak ada jalur tulis siswa yang menurunkan ulang folder dari nama', funct
 
 test('perintah audit berkas jalan walau belum ada sekolah yang siap', function () {
     $this->artisan('drive:audit-berkas-siswa')->assertSuccessful();
+});
+
+/**
+ * Audit adalah alat ukur, jadi ia harus diam soal hal yang bukan masalah. Di
+ * prod, 194 dari 573 folder dilaporkan bermasalah hanya karena `foto` tidak ada
+ * — padahal siswanya memang belum pernah difoto, dan jalur unggah foto sendiri
+ * tidak pernah berjalan tanpa `photo_path`.
+ */
+test('foto hanya wajib untuk siswa yang punya fotonya', function () {
+    $berfoto = Student::factory()->make(['photo_path' => 'photos/x.png']);
+    $belum = Student::factory()->make(['photo_path' => null, 'photo_drive_file_id' => null]);
+
+    $kartu = ['osis', 'perpustakaan'];
+
+    expect(AuditStudentDriveFilesCommand::jenisWajibSiswa($berfoto, $kartu))
+        ->toBe(['osis', 'perpustakaan', 'foto'])
+        ->and(AuditStudentDriveFilesCommand::jenisWajibSiswa($belum, $kartu))
+        ->toBe($kartu);
+});
+
+test('foto tetap wajib kalau id-nya tercatat walau photo_path kosong', function () {
+    $siswa = Student::factory()->make([
+        'photo_path' => null,
+        'photo_drive_file_id' => 'id-foto-drive',
+    ]);
+
+    expect(AuditStudentDriveFilesCommand::jenisWajibSiswa($siswa, ['osis']))
+        ->toContain('foto');
 });

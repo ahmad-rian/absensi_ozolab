@@ -140,7 +140,10 @@ class MergeStudentDriveFoldersCommand extends Command
         }
 
         $this->newLine();
-        $this->info("{$prefix}Siswa dengan folder terbelah: {$terbelah}, berkas dipindah: {$dipindah}, nama diselaraskan: {$diganti}.");
+        // "dirapikan", bukan "nama diselaraskan": hitungan ini mencakup berkas
+        // yang dibuang ke sampah karena sudah tergantikan, bukan hanya yang
+        // diganti nama.
+        $this->info("{$prefix}Siswa dengan folder terbelah: {$terbelah}, berkas dipindah: {$dipindah}, berkas dirapikan: {$diganti}.");
 
         if ($dipindah > 0 && ! $dryRun) {
             $this->line('Berkas bernama sama kini berkumpul di satu folder. Jalankan `drive:bersihkan-duplikat --dry-run` untuk merapikannya.');
