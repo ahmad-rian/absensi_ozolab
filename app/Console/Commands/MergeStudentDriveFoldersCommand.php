@@ -5,9 +5,8 @@ namespace App\Console\Commands;
 use App\Models\School;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
-use App\Services\PhotoSheetGeneratorService;
+use App\Support\StudentDriveNaming;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -297,10 +296,7 @@ class MergeStudentDriveFoldersCommand extends Command
         foreach ($isi as $berkas) {
             $namaBaru = self::namaSelaras($berkas['name'], $awalan);
 
-            // Nama barunya sudah dipakai berkas lain di folder ini — biarkan
-            // nama lamanya. Menimpa bukan tugas perintah pemulihan, dan tidak
-            // ada yang hilang karena dibiarkan.
-            if ($namaBaru === null || in_array($namaBaru, $namaTerpakai, true)) {
+            if ($namaBaru === null) {
                 continue;
             }
 
@@ -311,6 +307,24 @@ class MergeStudentDriveFoldersCommand extends Command
             // membiarkannya bernama lama.
             if (! $this->paksa && ! self::namaMirip(self::bagianNama($berkas['name']), $student->full_name)) {
                 $this->warn("  ! {$schoolName} / {$student->full_name}: berkas \"{$berkas['name']}\" namanya tidak beririsan — dilewati. Periksa manual, atau pakai --paksa.");
+
+                continue;
+            }
+
+            // Nama sasarannya sudah dipakai berkas lain di folder ini, dan
+            // keduanya keluaran berjenis sama — berarti yang ini versi lama yang
+            // sudah tergantikan. Dulu ia dibiarkan bernama lama, dan itulah yang
+            // membuat folder tetap berisi 6 berkas setelah nama siswa
+            // dibetulkan. Dibuang ke SAMPAH, bukan dihapus: Drive menyimpannya
+            // 30 hari kalau ternyata salah sasaran.
+            if (in_array($namaBaru, $namaTerpakai, true)) {
+                $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} sudah tergantikan → sampah");
+
+                if (! $dryRun) {
+                    $drive->trashFile($berkas['id']);
+                }
+
+                $diganti++;
 
                 continue;
             }
@@ -333,109 +347,36 @@ class MergeStudentDriveFoldersCommand extends Command
     }
 
     /**
-     * Jenis keluaran yang namanya boleh diselaraskan.
-     *
-     * Daftar tertutup dengan sengaja. Folder siswa juga bisa berisi berkas yang
-     * ditaruh fotografer dengan nama bebas — mengganti namanya berdasarkan pola
-     * tebakan akan merusak berkas yang tidak ada hubungannya dengan aplikasi.
+     * Aturan penamaan hidup di `App\Support\StudentDriveNaming` — jalur unggah
+     * dan job sinkronisasi memakainya juga, dan mereka tidak boleh memanggil
+     * kelas Command untuk itu. Yang di bawah ini penerus tipis supaya
+     * pemanggil lama dan seluruh tes yang sudah ada tetap berlaku.
      *
      * @return array<int, string>
      */
     public static function jenisDikenal(): array
     {
-        return array_merge(
-            ['osis', 'perpustakaan', 'identitas', 'foto'],
-            array_keys(PhotoSheetGeneratorService::TEMPLATES),
-        );
+        return StudentDriveNaming::jenisDikenal();
     }
 
-    /**
-     * Awalan nama berkas milik satu siswa, mis. `r-wastu-yuga-wibowo-17357-`.
-     *
-     * Keempat keluaran memakai bentuk yang sama — kartu (`CardGeneratorService`),
-     * lembar pas foto (`PhotoSheetGeneratorService`), dan foto siswa
-     * (`GoogleDriveService::studentPhotoFileName`) semuanya
-     * `{slug-nama}-{nis}-{jenis}.png`.
-     */
     public static function awalanBerkas(Student $student): string
     {
-        return Str::slug($student->full_name).'-'.($student->nis ?: $student->id).'-';
+        return StudentDriveNaming::prefix($student);
     }
 
-    /**
-     * Nama berkas yang sudah diselaraskan dengan nama siswa sekarang.
-     *
-     * `null` berarti tidak perlu — atau tidak boleh — diubah. Jenis keluarannya
-     * diambil dari potongan setelah tanda hubung terakhir dan harus ada di
-     * daftar tertutup `jenisDikenal()`; berkas yang ditaruh fotografer dengan
-     * nama bebas tidak boleh ikut diganti namanya. Template `4r_3x4` memakai
-     * garis bawah, bukan tanda hubung, jadi ia tetap utuh.
-     */
     public static function namaSelaras(string $namaLama, string $awalanBaru): ?string
     {
-        $pisah = mb_strrpos($namaLama, '-');
-
-        if ($pisah === false) {
-            return null;
-        }
-
-        $ekor = mb_substr($namaLama, $pisah + 1);
-
-        if (! in_array(mb_strtolower(pathinfo($ekor, PATHINFO_FILENAME)), self::jenisDikenal(), true)) {
-            return null;
-        }
-
-        $namaBaru = $awalanBaru.$ekor;
-
-        return $namaBaru === $namaLama ? null : $namaBaru;
+        return StudentDriveNaming::namaSelaras($namaLama, $awalanBaru);
     }
 
-    /**
-     * Bagian nama orang dari sebuah nama berkas.
-     *
-     * `alfian-rifky-maulana-17336-osis.png` → `alfian-rifky-maulana-17336`.
-     * Jenis keluarannya dibuang karena `osis`, `foto`, dan `perpustakaan` muncul
-     * di setiap berkas dan akan membuat semua nama terlihat beririsan. NIS-nya
-     * boleh ikut: angka tidak dihitung sebagai kata.
-     */
     public static function bagianNama(string $namaBerkas): string
     {
-        $pisah = mb_strrpos($namaBerkas, '-');
-
-        return $pisah === false ? $namaBerkas : mb_substr($namaBerkas, 0, $pisah);
+        return StudentDriveNaming::bagianNama($namaBerkas);
     }
 
-    /**
-     * Apakah nama folder ini masuk akal milik siswa tersebut.
-     *
-     * Nama orang berubah dengan berbagai cara yang masih menyisakan jejak —
-     * "RADEN WASTU YUGA WIBOWO" jadi "R WASTU YUGA WIBOWO", kapitalisasi
-     * diseragamkan, gelar dibuang. Semuanya tetap berbagi kata. Yang TIDAK
-     * berbagi satu kata pun hampir pasti orang lain, dan biasanya lahir dari
-     * NIS salah ketik yang kemudian dibetulkan sehingga NIS itu berpindah
-     * tangan.
-     *
-     * Kata sepanjang dua huruf atau kurang diabaikan: "R", "AL", dan "DE"
-     * beririsan terlalu mudah untuk bisa dipercaya. Kalau salah satu sisi tidak
-     * menyisakan kata yang bisa dinilai, jawabannya `true` — perintah ini tidak
-     * boleh menolak bekerja hanya karena namanya pendek.
-     */
     public static function namaMirip(string $namaFolder, string $namaSiswa): bool
     {
-        $kata = static function (string $teks): array {
-            $bagian = preg_split('/[^\p{L}]+/u', mb_strtolower($teks), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-            return array_filter($bagian, static fn (string $k): bool => mb_strlen($k) > 2);
-        };
-
-        $folder = $kata($namaFolder);
-        $siswa = $kata($namaSiswa);
-
-        if ($folder === [] || $siswa === []) {
-            return true;
-        }
-
-        return array_intersect($folder, $siswa) !== [];
+        return StudentDriveNaming::namaMirip($namaFolder, $namaSiswa);
     }
 
     /**

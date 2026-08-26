@@ -103,7 +103,7 @@ class RegisterStudentCardsJob implements ShouldQueue
             ]);
 
             $upload = $folderId
-                ? $this->uploadToFolder($student->photo_path, $folderId, $school, GoogleDriveService::studentPhotoFileName($student))
+                ? $this->uploadToFolder($student->photo_path, $folderId, $school, $student, GoogleDriveService::studentPhotoFileName($student))
                 : null;
 
             if ($upload) {
@@ -301,11 +301,19 @@ class RegisterStudentCardsJob implements ShouldQueue
      *
      * @return array{id: string, url: string}|null
      */
-    private function uploadToFolder(string $storagePath, string $folderId, School $school, ?string $fileName = null): ?array
+    private function uploadToFolder(string $storagePath, string $folderId, School $school, Student $student, ?string $fileName = null): ?array
     {
         try {
             $service = GoogleDriveService::forSchool($school->driveConfig);
-            $driveFile = $service->uploadFile(Storage::disk('public')->path($storagePath), $fileName ?: basename($storagePath), $folderId, 'image/png');
+
+            $driveFile = $service->replaceStudentOutput(
+                Storage::disk('public')->path($storagePath),
+                $student,
+                $folderId,
+                $fileName ?: basename($storagePath),
+                $student->photo_drive_file_id,
+                'image/png',
+            );
 
             return ['id' => $driveFile->getId(), 'url' => $service->makePublic($driveFile->getId())];
         } catch (\Throwable $e) {

@@ -5,13 +5,13 @@ namespace App\Services;
 use App\Models\SchoolDriveConfig;
 use App\Models\Setting;
 use App\Models\Student;
+use App\Support\StudentDriveNaming;
 use Google\Client as GoogleClient;
 use Google\Service\Drive as GoogleDrive;
 use Google\Service\Drive\DriveFile;
 use Google\Service\Drive\Permission;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Throwable;
 
 class GoogleDriveService
@@ -827,7 +827,120 @@ class GoogleDriveService
             return $student->drive_folder_id;
         }
 
-        return $this->studentFolderId($student);
+        $folderId = $this->studentFolderId($student);
+
+        // Disimpan di sini, bukan di pemanggil. Dulu hanya RegisterStudentCardsJob
+        // yang ingat menyimpannya, sementara CardGeneratorService dan
+        // GeneratePhotoSheetJob tidak — dan keduanya menurunkan ulang letak
+        // folder dari nama, jadi setiap kali nama siswa dibetulkan mereka
+        // membangun folder KEDUA. saveQuietly supaya observer tidak ikut menyala
+        // dan mengantrekan job sinkronisasi pada setiap generate.
+        // `exists` supaya model sementara (mis. dalam test) tidak diam-diam
+        // tersimpan sebagai siswa sungguhan.
+        if ($folderId !== null && $student->exists && $student->drive_folder_id !== $folderId) {
+            $student->forceFill(['drive_folder_id' => $folderId])->saveQuietly();
+        }
+
+        return $folderId;
+    }
+
+    /**
+     * Tulis satu hasil generate milik siswa, menimpa yang sudah ada.
+     *
+     * Ini pintu satu-satunya untuk kartu, lembar pas foto, dan foto siswa —
+     * berkas yang punya "jenis keluaran" dan hanya boleh ada satu per jenis per
+     * folder. `uploadFile()` tidak dipakai karena ia mencocokkan nama PERSIS,
+     * sementara nama berkas memuat nama dan NIS siswa: begitu salah satunya
+     * dibetulkan, pencarian meleset dan lahirlah berkas kedua di folder yang
+     * sama. Itulah kenapa folder yang isinya 4 berubah jadi 6.
+     *
+     * Isi folder dibaca sekali, lalu diputuskan berurutan:
+     *   1. id yang sudah tercatat — pegangan paling kuat, tidak ikut berubah
+     *      saat berkasnya diganti nama atau dipindah;
+     *   2. nama yang persis sama — perilaku lama;
+     *   3. berkas berjenis sama yang namanya sudah basi;
+     *   4. belum ada apa-apa, buat baru.
+     *
+     * Langkah 3 wajib dijaga `namaMirip()`: NIS berpindah tangan itu nyata di
+     * data prod, dan tanpa penjaganya langkah ini akan menimpa kartu milik anak
+     * lain yang kebetulan tertinggal di folder ini.
+     */
+    public function replaceStudentOutput(
+        string $localPath,
+        Student $student,
+        string $folderId,
+        string $fileName,
+        ?string $knownFileId = null,
+        ?string $mimeType = null,
+    ): DriveFile {
+        $isi = $this->listFiles($folderId, 1000);
+
+        $sasaran = $this->pickReplaceable($isi, $student, $fileName, $knownFileId);
+
+        if ($sasaran === null) {
+            return $this->uploadFile($localPath, $fileName, $folderId, $mimeType);
+        }
+
+        $mimeType = $mimeType ?: mime_content_type($localPath) ?: 'application/octet-stream';
+
+        $updated = $this->drive->files->update($sasaran['id'], new DriveFile, [
+            'data' => file_get_contents($localPath),
+            'mimeType' => $mimeType,
+            'uploadType' => 'media',
+            'fields' => 'id, name, webViewLink, webContentLink',
+            'supportsAllDrives' => true,
+        ]);
+
+        if ($sasaran['name'] !== $fileName) {
+            $this->renameFile($sasaran['id'], $fileName);
+        }
+
+        return $updated;
+    }
+
+    /**
+     * Berkas mana di folder ini yang harus ditimpa, atau null kalau tidak ada.
+     *
+     * @param  array<int, array<string, mixed>>  $isi
+     * @return array{id: string, name: string}|null
+     */
+    private function pickReplaceable(array $isi, Student $student, string $fileName, ?string $knownFileId): ?array
+    {
+        $ambil = static fn (array $f): array => ['id' => $f['id'], 'name' => $f['name']];
+
+        if ($knownFileId !== null) {
+            foreach ($isi as $berkas) {
+                if ($berkas['id'] === $knownFileId) {
+                    return $ambil($berkas);
+                }
+            }
+        }
+
+        foreach ($isi as $berkas) {
+            if ($berkas['name'] === $fileName) {
+                return $ambil($berkas);
+            }
+        }
+
+        $jenis = StudentDriveNaming::jenisDari($fileName);
+
+        if ($jenis === null) {
+            return null;
+        }
+
+        foreach ($isi as $berkas) {
+            if (StudentDriveNaming::jenisDari($berkas['name']) !== $jenis) {
+                continue;
+            }
+
+            if (! StudentDriveNaming::namaMirip(StudentDriveNaming::bagianNama($berkas['name']), $student->full_name)) {
+                continue;
+            }
+
+            return $ambil($berkas);
+        }
+
+        return null;
     }
 
     /**
@@ -1091,15 +1204,14 @@ class GoogleDriveService
     /**
      * Awalan nama untuk semua berkas yang sistem tulis sendiri ke folder siswa.
      *
-     * Tiga penulis memakainya: pas foto di bawah ini, kartu
-     * (CardGeneratorService), dan lembar 4R (PhotoSheetGeneratorService). Keduanya
-     * menyusun sendiri dengan sprintf yang sama — kalau pola ini diubah, keduanya
-     * harus ikut, karena StudentDrivePhotoLocator memakai awalan ini untuk
-     * membedakan berkas keluaran sistem dari foto yang ditaruh manusia.
+     * Aturannya hidup di `StudentDriveNaming::prefix()` — dulu tiga penulis
+     * menyusunnya sendiri dengan sprintf yang "sama", dan ternyata tidak: dua di
+     * antaranya memakai `??` alih-alih `?:`, sehingga NIS bernilai string kosong
+     * menghasilkan dua bentuk nama berbeda di folder yang sama.
      */
     public static function studentFilePrefix(Student $student): string
     {
-        return sprintf('%s-%s-', Str::slug($student->full_name), $student->nis ?: $student->id);
+        return StudentDriveNaming::prefix($student);
     }
 
     /**

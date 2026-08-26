@@ -19,6 +19,16 @@ class StudentObserver
     /** Nilai yang ikut menyusun jalur folder `{Kelas}/{NIS - Nama}`. */
     private const DRIVE_PATH_COLUMNS = ['classroom_id', 'nis', 'full_name'];
 
+    /**
+     * Nilai yang ikut menyusun NAMA BERKAS `{slug-nama}-{nis}-{jenis}.png`.
+     *
+     * Kelas sengaja tidak masuk: ia menentukan letak folder, bukan nama berkas
+     * di dalamnya. Membedakan keduanya yang membuat kenaikan kelas satu angkatan
+     * — ratusan job sekaligus di antrean yang dipakai bersama puluhan situs —
+     * tidak menambah satu pun panggilan Drive untuk menyelaraskan nama.
+     */
+    private const DRIVE_FILE_COLUMNS = ['nis', 'full_name'];
+
     public function updated(Student $student): void
     {
         if (! $student->drive_folder_id) {
@@ -29,6 +39,9 @@ class StudentObserver
             return;
         }
 
-        SyncStudentDriveFolderJob::dispatch($student->id);
+        SyncStudentDriveFolderJob::dispatch(
+            $student->id,
+            $student->wasChanged(self::DRIVE_FILE_COLUMNS),
+        );
     }
 }

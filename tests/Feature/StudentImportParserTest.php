@@ -40,11 +40,18 @@ function writeImportCsv(string $name, array $rows): string
 }
 
 /**
+ * Berbeda dari CSV, hasilnya TIDAK ditaruh di direktori fixture.
+ *
+ * XLSX itu arsip zip bertimestamp, jadi isinya berbeda tiap kali ditulis. Selama
+ * ia mendarat di direktori fixture yang ikut ter-commit, setiap kali suite
+ * dijalankan pohon kerja jadi kotor — dan run berikutnya membaca keadaan yang
+ * berbeda lalu gagal di tempat yang tidak ada hubungannya dengan perubahannya.
+ *
  * @param  list<list<string>>  $rows
  */
 function writeImportXlsx(string $name, array $rows): string
 {
-    $path = importFixtureDir().'/'.$name.'.xlsx';
+    $path = sys_get_temp_dir().'/import-'.$name.'.xlsx';
 
     $writer = new XlsxWriter;
     $writer->openToFile($path);
@@ -242,7 +249,11 @@ it('menolak kelas milik sekolah lain walau namanya sama', function () {
 it('membaca berkas xlsx sama seperti csv', function () {
     [$school] = makeImportSchool();
 
-    $path = writeImportXlsx('contoh-impor', [
+    // Namanya sengaja BUKAN `contoh-impor`: berkas dengan nama itu ikut
+    // ter-commit, dan menuliskannya di sini membuat setiap kali suite dijalankan
+    // meninggalkan perubahan di pohon kerja — lalu run berikutnya membaca
+    // keadaan yang berbeda dan gagal di tempat yang tidak ada hubungannya.
+    $path = writeImportXlsx('parser-xlsx', [
         ['NISN', 'NIS', 'Nama Lengkap', 'Kelas', 'L/P', 'Agama', 'No HP'],
         ['2000000001', '2025101', 'Fajar Ramadhan', '7A', 'L', 'Islam', '81234567890'],
     ]);

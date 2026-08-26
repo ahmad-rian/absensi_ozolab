@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Models\SchoolFrame;
 use App\Models\Student;
+use App\Support\StudentDriveNaming;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
@@ -48,11 +49,15 @@ class CardGeneratorService
 
         // %s, bukan %d — school_id adalah ULID dan dulu runtuh jadi "1",
         // sehingga seluruh sekolah menulis ke direktori yang sama.
+        //
+        // Awalannya dari StudentDriveNaming, bukan disusun ulang di sini: baris
+        // ini dulu memakai `??` sementara jalur foto memakai `?:`, jadi NIS
+        // bernilai string kosong menghasilkan `{slug}--osis.png` di sebelah
+        // `{slug}-{ulid}-foto.png` dan tidak ada jalur baca yang menduganya.
         $filename = sprintf(
-            'cards/%s/%s-%s-%s.png',
+            'cards/%s/%s%s.png',
             $school->id,
-            Str::slug($student->full_name),
-            $student->nis ?? $student->id,
+            StudentDriveNaming::prefix($student),
             $layout->type,
         );
 
@@ -173,10 +178,21 @@ class CardGeneratorService
             $fileName = basename($filePath);
 
             $log->loadMissing('student');
-            $folderId = ($log->student ? $service->studentFolderId($log->student) : null)
+
+            // `resolveStudentFolder`, bukan `studentFolderId`: yang kedua
+            // menurunkan ulang letak folder dari kelas + NIS + nama, jadi setiap
+            // kali salah satunya dibetulkan ia membangun folder KEDUA dan
+            // meninggalkan isi folder lama tak terjangkau.
+            $folderId = ($log->student ? $service->resolveStudentFolder($log->student) : null)
                 ?: $driveConfig->fresh()->cards_folder_id;
 
-            $driveFile = $service->uploadFile($fullPath, $fileName, $folderId, 'image/png');
+            // Folder cadangan `cards_folder_id` dipakai bersama seluruh sekolah
+            // dan tidak punya konsep "satu berkas per jenis per siswa", jadi di
+            // sana penimpaan tetap berdasarkan nama.
+            $driveFile = $log->student && $folderId !== $driveConfig->cards_folder_id
+                ? $service->replaceStudentOutput($fullPath, $log->student, $folderId, $fileName, $log->drive_file_id, 'image/png')
+                : $service->uploadFile($fullPath, $fileName, $folderId, 'image/png');
+
             $driveUrl = $service->makePublic($driveFile->getId());
 
             $log->update([

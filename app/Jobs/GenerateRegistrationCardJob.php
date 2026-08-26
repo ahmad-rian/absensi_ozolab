@@ -63,12 +63,19 @@ class GenerateRegistrationCardJob implements ShouldQueue
                 $path = app(CardGeneratorService::class)->generateCard($student, $log->cardLayout)['path'];
             }
 
-            $driveUrl = $this->folderId && $school ? $this->uploadToFolder($path, $this->folderId, $school) : null;
+            $unggah = $this->folderId && $school
+                ? $this->uploadToFolder($path, $this->folderId, $school, $log)
+                : null;
 
             $log->update([
                 'status' => 'completed',
                 'file_path' => $path,
-                'drive_url' => $driveUrl,
+                // `drive_file_id` dulu tidak pernah ditulis di sini — hanya
+                // URL-nya. Akibatnya justru jalur tombol "Generate Ulang Kartu",
+                // yang paling sering dipakai, tidak punya pegangan id sama
+                // sekali dan selalu jatuh ke pencocokan nama.
+                'drive_file_id' => $unggah['id'] ?? null,
+                'drive_url' => $unggah['url'] ?? null,
             ]);
         } catch (\Throwable $e) {
             $log->update(['status' => 'failed', 'error_message' => Str::limit($e->getMessage(), 500)]);
@@ -80,17 +87,46 @@ class GenerateRegistrationCardJob implements ShouldQueue
         CardGenerationLog::where('id', $this->logId)->update(['status' => 'failed', 'error_message' => Str::limit($e->getMessage(), 500)]);
     }
 
-    private function uploadToFolder(string $storagePath, string $folderId, School $school): ?string
+    /**
+     * @return array{id: string, url: ?string}|null
+     */
+    private function uploadToFolder(string $storagePath, string $folderId, School $school, CardGenerationLog $log): ?array
     {
         try {
             $service = GoogleDriveService::forSchool($school->driveConfig);
-            $driveFile = $service->uploadFile(Storage::disk('public')->path($storagePath), basename($storagePath), $folderId, 'image/png');
 
-            return $service->makePublic($driveFile->getId());
+            $driveFile = $service->replaceStudentOutput(
+                Storage::disk('public')->path($storagePath),
+                $log->student,
+                $folderId,
+                basename($storagePath),
+                $this->lastDriveFileId($log),
+                'image/png',
+            );
+
+            return ['id' => $driveFile->getId(), 'url' => $service->makePublic($driveFile->getId())];
         } catch (\Throwable $e) {
             Log::warning('Registration card Drive upload failed', ['log_id' => $this->logId, 'error' => $e->getMessage()]);
 
             return null;
         }
+    }
+
+    /**
+     * Id berkas Drive dari generate sebelumnya untuk keluaran yang sama.
+     *
+     * Riwayat generate sengaja menumpuk sebagai riwayat, jadi yang dicari adalah
+     * baris `completed` TERBARU untuk kombinasi siswa + jenis + layout yang sama.
+     */
+    private function lastDriveFileId(CardGenerationLog $log): ?string
+    {
+        return CardGenerationLog::withoutGlobalScope('school')
+            ->where('student_id', $log->student_id)
+            ->where('type', $log->type)
+            ->where('school_card_layout_id', $log->school_card_layout_id)
+            ->where('id', '!=', $log->id)
+            ->whereNotNull('drive_file_id')
+            ->latest()
+            ->value('drive_file_id');
     }
 }

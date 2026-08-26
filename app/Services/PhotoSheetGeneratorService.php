@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\Student;
+use App\Support\StudentDriveNaming;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Str;
 use Spatie\Browsershot\Browsershot;
 
 class PhotoSheetGeneratorService
@@ -71,11 +71,12 @@ class PhotoSheetGeneratorService
             'photoUrl' => $this->toBase64DataUri($student->photo_path),
         ])->render();
 
+        // Awalannya dari StudentDriveNaming — lihat catatan di
+        // CardGeneratorService soal `??` versus `?:`.
         $filename = sprintf(
-            'sheets/%s/%s-%s-%s.png',
+            'sheets/%s/%s%s.png',
             $student->school_id,
-            Str::slug($student->full_name),
-            $student->nis ?? $student->id,
+            StudentDriveNaming::prefix($student),
             $template,
         );
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\GenerateRegistrationCardJob;
 use App\Jobs\RegisterStudentCardsJob;
 use App\Models\Student;
 use Illuminate\Support\Facades\Queue;
@@ -105,4 +106,41 @@ test('a guest cannot regenerate anything', function () {
     $this->post("/admin/siswa/{$this->student->id}/regenerate/kartu")->assertRedirect('/login');
 
     Queue::assertNothingPushed();
+});
+
+/**
+ * `drive_file_id` adalah satu-satunya pegangan yang tidak bergeser ketika nama
+ * atau NIS siswa dibetulkan. Jalur inilah yang paling sering dipakai, dan justru
+ * dialah yang dulu hanya menyimpan URL — sehingga generate berikutnya tidak
+ * punya apa pun untuk ditimpa dan membuat berkas kedua.
+ */
+test('jalur generate ulang menyimpan id berkas Drive, bukan hanya URL', function () {
+    $sumber = file_get_contents(
+        (new ReflectionClass(GenerateRegistrationCardJob::class))->getFileName()
+    );
+
+    expect($sumber)->toContain("'drive_file_id' =>")
+        ->and($sumber)->toContain('replaceStudentOutput(')
+        // `uploadFile()` mencocokkan nama PERSIS, jadi memakainya di sini berarti
+        // berkas kedua lahir setiap kali nama siswa dibetulkan.
+        ->and($sumber)->not->toContain('->uploadFile(');
+});
+
+/**
+ * Dua jalur tulis lain dulu menurunkan ulang letak folder dari nama, jadi setiap
+ * kali nama siswa dibetulkan mereka membangun folder KEDUA dan meninggalkan isi
+ * folder lama tak terjangkau kode mana pun.
+ */
+test('tidak ada jalur tulis siswa yang menurunkan ulang folder dari nama', function (string $berkas) {
+    $sumber = file_get_contents(base_path($berkas));
+
+    expect($sumber)->toContain('resolveStudentFolder(')
+        ->and($sumber)->not->toContain('studentFolderId(');
+})->with([
+    'app/Services/CardGeneratorService.php',
+    'app/Jobs/GeneratePhotoSheetJob.php',
+]);
+
+test('perintah audit berkas jalan walau belum ada sekolah yang siap', function () {
+    $this->artisan('drive:audit-berkas-siswa')->assertSuccessful();
 });
