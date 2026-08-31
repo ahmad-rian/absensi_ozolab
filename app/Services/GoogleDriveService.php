@@ -757,10 +757,15 @@ class GoogleDriveService
         $pageToken = null;
 
         do {
+            // Folder IKUT, dan itu disengaja. Dulu ia disaring keluar, sehingga
+            // folder yang dibuang ke sampah tidak pernah muncul di sini dan
+            // `drive:pulihkan-sampah` tidak bisa mengembalikannya sama sekali —
+            // janji "pulih 30 hari" jadi hanya berlaku lewat UI Drive manual.
+            // Sejak menghapus siswa membuang FOLDER-nya, itu tidak cukup.
             $result = $this->drive->files->listFiles([
-                'q' => 'trashed = true and mimeType != \'application/vnd.google-apps.folder\'',
+                'q' => 'trashed = true',
                 'pageSize' => 1000,
-                'fields' => 'nextPageToken, files(id, name, trashedTime, parents)',
+                'fields' => 'nextPageToken, files(id, name, mimeType, trashedTime, parents)',
                 'supportsAllDrives' => true,
                 'includeItemsFromAllDrives' => true,
                 'pageToken' => $pageToken,
@@ -770,6 +775,7 @@ class GoogleDriveService
                 $files[] = [
                     'id' => $file->getId(),
                     'name' => $file->getName(),
+                    'mimeType' => $file->getMimeType(),
                     'trashedTime' => $file->getTrashedTime(),
                     'parents' => $file->getParents() ?: [],
                 ];

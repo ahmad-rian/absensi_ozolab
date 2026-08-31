@@ -95,9 +95,14 @@ type GeneratedCard = {
     id: string;
     layout_type: string;
     layout_name: string;
+    /** Status generate TERBARU; tautannya sendiri dari generate sukses terakhir. */
+    status: 'processing' | 'completed' | 'failed';
+    error_message: string | null;
     drive_url: string | null;
     file_url: string | null;
-    created_at: string;
+    /** Kapan versi yang bisa dibuka itu jadi. Null kalau belum pernah sukses. */
+    created_at: string | null;
+    updated_at: string | null;
 };
 
 type DrivePhotoFile = {
@@ -194,6 +199,28 @@ function photoStatusBadge(status: PhotoStatus | null): { label: string; classNam
     return status.uploaded
         ? { label: 'Tersimpan di Drive', className: sheetStatusConfig.completed.className }
         : { label: 'Hanya di server', className: netral };
+}
+
+/**
+ * Badge status satu kartu.
+ *
+ * "Belum digenerate" saja tidak cukup: setelah menekan Generate Ulang, operator
+ * perlu melihat bedanya antara sedang dirender, sudah selesai, dan gagal.
+ */
+function cardStatusBadge(card: GeneratedCard | undefined): { label: string; className: string } | null {
+    if (!card) {
+        return null;
+    }
+
+    if (card.status === 'processing') {
+        return { label: 'Sedang dibuat', className: sheetStatusConfig.processing.className };
+    }
+
+    if (card.status === 'failed') {
+        return { label: 'Gagal', className: sheetStatusConfig.failed.className };
+    }
+
+    return { label: 'Selesai', className: sheetStatusConfig.completed.className };
 }
 
 function genderLabel(gender: string): string {
@@ -769,13 +796,28 @@ export default function SiswaShow({
                                 {CARD_TYPES.map((type) => {
                                     const card = cards.find((item) => item.layout_type === type.value);
                                     const url = card?.drive_url ?? card?.file_url ?? null;
+                                    const badge = cardStatusBadge(card);
 
                                     return (
                                         <div key={type.value} className="flex items-center justify-between gap-2 border-b py-2 last:border-b-0">
                                             <div className="min-w-0">
-                                                <p className="truncate text-sm font-medium">{card?.layout_name ?? type.label}</p>
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    <p className="truncate text-sm font-medium">{card?.layout_name ?? type.label}</p>
+                                                    {badge && (
+                                                        <Badge variant="outline" className={badge.className}>
+                                                            {card?.status === 'processing' && (
+                                                                <Loader2 className="mr-1 size-3 animate-spin" />
+                                                            )}
+                                                            {badge.label}
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                                 <p className="text-muted-foreground text-xs">
-                                                    {card ? card.created_at : 'Belum digenerate'}
+                                                    {card?.status === 'processing'
+                                                        ? 'Sedang dirender, halaman ini menyegarkan sendiri.'
+                                                        : card?.status === 'failed'
+                                                          ? (card.error_message ?? 'Render gagal. Coba generate ulang.')
+                                                          : (card?.created_at ?? 'Belum digenerate')}
                                                 </p>
                                             </div>
                                             {url ? (

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ParentProfile;
 use App\Models\SchoolNotificationChannel;
 use App\Models\User;
+use App\Support\StudentAssetPurge;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -198,6 +199,16 @@ class OrangTuaController extends Controller
     {
         DB::transaction(function () use ($parentProfile) {
             $user = $parentProfile->user;
+
+            // `students.parent_profile_id` ber-cascadeOnDelete dan ParentProfile
+            // TIDAK memakai SoftDeletes, jadi baris siswanya benar-benar lenyap
+            // di sini. Cascade tingkat database tidak memicu event Eloquent,
+            // jadi tidak ada observer yang akan tahu — antreannya harus disusun
+            // eksplisit, dan sebelum induknya dihapus selagi bahannya masih ada.
+            foreach ($parentProfile->students()->withoutGlobalScope('school')->get() as $student) {
+                StudentAssetPurge::queue($student, auth()->user());
+            }
+
             $parentProfile->delete();
 
             $hasOtherProfiles = $user->roles()->where('name', '!=', UserRole::OrangTua->value)->exists();

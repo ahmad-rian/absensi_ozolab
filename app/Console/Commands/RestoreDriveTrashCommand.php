@@ -78,7 +78,11 @@ class RestoreDriveTrashCommand extends Command
 
             foreach (self::saring($sampah, $cocok, $sejak) as $berkas) {
                 $waktu = $berkas['trashedTime'] ?? 'entah kapan';
-                $this->line("{$prefix}{$school->name}: {$berkas['name']} (dibuang {$waktu})");
+                // Jenisnya disebut karena memulihkan FOLDER ikut mengembalikan
+                // seluruh isinya — akibatnya jauh lebih luas daripada memulihkan
+                // satu berkas, dan operator berhak tahu sebelum menerapkannya.
+                $jenis = self::jenis($berkas);
+                $this->line("{$prefix}{$school->name}: [{$jenis}] {$berkas['name']} (dibuang {$waktu})");
 
                 if (! $dryRun) {
                     $drive->untrashFile($berkas['id']);
@@ -131,5 +135,20 @@ class RestoreDriveTrashCommand extends Command
 
             return true;
         }));
+    }
+
+    /**
+     * Label pendek jenis isi sampah.
+     *
+     * Public dan statis dengan alasan yang sama seperti `saring()`: keputusannya
+     * diuji tanpa menyentuh Drive.
+     *
+     * @param  array<string, mixed>  $file
+     */
+    public static function jenis(array $file): string
+    {
+        return ($file['mimeType'] ?? null) === 'application/vnd.google-apps.folder'
+            ? 'folder'
+            : 'berkas';
     }
 }

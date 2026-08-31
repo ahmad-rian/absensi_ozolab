@@ -15,6 +15,7 @@ use App\Services\Student\StudentDrivePhotoLocator;
 use App\Services\Student\StudentStatsBuilder;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
+use App\Support\StudentAssetPurge;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -218,24 +219,40 @@ class SiswaController extends Controller
      */
     private function generatedCards(Student $siswa): array
     {
-        return CardGenerationLog::where('student_id', $siswa->id)
+        // Semua status diambil, bukan hanya `completed`. Dulu kartu yang sedang
+        // dirender atau yang gagal sama sekali tidak muncul di sini, jadi setelah
+        // menekan "Generate Ulang Kartu" halaman ini tampak persis seperti
+        // sebelumnya dan operator tidak punya cara tahu prosesnya sampai mana.
+        $logs = CardGenerationLog::where('student_id', $siswa->id)
             ->where('type', 'card')
-            ->where('status', 'completed')
             ->with('cardLayout:id,name,type')
             ->latest()
             ->get()
             ->filter(fn (CardGenerationLog $log) => $log->cardLayout !== null)
-            ->unique(fn (CardGenerationLog $log) => $log->cardLayout->type)
-            ->values()
-            ->map(fn (CardGenerationLog $log) => [
-                'id' => $log->id,
-                'layout_type' => $log->cardLayout->type,
-                'layout_name' => $log->cardLayout->name,
-                'drive_url' => $log->drive_url,
-                'file_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
-                'created_at' => SchoolTime::display($log->created_at),
-            ])
-            ->all();
+            ->groupBy(fn (CardGenerationLog $log) => $log->cardLayout->type);
+
+        return $logs->map(function ($perJenis) {
+            /** @var CardGenerationLog $terbaru */
+            $terbaru = $perJenis->first();
+
+            // Tautannya diambil dari generate SUKSES terakhir, statusnya dari
+            // baris terbaru. Kartu yang sudah jadi harus tetap bisa dibuka
+            // selagi versi barunya masih dirender — dan tetap bisa dibuka
+            // kalau render barunya gagal.
+            $sukses = $perJenis->firstWhere('status', 'completed');
+
+            return [
+                'id' => $terbaru->id,
+                'layout_type' => $terbaru->cardLayout->type,
+                'layout_name' => $terbaru->cardLayout->name,
+                'status' => $terbaru->status,
+                'error_message' => $terbaru->error_message,
+                'drive_url' => $sukses?->drive_url,
+                'file_url' => $sukses?->file_path ? Storage::disk('public')->url($sukses->file_path) : null,
+                'created_at' => $sukses ? SchoolTime::display($sukses->created_at) : null,
+                'updated_at' => SchoolTime::display($terbaru->updated_at),
+            ];
+        })->values()->all();
     }
 
     public function qrCode(Student $siswa, QrTokenGenerator $qrGenerator): HttpResponse
@@ -365,6 +382,11 @@ class SiswaController extends Controller
 
     public function destroy(Student $siswa): RedirectResponse
     {
+        // Diantrekan SEBELUM dihapus: bahannya (folder Drive, foto, kartu)
+        // dibaca dari baris yang masih utuh. Guru boleh menghapus siswa, tapi
+        // berkas Drive-nya tidak ikut dibuang — lihat StudentAssetPurge.
+        StudentAssetPurge::queue($siswa, auth()->user());
+
         $siswa->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data siswa berhasil dihapus.']);

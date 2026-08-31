@@ -178,6 +178,17 @@ export default function OrangTuaIndex({ parents, telegramActive, filters }: Page
                                                             <AlertDialogDescription>
                                                                 Apakah Anda yakin ingin menghapus data orang tua{' '}
                                                                 <strong>{parent.user?.name}</strong>? Tindakan ini tidak dapat dibatalkan.
+                                                                {parent.students && parent.students.length > 0 && (
+                                                                    <>
+                                                                        {' '}
+                                                                        <strong className="text-destructive">
+                                                                            {parent.students.length} siswa ikut terhapus
+                                                                        </strong>{' '}
+                                                                        ({parent.students.map((s) => s.full_name).join(', ')}), berikut
+                                                                        seluruh absensi dan riwayatnya. Foto dan kartunya dibuang ke
+                                                                        Sampah Google Drive.
+                                                                    </>
+                                                                )}
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>

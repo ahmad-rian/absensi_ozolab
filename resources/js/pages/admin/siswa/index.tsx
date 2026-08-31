@@ -213,7 +213,8 @@ export default function SiswaIndex({ students, classrooms, filters }: PageProps)
                                                             <AlertDialogDescription>
                                                                 Apakah Anda yakin ingin menghapus data siswa{' '}
                                                                 <strong>{student.full_name}</strong>? Tindakan ini tidak dapat
-                                                                dibatalkan.
+                                                                dibatalkan. Foto dan kartunya juga dibuang ke Sampah Google
+                                                                Drive, dan Google menghapusnya permanen setelah 30 hari.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
