@@ -8,6 +8,7 @@ use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
 use App\Services\PhotoCropService;
+use App\Support\StudentPhotoStorage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,7 +17,6 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * Orchestrates the async outputs for a registration: crops the photo, then fans
@@ -154,14 +154,9 @@ class RegisterStudentCardsJob implements ShouldQueue
         return in_array($output, $this->outputs, true);
     }
 
-    /**
-     * `schools.id` dan `students.id` keduanya ULID — dulu diformat dengan `%d`
-     * sehingga runtuh jadi `1` dan seluruh sekolah menulis ke folder yang sama.
-     * Komponen acak membuat nama berkas tidak bisa ditebak dari nama siswa.
-     */
     private function photoStoragePath(School $school, Student $student): string
     {
-        return sprintf('photos/students/%s/%s-%s.png', $school->id, $student->id, Str::random(16));
+        return StudentPhotoStorage::path($school->id, $student);
     }
 
     private function processPhoto(Student $student, School $school): void

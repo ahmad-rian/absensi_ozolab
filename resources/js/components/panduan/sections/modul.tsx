@@ -86,7 +86,7 @@ export function ModulAbsensi() {
 export function ModulLaporan() {
     return (
         <div className="space-y-4">
-            <Para>Rekap kehadiran per rentang tanggal dan kelas, bisa diekspor ke CSV atau PDF.</Para>
+            <Para>Rekap kehadiran per rentang tanggal dan kelas, bisa diekspor ke Excel atau PDF.</Para>
             <Note>
                 Hari efektif dihitung dari hari yang punya catatan absensi di sekolah itu, bukan dari
                 kalender. Jadi hari libur nasional tidak ikut menurunkan persentase kehadiran, selama

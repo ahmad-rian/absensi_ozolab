@@ -47,19 +47,34 @@ function reportUrl(string $kind, string $format): string
         '?start_date='.test()->start.'&end_date='.test()->end;
 }
 
-test('the attendance csv contains the identity, summary and rows', function () {
-    $response = $this->actingAs($this->admin)->get(reportUrl('absensi', 'csv'));
+/**
+ * Seluruh sel berkas XLSX sebagai satu daftar datar.
+ *
+ * Asersi lama memeriksa string CSV mentah; XLSX itu zip, jadi isinya harus
+ * dibaca kembali lewat pembacanya.
+ *
+ * @return array<int, string>
+ */
+function reportCells(string $kind, string $query = ''): array
+{
+    $response = test()->actingAs(test()->admin)->get(reportUrl($kind, 'xlsx').$query);
 
     $response->assertOk();
-    expect($response->headers->get('content-type'))->toContain('text/csv');
+
+    return collect(xlsxRows($response))->flatten()->all();
+}
+
+test('the attendance xlsx contains the identity, summary and rows', function () {
+    $response = $this->actingAs($this->admin)->get(reportUrl('absensi', 'xlsx'));
+
+    $response->assertOk();
+    expect($response->headers->get('content-type'))->toContain('spreadsheetml.sheet');
     expect($response->headers->get('content-disposition'))->toContain('absensi-20250099-');
 
-    $body = $response->streamedContent();
-
-    expect($body)->toStartWith("\xEF\xBB\xBF")
-        ->and($body)->toContain('SITI RAHMAWATI')
-        ->and($body)->toContain('Terlambat')
-        ->and($body)->toContain('% Kehadiran');
+    expect(collect(xlsxRows($response))->flatten()->all())
+        ->toContain('SITI RAHMAWATI')
+        ->toContain('Terlambat')
+        ->toContain('% Kehadiran');
 });
 
 test('the attendance pdf downloads', function () {
@@ -70,16 +85,12 @@ test('the attendance pdf downloads', function () {
     expect($response->headers->get('content-disposition'))->toContain('absensi-20250099-');
 });
 
-test('the prayer csv only reports prayer rows', function () {
-    $response = $this->actingAs($this->admin)->get(reportUrl('sholat', 'csv'));
-
-    $response->assertOk();
-    $body = $response->streamedContent();
-
-    expect($body)->toContain('Ikut Sholat')
-        ->and($body)->toContain('SITI RAHMAWATI')
+test('the prayer xlsx only reports prayer rows', function () {
+    expect(reportCells('sholat'))
+        ->toContain('Ikut Sholat')
+        ->toContain('SITI RAHMAWATI')
         // Kolom khas laporan absensi sekolah tidak boleh bocor ke laporan sholat.
-        ->and($body)->not->toContain('Terlambat');
+        ->not->toContain('Terlambat');
 });
 
 test('the prayer pdf downloads', function () {
@@ -94,7 +105,7 @@ test('reports for another school student are not reachable', function () {
     $other = Student::factory()->create();
 
     foreach (['absensi', 'sholat'] as $kind) {
-        foreach (['csv', 'pdf'] as $format) {
+        foreach (['xlsx', 'pdf'] as $format) {
             $this->actingAs($this->admin)
                 ->get(route("admin.siswa.laporan.{$kind}.{$format}", $other))
                 ->assertNotFound();
@@ -108,17 +119,17 @@ test('reports require the siswa permission', function () {
     $guru->roles()->first()->revokePermissionTo('siswa.access');
 
     $this->actingAs($guru)
-        ->get(reportUrl('absensi', 'csv'))
+        ->get(reportUrl('absensi', 'xlsx'))
         ->assertForbidden();
 });
 
 test('guests are redirected away from the reports', function () {
-    $this->get(reportUrl('absensi', 'csv'))->assertRedirect(route('login'));
+    $this->get(reportUrl('absensi', 'xlsx'))->assertRedirect(route('login'));
 });
 
 // ---------------------------------------------------------------- Per jenis
 
-test('the prayer csv can be narrowed to dhuha only', function () {
+test('the prayer xlsx can be narrowed to dhuha only', function () {
     $this->admin->school->setSetting('prayer_dhuha_enabled', true);
 
     PrayerAttendance::factory()->dhuha()->create([
@@ -127,15 +138,12 @@ test('the prayer csv can be narrowed to dhuha only', function () {
         'prayer_date' => $this->day->toDateString(),
     ]);
 
-    $body = $this->actingAs($this->admin)
-        ->get(reportUrl('sholat', 'csv').'&jenis=dhuha')
-        ->streamedContent();
-
-    expect($body)->toContain('Sholat Dhuha')
-        ->and($body)->not->toContain('Sholat Dzuhur');
+    expect(reportCells('sholat', '&jenis=dhuha'))
+        ->toContain('Sholat Dhuha')
+        ->not->toContain('Sholat Dzuhur');
 });
 
-test('the prayer csv without a jenis reports every active type', function () {
+test('the prayer xlsx without a jenis reports every active type', function () {
     $this->admin->school->setSetting('prayer_dhuha_enabled', true);
 
     PrayerAttendance::factory()->dhuha()->create([
@@ -144,18 +152,15 @@ test('the prayer csv without a jenis reports every active type', function () {
         'prayer_date' => $this->day->toDateString(),
     ]);
 
-    $body = $this->actingAs($this->admin)
-        ->get(reportUrl('sholat', 'csv'))
-        ->streamedContent();
-
-    expect($body)->toContain('Sholat Dhuha')
-        ->and($body)->toContain('Sholat Dzuhur');
+    expect(reportCells('sholat'))
+        ->toContain('Sholat Dhuha')
+        ->toContain('Sholat Dzuhur');
 });
 
 test('an unknown jenis falls back to every type instead of 404', function () {
     // Tautan lama atau salah ketik tetap harus menghasilkan laporan.
     $this->actingAs($this->admin)
-        ->get(reportUrl('sholat', 'csv').'&jenis=ngawur')
+        ->get(reportUrl('sholat', 'xlsx').'&jenis=ngawur')
         ->assertOk();
 });
 
@@ -173,12 +178,13 @@ test('the dhuha report gets its own filename', function () {
 test('B-3: asking for a disabled type reports zero, not the other type', function () {
     // Dhuha mati (default). Dulu filter jenisnya dilewati sepenuhnya, sehingga
     // laporan berjudul Dhuha menampilkan angka Dzuhur dengan tabel kosong.
-    $body = $this->actingAs($this->admin)
-        ->get(reportUrl('sholat', 'csv').'&jenis=dhuha')
-        ->streamedContent();
+    $response = $this->actingAs($this->admin)
+        ->get(reportUrl('sholat', 'xlsx').'&jenis=dhuha');
 
-    expect($body)->toContain('"Ikut Sholat",0')
-        ->and($body)->not->toContain('Sholat Dzuhur');
+    $ikut = collect(xlsxRows($response))->firstWhere(0, 'Ikut Sholat');
+
+    expect($ikut[1])->toBe('0')
+        ->and(collect(xlsxRows($response))->flatten()->all())->not->toContain('Sholat Dzuhur');
 });
 
 test('B-3: the rate can never exceed 100 percent', function () {
@@ -231,6 +237,6 @@ test('B-4: the prayer history is ordered newest first across months', function (
 
 test('B-12: an array jenis parameter does not blow up', function () {
     $this->actingAs($this->admin)
-        ->get(reportUrl('sholat', 'csv').'&jenis[]=dhuha')
+        ->get(reportUrl('sholat', 'xlsx').'&jenis[]=dhuha')
         ->assertOk();
 });

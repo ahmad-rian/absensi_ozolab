@@ -146,18 +146,30 @@ test('H-5: the webhook accepts the correct secret', function () {
 
 // ---------------------------------------------------------------- M-4
 
-test('M-4: a formula-looking name is neutralised in the CSV export', function () {
+/**
+ * Ekspor kini XLSX, dan formatnya TIDAK memberi kekebalan gratis:
+ * `OpenSpout\Common\Entity\Cell::fromValue()` mengubah string berawalan `=`
+ * menjadi `FormulaCell`. `XlsxDownload` sengaja membangun `StringCell` sendiri.
+ *
+ * Elemen `<f>` di sheet XML adalah bukti pastinya — pembaca OpenSpout hanya
+ * mengembalikan nilai sel, jadi memeriksa nilainya saja tidak akan menangkap
+ * kalau sel itu ternyata rumus.
+ */
+test('M-4: a formula-looking name never becomes a formula cell in the export', function () {
     $student = Student::factory()->create([
         'school_id' => $this->admin->school_id,
-        'full_name' => 'Budi Santoso',
+        'full_name' => '=HYPERLINK("https://evil.tld","Klik")',
         'nis' => '20250001',
     ]);
 
-    $body = $this->actingAs($this->admin)
-        ->get(route('admin.siswa.laporan.absensi.csv', $student))
-        ->streamedContent();
+    $response = $this->actingAs($this->admin)
+        ->get(route('admin.siswa.laporan.absensi.xlsx', $student));
 
-    expect($body)->toContain('BUDI SANTOSO');
+    $response->assertOk();
+
+    expect(xlsxSheetXml($response))->not->toContain('<f>')
+        ->and(collect(xlsxRows($response))->flatten()->all())
+        ->toContain('=HYPERLINK("HTTPS://EVIL.TLD","KLIK")');
 });
 
 // ---------------------------------------------------------------- Hardening

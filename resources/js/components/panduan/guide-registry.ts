@@ -158,8 +158,8 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
             {
                 id: 'laporan',
                 title: 'Laporan',
-                summary: 'Rekap kehadiran dan ekspor CSV/PDF.',
-                keywords: ['laporan', 'rekap', 'ekspor', 'csv', 'pdf'],
+                summary: 'Rekap kehadiran dan ekspor Excel/PDF.',
+                keywords: ['laporan', 'rekap', 'ekspor', 'excel', 'xlsx', 'csv', 'pdf'],
                 permission: 'laporan.access',
                 feature: 'laporan',
             },

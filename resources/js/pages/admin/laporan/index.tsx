@@ -150,7 +150,7 @@ export default function LaporanIndex({ reportData, summary, classrooms, filters 
                                     href={`/admin/laporan/export?start_date=${startDate}&end_date=${endDate}${classroomId && classroomId !== 'all' ? `&classroom_id=${classroomId}` : ''}`}
                                 >
                                     <Download className="size-4" />
-                                    Export CSV
+                                    Export Excel
                                 </a>
                             </Button>
                             <Button variant="outline" className="gap-2" asChild>

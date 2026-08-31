@@ -9,6 +9,7 @@ use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Setting;
 use App\Support\SchoolTime;
+use App\Support\XlsxDownload;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -16,7 +17,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class LaporanController extends Controller
 {
@@ -56,7 +57,7 @@ class LaporanController extends Controller
         ]);
     }
 
-    public function export(Request $request): StreamedResponse
+    public function export(Request $request): BinaryFileResponse
     {
         $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
@@ -65,15 +66,9 @@ class LaporanController extends Controller
 
         $reportData = $this->getReportData($startDate, $endDate, $classroomId, $schoolId);
 
-        $filename = 'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d').'.csv';
-
-        return response()->streamDownload(function () use ($reportData) {
-            $handle = fopen('php://output', 'w');
-
-            // UTF-8 BOM for Excel compatibility
-            fwrite($handle, "\xEF\xBB\xBF");
-
-            fputcsv($handle, [
+        return XlsxDownload::make(
+            'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d').'.xlsx',
+            [
                 'NIS',
                 'Nama Siswa',
                 'Kelas',
@@ -83,28 +78,21 @@ class LaporanController extends Controller
                 'Sakit',
                 'Alpa',
                 '% Kehadiran',
-            ]);
-
-            foreach ($reportData as $row) {
-                fputcsv($handle, [
-                    // Nama & NIS berasal dari pendaftaran publik — netralkan
-                    // supaya tidak dieksekusi sebagai rumus di Excel.
-                    $this->csvSafe($row['nis']),
-                    $this->csvSafe($row['full_name']),
-                    $this->csvSafe($row['classroom_name']),
-                    $row['hadir'],
-                    $row['terlambat'],
-                    $row['izin'],
-                    $row['sakit'],
-                    $row['alpa'],
-                    $row['attendance_rate'].'%',
-                ]);
-            }
-
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
+            ],
+            $reportData->map(fn (array $row): array => [
+                // NIS dikirim sebagai teks: nomor induk berawalan nol akan
+                // kehilangan nol depannya kalau Excel memperlakukannya angka.
+                (string) $row['nis'],
+                $row['full_name'],
+                $row['classroom_name'],
+                (int) $row['hadir'],
+                (int) $row['terlambat'],
+                (int) $row['izin'],
+                (int) $row['sakit'],
+                (int) $row['alpa'],
+                $row['attendance_rate'].'%',
+            ])->all(),
+        );
     }
 
     public function exportPdf(Request $request): HttpResponse

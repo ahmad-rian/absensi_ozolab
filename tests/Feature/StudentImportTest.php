@@ -100,18 +100,19 @@ test('admin sekolah lain tidak bisa membuka staging milik sekolah ini', function
     expect(StudentImportJob::query()->withoutGlobalScope('school')->count())->toBe(0);
 });
 
-test('unduh template mengembalikan csv ber-BOM', function () {
+test('unduh template mengembalikan xlsx berisi header dan dua baris contoh', function () {
     $admin = createAdminUser();
 
     $response = $this->actingAs($admin)->get(route('admin.siswa.import.template'));
 
     $response->assertOk();
 
-    $content = $response->streamedContent();
+    $rows = xlsxRows($response);
 
-    expect($content)->toStartWith("\xEF\xBB\xBF")
-        ->and($content)->toContain('NISN,NIS,Nama,Kelas')
-        ->and(substr_count(trim($content), "\n"))->toBe(2);
+    expect($rows)->toHaveCount(3)
+        ->and(array_slice($rows[0], 0, 4))->toBe(['NISN', 'NIS', 'Nama', 'Kelas'])
+        // NISN berawalan nol harus bertahan; itu alasan templatenya bukan CSV.
+        ->and($rows[1][0])->toBe('0071234567');
 });
 
 test('berkas dengan header tak dikenali ditolak dengan pesan', function () {

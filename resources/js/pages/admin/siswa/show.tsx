@@ -1,25 +1,29 @@
-import { Head, Link, router, usePage, WhenVisible } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage, WhenVisible } from '@inertiajs/react';
 import {
     AlarmClock,
     ArrowLeft,
     CalendarCheck,
     CalendarDays,
+    Camera,
     CreditCard,
     Download,
     HardDrive,
     Images,
     Loader2,
     MoonStar,
+    Pencil,
     Percent,
     Printer,
     RefreshCw,
     Search,
+    Upload,
     User,
     UserCheck,
     UserX,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { refreshDrivePhoto as refreshDrivePhotoRoute } from '@/actions/App/Http/Controllers/Admin/SiswaController';
+import InputError from '@/components/input-error';
 import { ATTENDANCE_SERIES, PRAYER_SERIES } from '@/components/student/daily-bar-chart';
 import { PrayerMembershipCard } from '@/components/student/prayer-membership-card';
 import { reportExports } from '@/components/student/range-bar';
@@ -28,13 +32,16 @@ import { attendanceSlices, prayerSlices } from '@/components/student/status-pie'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { dashboard } from '@/routes';
 import type { SchoolFeatureMap } from '@/types';
+import type { ParentProfile as ParentProfileModel } from '@/types/models';
 import type { AttendanceStats, PrayerStats, RangeFilters } from '@/types/student-stats';
 
 type Classroom = {
@@ -42,18 +49,14 @@ type Classroom = {
     name: string;
 };
 
-type ParentUser = {
-    id: string;
-    name: string;
-};
-
-type ParentProfile = {
-    id: string;
-    user: ParentUser | null;
-    relation_label?: string;
-    whatsapp_number?: string | null;
-    email?: string | null;
-};
+/**
+ * Server mengirim seluruh kolom orang tua lewat `toArray()`; tipe lokal yang
+ * lama hanya mengakui empat di antaranya, sehingga form ubah tidak punya cara
+ * membaca NIK, pekerjaan, alamat, dan kota yang sebenarnya sudah ada di prop.
+ *
+ * `relation_label` bukan kolom — ia ditempelkan controller dari enum.
+ */
+type ParentProfile = ParentProfileModel & { relation_label?: string };
 
 type Student = {
     id: string;
@@ -261,7 +264,18 @@ export default function SiswaShow({
     prayerDzuhur,
     drivePhoto,
 }: PageProps) {
-    const { features } = usePage().props as unknown as { features?: Partial<SchoolFeatureMap> };
+    const { auth, features } = usePage().props as unknown as {
+        auth: { user: { roles?: string[]; permissions?: string[] } | null };
+        features?: Partial<SchoolFeatureMap>;
+    };
+
+    // Guru memegang `siswa.access` tapi TIDAK `orang-tua.access`, jadi halaman
+    // ini terbuka untuknya sementara rute ubah orang tuanya 403. Tombolnya
+    // disembunyikan supaya tidak ada tombol yang pasti gagal. Sama seperti di
+    // sidebar, SUPER_ADMIN melompati cek permission.
+    const bolehUbahOrangTua =
+        (auth?.user?.roles ?? []).includes('SUPER_ADMIN') ||
+        (auth?.user?.permissions ?? []).includes('orang-tua.access');
 
     // Tab jenis sholat yang dimatikan sekolah disembunyikan sepenuhnya, bukan
     // ditampilkan lalu kosong — flag-nya ada di prop non-defer supaya tidak
@@ -281,6 +295,12 @@ export default function SiswaShow({
     const [tab, setTab] = useState(() => initialTab(allowedTabs));
     const [startDate, setStartDate] = useState(filters.start);
     const [endDate, setEndDate] = useState(filters.end);
+    const [ortuDialog, setOrtuDialog] = useState(false);
+    const [fotoDialog, setFotoDialog] = useState(false);
+    const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+    // Kartu digital sengaja TIDAK dibuat ulang otomatis saat foto diganti.
+    // Operator harus diberi tahu, bukan dibiarkan mengira kartunya ikut segar.
+    const [fotoDiganti, setFotoDiganti] = useState(false);
 
     // Tab disimpan di query string supaya refresh dan tombol back tidak
     // melompat balik ke Profil.
@@ -421,6 +441,96 @@ export default function SiswaShow({
         );
     }
 
+    // --- Ubah orang tua tanpa meninggalkan halaman ini ---
+
+    const ortu = student.parent_profile;
+
+    const ortuForm = useForm({
+        name: '',
+        email: '',
+        notification_email: '',
+        phone: '',
+        relation: 'AYAH',
+        telegram_chat_id: '',
+        nik: '',
+        occupation: '',
+        address: '',
+        city: '',
+    });
+
+    function bukaDialogOrangTua() {
+        if (!ortu) {
+            return;
+        }
+
+        // Diisi saat dibuka, bukan saat komponen dirender: prop-nya berubah
+        // setiap kali halaman disegarkan polling, dan form yang diinisialisasi
+        // sekali akan memegang nilai basi.
+        ortuForm.setData({
+            name: ortu.user?.name ?? '',
+            email: ortu.user?.email ?? '',
+            notification_email: ortu.email ?? '',
+            phone: ortu.user?.phone ?? ortu.whatsapp_number ?? '',
+            relation: ortu.relation ?? 'AYAH',
+            telegram_chat_id: ortu.telegram_chat_id ?? '',
+            nik: ortu.nik ?? '',
+            occupation: ortu.occupation ?? '',
+            address: ortu.address ?? '',
+            city: ortu.city ?? '',
+        });
+
+        setOrtuDialog(true);
+    }
+
+    function simpanOrangTua(e: FormEvent) {
+        e.preventDefault();
+        ortuForm.put(`/admin/siswa/${student.id}/orang-tua`, {
+            preserveScroll: true,
+            onSuccess: () => setOrtuDialog(false),
+        });
+    }
+
+    // --- Ganti pas foto ---
+
+    const fotoForm = useForm<{ photo: File | null }>({ photo: null });
+
+    function pilihFoto(file: File | null) {
+        fotoForm.setData('photo', file);
+        setFotoPreview((lama) => {
+            if (lama) {
+                URL.revokeObjectURL(lama);
+            }
+
+            return file ? URL.createObjectURL(file) : null;
+        });
+    }
+
+    function tutupDialogFoto() {
+        setFotoDialog(false);
+        pilihFoto(null);
+        fotoForm.clearErrors();
+    }
+
+    function simpanFoto(e: FormEvent) {
+        e.preventDefault();
+        fotoForm.post(`/admin/siswa/${student.id}/foto`, {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                tutupDialogFoto();
+                setFotoDiganti(true);
+            },
+        });
+    }
+
+    // URL objek pratinjau harus dilepas, kalau tidak berkasnya ditahan di
+    // memori sampai tab ditutup.
+    useEffect(() => () => {
+        if (fotoPreview) {
+            URL.revokeObjectURL(fotoPreview);
+        }
+    }, [fotoPreview]);
+
     function handleGenerateSheet() {
         if (!template) {
             return;
@@ -484,17 +594,30 @@ export default function SiswaShow({
                         {/* Photo + Name Header */}
                         <Card>
                             <CardContent className="flex items-center gap-5 p-5">
-                                {student.photo_url ? (
-                                    <img
-                                        src={student.photo_url}
-                                        alt={student.full_name}
-                                        className="size-24 shrink-0 rounded-xl border-2 border-blue-200 object-cover shadow-md"
-                                    />
-                                ) : (
-                                    <div className="flex size-24 shrink-0 items-center justify-center rounded-xl border-2 border-zinc-200 bg-zinc-100 dark:bg-zinc-800">
-                                        <User className="size-10 text-zinc-400" />
-                                    </div>
-                                )}
+                                <div className="shrink-0 space-y-2">
+                                    {student.photo_url ? (
+                                        <a href={student.photo_url} target="_blank" rel="noreferrer" title="Lihat ukuran penuh">
+                                            <img
+                                                src={student.photo_url}
+                                                alt={student.full_name}
+                                                className="size-28 rounded-xl border-2 border-blue-200 object-cover shadow-md"
+                                            />
+                                        </a>
+                                    ) : (
+                                        <div className="flex size-28 items-center justify-center rounded-xl border-2 border-zinc-200 bg-zinc-100 dark:bg-zinc-800">
+                                            <User className="size-10 text-zinc-400" />
+                                        </div>
+                                    )}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-28 print:hidden"
+                                        onClick={() => setFotoDialog(true)}
+                                    >
+                                        <Camera className="mr-1.5 size-3.5" />
+                                        {student.photo_url ? 'Ganti Foto' : 'Unggah Foto'}
+                                    </Button>
+                                </div>
                                 <div>
                                     <h2 className="text-xl font-bold">{student.full_name}</h2>
                                     <p className="text-muted-foreground text-sm">
@@ -512,9 +635,22 @@ export default function SiswaShow({
                             </CardContent>
                         </Card>
 
+                        {fotoDiganti && (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200 print:hidden">
+                                Pas foto sudah diganti. Kartu digital yang sudah ada masih memakai foto lama —
+                                tekan <b>Generate Ulang Kartu</b> kalau ingin ikut diperbarui.
+                            </div>
+                        )}
+
                         <Card>
-                            <CardHeader>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0">
                                 <CardTitle>Informasi Siswa</CardTitle>
+                                {bolehUbahOrangTua && ortu && (
+                                    <Button variant="outline" size="sm" className="print:hidden" onClick={bukaDialogOrangTua}>
+                                        <Pencil className="mr-1.5 size-3.5" />
+                                        Ubah Orang Tua
+                                    </Button>
+                                )}
                             </CardHeader>
                             <CardContent>
                                 <dl>
@@ -533,7 +669,20 @@ export default function SiswaShow({
                                         }
                                     />
                                     <InfoRow label="Alamat" value={student.address} />
-                                    <InfoRow label="Orang Tua / Wali" value={student.parent_profile?.user?.name ?? student.parent_name} />
+                                    <InfoRow
+                                        label="Orang Tua / Wali"
+                                        value={
+                                            ortu?.user?.name ??
+                                            student.parent_name ?? (
+                                                // Belum tertaut: dialog ubah tidak berlaku, jadi
+                                                // operator diarahkan ke halaman yang memang bisa
+                                                // menautkan atau membuat orang tua.
+                                                <Link href={`/admin/siswa/${student.id}/edit`} className="text-primary underline print:hidden">
+                                                    Belum tertaut — hubungkan orang tua
+                                                </Link>
+                                            )
+                                        }
+                                    />
                                     <InfoRow label="Hubungan" value={student.parent_profile?.relation_label} />
                                     <InfoRow label="No. WhatsApp" value={student.parent_profile?.whatsapp_number ?? student.parent_phone} />
                                     <InfoRow
@@ -910,6 +1059,189 @@ export default function SiswaShow({
                         </TabsContent>
                     ))}
                 </Tabs>
+
+                {/* Ubah orang tua tanpa meninggalkan halaman siswa */}
+                <Dialog open={ortuDialog} onOpenChange={(open) => !open && setOrtuDialog(false)}>
+                    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Ubah Data Orang Tua</DialogTitle>
+                            <DialogDescription>
+                                Perubahan berlaku untuk seluruh anak yang tertaut ke orang tua ini, bukan hanya {student.full_name}.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form onSubmit={simpanOrangTua} className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-2 sm:col-span-2">
+                                <Label htmlFor="ortu-name">Nama Lengkap</Label>
+                                <Input
+                                    id="ortu-name"
+                                    value={ortuForm.data.name}
+                                    onChange={(e) => ortuForm.setData('name', e.target.value)}
+                                />
+                                <InputError message={ortuForm.errors.name} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="ortu-email">Email Akun (Login)</Label>
+                                <Input
+                                    id="ortu-email"
+                                    type="email"
+                                    value={ortuForm.data.email}
+                                    onChange={(e) => ortuForm.setData('email', e.target.value)}
+                                />
+                                <InputError message={ortuForm.errors.email} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="ortu-notif-email">Email Notifikasi Absensi</Label>
+                                <Input
+                                    id="ortu-notif-email"
+                                    type="email"
+                                    value={ortuForm.data.notification_email}
+                                    onChange={(e) => ortuForm.setData('notification_email', e.target.value)}
+                                />
+                                <p className="text-muted-foreground text-xs">Kosong = pakai email akun.</p>
+                                <InputError message={ortuForm.errors.notification_email} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="ortu-phone">No. WhatsApp</Label>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground text-sm">+62</span>
+                                    <Input
+                                        id="ortu-phone"
+                                        value={ortuForm.data.phone}
+                                        onChange={(e) => ortuForm.setData('phone', e.target.value.replace(/\D/g, ''))}
+                                    />
+                                </div>
+                                <InputError message={ortuForm.errors.phone} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="ortu-relation">Hubungan</Label>
+                                <Select value={ortuForm.data.relation} onValueChange={(v) => ortuForm.setData('relation', v)}>
+                                    <SelectTrigger id="ortu-relation">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="AYAH">Ayah</SelectItem>
+                                        <SelectItem value="IBU">Ibu</SelectItem>
+                                        <SelectItem value="WALI">Wali</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={ortuForm.errors.relation} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="ortu-nik">NIK</Label>
+                                <Input
+                                    id="ortu-nik"
+                                    value={ortuForm.data.nik}
+                                    onChange={(e) => ortuForm.setData('nik', e.target.value.replace(/\D/g, ''))}
+                                />
+                                <InputError message={ortuForm.errors.nik} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="ortu-telegram">Telegram Chat ID</Label>
+                                <Input
+                                    id="ortu-telegram"
+                                    value={ortuForm.data.telegram_chat_id}
+                                    onChange={(e) => ortuForm.setData('telegram_chat_id', e.target.value.replace(/\D/g, ''))}
+                                />
+                                <InputError message={ortuForm.errors.telegram_chat_id} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="ortu-occupation">Pekerjaan</Label>
+                                <Input
+                                    id="ortu-occupation"
+                                    value={ortuForm.data.occupation}
+                                    onChange={(e) => ortuForm.setData('occupation', e.target.value)}
+                                />
+                                <InputError message={ortuForm.errors.occupation} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="ortu-city">Kota</Label>
+                                <Input
+                                    id="ortu-city"
+                                    value={ortuForm.data.city}
+                                    onChange={(e) => ortuForm.setData('city', e.target.value)}
+                                />
+                                <InputError message={ortuForm.errors.city} />
+                            </div>
+
+                            <div className="grid gap-2 sm:col-span-2">
+                                <Label htmlFor="ortu-address">Alamat</Label>
+                                <Textarea
+                                    id="ortu-address"
+                                    rows={2}
+                                    value={ortuForm.data.address}
+                                    onChange={(e) => ortuForm.setData('address', e.target.value)}
+                                />
+                                <InputError message={ortuForm.errors.address} />
+                            </div>
+
+                            <DialogFooter className="sm:col-span-2">
+                                <Button type="button" variant="outline" onClick={() => setOrtuDialog(false)}>
+                                    Batal
+                                </Button>
+                                <Button type="submit" disabled={ortuForm.processing}>
+                                    {ortuForm.processing && <Loader2 className="mr-2 size-4 animate-spin" />}
+                                    Simpan
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Ganti pas foto */}
+                <Dialog open={fotoDialog} onOpenChange={(open) => !open && tutupDialogFoto()}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>{student.photo_url ? 'Ganti Pas Foto' : 'Unggah Pas Foto'}</DialogTitle>
+                            <DialogDescription>
+                                Foto lama di server dan di Google Drive akan diganti. Kartu digital tidak ikut dibuat ulang.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form onSubmit={simpanFoto} className="grid gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="foto-berkas">Berkas foto</Label>
+                                <Input
+                                    id="foto-berkas"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => pilihFoto(e.target.files?.[0] ?? null)}
+                                />
+                                <p className="text-muted-foreground text-xs">JPG, PNG, atau WEBP. Maksimal 5 MB.</p>
+                                <InputError message={fotoForm.errors.photo} />
+                            </div>
+
+                            {fotoPreview && (
+                                <div className="flex items-center gap-4">
+                                    <img src={fotoPreview} alt="Pratinjau" className="size-32 rounded-lg border object-cover" />
+                                    <p className="text-muted-foreground text-xs">Pratinjau foto yang akan disimpan.</p>
+                                </div>
+                            )}
+
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={tutupDialogFoto}>
+                                    Batal
+                                </Button>
+                                <Button type="submit" disabled={!fotoForm.data.photo || fotoForm.processing}>
+                                    {fotoForm.processing ? (
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                    ) : (
+                                        <Upload className="mr-2 size-4" />
+                                    )}
+                                    Simpan Foto
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
         </>
     );

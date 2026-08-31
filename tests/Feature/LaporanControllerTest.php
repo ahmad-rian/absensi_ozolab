@@ -62,7 +62,7 @@ test('guests are redirected from laporan export', function () {
     $this->get(route('admin.laporan.export'))->assertRedirect(route('login'));
 });
 
-test('authenticated users can export laporan as csv', function () {
+test('authenticated users can export laporan as xlsx', function () {
     $user = createAdminUser();
     $student = Student::factory()->create(['school_id' => $user->school_id]);
 
@@ -80,11 +80,12 @@ test('authenticated users can export laporan as csv', function () {
     ]));
 
     $response->assertOk();
-    $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
     $response->assertDownload();
+    expect($response->headers->get('content-type'))->toContain('spreadsheetml.sheet');
 
-    $content = $response->streamedContent();
-    expect($content)->toContain('NIS')
+    $isi = collect(xlsxRows($response))->flatten()->all();
+
+    expect($isi)->toContain('NIS')
         ->toContain('Nama Siswa')
         ->toContain('% Kehadiran')
         ->toContain($student->nis)
@@ -122,8 +123,8 @@ test('laporan export filters by classroom', function () {
 
     $response->assertOk();
 
-    $content = $response->streamedContent();
-    expect($content)->toContain($student1->full_name)
+    expect(collect(xlsxRows($response))->flatten()->all())
+        ->toContain($student1->full_name)
         ->not->toContain($student2->full_name);
 });
 

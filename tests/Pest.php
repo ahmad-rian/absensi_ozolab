@@ -4,6 +4,8 @@ use App\Models\School;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
+use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use Tests\TestCase;
 
 /*
@@ -73,4 +75,55 @@ function createSuperAdminUser(array $attributes = []): User
     $user->assignRole('SUPER_ADMIN');
 
     return $user;
+}
+
+/**
+ * Baris-baris XLSX dari sebuah respons unduhan.
+ *
+ * Ekspor memakai `BinaryFileResponse`, jadi `streamedContent()` tidak berlaku —
+ * berkasnya ada di disk dan baru dihapus saat respons benar-benar dikirim, yang
+ * tidak pernah terjadi di dalam test.
+ *
+ * @return array<int, array<int, string>>
+ */
+function xlsxRows(TestResponse $response): array
+{
+    $reader = new XlsxReader;
+    $reader->open($response->baseResponse->getFile()->getPathname());
+
+    $rows = [];
+
+    foreach ($reader->getSheetIterator() as $sheet) {
+        foreach ($sheet->getRowIterator() as $row) {
+            $rows[] = array_map(
+                static fn ($value): string => $value instanceof DateTimeInterface
+                    ? $value->format('Y-m-d')
+                    : (string) $value,
+                $row->toArray(),
+            );
+        }
+
+        break;
+    }
+
+    $reader->close();
+
+    return $rows;
+}
+
+/**
+ * Isi mentah `xl/worksheets/sheet1.xml` di dalam berkas XLSX.
+ *
+ * Dipakai untuk membuktikan tidak ada elemen `<f>` — satu-satunya cara pasti
+ * membedakan sel teks dari sel RUMUS. Pembaca OpenSpout mengembalikan nilai,
+ * bukan jenis selnya, jadi membaca nilai saja tidak bisa menangkap injeksi.
+ */
+function xlsxSheetXml(TestResponse $response): string
+{
+    $zip = new ZipArchive;
+    $zip->open($response->baseResponse->getFile()->getPathname());
+    $xml = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+    $zip->close();
+
+    return $xml;
 }

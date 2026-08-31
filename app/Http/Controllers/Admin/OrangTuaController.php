@@ -7,7 +7,9 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\ParentProfile;
 use App\Models\SchoolNotificationChannel;
+use App\Models\Student;
 use App\Models\User;
+use App\Support\ParentProfileForm;
 use App\Support\StudentAssetPurge;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -141,58 +143,41 @@ class OrangTuaController extends Controller
 
     public function update(Request $request, ParentProfile $parentProfile): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/', 'unique:users,email,'.$parentProfile->user_id],
-            'notification_email' => ['nullable', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
-            'phone' => [
-                'required', 'string', 'max:20', 'regex:/^[0-9]+$/',
-                Rule::unique('parent_profiles', 'whatsapp_number')
-                    ->where(fn ($q) => $q->where('school_id', $parentProfile->school_id))
-                    ->ignore($parentProfile->id),
-            ],
-            'relation' => ['required', 'in:AYAH,IBU,WALI'],
-            'telegram_chat_id' => ['nullable', 'string', 'max:50', 'regex:/^[0-9]+$/'],
-            'nik' => ['nullable', 'string', 'max:20', 'regex:/^[0-9]+$/'],
-            'occupation' => ['nullable', 'string', 'max:255'],
-            'address' => ['nullable', 'string'],
-            'city' => ['nullable', 'string', 'max:255'],
-        ], [
-            'name.required' => 'Nama lengkap wajib diisi.',
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email sudah digunakan.',
-            'phone.required' => 'Nomor WhatsApp wajib diisi.',
-            'phone.regex' => 'Nomor WhatsApp hanya boleh angka.',
-            'phone.unique' => 'Nomor WhatsApp sudah dipakai orang tua lain.',
-            'telegram_chat_id.regex' => 'Telegram Chat ID hanya boleh angka.',
-            'nik.regex' => 'NIK hanya boleh angka.',
-            'relation.required' => 'Hubungan wajib dipilih.',
-            'relation.in' => 'Hubungan tidak valid.',
-        ]);
-
-        DB::transaction(function () use ($validated, $parentProfile) {
-            $parentProfile->user?->update([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-            ]);
-
-            $parentProfile->update([
-                'whatsapp_number' => $validated['phone'],
-                'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
-                'email' => ($validated['notification_email'] ?? null) ?: (str_contains($validated['email'], '@internal.app') ? null : $validated['email']),
-                'relation' => $validated['relation'],
-                'nik' => $validated['nik'] ?? null,
-                'occupation' => $validated['occupation'] ?? null,
-                'address' => $validated['address'] ?? null,
-                'city' => $validated['city'] ?? null,
-            ]);
-        });
+        ParentProfileForm::apply($parentProfile, $request->validate(
+            ParentProfileForm::rules($parentProfile),
+            ParentProfileForm::messages(),
+        ));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Data orang tua berhasil diperbarui.']);
 
         return to_route('admin.orang-tua.index');
+    }
+
+    /**
+     * Pintasan ubah orang tua dari halaman detail siswa.
+     *
+     * Aturan dan penyimpanannya sama persis dengan `update()`; yang berbeda
+     * hanya tujuannya — operator dikembalikan ke siswa yang sedang dilihatnya,
+     * bukan dilempar ke daftar orang tua.
+     *
+     * Rutenya duduk di grup `permission:orang-tua.access`, jadi Guru — yang
+     * memegang `siswa.access` tapi tidak `orang-tua.access` — tertahan di
+     * middleware tanpa penjaga tambahan di sini.
+     */
+    public function updateFromStudent(Request $request, Student $siswa): RedirectResponse
+    {
+        $parentProfile = $siswa->parentProfile;
+
+        abort_if($parentProfile === null, 404, 'Siswa ini belum punya orang tua tertaut.');
+
+        ParentProfileForm::apply($parentProfile, $request->validate(
+            ParentProfileForm::rules($parentProfile),
+            ParentProfileForm::messages(),
+        ));
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Data orang tua berhasil diperbarui.']);
+
+        return to_route('admin.siswa.show', $siswa);
     }
 
     public function destroy(ParentProfile $parentProfile): RedirectResponse

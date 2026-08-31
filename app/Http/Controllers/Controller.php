@@ -8,20 +8,6 @@ use Illuminate\Validation\Rules\Exists;
 abstract class Controller
 {
     /**
-     * Netralkan sel CSV yang diawali karakter rumus.
-     *
-     * `fputcsv` hanya meng-quote koma dan kutip; Excel tetap mengeksekusi sel
-     * yang diawali `=`, `+`, `-`, atau `@`. Nama siswa berasal dari form
-     * pendaftaran publik, jadi ini jalur tak-terautentikasi.
-     */
-    protected function csvSafe(mixed $value): string
-    {
-        $value = (string) $value;
-
-        return preg_match('/^[=+\-@\t\r]/', $value) ? "'".$value : $value;
-    }
-
-    /**
      * Rule `exists` yang dikunci ke sekolah user yang sedang login.
      *
      * `exists:classrooms,id` polos memakai query builder sehingga global scope

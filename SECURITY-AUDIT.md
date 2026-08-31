@@ -611,15 +611,11 @@ fputcsv($handle, [
 
 Jalur `StudentReportController` tidak butuh prasyarat apa pun (`full_name` masuk ke preamble tanpa syarat). Jalur `LaporanController` butuh siswa palsu itu punya baris absensi.
 
-**Perbaikan:** satu helper dipakai di kedua tempat.
+**Perbaikan (awal):** helper `csvSafe()` yang melarikan awalan `=+-@`, dipakai di kedua sink CSV.
 
-```php
-private function csvSafe(?string $value): string
-{
-    $value = (string) $value;
-    return preg_match('/^[=+\-@\t\r]/', $value) ? "'".$value : $value;
-}
-```
+**Perbaikan (berlaku sekarang):** seluruh ekspor pindah ke XLSX dan `csvSafe()` dihapus — nol pemanggil setelah `fputcsv` terakhir hilang. Penangkalnya sekarang tipe sel, bukan pelarian awalan: `App\Support\XlsxDownload` membangun `new StringCell(...)` secara eksplisit, sehingga teks tetap teks apa pun karakter pertamanya.
+
+Ini **bukan** kekebalan gratis dari format XLSX. `OpenSpout\Common\Entity\Cell::fromValue()` memeriksa `'=' === $value[0]` dan mengembalikan `FormulaCell`, jadi menulis lewat `Row::fromValues()` akan memindahkan kerentanan ini utuh ke format baru sambil menghapus penjaganya. `XlsxDownload` sengaja tidak pernah memanggil `fromValue()`; `tests/Feature/XlsxExportTest.php` menjaganya dengan membaca ulang berkas hasil ekspor.
 
 Defense in depth di `StudentRegistrationController`: `'full_name' => [..., 'regex:/^[\p{L}\p{N} .,\'\-]+$/u']` dan `'nis'|'nisn' => [..., 'alpha_num']`.
 
@@ -804,7 +800,7 @@ Setiap butir wajib disertai test Pest (proyek ini punya aturan test enforcement 
 ### Tahap 3 — Bulan ini (medium)
 
 10. `composer require laravel/framework:^13.10` + `composer update symfony/mime symfony/mailer` (M-5) — mudah, kerjakan lebih awal jika ada jendela deploy.
-11. Helper `csvSafe()` di kedua sink CSV (M-4).
+11. ~~Helper `csvSafe()` di kedua sink CSV~~ → seluruh ekspor pindah ke XLSX lewat `App\Support\XlsxDownload` (M-4).
 12. `ImageConverter` ekstensi dari mime hasil sniffing + `mimes:` rule di 4 controller upload (M-2).
 13. Pindahkan branding logo/favicon ke `$school->settings` (M-3).
 14. Super-admin-only untuk semua aksi tulis `RolePermissionController` (M-1).

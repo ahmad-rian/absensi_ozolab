@@ -41,7 +41,11 @@ function registerClassPromotionRoutes(): void
  */
 function writePromotionCsv(array $rows): string
 {
-    $dir = base_path('tests/fixtures/imports');
+    // Direktori sementara, BUKAN `tests/fixtures/imports` yang ikut ter-commit.
+    // Menulis ke sana mengotori pohon kerja setiap kali suite jalan, dan run
+    // berikutnya gagal di test lain yang tidak ada hubungannya — persis ranjau
+    // yang sudah dicabut dari `StudentImportParserTest` di 15068c8.
+    $dir = sys_get_temp_dir().'/absensi-promotion-'.uniqid();
 
     if (! is_dir($dir)) {
         mkdir($dir, 0755, true);

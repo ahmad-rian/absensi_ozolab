@@ -7,13 +7,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Services\Student\StudentStatsBuilder;
 use App\Support\SchoolTime;
+use App\Support\XlsxDownload;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Laporan per siswa (absensi sekolah & absen sholat), CSV dan PDF.
+ * Laporan per siswa (absensi sekolah & absen sholat), XLSX dan PDF.
  *
  * Semua angka datang dari StudentStatsBuilder yang sama dengan halaman detail
  * siswa, jadi isi berkas dijamin sama dengan yang tampil di layar.
@@ -24,13 +25,13 @@ class StudentReportController extends Controller
         private readonly StudentStatsBuilder $stats,
     ) {}
 
-    public function attendanceCsv(Request $request, Student $siswa): StreamedResponse
+    public function attendanceXlsx(Request $request, Student $siswa): BinaryFileResponse
     {
         ['start' => $start, 'end' => $end] = $this->range($request);
         $data = $this->stats->attendanceFor($siswa, $start, $end);
 
-        return $this->streamCsv(
-            $this->filename('absensi', $siswa, $start, $end, 'csv'),
+        return XlsxDownload::make(
+            $this->filename('absensi', $siswa, $start, $end, 'xlsx'),
             ['Tanggal', 'Jenis', 'Status', 'Jam', 'Perangkat'],
             array_map(fn (array $row) => [
                 $row['date'],
@@ -78,14 +79,14 @@ class StudentReportController extends Controller
         return $pdf->download($this->filename('absensi', $siswa, $start, $end, 'pdf'));
     }
 
-    public function prayerCsv(Request $request, Student $siswa): StreamedResponse
+    public function prayerXlsx(Request $request, Student $siswa): BinaryFileResponse
     {
         ['start' => $start, 'end' => $end] = $this->range($request);
         $type = $this->prayerType($request);
         $data = $this->stats->prayerFor($siswa, $start, $end, $type);
 
-        return $this->streamCsv(
-            $this->filename($this->prayerPrefix($type), $siswa, $start, $end, 'csv'),
+        return XlsxDownload::make(
+            $this->filename($this->prayerPrefix($type), $siswa, $start, $end, 'xlsx'),
             ['Tanggal', 'Jenis', 'Status', 'Jam', 'Perangkat'],
             array_map(fn (array $row) => [
                 $row['date'],
@@ -205,32 +206,5 @@ class StudentReportController extends Controller
         $lines[] = [];
 
         return $lines;
-    }
-
-    /**
-     * @param  array<int, string>  $header
-     * @param  array<int, array<int, string>>  $rows
-     * @param  array<int, array<int, string>>  $preamble
-     */
-    private function streamCsv(string $filename, array $header, array $rows, array $preamble): StreamedResponse
-    {
-        return response()->streamDownload(function () use ($header, $rows, $preamble) {
-            $handle = fopen('php://output', 'w');
-
-            // UTF-8 BOM supaya Excel membaca karakter Indonesia dengan benar.
-            fwrite($handle, "\xEF\xBB\xBF");
-
-            foreach ($preamble as $line) {
-                fputcsv($handle, array_map(fn ($cell) => $this->csvSafe($cell), $line));
-            }
-
-            fputcsv($handle, $header);
-
-            foreach ($rows as $row) {
-                fputcsv($handle, array_map(fn ($cell) => $this->csvSafe($cell), $row));
-            }
-
-            fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 }

@@ -30,7 +30,7 @@ export type ParentProfile = {
     address: string | null;
     city: string | null;
     created_at?: string;
-    user?: { id: string; name: string; email: string };
+    user?: { id: string; name: string; email: string; phone?: string | null };
     students?: Student[];
 };
 

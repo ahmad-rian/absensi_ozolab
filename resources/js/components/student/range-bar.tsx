@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 export type ExportLink = { label: string; href: string; icon: LucideIcon };
 
 /**
- * Rakit tautan CSV+PDF untuk satu jenis laporan.
+ * Rakit tautan Excel+PDF untuk satu jenis laporan.
  *
  * Href SELALU dibangun dari rentang yang sudah dikonfirmasi server, bukan dari
  * state input lokal — kalau tidak, berkas yang diunduh berbeda dengan chart di
@@ -22,7 +22,7 @@ export function reportExports(studentId: string, kind: string, start: string, en
     }
 
     return [
-        { label: 'CSV', icon: FileSpreadsheet, href: `/admin/siswa/${studentId}/laporan/${kind}/csv?${query}` },
+        { label: 'Excel', icon: FileSpreadsheet, href: `/admin/siswa/${studentId}/laporan/${kind}/xlsx?${query}` },
         { label: 'PDF', icon: FileText, href: `/admin/siswa/${studentId}/laporan/${kind}/pdf?${query}` },
     ];
 }

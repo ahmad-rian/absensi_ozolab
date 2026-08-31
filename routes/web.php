@@ -136,6 +136,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::post('siswa/{siswa}/photo-sheet', [PhotoSheetController::class, 'generate'])->name('admin.siswa.photo-sheet');
         Route::patch('siswa/{siswa}/prayer-opt-in', [SiswaController::class, 'updatePrayerOptIn'])->name('admin.siswa.prayer-opt-in');
         Route::post('siswa/{siswa}/drive-photo/refresh', [SiswaController::class, 'refreshDrivePhoto'])->name('admin.siswa.drive-photo.refresh');
+        Route::post('siswa/{siswa}/foto', [SiswaController::class, 'uploadPhoto'])->name('admin.siswa.foto.upload');
 
         // Generate ulang per keluaran. Dipisah karena merender kartu memanggil
         // headless Chrome dan mengambil foto memukul Drive — memperbaiki satu
@@ -143,9 +144,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::post('siswa/{siswa}/regenerate/kartu', [StudentRegenerateController::class, 'cards'])->name('admin.siswa.regenerate.cards');
         Route::post('siswa/{siswa}/regenerate/pas-foto', [StudentRegenerateController::class, 'photoSheet'])->name('admin.siswa.regenerate.photo-sheet');
         Route::post('siswa/{siswa}/regenerate/foto', [StudentRegenerateController::class, 'photo'])->name('admin.siswa.regenerate.photo');
-        Route::get('siswa/{siswa}/laporan/absensi/csv', [StudentReportController::class, 'attendanceCsv'])->name('admin.siswa.laporan.absensi.csv');
+        Route::get('siswa/{siswa}/laporan/absensi/xlsx', [StudentReportController::class, 'attendanceXlsx'])->name('admin.siswa.laporan.absensi.xlsx');
         Route::get('siswa/{siswa}/laporan/absensi/pdf', [StudentReportController::class, 'attendancePdf'])->name('admin.siswa.laporan.absensi.pdf');
-        Route::get('siswa/{siswa}/laporan/sholat/csv', [StudentReportController::class, 'prayerCsv'])->name('admin.siswa.laporan.sholat.csv');
+        Route::get('siswa/{siswa}/laporan/sholat/xlsx', [StudentReportController::class, 'prayerXlsx'])->name('admin.siswa.laporan.sholat.xlsx');
         Route::get('siswa/{siswa}/laporan/sholat/pdf', [StudentReportController::class, 'prayerPdf'])->name('admin.siswa.laporan.sholat.pdf');
     });
 
@@ -167,6 +168,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
 
     Route::middleware(['permission:orang-tua.access', 'feature:master_siswa'])->group(function () {
         Route::resource('orang-tua', OrangTuaController::class)->parameter('orang-tua', 'parentProfile')->names('admin.orang-tua');
+
+        // Pintasan dari halaman detail siswa. Sengaja di grup ini, bukan grup
+        // siswa: Guru boleh membuka detail siswa tapi tidak boleh mengubah
+        // nomor tujuan notifikasi orang tuanya.
+        Route::put('siswa/{siswa}/orang-tua', [OrangTuaController::class, 'updateFromStudent'])->name('admin.siswa.orang-tua.update');
     });
 
     Route::middleware(['permission:kelas.access', 'feature:master_siswa'])->group(function () {

@@ -264,7 +264,7 @@ export default function SiswaImport({ jobs, preview, errors }: Props) {
                                 <Button type="button" variant="outline" asChild>
                                     <a href="/admin/siswa/import/template">
                                         <Download className="size-4" /> Unduh
-                                        Template CSV
+                                        Template Excel
                                     </a>
                                 </Button>
                                 <Button type="button" variant="ghost" asChild>

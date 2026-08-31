@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\StudentImportJob;
 use App\Services\Import\StudentImportParser;
 use App\Support\SchoolTime;
+use App\Support\XlsxDownload;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -17,7 +18,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class StudentImportController extends Controller
 {
@@ -51,25 +52,20 @@ class StudentImportController extends Controller
     }
 
     /**
-     * Template CSV: header persis sinonim yang dikenali parser, plus dua baris
+     * Template Excel: header persis sinonim yang dikenali parser, plus dua baris
      * contoh supaya format tanggal dan kode jenis kelamin tidak perlu ditebak.
+     *
+     * XLSX, bukan CSV, karena seluruh isinya ditulis sebagai teks: NISN
+     * `0071234567` dan tanggal `12/03/2012` bertahan apa adanya, sementara CSV
+     * menyerahkannya pada tebakan Excel.
      */
-    public function template(): StreamedResponse
+    public function template(): BinaryFileResponse
     {
-        return response()->streamDownload(function (): void {
-            $handle = fopen('php://output', 'w');
-
-            // UTF-8 BOM supaya Excel membaca karakter Indonesia dengan benar.
-            fwrite($handle, "\xEF\xBB\xBF");
-
-            fputcsv($handle, self::TEMPLATE_HEADER);
-
-            foreach (self::TEMPLATE_SAMPLE_ROWS as $row) {
-                fputcsv($handle, array_map(fn (string $cell): string => $this->csvSafe($cell), $row));
-            }
-
-            fclose($handle);
-        }, 'template-impor-siswa.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return XlsxDownload::make(
+            'template-impor-siswa.xlsx',
+            self::TEMPLATE_HEADER,
+            self::TEMPLATE_SAMPLE_ROWS,
+        );
     }
 
     public function upload(Request $request, StudentImportParser $parser): RedirectResponse
