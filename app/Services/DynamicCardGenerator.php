@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Models\SchoolFrame;
+use App\Support\ChromeBinary;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
@@ -61,10 +62,7 @@ class DynamicCardGenerator
             ->waitUntilNetworkIdle()
             ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
 
-        $chromePath = config('services.chrome.path');
-        if ($chromePath && file_exists($chromePath)) {
-            $browsershot->setChromePath($chromePath);
-        }
+        ChromeBinary::applyTo($browsershot);
 
         $browsershot->save($outputPath);
     }

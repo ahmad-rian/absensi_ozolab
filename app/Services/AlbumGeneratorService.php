@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\School;
 use App\Models\SchoolAlbumLayout;
 use App\Models\Student;
+use App\Support\ChromeBinary;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
@@ -107,10 +108,7 @@ class AlbumGeneratorService
             ->waitUntilNetworkIdle()
             ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
 
-        $chromePath = config('services.chrome.path');
-        if ($chromePath && file_exists($chromePath)) {
-            $browsershot->setChromePath($chromePath);
-        }
+        ChromeBinary::applyTo($browsershot);
 
         $browsershot->save($outputPath);
     }

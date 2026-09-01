@@ -29,3 +29,10 @@ yarn-error.log
 /.zed
 storage/google-service-account.json
 .env.clean
+
+# Biner Chrome untuk Browsershot. Diunduh per server dengan
+# `npx @puppeteer/browsers install chrome@stable`, jalurnya dicatat di
+# CHROME_PATH. ~200 MB dan berbeda versi tiap mesin, jadi tidak ikut repo —
+# tapi harus diabaikan secara eksplisit supaya tidak muncul sebagai perubahan.
+/chrome
+/.puppeteer-cache

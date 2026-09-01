@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Student;
+use App\Support\ChromeBinary;
 use App\Support\StudentDriveNaming;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
@@ -105,10 +106,7 @@ class PhotoSheetGeneratorService
             ->waitUntilNetworkIdle()
             ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
 
-        $chromePath = config('services.chrome.path');
-        if ($chromePath && file_exists($chromePath)) {
-            $browsershot->setChromePath($chromePath);
-        }
+        ChromeBinary::applyTo($browsershot);
 
         $browsershot->save($outputPath);
     }

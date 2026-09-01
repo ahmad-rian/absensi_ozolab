@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\PhotoSheetBatch;
 use App\Models\Student;
+use App\Support\ChromeBinary;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Spatie\Browsershot\Browsershot;
@@ -176,10 +177,7 @@ class PhotoSheetBatchService
             ->waitUntilNetworkIdle()
             ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
 
-        $chromePath = config('services.chrome.path');
-        if ($chromePath && file_exists($chromePath)) {
-            $browsershot->setChromePath($chromePath);
-        }
+        ChromeBinary::applyTo($browsershot);
 
         $browsershot->savePdf($outputPath);
     }

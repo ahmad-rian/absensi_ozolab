@@ -1,5 +1,5 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { BookOpen, Building2, Edit, Mail, MapPin, MoonStar, Phone, Plus, ScanLine, Search, Trash2 } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { BookOpen, Building2, Edit, LogIn, Mail, MapPin, MoonStar, Phone, Plus, ScanLine, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -37,9 +37,22 @@ type Paginated = { data: School[]; links: PaginationLink[]; from: number | null;
 export default function SchoolsIndex({ schools, filters }: { schools: Paginated; filters: { search: string } }) {
     const [search, setSearch] = useState(filters.search);
 
+    // Sekolah yang sedang dibuka. Dulu ditandai oleh pemilih di sidebar; sejak
+    // pemilih itu pindah ke sini, kartunya sendiri yang harus menyatakannya —
+    // kalau tidak, tidak ada lagi cara tahu sedang berada di sekolah mana.
+    const { currentSchool } = usePage().props as unknown as {
+        currentSchool: { id: string } | null;
+    };
+
     function handleSearch(value: string) {
         setSearch(value);
         router.get('/admin/schools', { search: value || undefined }, { preserveState: true, replace: true });
+    }
+
+    // Rutenya menyimpan pilihan ke session lalu memuat ulang ke dashboard, jadi
+    // menekan ini benar-benar berpindah tenant — bukan sekadar menyorot kartu.
+    function bukaSekolah(schoolId: string) {
+        router.post('/admin/switch-school', { school_id: schoolId });
     }
 
     const SCAN_LINKS = {
@@ -88,8 +101,11 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
                     </div>
                 ) : (
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        {schools.data.map((school) => (
-                            <Card key={school.id} className="relative">
+                        {schools.data.map((school) => {
+                            const sedangDibuka = currentSchool?.id === school.id;
+
+                            return (
+                            <Card key={school.id} className={sedangDibuka ? 'border-primary relative border-2' : 'relative'}>
                                 <CardHeader className="pb-3">
                                     <div className="flex items-start justify-between">
                                         <div className="flex items-center gap-3">
@@ -101,9 +117,16 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
                                                 <p className="text-muted-foreground text-xs">{school.slug}</p>
                                             </div>
                                         </div>
-                                        <Badge variant={school.is_active ? 'default' : 'secondary'}>
-                                            {school.is_active ? 'Aktif' : 'Nonaktif'}
-                                        </Badge>
+                                        <div className="flex shrink-0 flex-col items-end gap-1">
+                                            <Badge variant={school.is_active ? 'default' : 'secondary'}>
+                                                {school.is_active ? 'Aktif' : 'Nonaktif'}
+                                            </Badge>
+                                            {sedangDibuka && (
+                                                <Badge variant="outline" className="border-primary text-primary">
+                                                    Sedang dibuka
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-2 pb-3">
@@ -129,7 +152,16 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
                                         </div>
                                     )}
                                 </CardContent>
-                                <CardFooter className="gap-2 pt-0">
+                                <CardFooter className="flex-wrap gap-2 pt-0">
+                                    <Button
+                                        size="sm"
+                                        variant={sedangDibuka ? 'secondary' : 'default'}
+                                        disabled={sedangDibuka}
+                                        onClick={() => bukaSekolah(school.id)}
+                                    >
+                                        <LogIn className="mr-1 size-3.5" />
+                                        {sedangDibuka ? 'Sedang dibuka' : 'Buka Sekolah'}
+                                    </Button>
                                     <Button variant="outline" size="sm" asChild>
                                         <Link href={`/admin/schools/${school.id}/edit`}><Edit className="mr-1 size-3.5" />Edit</Link>
                                     </Button>
@@ -187,7 +219,8 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
                                     </AlertDialog>
                                 </CardFooter>
                             </Card>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
 

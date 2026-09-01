@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Models\SchoolFrame;
 use App\Models\Student;
+use App\Support\ChromeBinary;
 use App\Support\StudentDriveNaming;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -146,10 +147,7 @@ class CardGeneratorService
             ->waitUntilNetworkIdle()
             ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox']);
 
-        $chromePath = config('services.chrome.path');
-        if ($chromePath && file_exists($chromePath)) {
-            $browsershot->setChromePath($chromePath);
-        }
+        ChromeBinary::applyTo($browsershot);
 
         $browsershot->save($outputPath);
     }

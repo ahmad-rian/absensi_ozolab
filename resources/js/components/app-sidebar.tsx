@@ -31,7 +31,6 @@ import { useMemo } from 'react';
 import AppLogo from '@/components/app-logo';
 import { NavCollapsibleGroup, NavGroup, type BadgedNavItem } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import { SchoolSwitcher } from '@/components/school-switcher';
 import {
     Sidebar,
     SidebarContent,
@@ -173,9 +172,6 @@ export function AppSidebar() {
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SchoolSwitcher />
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
