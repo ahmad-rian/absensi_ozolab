@@ -55,6 +55,27 @@ type CardRow = {
     created_at: string;
 };
 
+type ParentRow = {
+    id: string;
+    name: string | null;
+    school: string | null;
+    whatsapp_number: string;
+    relation: string | null;
+    email: string | null;
+    students_count: number;
+};
+
+type ClassroomRow = {
+    id: string;
+    name: string;
+    school: string | null;
+    grade_level: number;
+    academic_year: string | null;
+    homeroom_teacher: string | null;
+    students_count: number;
+    capacity: number;
+};
+
 type PaginationLink = { url: string | null; label: string; active: boolean };
 
 type Paginated<T> = {
@@ -68,11 +89,15 @@ type Paginated<T> = {
 
 type PageProps = {
     tab: string;
-    filters: { search: string; school_id: string; start: string; end: string };
+    filters: { search: string; school_id: string; classroom_id: string; start: string; end: string };
     schools: SchoolOption[];
+    /** Terisi hanya setelah satu sekolah dipilih — nama kelas berulang di tiap sekolah. */
+    classrooms: SchoolOption[];
     totals: { schools: number; students: number; active_students: number };
     summary: SummaryRow[] | null;
     students: Paginated<StudentRow> | null;
+    parents: Paginated<ParentRow> | null;
+    classrooms_list: Paginated<ClassroomRow> | null;
     attendance: AttendanceRow[] | null;
     cards: Paginated<CardRow> | null;
 };
@@ -80,11 +105,25 @@ type PageProps = {
 const TABS = [
     { value: 'ringkasan', label: 'Ringkasan' },
     { value: 'siswa', label: 'Data Siswa' },
+    { value: 'orang-tua', label: 'Orang Tua' },
+    { value: 'kelas', label: 'Kelas' },
     { value: 'absensi', label: 'Absensi' },
     { value: 'kartu', label: 'Kartu & Pas Foto' },
 ];
 
-export default function SemuaSekolahIndex({ tab, filters, schools, totals, summary, students, attendance, cards }: PageProps) {
+export default function SemuaSekolahIndex({
+    tab,
+    filters,
+    schools,
+    classrooms,
+    totals,
+    summary,
+    students,
+    parents,
+    classrooms_list: classroomsList,
+    attendance,
+    cards,
+}: PageProps) {
     const [search, setSearch] = useState(filters.search);
     const [start, setStart] = useState(filters.start);
     const [end, setEnd] = useState(filters.end);
@@ -92,12 +131,28 @@ export default function SemuaSekolahIndex({ tab, filters, schools, totals, summa
     function go(next: Partial<PageProps['filters'] & { tab: string }>) {
         const merged = { tab, ...filters, ...next };
 
+        // Kata kunci dipakai bersama semua tab tapi artinya berbeda di tiap tab:
+        // nama siswa, nama orang tua, nama kelas. Membawanya ikut berpindah tab
+        // menghasilkan tabel kosong yang terbaca sebagai "datanya tidak ada".
+        const gantiTab = next.tab !== undefined && next.tab !== tab;
+
+        // Berganti sekolah membuang pilihan kelas. Kelasnya milik sekolah lama,
+        // jadi membiarkannya juga menghasilkan daftar kosong yang menyesatkan.
+        const gantiSekolah = next.school_id !== undefined && next.school_id !== filters.school_id;
+
+        if (gantiTab) {
+            setSearch('');
+        }
+
         router.get(
             '/admin/semua-sekolah',
             {
                 tab: merged.tab,
-                search: merged.search || undefined,
+                search: gantiTab ? undefined : merged.search || undefined,
+                // Sekolah sengaja BERTAHAN saat pindah tab: memeriksa satu sekolah
+                // lintas siswa, orang tua, lalu kelasnya adalah alur yang wajar.
                 school_id: merged.school_id || undefined,
+                classroom_id: gantiTab || gantiSekolah ? undefined : merged.classroom_id || undefined,
                 start: merged.start || undefined,
                 end: merged.end || undefined,
             },
@@ -191,6 +246,15 @@ export default function SemuaSekolahIndex({ tab, filters, schools, totals, summa
                                 />
                             </div>
                             <SchoolFilter schools={schools} value={filters.school_id} onChange={(value) => go({ school_id: value })} />
+                            {/* Muncul hanya setelah sekolah dipilih: "7A" ada di dua puluh
+                                sekolah, jadi daftar kelas gabungan tidak bisa dipakai memilih. */}
+                            {filters.school_id && (
+                                <ClassroomFilter
+                                    classrooms={classrooms}
+                                    value={filters.classroom_id}
+                                    onChange={(value) => go({ classroom_id: value })}
+                                />
+                            )}
                         </div>
 
                         <div className="rounded-md border">
@@ -258,6 +322,125 @@ export default function SemuaSekolahIndex({ tab, filters, schools, totals, summa
                         </div>
 
                         <Pagination page={students} />
+                    </>
+                )}
+
+                {tab === 'orang-tua' && parents && (
+                    <>
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                            <div className="relative flex-1">
+                                <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                                <Input
+                                    placeholder="Cari nama atau nomor WhatsApp di semua sekolah..."
+                                    value={search}
+                                    onChange={(e) => {
+                                        setSearch(e.target.value);
+                                        go({ search: e.target.value });
+                                    }}
+                                    className="pl-9"
+                                />
+                            </div>
+                            <SchoolFilter schools={schools} value={filters.school_id} onChange={(value) => go({ school_id: value })} />
+                        </div>
+
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Sekolah</TableHead>
+                                        <TableHead>Nama</TableHead>
+                                        <TableHead>Hubungan</TableHead>
+                                        <TableHead>No. WhatsApp</TableHead>
+                                        <TableHead>Email Notifikasi</TableHead>
+                                        <TableHead className="text-right">Anak</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {parents.data.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+                                                Tidak ada orang tua yang cocok.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        parents.data.map((parent) => (
+                                            <TableRow key={parent.id}>
+                                                <TableCell className="text-muted-foreground text-xs">{parent.school ?? '-'}</TableCell>
+                                                <TableCell className="font-medium">{parent.name ?? '-'}</TableCell>
+                                                <TableCell>{parent.relation ?? '-'}</TableCell>
+                                                <TableCell>{parent.whatsapp_number}</TableCell>
+                                                <TableCell className="text-muted-foreground text-xs">{parent.email ?? 'Belum diisi'}</TableCell>
+                                                <TableCell className="text-right">{parent.students_count}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        <Pagination page={parents} />
+                    </>
+                )}
+
+                {tab === 'kelas' && classroomsList && (
+                    <>
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                            <div className="relative flex-1">
+                                <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                                <Input
+                                    placeholder="Cari nama kelas di semua sekolah..."
+                                    value={search}
+                                    onChange={(e) => {
+                                        setSearch(e.target.value);
+                                        go({ search: e.target.value });
+                                    }}
+                                    className="pl-9"
+                                />
+                            </div>
+                            <SchoolFilter schools={schools} value={filters.school_id} onChange={(value) => go({ school_id: value })} />
+                        </div>
+
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Sekolah</TableHead>
+                                        <TableHead>Kelas</TableHead>
+                                        <TableHead>Tingkat</TableHead>
+                                        <TableHead>Tahun Ajaran</TableHead>
+                                        <TableHead>Wali Kelas</TableHead>
+                                        <TableHead className="text-right">Siswa</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {classroomsList.data.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+                                                Tidak ada kelas yang cocok.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        classroomsList.data.map((classroom) => (
+                                            <TableRow key={classroom.id}>
+                                                <TableCell className="text-muted-foreground text-xs">{classroom.school ?? '-'}</TableCell>
+                                                <TableCell className="font-medium">{classroom.name}</TableCell>
+                                                <TableCell>{classroom.grade_level}</TableCell>
+                                                <TableCell>{classroom.academic_year ?? '-'}</TableCell>
+                                                <TableCell>{classroom.homeroom_teacher ?? '-'}</TableCell>
+                                                <TableCell className="text-right">
+                                                    {classroom.students_count}
+                                                    {classroom.capacity > 0 && (
+                                                        <span className="text-muted-foreground"> / {classroom.capacity}</span>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        <Pagination page={classroomsList} />
                     </>
                 )}
 
@@ -392,6 +575,32 @@ function SchoolFilter({ schools, value, onChange }: { schools: SchoolOption[]; v
                 {schools.map((school) => (
                     <SelectItem key={school.id} value={school.id}>
                         {school.name}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+}
+
+function ClassroomFilter({
+    classrooms,
+    value,
+    onChange,
+}: {
+    classrooms: SchoolOption[];
+    value: string;
+    onChange: (value: string) => void;
+}) {
+    return (
+        <Select value={value || 'all'} onValueChange={(next) => onChange(next === 'all' ? '' : next)}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Semua Kelas" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">Semua Kelas</SelectItem>
+                {classrooms.map((classroom) => (
+                    <SelectItem key={classroom.id} value={classroom.id}>
+                        {classroom.name}
                     </SelectItem>
                 ))}
             </SelectContent>

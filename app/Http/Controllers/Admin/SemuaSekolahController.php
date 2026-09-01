@@ -7,8 +7,11 @@ use App\Enums\AttendanceType;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\CardGenerationLog;
+use App\Models\Classroom;
+use App\Models\ParentProfile;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\User;
 use App\Support\SchoolTime;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
@@ -35,28 +38,51 @@ use Inertia\Response;
  */
 class SemuaSekolahController extends Controller
 {
-    private const TABS = ['ringkasan', 'siswa', 'absensi', 'kartu'];
+    private const TABS = ['ringkasan', 'siswa', 'orang-tua', 'kelas', 'absensi', 'kartu'];
 
     public function index(Request $request): Response
     {
         $tab = in_array($request->query('tab'), self::TABS, true) ? $request->query('tab') : 'ringkasan';
         $range = $this->resolveRange($request);
+        $schoolId = $request->query('school_id');
 
         return Inertia::render('admin/semua-sekolah/index', [
             'tab' => $tab,
             'filters' => [
                 'search' => $request->query('search', ''),
-                'school_id' => $request->query('school_id', ''),
+                'school_id' => $schoolId ?? '',
+                'classroom_id' => $request->query('classroom_id', ''),
                 'start' => $range['start'],
                 'end' => $range['end'],
             ],
             'schools' => School::orderBy('name')->get(['id', 'name'])->all(),
+            // Daftar kelas hanya diisi setelah satu sekolah dipilih. Nama kelas
+            // berulang di setiap sekolah — "7A" ada di dua puluh tempat — jadi
+            // daftar gabungannya justru tidak bisa dipakai memilih apa pun.
+            'classrooms' => $schoolId ? $this->classroomOptions($schoolId) : [],
             'totals' => $this->totals(),
             'summary' => $tab === 'ringkasan' ? $this->summary() : null,
             'students' => $tab === 'siswa' ? $this->students($request) : null,
+            'parents' => $tab === 'orang-tua' ? $this->parents($request) : null,
+            'classrooms_list' => $tab === 'kelas' ? $this->classrooms($request) : null,
             'attendance' => $tab === 'absensi' ? $this->attendance($range) : null,
             'cards' => $tab === 'kartu' ? $this->cards($request) : null,
         ]);
+    }
+
+    /**
+     * Pilihan kelas untuk satu sekolah.
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function classroomOptions(string $schoolId): array
+    {
+        return Classroom::withoutGlobalScope('school')
+            ->where('school_id', $schoolId)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Classroom $classroom) => ['id' => $classroom->id, 'name' => $classroom->name])
+            ->all();
     }
 
     /**
@@ -128,6 +154,14 @@ class SemuaSekolahController extends Controller
                 });
             })
             ->when($request->query('school_id'), fn ($query, $schoolId) => $query->where('school_id', $schoolId))
+            // Kelas hanya menyaring bersama sekolahnya. Id kelas memang unik, tapi
+            // pilihannya baru dikirim setelah sekolah dipilih — menerimanya sendirian
+            // berarti tautan tempelan bisa menampilkan satu kelas milik sekolah lain
+            // di tengah daftar yang katanya tidak difilter.
+            ->when(
+                $request->query('school_id') && $request->query('classroom_id'),
+                fn ($query) => $query->where('classroom_id', $request->query('classroom_id')),
+            )
             ->orderBy('full_name')
             ->paginate(25)
             ->withQueryString()
@@ -142,6 +176,76 @@ class SemuaSekolahController extends Controller
                 'school' => $student->school?->name,
                 'school_id' => $student->school_id,
                 'is_active' => $student->is_active,
+            ]);
+    }
+
+    /**
+     * Orang tua lintas sekolah, hanya-baca.
+     *
+     * Tidak ada tombol ubah maupun hapus di sini, dan itu disengaja lebih keras
+     * daripada di tab lain: `ParentProfile` tidak memakai SoftDeletes dan
+     * `students.parent_profile_id` ber-cascadeOnDelete, jadi menghapus satu baris
+     * di sini akan melenyapkan seluruh anaknya secara PERMANEN — di sekolah yang
+     * bahkan tidak sedang dibuka operator.
+     *
+     * @return LengthAwarePaginator<int, array<string, mixed>>
+     */
+    private function parents(Request $request)
+    {
+        return ParentProfile::acrossSchools()
+            ->with(['user:id,name,email', 'school:id,name'])
+            ->withCount(['students' => fn ($query) => $query->withoutGlobalScope('school')])
+            ->when($request->query('search'), function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('whatsapp_number', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%")->withoutGlobalScope('school'));
+                });
+            })
+            ->when($request->query('school_id'), fn ($query, $schoolId) => $query->where('school_id', $schoolId))
+            // Namanya ada di tabel `users`, jadi urutannya lewat subquery. Tanpa
+            // urutan yang pasti, halaman 2 bisa mengulang baris dari halaman 1 —
+            // MySQL tidak menjamin urutan apa pun tanpa ORDER BY.
+            ->orderBy(User::select('name')->whereColumn('users.id', 'parent_profiles.user_id'))
+            ->paginate(25)
+            ->withQueryString()
+            ->through(fn (ParentProfile $parent) => [
+                'id' => $parent->id,
+                'name' => $parent->user?->name,
+                'school' => $parent->school?->name,
+                'whatsapp_number' => $parent->whatsapp_number,
+                'relation' => $parent->relation?->label(),
+                // Alamat `@internal.app` dibuat sistem dan tidak pernah sampai ke
+                // siapa pun — menampilkannya sebagai email hanya menyesatkan.
+                'email' => $parent->email && ! str_contains($parent->email, '@internal.app') ? $parent->email : null,
+                'students_count' => $parent->students_count,
+            ]);
+    }
+
+    /**
+     * Kelas lintas sekolah, hanya-baca.
+     *
+     * @return LengthAwarePaginator<int, array<string, mixed>>
+     */
+    private function classrooms(Request $request)
+    {
+        return Classroom::acrossSchools()
+            ->with(['school:id,name', 'academicYear:id,name', 'homeroomTeacher:id,name'])
+            ->withCount(['students' => fn ($query) => $query->withoutGlobalScope('school')])
+            ->when($request->query('search'), fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
+            ->when($request->query('school_id'), fn ($query, $schoolId) => $query->where('school_id', $schoolId))
+            ->orderBy('grade_level')
+            ->orderBy('name')
+            ->paginate(25)
+            ->withQueryString()
+            ->through(fn (Classroom $classroom) => [
+                'id' => $classroom->id,
+                'name' => $classroom->name,
+                'school' => $classroom->school?->name,
+                'grade_level' => $classroom->grade_level,
+                'academic_year' => $classroom->academicYear?->name,
+                'homeroom_teacher' => $classroom->homeroomTeacher?->name,
+                'students_count' => $classroom->students_count,
+                'capacity' => $classroom->capacity,
             ]);
     }
 

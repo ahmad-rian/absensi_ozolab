@@ -5,6 +5,7 @@ use App\Enums\AttendanceType;
 use App\Models\Attendance;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
+use App\Models\ParentProfile;
 use App\Models\School;
 use App\Models\Student;
 use App\Support\SchoolTime;
@@ -161,4 +162,128 @@ test('the view offers no way to change anything', function () {
         ->all();
 
     expect($writeRoutes)->toBe([]);
+});
+
+// ---------------------------------------------------------------- Tab baru & filter
+
+test('tab orang tua menampilkan orang tua dari semua sekolah', function () {
+    $ortuSatu = ParentProfile::factory()->create(['school_id' => $this->satu->id]);
+    $ortuSatu->user->update(['name' => 'BUDI SATU']);
+    $this->siswaSatu->update(['parent_profile_id' => $ortuSatu->id]);
+
+    $ortuDua = ParentProfile::factory()->create(['school_id' => $this->dua->id]);
+    $ortuDua->user->update(['name' => 'CITRA DUA']);
+
+    // Dicari lewat nama, bukan diambil dari indeks: `Student::factory()` ikut
+    // membuat orang tuanya sendiri, jadi tabelnya berisi lebih dari dua baris.
+    $this->actingAs($this->superAdmin)
+        ->get(route('admin.semua-sekolah', ['tab' => 'orang-tua', 'search' => 'BUDI SATU']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('tab', 'orang-tua')
+            ->has('parents.data', 1)
+            ->where('parents.data.0.name', 'BUDI SATU')
+            ->where('parents.data.0.school', 'SMP Satu')
+            // Jumlah anak harus lepas dari global scope sekolah: super admin
+            // sedang berada di sekolahnya sendiri, bukan di SMP Satu.
+            ->where('parents.data.0.students_count', 1)
+        );
+
+    // Tanpa kata kunci, orang tua dari kedua sekolah harus muncul bersama.
+    $this->actingAs($this->superAdmin)
+        ->get(route('admin.semua-sekolah', ['tab' => 'orang-tua']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('parents.data', fn ($rows) => collect($rows)->pluck('school')->unique()->count() > 1)
+        );
+});
+
+test('daftar orang tua diurutkan berdasarkan nama, bukan urutan acak database', function () {
+    foreach (['ZULFA AKHIR', 'ANDI AWAL'] as $nama) {
+        ParentProfile::factory()->create(['school_id' => $this->satu->id])->user->update(['name' => $nama]);
+    }
+
+    $this->actingAs($this->superAdmin)
+        ->get(route('admin.semua-sekolah', ['tab' => 'orang-tua', 'school_id' => $this->satu->id]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('parents.data', function ($rows) {
+                $nama = collect($rows)->pluck('name')->filter()->values()->all();
+
+                return $nama === collect($nama)->sort()->values()->all();
+            })
+        );
+});
+
+/**
+ * `ParentProfile` tidak memakai SoftDeletes dan `students.parent_profile_id`
+ * ber-cascadeOnDelete, jadi satu penghapusan di sini akan melenyapkan seluruh
+ * anaknya PERMANEN — di sekolah yang bahkan tidak sedang dibuka operator.
+ */
+test('tab orang tua tidak menyediakan jalan mengubah atau menghapus', function () {
+    $sumber = file_get_contents(base_path('resources/js/pages/admin/semua-sekolah/index.tsx'));
+
+    expect($sumber)->not->toContain('router.delete')
+        ->and($sumber)->not->toContain('router.put')
+        ->and($sumber)->not->toContain('router.patch');
+});
+
+test('tab kelas menampilkan kelas dari semua sekolah berikut jumlah siswanya', function () {
+    $this->actingAs($this->superAdmin)
+        ->get(route('admin.semua-sekolah', ['tab' => 'kelas']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('tab', 'kelas')
+            ->has('classrooms_list.data', 2)
+            ->where('classrooms_list.data.0.students_count', 1)
+        );
+});
+
+test('daftar pilihan kelas kosong sampai satu sekolah dipilih', function () {
+    $this->actingAs($this->superAdmin)
+        ->get(route('admin.semua-sekolah', ['tab' => 'siswa']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('classrooms', 0));
+
+    $this->actingAs($this->superAdmin)
+        ->get(route('admin.semua-sekolah', ['tab' => 'siswa', 'school_id' => $this->satu->id]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('classrooms', 1));
+});
+
+test('filter kelas mempersempit daftar siswa', function () {
+    $kelasLain = Classroom::factory()->create(['school_id' => $this->satu->id]);
+    Student::factory()->create([
+        'school_id' => $this->satu->id,
+        'classroom_id' => $kelasLain->id,
+        'full_name' => 'Siswa Kelas Lain',
+    ]);
+
+    $this->actingAs($this->superAdmin)
+        ->get(route('admin.semua-sekolah', [
+            'tab' => 'siswa',
+            'school_id' => $this->satu->id,
+            'classroom_id' => $this->siswaSatu->classroom_id,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('students.data', 1)
+            ->where('students.data.0.full_name', 'SISWA SEKOLAH SATU')
+        );
+});
+
+/**
+ * Id kelas memang unik, tapi pilihannya baru dikirim setelah sekolah dipilih.
+ * Tanpa penjaga ini, tautan tempelan ber-`classroom_id` tanpa `school_id` akan
+ * menampilkan satu kelas milik sekolah lain di tengah daftar yang menurut
+ * filternya tidak disaring sama sekali.
+ */
+test('filter kelas tanpa filter sekolah diabaikan', function () {
+    $this->actingAs($this->superAdmin)
+        ->get(route('admin.semua-sekolah', [
+            'tab' => 'siswa',
+            'classroom_id' => $this->siswaSatu->classroom_id,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->has('students.data', 2));
 });
