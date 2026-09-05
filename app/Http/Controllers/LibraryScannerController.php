@@ -6,6 +6,7 @@ use App\Enums\SchoolFeature;
 use App\Models\School;
 use App\Services\Attendance\LibraryVisitRecorder;
 use App\Services\Attendance\StudentLookup;
+use App\Support\ScanRejectionLog;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
@@ -66,6 +67,8 @@ class LibraryScannerController extends Controller
         }
 
         if (! $student) {
+            ScanRejectionLog::tolak($school, $request->token, 'perpustakaan');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Kartu atau QR Code tidak dikenali.',

@@ -109,6 +109,7 @@
         .fail { width: 100%; text-align: center; }
         .fail .mark { font-size: 72px; color: #fecaca; }
         .fail .msg { margin-top: 10px; font-size: 34px; font-weight: bold; color: #ffffff; }
+        .fail .probe { margin-top: 10px; font-size: 16px; color: #fecaca; font-family: "Courier New", monospace; }
 
         form { margin-top: 14px; }
         input[type=text] {
@@ -190,7 +191,7 @@
             var SCAN_URL = @json($scanUrl);
             var SAME_CARD_MS = 1500;
             var RESULT_MS = 2500;
-            var KEY_IDLE_MS = 400;
+            var KEY_IDLE_MS = 600;
             var MAX_BUFFER = 64;
             /* Panjang minimal untuk dikirim tanpa Enter. Token QR dan UID kartu
                selalu jauh lebih panjang. */
@@ -212,6 +213,8 @@
             var recent = {};
             var resultTimer = null;
             var entries = [];
+            /* Bentuk bacaan terakhir, dipakai hanya saat menampilkan kegagalan. */
+            var terakhir = null;
 
             function tick() {
                 clockEl.textContent = new Date().toLocaleTimeString('id-ID');
@@ -285,9 +288,17 @@
                         '</div>';
                 } else {
                     stage.className = 'stage bad';
+                    /* Bentuk bacaan ikut ditampilkan saat gagal. Operator memegang
+                       kartunya: kalau tertulis "terbaca 18 karakter" padahal
+                       tokennya 35, bacaan terpotongnya kelihatan saat itu juga —
+                       tanpa perlu membuka server. */
+                    var jejak = terakhir
+                        ? '<div class="probe">terbaca ' + terakhir.len + ' karakter &middot; ' +
+                          esc(terakhir.awal) + '&hellip;' + esc(terakhir.akhir) + '</div>'
+                        : '';
                     stage.innerHTML =
                         '<div class="fail"><div class="mark">&#10007;</div>' +
-                        '<div class="msg">' + esc(data.message) + '</div></div>';
+                        '<div class="msg">' + esc(data.message) + '</div>' + jejak + '</div>';
                 }
 
                 if (resultTimer) clearTimeout(resultTimer);
@@ -327,6 +338,11 @@
                 if (recent[token]) return;
 
                 inFlight[token] = true;
+                terakhir = {
+                    len: token.length,
+                    awal: token.substring(0, 3),
+                    akhir: token.length > 3 ? token.substring(token.length - 3) : ''
+                };
 
                 fetch(SCAN_URL, {
                     method: 'POST',
@@ -375,13 +391,13 @@
                 box.value = '';
             }
 
-            /* Isi kotak ikut dilirik dan yang LEBIH PANJANG yang menang: di
-               perangkat lemot satu keystroke bisa tertunda melewati
-               KEY_IDLE_MS, buffer terpotong di tengah UID, dan sisanya terkirim
-               sebagai token cacat. Elemen input tidak punya timer. */
+            /* Kotak isian adalah sumber UTAMA, bukan cadangan: elemen input
+               tidak punya timer dan tidak bisa terpotong, sedangkan buffer bisa
+               terpangkas kalau satu keystroke tertunda melewati KEY_IDLE_MS di
+               perangkat lemot. Buffer hanya dipakai kalau fokus tidak di kotak. */
             function flushBuffer() {
                 var dariInput = box.value.replace(/^\s+|\s+$/g, '');
-                var token = dariInput.length > buffer.length ? dariInput : buffer;
+                var token = dariInput !== '' ? dariInput : buffer;
 
                 resetBuffer();
 

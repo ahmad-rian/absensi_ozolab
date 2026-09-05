@@ -8,6 +8,7 @@ use App\Models\School;
 use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\StudentLookup;
 use App\Support\ScannerShortLink;
+use App\Support\ScanRejectionLog;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
@@ -145,6 +146,11 @@ class PublicScannerController extends Controller
         }
 
         if (! $student) {
+            // Pesan ke layar sengaja sama untuk keempat sebab supaya tidak
+            // membocorkan apa pun ke orang di depan gerbang. Bedanya ditulis ke
+            // log, yang hanya bisa dibaca dari server.
+            ScanRejectionLog::tolak($school, $request->token, 'absensi');
+
             return response()->json([
                 'success' => false,
                 'message' => 'Kartu atau QR Code tidak dikenali.',

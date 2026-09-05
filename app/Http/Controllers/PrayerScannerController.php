@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Services\Attendance\PrayerAttendanceRecorder;
 use App\Services\Attendance\StudentLookup;
 use App\Support\PrayerSchedule;
+use App\Support\ScanRejectionLog;
 use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,6 +62,8 @@ class PrayerScannerController extends Controller
         $student = $this->studentLookup->findByQrToken($request->token, $school->id);
 
         if (! $student) {
+            ScanRejectionLog::tolak($school, $request->token, 'sholat');
+
             return response()->json([
                 'success' => false,
                 'message' => 'QR Code tidak dikenali atau siswa tidak ditemukan.',

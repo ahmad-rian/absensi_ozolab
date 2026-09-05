@@ -86,10 +86,10 @@ const RESULT_MS = 2500;
  * bukan total. Nilai lama 150 ms terlalu ketat: saat React sedang render di
  * perangkat lemot, satu keystroke bisa tertunda melewatinya dan buffer dibuang
  * di tengah UID — sisanya terkirim sebagai token potong dan ditolak server.
- * Manusia butuh ~1 detik untuk berganti kartu, jadi 400 ms tidak akan
+ * Manusia butuh ~1 detik untuk berganti kartu, jadi angka ini tidak akan
  * menyatukan dua tempelan.
  */
-const KEY_IDLE_MS = 400;
+const KEY_IDLE_MS = 600;
 
 /** UID kartu terpanjang yang masuk akal; sisanya pasti sampah. */
 const MAX_BUFFER = 64;
@@ -125,6 +125,15 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     const [selectedCamera, setSelectedCamera] = useState<string>('');
     const [lastResult, setLastResult] = useState<ScanResult | null>(null);
     const [scanLog, setScanLog] = useState<ScanLogItem[]>([]);
+    /**
+     * Bentuk bacaan terakhir, ditampilkan hanya saat gagal.
+     *
+     * Operator memegang kartunya. Kalau layar bilang "terbaca 18 karakter"
+     * padahal tokennya 35, bacaan yang terpotong kelihatan saat itu juga —
+     * tanpa perlu membuka server. Ini yang selama ini hilang setiap kali ada
+     * laporan "kartu tidak dikenali padahal datanya ada".
+     */
+    const [lastProbe, setLastProbe] = useState<{ len: number; awal: string; akhir: string } | null>(null);
     const [clock, setClock] = useState('');
     const [today, setToday] = useState('');
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -188,6 +197,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             if (recent.has(token)) return;
 
             inFlightRef.current.add(token);
+            setLastProbe({ len: token.length, awal: token.slice(0, 3), akhir: token.slice(-3) });
 
             try {
                 const res = await fetch(scanUrl, {
@@ -363,15 +373,15 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
         /**
          * Kirim apa yang sudah terkumpul.
          *
-         * Isi kotak manual ikut dilirik dan yang LEBIH PANJANG yang menang.
-         * Alasannya: di perangkat lemot satu keystroke bisa tertunda melewati
-         * KEY_IDLE_MS, buffer dibuang di tengah UID, dan sisanya terkirim
-         * sebagai token cacat — "kartu tidak dikenali" padahal kartunya sah.
-         * Elemen input tidak punya timer, jadi ia masih memegang utuh.
+         * Kotak isian adalah sumber UTAMA, bukan cadangan: elemen input tidak
+         * punya timer dan tidak bisa terpotong, sedangkan buffer bisa terpangkas
+         * kalau satu keystroke tertunda melewati KEY_IDLE_MS di perangkat lemot.
+         * Buffer hanya dipakai ketika fokus tidak berada di kotak itu — misalnya
+         * operator baru saja mengklik di tempat lain.
          */
         function flush() {
             const dariInput = barcodeInputRef.current?.value?.trim() ?? '';
-            const token = dariInput.length > buffer.length ? dariInput : buffer;
+            const token = dariInput !== '' ? dariInput : buffer;
 
             reset();
 
@@ -585,6 +595,11 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                                     <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
                                         <XCircle className="mx-auto size-12 text-red-500" />
                                         <p className="mt-3 text-lg font-bold text-red-600">{lastResult.message}</p>
+                                        {lastProbe && (
+                                            <p className="mt-2 font-mono text-xs text-slate-400">
+                                                terbaca {lastProbe.len} karakter · {lastProbe.awal}…{lastProbe.akhir}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </div>

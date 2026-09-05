@@ -25,11 +25,43 @@ test('konsol scan tidak lagi mengunci seluruh scan setelah satu kartu', function
  * "kadang jadi kadang tidak" di perangkat lemot.
  */
 test('jeda antar-karakter cukup longgar untuk perangkat lemot', function () {
-    $sumber = file_get_contents(resource_path('js/components/scanner/public-scan-console.tsx'));
+    $konsol = file_get_contents(resource_path('js/components/scanner/public-scan-console.tsx'));
+    $ringan = file_get_contents(resource_path('views/scan/light.blade.php'));
 
-    preg_match('/const KEY_IDLE_MS = (\d+);/', $sumber, $cocok);
+    preg_match('/KEY_IDLE_MS = (\d+);/', $konsol, $a);
+    preg_match('/KEY_IDLE_MS = (\d+);/', $ringan, $b);
 
-    expect($cocok[1] ?? 0)->toBeGreaterThanOrEqual(300);
+    expect((int) ($a[1] ?? 0))->toBeGreaterThanOrEqual(600)
+        ->and((int) ($b[1] ?? 0))->toBeGreaterThanOrEqual(600);
+});
+
+/**
+ * Elemen input tidak punya timer dan tidak bisa terpotong; buffer bisa. Kalau
+ * buffer yang dimenangkan saat keduanya terisi, satu keystroke yang tertunda di
+ * perangkat lemot mengirim token separuh — dan gerbang menolak kartu yang sah.
+ */
+test('kotak isian jadi sumber utama, bukan sekadar yang lebih panjang', function () {
+    $konsol = file_get_contents(resource_path('js/components/scanner/public-scan-console.tsx'));
+    $ringan = file_get_contents(resource_path('views/scan/light.blade.php'));
+
+    foreach ([$konsol, $ringan] as $sumber) {
+        expect($sumber)
+            ->toContain("dariInput !== '' ? dariInput : buffer")
+            ->not->toContain('dariInput.length > buffer.length');
+    }
+});
+
+/**
+ * Operator memegang kartunya. "terbaca 18 karakter" padahal tokennya 35
+ * memperlihatkan bacaan terpotong saat itu juga, tanpa membuka server.
+ */
+test('kegagalan menyebutkan berapa karakter yang terbaca', function () {
+    $konsol = file_get_contents(resource_path('js/components/scanner/public-scan-console.tsx'));
+    $ringan = file_get_contents(resource_path('views/scan/light.blade.php'));
+
+    foreach ([$konsol, $ringan] as $sumber) {
+        expect($sumber)->toContain('terbaca ');
+    }
 });
 
 /**
