@@ -53,6 +53,13 @@ Route::inertia('/', 'welcome')->name('home');
 Route::get('scan/{school:scanner_token}', [PublicScannerController::class, 'index'])->name('public.scanner');
 Route::post('scan/{school:scanner_token}', [PublicScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.scanner.scan');
 
+// Versi ringan untuk perangkat gerbang berspesifikasi rendah (box Android TV).
+// Blade polos tanpa React/Inertia/Tailwind: app.css memakai oklch() yang baru
+// dikenal Chrome 111+, sedangkan box semacam itu umumnya masih Chrome 80-100 dan
+// gagal mem-parse seluruh variabel warnanya. POST-nya tetap ke public.scanner.scan
+// supaya logika absensinya tidak punya salinan kedua.
+Route::get('scan/{school:scanner_token}/ringan', [PublicScannerController::class, 'light'])->name('public.scanner.light');
+
 // Absen sholat dzuhur — URL terpisah supaya device mushola tidak bisa salah mode.
 Route::get('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'index'])->name('public.prayer-scanner');
 Route::post('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.prayer-scanner.scan');

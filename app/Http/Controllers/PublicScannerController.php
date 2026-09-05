@@ -12,6 +12,7 @@ use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,6 +34,25 @@ class PublicScannerController extends Controller
             // Dipisah dari is_active supaya operator tahu bedanya "sekolah
             // nonaktif" dan "fitur absensi dimatikan admin". Halaman tetap 200:
             // tablet di dinding harus menampilkan pesan, bukan layar 403.
+            'featureEnabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiSekolah),
+        ]);
+    }
+
+    /**
+     * Konsol scan versi ringan: Blade mandiri, tanpa React/Inertia/Vite.
+     *
+     * Dipakai perangkat gerbang berspesifikasi rendah — terutama box Android TV
+     * yang browsernya terlalu tua untuk oklch() di app.css. Penjaganya sama
+     * persis dengan index(), termasuk membedakan "sekolah nonaktif" dari "fitur
+     * dimatikan admin", dan halamannya tetap 200 supaya layar di dinding
+     * menampilkan pesan alih-alih 403.
+     */
+    public function light(School $school): View
+    {
+        return view('scan.light', [
+            'school' => $school,
+            'logoUrl' => $school->logo_path ? Storage::disk('public')->url($school->logo_path) : null,
+            'scanUrl' => route('public.scanner.scan', ['school' => $school->scanner_token]),
             'featureEnabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiSekolah),
         ]);
     }

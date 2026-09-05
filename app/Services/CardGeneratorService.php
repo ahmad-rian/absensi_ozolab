@@ -9,6 +9,7 @@ use App\Models\SchoolFrame;
 use App\Models\Student;
 use App\Support\ChromeBinary;
 use App\Support\StudentDriveNaming;
+use App\Support\StudentOutputCleanup;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
@@ -115,6 +116,10 @@ class CardGeneratorService
                 'status' => 'completed',
                 'file_path' => $result['path'],
             ]);
+
+            // Nama berkas ikut nama dan NIS siswa, jadi membetulkan salah satunya
+            // memindahkan keluaran ke nama baru dan meninggalkan PNG lama yatim.
+            StudentOutputCleanup::buangKeluaranLokalLama($log, $result['path']);
 
             // Upload to Drive if configured
             $this->uploadToDrive($log, $result['path']);

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
@@ -37,9 +38,17 @@ class SyncStudentDriveFolderJob implements ShouldQueue
 
     public int $timeout = 120;
 
+    /**
+     * `$atributLama` berisi nilai siswa SEBELUM perubahan, diisi hanya ketika
+     * `drive_folder_id` kosong. Dari sanalah nama folder lama disusun untuk
+     * dicari di Drive.
+     *
+     * @param  array{id?: string, nis?: string|null, full_name?: string|null, classroom_id?: string|null}  $atributLama
+     */
     public function __construct(
         public string $studentId,
         public bool $selaraskanBerkas = false,
+        public array $atributLama = [],
     ) {
         $this->onQueue(config('cards.queue'));
     }
@@ -48,10 +57,14 @@ class SyncStudentDriveFolderJob implements ShouldQueue
     {
         $student = Student::with('classroom')->find($this->studentId);
 
-        // Tanpa folder tersimpan tidak ada apa pun yang perlu dipindah: siswa ini
-        // belum pernah menghasilkan berkas. Folder akan dibuat saat generate
-        // pertama, dengan nama yang sudah benar.
-        if (! $student || ! $student->drive_folder_id) {
+        if (! $student) {
+            return;
+        }
+
+        // Folder belum tercatat DAN tidak ada nilai lama untuk dicari: siswa ini
+        // memang belum pernah menghasilkan berkas. Folder akan dibuat saat
+        // generate pertama, dengan nama yang sudah benar.
+        if (! $student->drive_folder_id && $this->atributLama === []) {
             return;
         }
 
@@ -71,6 +84,12 @@ class SyncStudentDriveFolderJob implements ShouldQueue
             $schoolRootId = $drive->ensureSchoolRoot();
 
             if (! $schoolRootId) {
+                return;
+            }
+
+            if (! $student->drive_folder_id && ! $this->adopsiFolderLama($drive, $student, $schoolRootId)) {
+                // Nama lamanya tidak ada di Drive — tidak ada yang perlu
+                // diselamatkan, dan membuat folder di sini bukan tugas job ini.
                 return;
             }
 
@@ -94,6 +113,41 @@ class SyncStudentDriveFolderJob implements ShouldQueue
         // Nama berkas pas foto ikut nama siswa, jadi hasil pencarian yang tersimpan
         // sudah tidak menggambarkan keadaan di Drive.
         $locator->forget($student);
+    }
+
+    /**
+     * Temukan folder siswa yang sudah ada di bawah NAMA LAMA, lalu catat idnya.
+     *
+     * Folder siswa duduk di `{Sekolah}/{Kelas}/{NIS - Nama}` — ketiganya nilai
+     * yang barusan berubah, jadi pencariannya memakai nilai lama. `findFolder()`
+     * mencoba nama persis lalu mengabaikan huruf besar/kecil, dan tidak pernah
+     * membuat folder baru: kalau tidak ketemu, memang tidak ada yang diadopsi.
+     *
+     * Nama folder disusun lewat helper yang sama dengan jalur tulis, bukan
+     * dirakit ulang di sini — dua aturan penamaan yang terpisah pasti menyimpang.
+     */
+    private function adopsiFolderLama(GoogleDriveService $drive, Student $student, string $schoolRootId): bool
+    {
+        $lama = (new Student)->forceFill($this->atributLama);
+        $lama->setRelation('classroom', $lama->classroom_id ? Classroom::find($lama->classroom_id) : null);
+
+        $kelasId = $drive->findFolder(GoogleDriveService::classFolderName($lama), $schoolRootId);
+
+        if (! $kelasId) {
+            return false;
+        }
+
+        $folderId = $drive->findFolder(GoogleDriveService::studentFolderName($lama), $kelasId);
+
+        if (! $folderId) {
+            return false;
+        }
+
+        // saveQuietly: menyimpan di sini tidak boleh memicu observer dan
+        // mengantrekan job ini lagi.
+        $student->forceFill(['drive_folder_id' => $folderId])->saveQuietly();
+
+        return true;
     }
 
     /**

@@ -66,6 +66,35 @@ let logId = 0;
 const DATE_FMT: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
 
 /**
+ * Berapa lama kartu yang SAMA diabaikan setelah berhasil tercatat.
+ *
+ * Tidak ada jeda menyeluruh: kartu berbeda boleh menyusul seketika, supaya
+ * antrean di gerbang tidak tersendat. Penjaga ini hanya menahan pantulan —
+ * pembaca RFID/barcode kerap memancarkan UID dua kali dalam satu tempelan,
+ * dan tanpa penahan itu anak melihat kotak merah "Sudah absen masuk hari ini"
+ * sedetik setelah dia benar-benar berhasil.
+ */
+const SAME_CARD_MS = 1500;
+
+/** Umur kartu hasil di layar. Scan baru tetap menggantikannya seketika. */
+const RESULT_MS = 2500;
+
+/**
+ * Batas diam antar-tombol sebelum buffer barcode gun dibuang.
+ *
+ * Timernya direset tiap tombol, jadi angka ini adalah jeda ANTAR-KARAKTER,
+ * bukan total. Nilai lama 150 ms terlalu ketat: saat React sedang render di
+ * perangkat lemot, satu keystroke bisa tertunda melewatinya dan buffer dibuang
+ * di tengah UID — sisanya terkirim sebagai token potong dan ditolak server.
+ * Manusia butuh ~1 detik untuk berganti kartu, jadi 400 ms tidak akan
+ * menyatukan dua tempelan.
+ */
+const KEY_IDLE_MS = 400;
+
+/** UID kartu terpanjang yang masuk akal; sisanya pasti sampah. */
+const MAX_BUFFER = 64;
+
+/**
  * Konsol scan layar-penuh: kamera QR, barcode gun, kartu hasil, riwayat.
  *
  * Dipakai bersama oleh absensi sekolah dan absen sholat — dua halaman itu
@@ -78,7 +107,6 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     const [selectedCamera, setSelectedCamera] = useState<string>('');
     const [lastResult, setLastResult] = useState<ScanResult | null>(null);
     const [scanLog, setScanLog] = useState<ScanLogItem[]>([]);
-    const [cooldown, setCooldown] = useState(false);
     const [clock, setClock] = useState('');
     const [today, setToday] = useState('');
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -86,8 +114,10 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     const barcodeInputRef = useRef<HTMLInputElement>(null);
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const mountedRef = useRef(true);
-    const cooldownRef = useRef(false);
-    const lastTokenRef = useRef('');
+    /** Token yang requestnya sedang terbang — mencegah kirim ganda token sama. */
+    const inFlightRef = useRef<Set<string>>(new Set());
+    /** Token berhasil terakhir beserta waktunya, untuk penjaga SAME_CARD_MS. */
+    const recentRef = useRef<Map<string, number>>(new Map());
     const resultTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const readerId = 'public-qr-reader';
 
@@ -125,16 +155,40 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
         }
     }, []);
 
+    // Kamera dijeda selama kartu hasil tampil. Tanpa ini html5-qrcode terus
+    // memindai 15 fps di balik overlay dan hasilnya dibuang — beban CPU murni,
+    // dan di perangkat lemot justru itu yang menunda keystroke barcode gun.
+    const pauseCamera = useCallback(() => {
+        try {
+            if (scannerRef.current?.isScanning) scannerRef.current.pause(true);
+        } catch {
+            /* noop */
+        }
+    }, []);
+
+    const resumeCamera = useCallback(() => {
+        try {
+            scannerRef.current?.resume();
+        } catch {
+            /* noop */
+        }
+    }, []);
+
     const submitScan = useCallback(
         async (rawToken: string) => {
             const token = rawToken.trim();
             if (!token || token.length < 3) return;
-            if (cooldownRef.current) return;
-            if (token === lastTokenRef.current) return;
 
-            cooldownRef.current = true;
-            lastTokenRef.current = token;
-            setCooldown(true);
+            if (inFlightRef.current.has(token)) return;
+
+            const now = Date.now();
+            const recent = recentRef.current;
+            recent.forEach((at, key) => {
+                if (now - at > SAME_CARD_MS) recent.delete(key);
+            });
+            if (recent.has(token)) return;
+
+            inFlightRef.current.add(token);
 
             try {
                 const res = await fetch(scanUrl, {
@@ -149,7 +203,13 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 const data: ScanResult = await res.json();
                 if (!mountedRef.current) return;
 
+                // Hanya yang berhasil yang ditahan. Kartu yang ditolak boleh
+                // ditempel ulang saat itu juga — dulu ia ikut terkunci dan
+                // operator mengira alatnya rusak.
+                if (data.success) recent.set(token, Date.now());
+
                 setLastResult(data);
+                pauseCamera();
                 setScanLog((prev) =>
                     [
                         {
@@ -168,21 +228,20 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             } catch {
                 if (!mountedRef.current) return;
                 setLastResult({ success: false, message: 'Gagal menghubungi server.', student: null });
+                pauseCamera();
                 playErrorSound('Gagal menghubungi server');
+            } finally {
+                inFlightRef.current.delete(token);
             }
 
             if (resultTimeout.current) clearTimeout(resultTimeout.current);
             resultTimeout.current = setTimeout(() => {
-                if (mountedRef.current) setLastResult(null);
-            }, 7000);
-
-            setTimeout(() => {
-                cooldownRef.current = false;
-                lastTokenRef.current = '';
-                if (mountedRef.current) setCooldown(false);
-            }, 1800);
+                if (!mountedRef.current) return;
+                setLastResult(null);
+                resumeCamera();
+            }, RESULT_MS);
         },
-        [csrfToken, scanUrl],
+        [csrfToken, scanUrl, pauseCamera, resumeCamera],
     );
 
     // ---- Camera (live QR) ----
@@ -302,19 +361,20 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             if (tag === 'TEXTAREA' || tag === 'SELECT') return;
             if (tag === 'INPUT' && (e.target as HTMLInputElement) !== barcodeInputRef.current) return;
 
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' || e.code === 'NumpadEnter') {
                 e.preventDefault();
+                if (timer) clearTimeout(timer);
                 if (buffer.length >= 3) submitScan(buffer);
                 buffer = '';
                 if (barcodeInputRef.current) barcodeInputRef.current.value = '';
                 return;
             }
             if (e.key.length === 1) {
-                buffer += e.key;
+                buffer = (buffer + e.key).slice(-MAX_BUFFER);
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(() => {
                     buffer = '';
-                }, 150);
+                }, KEY_IDLE_MS);
             }
         }
 
@@ -443,14 +503,16 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                                     <div className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-2xl">
                                         {/* Header: foto + nama + badge */}
                                         <div className="flex gap-4">
+                                            {/* Bentuk pas foto 3:4 dengan object-contain — kotak
+                                                + object-cover dulu memangkas kepala anak. */}
                                             {lastResult.student.photo_url ? (
                                                 <img
                                                     src={lastResult.student.photo_url}
                                                     alt={lastResult.student.full_name}
-                                                    className="size-28 shrink-0 rounded-2xl border-4 border-emerald-300 object-cover shadow"
+                                                    className="aspect-[3/4] w-24 shrink-0 rounded-2xl border-4 border-emerald-300 bg-emerald-50 object-contain shadow"
                                                 />
                                             ) : (
-                                                <div className="flex size-28 shrink-0 items-center justify-center rounded-2xl border-4 border-emerald-300 bg-emerald-50">
+                                                <div className="flex aspect-[3/4] w-24 shrink-0 items-center justify-center rounded-2xl border-4 border-emerald-300 bg-emerald-50">
                                                     <User className="size-12 text-emerald-400" />
                                                 </div>
                                             )}
@@ -520,9 +582,8 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                         inputMode="text"
                         autoComplete="off"
                         autoFocus
-                        disabled={cooldown}
                         placeholder="Tembak barcode gun ke QR Code siswa..."
-                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono tracking-wide text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 disabled:opacity-50"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono tracking-wide text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
                     />
                 </form>
 
@@ -536,10 +597,14 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                             {scanLog.map((entry) => (
                                 <div key={entry.id} className="flex items-center gap-3 px-5 py-3">
                                     {entry.success && entry.student?.photo_url ? (
-                                        <img src={entry.student.photo_url} alt="" className="size-10 shrink-0 rounded-lg object-cover" />
+                                        <img
+                                            src={entry.student.photo_url}
+                                            alt=""
+                                            className="aspect-[3/4] w-9 shrink-0 rounded-lg bg-slate-100 object-contain"
+                                        />
                                     ) : (
                                         <div
-                                            className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${
+                                            className={`flex aspect-[3/4] w-9 shrink-0 items-center justify-center rounded-lg ${
                                                 entry.success ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'
                                             }`}
                                         >

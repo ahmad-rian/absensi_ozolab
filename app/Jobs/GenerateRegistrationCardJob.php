@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Services\CardGeneratorService;
 use App\Services\GoogleDriveService;
 use App\Services\PhotoSheetGeneratorService;
+use App\Support\StudentOutputCleanup;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -77,6 +78,10 @@ class GenerateRegistrationCardJob implements ShouldQueue
                 'drive_file_id' => $unggah['id'] ?? null,
                 'drive_url' => $unggah['url'] ?? null,
             ]);
+
+            // Nama berkas ikut nama dan NIS siswa, jadi membetulkan salah satunya
+            // memindahkan keluaran ke nama baru dan meninggalkan PNG lama yatim.
+            StudentOutputCleanup::buangKeluaranLokalLama($log, $path);
         } catch (\Throwable $e) {
             $log->update(['status' => 'failed', 'error_message' => Str::limit($e->getMessage(), 500)]);
         }

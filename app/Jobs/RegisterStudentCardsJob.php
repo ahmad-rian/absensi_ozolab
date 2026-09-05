@@ -159,6 +159,31 @@ class RegisterStudentCardsJob implements ShouldQueue
         return StudentPhotoStorage::path($school->id, $student);
     }
 
+    /**
+     * Pasang foto baru, lalu buang berkas lama dari disk.
+     *
+     * StudentPhotoStorage::path() menyisipkan 16 karakter acak, jadi keluaran
+     * baru TIDAK PERNAH menimpa yang lama — ia mendarat di sebelahnya. Tanpa
+     * pembuangan ini setiap "generate ulang foto" menambah satu berkas yatim,
+     * dan disk penuh sudah pernah menjatuhkan server ini. Jalur unggah dari
+     * browser (SiswaController::uploadPhoto) sudah melakukan hal yang sama;
+     * jalur generate ulang yang tertinggal.
+     *
+     * Berkas lama dibuang SETELAH kolomnya berpindah, supaya kegagalan di
+     * tengah jalan tidak meninggalkan siswa dengan penunjuk ke berkas yang
+     * sudah tidak ada.
+     */
+    private function swapPhoto(Student $student, string $storagePath): void
+    {
+        $fotoLama = $student->photo_path;
+
+        $student->update(['photo_path' => $storagePath]);
+
+        if ($fotoLama && $fotoLama !== $storagePath) {
+            Storage::disk('public')->delete($fotoLama);
+        }
+    }
+
     private function processPhoto(Student $student, School $school): void
     {
         // Pakai ulang berkas pratinjau yang sudah diunduh saat crop-preview
@@ -171,7 +196,7 @@ class RegisterStudentCardsJob implements ShouldQueue
                 // klien meminta croping dibuang. Lihat PhotoCropService::cropAndStore().
                 (new PhotoCropService)->cropAndStore(Storage::disk('local')->path($this->photoTemp), $storagePath, 9, $this->manualCrop, crop: false);
                 Storage::disk('local')->delete($this->photoTemp);
-                $student->update(['photo_path' => $storagePath]);
+                $this->swapPhoto($student, $storagePath);
 
                 return;
             } catch (\Throwable $e) {
@@ -214,7 +239,7 @@ class RegisterStudentCardsJob implements ShouldQueue
             (new PhotoCropService)->cropAndStore($tempPath, $storagePath, 9, $manualCrop, crop: false);
 
             @unlink($tempPath);
-            $student->update(['photo_path' => $storagePath]);
+            $this->swapPhoto($student, $storagePath);
 
             return true;
         } catch (\Throwable $e) {
