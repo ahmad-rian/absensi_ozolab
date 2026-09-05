@@ -19,6 +19,7 @@ class School extends Model
         'name',
         'slug',
         'scanner_token',
+        'scan_short_code',
         'logo_path',
         'favicon_path',
         'address',

@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, Check, Copy, ExternalLink, RefreshCw, ScanLine } from 'lucide-react';
+import { ArrowLeft, Check, Copy, ExternalLink, RefreshCw, ScanLine, Tv } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
@@ -12,18 +12,30 @@ import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { dashboard } from '@/routes';
 
-type SchoolData = { id: string; name: string; address: string | null; city: string | null; phone: string | null; email: string | null; website: string | null; is_active: boolean; scanner_token: string };
+type SchoolData = {
+    id: string; name: string; address: string | null; city: string | null; phone: string | null;
+    email: string | null; website: string | null; is_active: boolean; scanner_token: string;
+    /** Alias pilihan sendiri. Kosong berarti memakai potongan token. */
+    scan_short_code: string | null;
+    /** Kode yang berlaku sekarang — alias kalau ada, potongan token kalau belum. */
+    scan_short_code_effective: string;
+};
 
 export default function SchoolsEdit({ school }: { school: SchoolData }) {
     const { data, setData, put, processing, errors } = useForm({
         name: school.name, address: school.address ?? '', city: school.city ?? '',
         phone: school.phone ?? '', email: school.email ?? '', website: school.website ?? '',
-        is_active: school.is_active,
+        is_active: school.is_active, scan_short_code: school.scan_short_code ?? '',
     });
 
     const [copied, setCopied] = useState(false);
+    const [shortCopied, setShortCopied] = useState(false);
     const [regenerating, setRegenerating] = useState(false);
-    const scanUrl = typeof window !== 'undefined' ? `${window.location.origin}/scan/${school.scanner_token}` : `/scan/${school.scanner_token}`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const scanUrl = `${origin}/scan/${school.scanner_token}`;
+    // Pratinjau ikut apa yang sedang diketik; kalau dikosongkan, kembali ke kode
+    // yang berlaku sekarang supaya tidak pernah menampilkan alamat kosong.
+    const shortUrl = `${origin}/g/${data.scan_short_code.trim() || school.scan_short_code_effective}`;
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -36,6 +48,17 @@ export default function SchoolsEdit({ school }: { school: SchoolData }) {
             setCopied(true);
             toast.success('Link scan disalin.');
             setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast.error('Gagal menyalin link.');
+        }
+    }
+
+    async function copyShortLink() {
+        try {
+            await navigator.clipboard.writeText(shortUrl);
+            setShortCopied(true);
+            toast.success('Link scan ringan disalin.');
+            setTimeout(() => setShortCopied(false), 2000);
         } catch {
             toast.error('Gagal menyalin link.');
         }
@@ -123,6 +146,51 @@ export default function SchoolsEdit({ school }: { school: SchoolData }) {
                                     {regenerating ? <Spinner /> : <RefreshCw className="size-4" />} Buat Ulang Link
                                 </Button>
                             </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Tv className="size-5" /> Link Scan Ringan</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-4">
+                            <p className="text-muted-foreground text-sm">
+                                Halaman scan sederhana untuk perangkat gerbang berspesifikasi rendah — box Android TV,
+                                tablet lama. Tanpa kamera, hanya barcode gun dan pembaca RFID. Alamatnya dibuat pendek
+                                karena diketik memakai remote.
+                            </p>
+                            <div className="grid gap-2">
+                                <Label htmlFor="scan_short_code">Nama Link</Label>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground shrink-0 font-mono text-sm">{origin}/g/</span>
+                                    <Input
+                                        id="scan_short_code"
+                                        value={data.scan_short_code}
+                                        onChange={(e) => setData('scan_short_code', e.target.value)}
+                                        placeholder={school.scan_short_code_effective}
+                                        className="font-mono text-sm"
+                                    />
+                                </div>
+                                <InputError message={errors.scan_short_code} />
+                                <p className="text-muted-foreground text-xs">
+                                    Huruf kecil, angka, strip, dan garis bawah. Minimal 3 karakter. Kosongkan untuk
+                                    kembali memakai kode bawaan{' '}
+                                    <span className="font-mono">{school.scanner_token.slice(0, 8)}</span>.
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Input value={shortUrl} readOnly onFocus={(e) => e.target.select()} className="font-mono text-sm" />
+                                <Button type="button" variant="outline" size="icon" onClick={copyShortLink} title="Salin link">
+                                    {shortCopied ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                                </Button>
+                                <Button type="button" variant="outline" size="icon" asChild title="Buka link">
+                                    <a href={shortUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" /></a>
+                                </Button>
+                            </div>
+                            <p className="text-muted-foreground text-xs">
+                                Nama yang gampang ditebak berarti halaman ini gampang dibuka orang. Karena itu halaman
+                                ringan tidak memuat token sekolah sama sekali — gerbang sholat dan perpustakaan tetap
+                                terlindungi walau nama ini tersebar.
+                            </p>
                         </CardContent>
                     </Card>
                     <div className="flex gap-3">

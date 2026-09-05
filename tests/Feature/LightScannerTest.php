@@ -41,12 +41,56 @@ test('token pemindai yang tidak dikenal tetap 404', function () {
     $this->get('/scan/token-karangan/ringan')->assertNotFound();
 });
 
-test('alamat pendek /g/{kode} mengarahkan ke halaman ringan sekolahnya', function () {
-    $school = School::factory()->create();
+test('alamat pendek /g/{kode} membuka halaman ringan sekolahnya', function () {
+    $school = School::factory()->create(['name' => 'SMP MAJU MAKMUR']);
     $kode = substr($school->scanner_token, 0, 8);
 
     $this->get('/g/'.$kode)
-        ->assertRedirect(route('public.scanner.light', ['school' => $school->scanner_token]));
+        ->assertOk()
+        ->assertSee('SMP MAJU MAKMUR');
+});
+
+test('alias pilihan sendiri juga membuka halaman yang sama', function () {
+    $school = School::factory()->create(['name' => 'TYAS PHOTO', 'scan_short_code' => 'tyas-photo']);
+
+    $this->get('/g/tyas-photo')->assertOk()->assertSee('TYAS PHOTO');
+
+    // Kode bawaan berbasis token tetap berlaku berdampingan.
+    $this->get('/g/'.substr($school->scanner_token, 0, 8))->assertOk();
+});
+
+/**
+ * Alias seperti "tyas-photo" memang dibuat gampang ditebak. Kalau halamannya
+ * memuat scanner_token, alias yang tersebar ikut membuka gerbang sholat dan
+ * perpustakaan — ketiganya memakai token yang sama.
+ */
+test('halaman ringan tidak pernah memuat scanner_token', function () {
+    $school = School::factory()->create(['scan_short_code' => 'tyas-photo']);
+
+    $this->get('/g/tyas-photo')
+        ->assertOk()
+        ->assertDontSee($school->scanner_token);
+
+    // Termasuk saat dibuka lewat alamat bertoken sekalipun.
+    $this->get(route('public.scanner.light', ['school' => $school->scanner_token]))
+        ->assertOk()
+        ->assertDontSee($school->scanner_token);
+});
+
+test('scan lewat alamat pendek diteruskan ke logika sekolah yang benar', function () {
+    School::factory()->create(['scan_short_code' => 'gerbang-satu']);
+
+    // Token karangan. Pesannya yang membuktikan permintaan sudah masuk ke
+    // logika scan sekolah itu, bukan berhenti di resolusi kodenya.
+    $this->postJson('/g/gerbang-satu', ['token' => 'bukan-kartu-siapa-siapa'])
+        ->assertNotFound()
+        ->assertJsonPath('message', 'Kartu atau QR Code tidak dikenali.');
+});
+
+test('scan lewat kode yang tidak dikenal dijawab JSON, bukan halaman galat', function () {
+    $this->postJson('/g/tidak-ada-ini', ['token' => 'apa-saja'])
+        ->assertNotFound()
+        ->assertJsonPath('success', false);
 });
 
 test('kode yang salah panjang atau tidak dikenal dijawab 404', function () {

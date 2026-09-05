@@ -11,7 +11,6 @@ use App\Support\ScannerShortLink;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -51,12 +50,7 @@ class PublicScannerController extends Controller
      */
     public function light(School $school): View
     {
-        return view('scan.light', [
-            'school' => $school,
-            'logoUrl' => $school->logo_path ? Storage::disk('public')->url($school->logo_path) : null,
-            'scanUrl' => route('public.scanner.scan', ['school' => $school->scanner_token]),
-            'featureEnabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiSekolah),
-        ]);
+        return $this->lightView($school);
     }
 
     /**
@@ -65,17 +59,58 @@ class PublicScannerController extends Controller
      * Box Android TV di gerbang diketik pakai remote; 40 karakter scanner_token
      * tidak masuk akal untuk itu. Kode tidak dikenal atau ambigu dijawab 404,
      * sama seperti token yang salah.
+     *
+     * Halamannya dirender di sini, BUKAN dialihkan ke /scan/{token}/ringan.
+     * Pengalihan akan menaruh token 40 karakter itu di bilah alamat, dan token
+     * yang sama juga membuka gerbang sholat dan perpustakaan — sedangkan alias
+     * seperti "tyas-photo" memang dibuat untuk gampang ditebak orang.
      */
-    public function shortLink(string $kode): RedirectResponse
+    public function shortLink(string $kode): View
     {
         $school = ScannerShortLink::resolve($kode);
 
         abort_if($school === null, 404);
 
-        return redirect()->route('public.scanner.light', ['school' => $school->scanner_token]);
+        return $this->lightView($school);
+    }
+
+    /**
+     * `POST /g/{kode}` — endpoint scan milik halaman ringan.
+     *
+     * Alasannya sama dengan di atas: halaman ringan tidak boleh memuat
+     * `scanner_token` di dalam HTML-nya, karena alamatnya sengaja gampang
+     * ditebak. Logikanya tidak digandakan — keduanya masuk ke recordScan().
+     */
+    public function shortScan(Request $request, string $kode, AttendanceRecorder $recorder): JsonResponse
+    {
+        $school = ScannerShortLink::resolve($kode);
+
+        if ($school === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Halaman absensi tidak dikenali.',
+            ], 404);
+        }
+
+        return $this->recordScan($request, $school, $recorder);
+    }
+
+    private function lightView(School $school): View
+    {
+        return view('scan.light', [
+            'school' => $school,
+            'logoUrl' => $school->logo_path ? Storage::disk('public')->url($school->logo_path) : null,
+            'scanUrl' => route('public.scanner.short.scan', ['kode' => ScannerShortLink::codeFor($school)]),
+            'featureEnabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiSekolah),
+        ]);
     }
 
     public function scan(Request $request, School $school, AttendanceRecorder $recorder): JsonResponse
+    {
+        return $this->recordScan($request, $school, $recorder);
+    }
+
+    private function recordScan(Request $request, School $school, AttendanceRecorder $recorder): JsonResponse
     {
         if (! $school->is_active) {
             return response()->json([

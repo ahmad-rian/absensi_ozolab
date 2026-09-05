@@ -120,9 +120,18 @@ class SchoolController extends Controller
     {
         return Inertia::render('admin/schools/edit', [
             // Jangan serialisasi model utuh — kolom `settings` ikut terbawa.
-            'school' => $school->only([
-                'id', 'name', 'slug', 'address', 'city', 'phone', 'email', 'website', 'is_active',
-            ]),
+            'school' => [
+                // `scanner_token` sempat tidak ikut dikirim, sehingga kotak
+                // "Link Absensi Publik" di halaman ini menampilkan
+                // /scan/undefined.
+                ...$school->only([
+                    'id', 'name', 'slug', 'address', 'city', 'phone', 'email', 'website', 'is_active', 'scanner_token',
+                ]),
+                'scan_short_code' => $school->scan_short_code,
+                // Kode yang BERLAKU sekarang: alias kalau sudah diatur, potongan
+                // token kalau belum. Dipakai untuk pratinjau alamatnya.
+                'scan_short_code_effective' => ScannerShortLink::codeFor($school),
+            ],
         ]);
     }
 
@@ -136,7 +145,16 @@ class SchoolController extends Controller
             'email' => ['nullable', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'website' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
+            'scan_short_code' => ScannerShortLink::rules($school),
+        ], [
+            'scan_short_code.regex' => 'Kode hanya boleh huruf kecil, angka, strip, dan garis bawah, diawali huruf atau angka.',
+            'scan_short_code.unique' => 'Kode ini sudah dipakai sekolah lain.',
         ]);
+
+        // Dinormalkan setelah divalidasi, bukan sebelumnya: aturannya memang
+        // menuntut huruf kecil, jadi pemakai harus melihat kesalahannya alih-alih
+        // diam-diam dibetulkan.
+        $validated['scan_short_code'] = ScannerShortLink::normalize($validated['scan_short_code'] ?? null);
 
         $school->update($validated);
 
