@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { BookOpen, Building2, Edit, LogIn, Mail, MapPin, MoonStar, Phone, Plus, ScanLine, Search, Trash2 } from 'lucide-react';
+import { BookOpen, Building2, Edit, LogIn, Mail, MapPin, MoonStar, Phone, Plus, ScanLine, Search, Trash2, Tv } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -24,6 +24,8 @@ type School = {
     website: string | null;
     is_active: boolean;
     scanner_token: string;
+    /** Kode `/g/{kode}` menuju halaman scan ringan. Dihitung server. */
+    scan_short_code: string;
     prayer_enabled: boolean;
     library_enabled: boolean;
     users_count: number;
@@ -67,6 +69,19 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
         try {
             await navigator.clipboard.writeText(url);
             toast.success(SCAN_LINKS[kind].label);
+        } catch {
+            toast.error('Gagal menyalin link.');
+        }
+    }
+
+    /**
+     * Alamat pendek halaman scan ringan, untuk perangkat gerbang berspesifikasi
+     * rendah — box Android TV, yang alamatnya diketik pakai remote.
+     */
+    async function copyShortScanLink(code: string) {
+        try {
+            await navigator.clipboard.writeText(`${window.location.origin}/g/${code}`);
+            toast.success('Link scan ringan disalin.');
         } catch {
             toast.error('Gagal menyalin link.');
         }
@@ -175,6 +190,15 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
                                             <DropdownMenuItem onClick={() => copyScanLink(school.scanner_token, 'absensi')}>
                                                 <ScanLine className="mr-2 size-4" />
                                                 Salin link absensi
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => copyShortScanLink(school.scan_short_code)}>
+                                                <Tv className="mr-2 size-4" />
+                                                <span className="flex flex-col items-start">
+                                                    Salin link scan ringan
+                                                    <span className="text-muted-foreground text-xs">
+                                                        /g/{school.scan_short_code} · untuk box Android &amp; perangkat lemot
+                                                    </span>
+                                                </span>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 disabled={!school.prayer_enabled}

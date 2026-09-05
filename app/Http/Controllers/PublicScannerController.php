@@ -7,9 +7,11 @@ use App\Enums\SchoolFeature;
 use App\Models\School;
 use App\Services\Attendance\AttendanceRecorder;
 use App\Services\Attendance\StudentLookup;
+use App\Support\ScannerShortLink;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -55,6 +57,22 @@ class PublicScannerController extends Controller
             'scanUrl' => route('public.scanner.scan', ['school' => $school->scanner_token]),
             'featureEnabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiSekolah),
         ]);
+    }
+
+    /**
+     * `/g/{kode}` — alamat pendek menuju halaman scan ringan.
+     *
+     * Box Android TV di gerbang diketik pakai remote; 40 karakter scanner_token
+     * tidak masuk akal untuk itu. Kode tidak dikenal atau ambigu dijawab 404,
+     * sama seperti token yang salah.
+     */
+    public function shortLink(string $kode): RedirectResponse
+    {
+        $school = ScannerShortLink::resolve($kode);
+
+        abort_if($school === null, 404);
+
+        return redirect()->route('public.scanner.light', ['school' => $school->scanner_token]);
     }
 
     public function scan(Request $request, School $school, AttendanceRecorder $recorder): JsonResponse

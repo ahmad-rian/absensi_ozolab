@@ -60,6 +60,11 @@ Route::post('scan/{school:scanner_token}', [PublicScannerController::class, 'sca
 // supaya logika absensinya tidak punya salinan kedua.
 Route::get('scan/{school:scanner_token}/ringan', [PublicScannerController::class, 'light'])->name('public.scanner.light');
 
+// Alamat pendek menuju halaman ringan di atas. Alamatnya diketik dengan remote
+// TV, jadi 40 karakter scanner_token tidak masuk akal. Throttle-nya rapat karena
+// rute ini satu-satunya yang mengubah tebakan pendek jadi token penuh.
+Route::get('g/{kode}', [PublicScannerController::class, 'shortLink'])->middleware('throttle:30,1')->name('public.scanner.short');
+
 // Absen sholat dzuhur — URL terpisah supaya device mushola tidak bisa salah mode.
 Route::get('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'index'])->name('public.prayer-scanner');
 Route::post('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.prayer-scanner.scan');

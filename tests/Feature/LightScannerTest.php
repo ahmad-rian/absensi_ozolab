@@ -41,6 +41,40 @@ test('token pemindai yang tidak dikenal tetap 404', function () {
     $this->get('/scan/token-karangan/ringan')->assertNotFound();
 });
 
+test('alamat pendek /g/{kode} mengarahkan ke halaman ringan sekolahnya', function () {
+    $school = School::factory()->create();
+    $kode = substr($school->scanner_token, 0, 8);
+
+    $this->get('/g/'.$kode)
+        ->assertRedirect(route('public.scanner.light', ['school' => $school->scanner_token]));
+});
+
+test('kode yang salah panjang atau tidak dikenal dijawab 404', function () {
+    School::factory()->create();
+
+    $this->get('/g/abcdefgh')->assertNotFound();
+    $this->get('/g/abc')->assertNotFound();
+});
+
+/**
+ * `_` dan `%` adalah wildcard LIKE. Tanpa penjaga bentuk, `/g/________` cocok
+ * dengan token sekolah mana pun dan pemakainya mendarat di gerbang orang lain.
+ */
+test('wildcard LIKE tidak bisa dipakai menebak sekolah', function () {
+    School::factory()->create();
+
+    $this->get('/g/________')->assertNotFound();
+    $this->get('/g/%%%%%%%%')->assertNotFound();
+});
+
+test('kode yang ambigu ditolak, bukan ditebak', function () {
+    // Dua sekolah dengan awalan token sama — tidak mungkin dipilih dengan benar.
+    School::factory()->create(['scanner_token' => 'KEMBAR11'.str_repeat('a', 32)]);
+    School::factory()->create(['scanner_token' => 'KEMBAR11'.str_repeat('b', 32)]);
+
+    $this->get('/g/KEMBAR11')->assertNotFound();
+});
+
 /**
  * Penjaga tingkat sumber. Ketiga hal ini yang membuat aplikasi utama tidak bisa
  * dibuka di perangkat sasaran; halaman ringan tidak boleh memungutnya kembali.

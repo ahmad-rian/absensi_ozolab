@@ -8,6 +8,7 @@ use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Services\Attendance\ScheduleProvisioner;
 use App\Support\PrayerSchedule;
+use App\Support\ScannerShortLink;
 use App\Support\SchoolFeatures;
 use App\Support\WhatsAppQuota;
 use Illuminate\Http\RedirectResponse;
@@ -39,6 +40,9 @@ class SchoolController extends Controller
             'website' => $school->website,
             'is_active' => $school->is_active,
             'scanner_token' => $school->scanner_token,
+            // Kode alamat pendek dihitung server, bukan dipotong di frontend —
+            // supaya panjangnya hanya punya satu sumber (ScannerShortLink).
+            'scan_short_code' => ScannerShortLink::codeFor($school),
             // Penanda "sekolah ini memakai absen sholat" — cukup salah satu
             // jenis aktif, karena tautan scan-nya memang satu untuk keduanya.
             'prayer_enabled' => PrayerSchedule::for($school)->anyEnabled(),
