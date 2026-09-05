@@ -22,6 +22,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Alamatnya memuat kode akses sekolah. Terindeks = bocor. --}}
+    <meta name="robots" content="noindex, nofollow">
     <title>Absensi {{ $school->name }}</title>
     <style>
         * { box-sizing: border-box; }
@@ -190,6 +192,12 @@
             var RESULT_MS = 2500;
             var KEY_IDLE_MS = 400;
             var MAX_BUFFER = 64;
+            /* Panjang minimal untuk dikirim tanpa Enter. Token QR dan UID kartu
+               selalu jauh lebih panjang. */
+            var MIN_TOKEN = 6;
+            /* Rata-rata jeda antar-tombol yang masih dianggap diketik mesin.
+               Pembaca kartu 5-20 ms; manusia tercepat pun di atas 50 ms. */
+            var MACHINE_MS_PER_KEY = 50;
 
             var meta = document.querySelector('meta[name="csrf-token"]');
             var CSRF = meta ? meta.getAttribute('content') : '';
@@ -353,23 +361,61 @@
                     });
             }
 
-            /* Barcode gun / pembaca RFID mode HID: mengetik lalu menekan Enter. */
+            /* Barcode gun / pembaca RFID mode HID: mengetik cepat, lalu SEBAGIAN
+               menekan Enter. Yang tidak menekan Enter ditangani timer di bawah. */
             var buffer = '';
+            var firstAt = 0;
+            var lastAt = 0;
             var keyTimer = null;
 
+            function resetBuffer() {
+                buffer = '';
+                firstAt = 0;
+                lastAt = 0;
+                box.value = '';
+            }
+
+            /* Isi kotak ikut dilirik dan yang LEBIH PANJANG yang menang: di
+               perangkat lemot satu keystroke bisa tertunda melewati
+               KEY_IDLE_MS, buffer terpotong di tengah UID, dan sisanya terkirim
+               sebagai token cacat. Elemen input tidak punya timer. */
+            function flushBuffer() {
+                var dariInput = box.value.replace(/^\s+|\s+$/g, '');
+                var token = dariInput.length > buffer.length ? dariInput : buffer;
+
+                resetBuffer();
+
+                if (token.length >= 3) submitScan(token);
+            }
+
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.code === 'NumpadEnter') {
+                if (e.key === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13) {
                     e.preventDefault();
                     if (keyTimer) clearTimeout(keyTimer);
-                    if (buffer.length >= 3) submitScan(buffer);
-                    buffer = '';
-                    box.value = '';
+                    keyTimer = null;
+                    flushBuffer();
                     return;
                 }
                 if (e.key && e.key.length === 1) {
+                    var now = new Date().getTime();
+                    if (buffer === '') firstAt = now;
+                    lastAt = now;
                     buffer = (buffer + e.key).slice(-MAX_BUFFER);
+
                     if (keyTimer) clearTimeout(keyTimer);
-                    keyTimer = setTimeout(function () { buffer = ''; }, KEY_IDLE_MS);
+                    keyTimer = setTimeout(function () {
+                        keyTimer = null;
+
+                        /* Pembaca yang tidak mengirim Enter: ketikannya berhenti
+                           begitu saja. Dulu buffer-nya justru DIBUANG di sini. */
+                        var perKey = buffer.length > 1 ? (lastAt - firstAt) / (buffer.length - 1) : Infinity;
+
+                        if (buffer.length >= MIN_TOKEN && perKey <= MACHINE_MS_PER_KEY) {
+                            flushBuffer();
+                        } else {
+                            resetBuffer();
+                        }
+                    }, KEY_IDLE_MS);
                 }
             });
 

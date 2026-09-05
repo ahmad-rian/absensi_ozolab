@@ -95,6 +95,24 @@ const KEY_IDLE_MS = 400;
 const MAX_BUFFER = 64;
 
 /**
+ * Panjang minimal untuk dikirim otomatis tanpa Enter.
+ *
+ * Token QR dan UID kartu selalu jauh lebih panjang dari ini, jadi ambang
+ * segini tidak akan mengirim potongan ketikan yang belum selesai.
+ */
+const MIN_TOKEN = 6;
+
+/**
+ * Batas rata-rata jeda antar-tombol yang masih dianggap "diketik mesin".
+ *
+ * Pembaca RFID/barcode mengetik 5-20 ms per karakter; manusia tercepat pun
+ * jauh di atas 50 ms. Ini yang memisahkan tempelan kartu dari orang yang
+ * sedang mengetik di kotak manual — supaya ketikan tangan tidak terkirim
+ * sendiri di tengah jalan.
+ */
+const MACHINE_MS_PER_KEY = 50;
+
+/**
  * Konsol scan layar-penuh: kamera QR, barcode gun, kartu hasil, riwayat.
  *
  * Dipakai bersama oleh absensi sekolah dan absen sholat — dua halaman itu
@@ -155,25 +173,6 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
         }
     }, []);
 
-    // Kamera dijeda selama kartu hasil tampil. Tanpa ini html5-qrcode terus
-    // memindai 15 fps di balik overlay dan hasilnya dibuang — beban CPU murni,
-    // dan di perangkat lemot justru itu yang menunda keystroke barcode gun.
-    const pauseCamera = useCallback(() => {
-        try {
-            if (scannerRef.current?.isScanning) scannerRef.current.pause(true);
-        } catch {
-            /* noop */
-        }
-    }, []);
-
-    const resumeCamera = useCallback(() => {
-        try {
-            scannerRef.current?.resume();
-        } catch {
-            /* noop */
-        }
-    }, []);
-
     const submitScan = useCallback(
         async (rawToken: string) => {
             const token = rawToken.trim();
@@ -209,7 +208,6 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 if (data.success) recent.set(token, Date.now());
 
                 setLastResult(data);
-                pauseCamera();
                 setScanLog((prev) =>
                     [
                         {
@@ -228,7 +226,6 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             } catch {
                 if (!mountedRef.current) return;
                 setLastResult({ success: false, message: 'Gagal menghubungi server.', student: null });
-                pauseCamera();
                 playErrorSound('Gagal menghubungi server');
             } finally {
                 inFlightRef.current.delete(token);
@@ -236,12 +233,10 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
 
             if (resultTimeout.current) clearTimeout(resultTimeout.current);
             resultTimeout.current = setTimeout(() => {
-                if (!mountedRef.current) return;
-                setLastResult(null);
-                resumeCamera();
+                if (mountedRef.current) setLastResult(null);
             }, RESULT_MS);
         },
-        [csrfToken, scanUrl, pauseCamera, resumeCamera],
+        [csrfToken, scanUrl],
     );
 
     // ---- Camera (live QR) ----
@@ -354,7 +349,34 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
         if (blocked) return;
 
         let buffer = '';
+        let firstAt = 0;
+        let lastAt = 0;
         let timer: ReturnType<typeof setTimeout> | null = null;
+
+        function reset() {
+            buffer = '';
+            firstAt = 0;
+            lastAt = 0;
+            if (barcodeInputRef.current) barcodeInputRef.current.value = '';
+        }
+
+        /**
+         * Kirim apa yang sudah terkumpul.
+         *
+         * Isi kotak manual ikut dilirik dan yang LEBIH PANJANG yang menang.
+         * Alasannya: di perangkat lemot satu keystroke bisa tertunda melewati
+         * KEY_IDLE_MS, buffer dibuang di tengah UID, dan sisanya terkirim
+         * sebagai token cacat — "kartu tidak dikenali" padahal kartunya sah.
+         * Elemen input tidak punya timer, jadi ia masih memegang utuh.
+         */
+        function flush() {
+            const dariInput = barcodeInputRef.current?.value?.trim() ?? '';
+            const token = dariInput.length > buffer.length ? dariInput : buffer;
+
+            reset();
+
+            if (token.length >= 3) submitScan(token);
+        }
 
         function onKeyDown(e: KeyboardEvent) {
             const tag = (e.target as HTMLElement)?.tagName;
@@ -364,16 +386,33 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             if (e.key === 'Enter' || e.code === 'NumpadEnter') {
                 e.preventDefault();
                 if (timer) clearTimeout(timer);
-                if (buffer.length >= 3) submitScan(buffer);
-                buffer = '';
-                if (barcodeInputRef.current) barcodeInputRef.current.value = '';
+                timer = null;
+                flush();
+
                 return;
             }
+
             if (e.key.length === 1) {
+                const now = Date.now();
+                if (buffer === '') firstAt = now;
+                lastAt = now;
                 buffer = (buffer + e.key).slice(-MAX_BUFFER);
+
                 if (timer) clearTimeout(timer);
                 timer = setTimeout(() => {
-                    buffer = '';
+                    timer = null;
+
+                    // Banyak pembaca RFID tidak mengirim Enter sama sekali —
+                    // ketikannya berhenti begitu saja. Dulu buffer-nya justru
+                    // DIBUANG di sini, jadi kartu semacam itu tidak pernah
+                    // terkirim tanpa operator menekan Enter sendiri.
+                    const perKey = buffer.length > 1 ? (lastAt - firstAt) / (buffer.length - 1) : Infinity;
+
+                    if (buffer.length >= MIN_TOKEN && perKey <= MACHINE_MS_PER_KEY) {
+                        flush();
+                    } else {
+                        reset();
+                    }
                 }, KEY_IDLE_MS);
             }
         }

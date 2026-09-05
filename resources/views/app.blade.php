@@ -5,6 +5,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        @php
+            $seo = App\Support\SeoMeta::forComponent($page['component'] ?? '', $page['props'] ?? []);
+        @endphp
+        @include('partials.seo', ['seo' => $seo])
+
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
             (function() {
@@ -54,8 +59,10 @@
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        {{-- Judul cadangan untuk perayap yang tidak menjalankan JS. React
+             menggantinya lewat <Head> begitu bundelnya jalan. --}}
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ $seo['title'] }}</title>
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

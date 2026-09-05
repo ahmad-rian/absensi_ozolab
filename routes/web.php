@@ -45,11 +45,18 @@ use App\Http\Controllers\ParentTelegramController;
 use App\Http\Controllers\PrayerScannerController;
 use App\Http\Controllers\Public\CardFormController;
 use App\Http\Controllers\PublicScannerController;
+use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StudentRegistrationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+// FAQ datang dari config/seo.php supaya isi yang dibaca pengunjung dan isi yang
+// dibaca mesin (skema FAQPage) tidak pernah menyimpang.
+Route::get('/', fn () => Inertia\Inertia::render('welcome', ['faqs' => config('seo.faq')]))->name('home');
+
+// Berkas yang dibaca mesin. robots.txt tetap berkas statis di public/.
+Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+Route::get('llms.txt', [SeoController::class, 'llms'])->name('seo.llms');
 Route::get('scan/{school:scanner_token}', [PublicScannerController::class, 'index'])->name('public.scanner');
 Route::post('scan/{school:scanner_token}', [PublicScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.scanner.scan');
 

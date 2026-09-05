@@ -1,2 +1,50 @@
+# Aplikasi ini penuh halaman bertoken. Token yang terindeks sama saja dengan
+# token yang bocor, jadi jalur-jalur itu ditutup di sini DAN diberi
+# `noindex, nofollow` di halamannya (lihat App\Support\SeoMeta).
+
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /settings
+Disallow: /scan/
+Disallow: /g/
+Disallow: /f/
+Disallow: /kartu-bebas
+Disallow: /daftar/
+Disallow: /quick-regis
+Disallow: /login
+Disallow: /register
+
+# Perayap AI sengaja DIIZINKAN untuk halaman publik: ringkasan AI kini jalur
+# penemuan yang nyata, dan memblokirnya berarti hilang dari sana. Larangan di
+# atas tetap berlaku untuk mereka lewat blok User-agent: * ini.
+
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+Disallow: /scan/
+Disallow: /g/
+Disallow: /f/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin
+Disallow: /scan/
+Disallow: /g/
+Disallow: /f/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin
+Disallow: /scan/
+Disallow: /g/
+Disallow: /f/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin
+Disallow: /scan/
+Disallow: /g/
+Disallow: /f/
+
+Sitemap: https://tyasphoto.ozolab.id/sitemap.xml
