@@ -6,6 +6,7 @@ import {
     BookOpen,
     Building2,
     CalendarCheck,
+    Camera,
     Clock,
     CreditCard,
     FileSpreadsheet,
@@ -16,6 +17,7 @@ import {
     HardDrive,
     History,
     Images,
+    KeyRound,
     LayoutGrid,
     LayoutTemplate,
     LifeBuoy,
@@ -55,6 +57,15 @@ import type { SchoolFeatureKey, SchoolFeatureMap } from '@/types';
 type GuardedNavItem = BadgedNavItem & { permission: string; feature?: SchoolFeatureKey };
 
 type NavSection = { label: string; items: GuardedNavItem[] };
+
+/**
+ * Penanda href yang diganti alamat Tyas Studio saat render.
+ *
+ * `sections` adalah konstanta modul, sedangkan alamat Studio datang dari shared
+ * prop — menuliskan domainnya di sini berarti satu salinan lagi yang harus ikut
+ * diubah kalau subdomainnya pindah.
+ */
+const STUDIO_PLACEHOLDER = 'studio:url';
 
 const overviewItems: GuardedNavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid, permission: 'dashboard.access' },
@@ -111,6 +122,10 @@ const sections: NavSection[] = [
             { title: 'Sekolah', href: '/admin/schools', icon: Building2, permission: 'schools.access' },
             { title: 'Semua Sekolah', href: '/admin/semua-sekolah', icon: Globe, permission: 'semua-sekolah.access' },
             { title: 'Kartu Bebas / Haji', href: '/kartu-bebas', icon: FileText, newTab: true, permission: 'kartu-bebas.access' },
+            // Aplikasi lain di subdomain lain. Alamatnya datang dari server
+            // (shared prop `studioUrl`), jadi href-nya baru diisi saat render —
+            // lihat STUDIO_PLACEHOLDER.
+            { title: 'Tyas Studio', href: STUDIO_PLACEHOLDER, icon: Camera, newTab: true, permission: 'schools.access' },
         ],
     },
     {
@@ -128,16 +143,18 @@ const sections: NavSection[] = [
             { title: 'Gateway Notifikasi', href: '/admin/notification-gateways', icon: MessageSquare, permission: 'notification-gateways.access' },
             { title: 'WhatsApp', href: '/admin/wa-config', icon: MessageSquare, permission: 'wa-config.access', feature: 'integrasi_whatsapp' },
             { title: 'Google Drive', href: '/admin/drive-config', icon: HardDrive, permission: 'drive-config.access', feature: 'integrasi_drive' },
+            { title: 'Token Tyas Studio', href: '/admin/studio-tokens', icon: KeyRound, permission: 'schools.access' },
             { title: 'Pengaturan', href: '/admin/pengaturan', icon: Settings, permission: 'pengaturan.access' },
         ],
     },
 ];
 
 export function AppSidebar() {
-    const { auth, notifications, features } = usePage().props as unknown as {
+    const { auth, notifications, features, studioUrl } = usePage().props as unknown as {
         auth: { user: { roles?: string[]; permissions?: string[] } | null };
         notifications?: { unread: number };
         features?: Partial<SchoolFeatureMap>;
+        studioUrl?: string;
     };
 
     const isSuperAdmin = (auth?.user?.roles ?? []).includes('SUPER_ADMIN');
@@ -156,10 +173,18 @@ export function AppSidebar() {
                 // `isSuperAdmin` hanya melompati cek permission, BUKAN cek
                 // fitur — sama persis dengan aturan di middleware `feature:`.
                 .filter((item) => (item.permission === '' || isSuperAdmin || granted.includes(item.permission)) && featureOn(item.feature))
-                .map((item) =>
-                    item.href === '/admin/notifikasi' ? { ...item, badge: unread } : item,
-                );
-    }, [isSuperAdmin, granted, unread, features]);
+                // Tanpa alamat dari server, tautan Studio disembunyikan saja —
+                // href kosong yang bisa diklik lebih membingungkan daripada
+                // menu yang tidak ada.
+                .filter((item) => item.href !== STUDIO_PLACEHOLDER || Boolean(studioUrl))
+                .map((item) => {
+                    if (item.href === STUDIO_PLACEHOLDER) {
+                        return { ...item, href: studioUrl as string };
+                    }
+
+                    return item.href === '/admin/notifikasi' ? { ...item, badge: unread } : item;
+                });
+    }, [isSuperAdmin, granted, unread, features, studioUrl]);
 
     const overview = visible(overviewItems);
 

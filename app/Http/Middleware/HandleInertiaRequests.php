@@ -116,6 +116,10 @@ class HandleInertiaRequests extends Middleware
                     'favicon' => $faviconPath ? Storage::disk('public')->url($faviconPath) : null,
                 ];
             },
+            // Alamat Tyas Studio, aplikasi jepret + crop di subdomain sendiri.
+            // Dibagikan supaya sidebar dan tombol di halaman siswa tidak
+            // menuliskan domainnya sendiri-sendiri.
+            'studioUrl' => config('services.studio.url'),
             'flash' => [
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),

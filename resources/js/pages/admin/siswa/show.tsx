@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm, usePage, WhenVisible } from '@inertiajs/react';
 import {
     AlarmClock,
+    Aperture,
     ArrowLeft,
     CalendarCheck,
     CalendarDays,
@@ -264,9 +265,10 @@ export default function SiswaShow({
     prayerDzuhur,
     drivePhoto,
 }: PageProps) {
-    const { auth, features } = usePage().props as unknown as {
+    const { auth, features, studioUrl } = usePage().props as unknown as {
         auth: { user: { roles?: string[]; permissions?: string[] } | null };
         features?: Partial<SchoolFeatureMap>;
+        studioUrl?: string;
     };
 
     // Guru memegang `siswa.access` tapi TIDAK `orang-tua.access`, jadi halaman
@@ -617,6 +619,21 @@ export default function SiswaShow({
                                         <Camera className="mr-1.5 size-3.5" />
                                         {student.photo_url ? 'Ganti Foto' : 'Unggah Foto'}
                                     </Button>
+                                    {studioUrl && (
+                                        // Aplikasi lain, tab lain. Studio menaruh
+                                        // hasil jepretan di folder Drive siswa; pas
+                                        // foto kartu di atas TIDAK ikut berubah.
+                                        <Button variant="ghost" size="sm" className="w-28 print:hidden" asChild>
+                                            <a
+                                                href={`${studioUrl}/sesi?siswa=${student.id}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                <Aperture className="mr-1.5 size-3.5" />
+                                                Foto di Studio
+                                            </a>
+                                        </Button>
+                                    )}
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold">{student.full_name}</h2>

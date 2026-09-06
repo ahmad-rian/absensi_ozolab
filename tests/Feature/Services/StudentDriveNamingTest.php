@@ -80,6 +80,41 @@ test('kartu dan lembar pas foto tidak menyusun awalan sendiri', function (string
     PhotoSheetGeneratorService::class,
 ]);
 
+/**
+ * Keluaran Tyas Studio. Tanpa keduanya masuk daftar jenis yang dikenal,
+ * `jenisDari()` menganggapnya berkas fotografer — dan begitu nama siswa
+ * dibetulkan, keduanya tertinggal dengan nama basi: yatim di folder yang benar.
+ */
+test('keluaran Tyas Studio dikenali sebagai jenis tersendiri', function () {
+    expect(StudentDriveNaming::jenisDari('r-wastu-17357-ori.jpg'))->toBe('ori')
+        ->and(StudentDriveNaming::jenisDari('r-wastu-17357-studio.png'))->toBe('studio')
+        ->and(StudentDriveNaming::jenisDikenal())->toContain('ori', 'studio');
+});
+
+test('keluaran Tyas Studio ikut diselaraskan saat nama siswa berubah', function () {
+    $awalanBaru = 'r-wastu-yuga-wibowo-17357-';
+
+    expect(StudentDriveNaming::namaSelaras('raden-wastu-yuga-wibowo-17357-ori.jpg', $awalanBaru))
+        ->toBe($awalanBaru.'ori.jpg')
+        ->and(StudentDriveNaming::namaSelaras('raden-wastu-yuga-wibowo-17357-studio.png', $awalanBaru))
+        ->toBe($awalanBaru.'studio.png');
+});
+
+/**
+ * Pas foto kartu dan keluaran Studio harus tetap jadi tiga berkas berbeda.
+ * Kalau salah satu jenisnya bertabrakan, `replaceStudentOutput` akan menimpa
+ * berkas yang salah — dan pas foto kartu ikut berganti tanpa ada yang meminta.
+ */
+test('ori, studio, dan foto tidak saling menimpa', function () {
+    $siswa = Student::factory()->make(['full_name' => 'FULAN', 'nis' => '17357']);
+    $awalan = StudentDriveNaming::prefix($siswa);
+
+    $nama = [$awalan.'ori.jpg', $awalan.'studio.png', GoogleDriveService::studentPhotoFileName($siswa)];
+
+    expect(array_unique($nama))->toHaveCount(3)
+        ->and(array_map(StudentDriveNaming::jenisDari(...), $nama))->toBe(['ori', 'studio', 'foto']);
+});
+
 test('nama yang sudah benar tidak diselaraskan ulang', function () {
     expect(StudentDriveNaming::namaSelaras('r-wastu-17357-osis.png', 'r-wastu-17357-'))->toBeNull();
 });

@@ -42,6 +42,15 @@ return [
         'oauth_refresh_token' => env('GOOGLE_OAUTH_REFRESH_TOKEN'),
     ],
 
+    /*
+     * Tyas Studio — aplikasi jepret + crop di subdomain sendiri.
+     * Dipakai hanya untuk membuat tautan; aplikasi ini tidak pernah
+     * memanggilnya balik.
+     */
+    'studio' => [
+        'url' => env('STUDIO_URL', 'https://tyasstudio.ozolab.id'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

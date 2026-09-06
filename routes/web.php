@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\StudentImportController;
 use App\Http\Controllers\Admin\StudentQuickOpenController;
 use App\Http\Controllers\Admin\StudentRegenerateController;
 use App\Http\Controllers\Admin\StudentReportController;
+use App\Http\Controllers\Admin\StudioTokenController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\DashboardController;
@@ -296,6 +297,15 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // ber-tenant, jadi global scope tidak melindungi apa pun.
     Route::middleware(['permission:impersonate.access', 'super-admin'])->group(function () {
         Route::post('users/{user}/impersonate', [ImpersonationController::class, 'store'])->name('admin.users.impersonate');
+    });
+
+    // Kredensial Tyas Studio. `super-admin` wajib: token boleh diterbitkan
+    // lintas sekolah, dan `StudioToken` sengaja tidak ber-tenant supaya
+    // pencariannya tetap bekerja saat tidak ada user yang login.
+    Route::middleware(['permission:schools.access', 'super-admin'])->group(function () {
+        Route::get('studio-tokens', [StudioTokenController::class, 'index'])->name('admin.studio-tokens');
+        Route::post('studio-tokens', [StudioTokenController::class, 'store'])->name('admin.studio-tokens.store');
+        Route::delete('studio-tokens/{studioToken}', [StudioTokenController::class, 'destroy'])->name('admin.studio-tokens.destroy');
     });
 
     Route::middleware(['permission:notification-gateways.access', 'super-admin'])->group(function () {

@@ -36,3 +36,10 @@ storage/google-service-account.json
 # tapi harus diabaikan secara eksplisit supaya tidak muncul sebagai perubahan.
 /chrome
 /.puppeteer-cache
+
+# Tyas Studio — aplikasi terpisah dengan repo, composer, dan node_modules
+# sendiri (github.com/ahmad-rian/tyas_studio). Ia kebetulan bersarang di sini
+# supaya mudah dikerjakan berdampingan, tapi ia BUKAN bagian dari repo ini dan
+# tidak boleh ikut ter-commit. Juga dikecualikan di pint.json — formatternya
+# sendiri yang mengurusnya.
+/tyas_studio

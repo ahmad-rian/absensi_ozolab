@@ -38,12 +38,18 @@ class StudentDriveNaming
      * ditaruh fotografer dengan nama bebas — mengganti namanya berdasarkan pola
      * tebakan akan merusak berkas yang tidak ada hubungannya dengan aplikasi.
      *
+     * `ori` dan `studio` datang dari Tyas Studio. Keduanya WAJIB ada di sini:
+     * tanpa itu `jenisDari()` menganggapnya berkas fotografer, dan begitu nama
+     * siswa dibetulkan keduanya tertinggal dengan nama basi — yatim di folder
+     * yang benar. Keduanya satu kata tanpa hubung, jadi aman terhadap
+     * pemotongan di tanda hubung terakhir.
+     *
      * @return array<int, string>
      */
     public static function jenisDikenal(): array
     {
         return array_merge(
-            ['osis', 'perpustakaan', 'identitas', 'foto'],
+            ['osis', 'perpustakaan', 'identitas', 'foto', 'ori', 'studio'],
             array_keys(PhotoSheetGeneratorService::TEMPLATES),
         );
     }
