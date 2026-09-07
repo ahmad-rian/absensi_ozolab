@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SyncStudioPhotoToDriveJob;
 use App\Models\CardGenerationLog;
 use App\Models\Student;
+use App\Services\GoogleDriveService;
 use App\Services\PhotoCropService;
+use App\Support\StudentDriveNaming;
 use App\Support\StudioRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -115,6 +118,80 @@ class StudioPhotoController extends Controller
             // belum aktif untuk sekolah ini" jadi berguna.
             'error' => $log->error_message,
         ]);
+    }
+
+    /**
+     * GET /api/studio/students/{student}/ori
+     *
+     * Kembalikan jepretan ASLI yang tersimpan di folder Drive siswa.
+     *
+     * Ada supaya Tyas Studio bisa memotong ULANG tanpa memfoto ulang anaknya.
+     * Salinan di server sengaja dihapus begitu naik ke Drive — lihat
+     * `SyncStudioPhotoToDriveJob::bersihkan()` — jadi Drive adalah satu-satunya
+     * tempat ia ada, dan induk tetap satu-satunya yang memegang kredensialnya.
+     *
+     * Distream, bukan disimpan dulu ke disk: berkasnya bisa 20 MB, dan disk
+     * server ini sudah 84% penuh.
+     */
+    public function original(Request $request, string $student): Response|JsonResponse
+    {
+        $siswa = StudioRequest::student($request, $student);
+
+        /*
+         * Diselesaikan DI SINI, bukan di konstruktor.
+         *
+         * Konstruktor `GoogleDriveService` melempar kalau kredensial sekolahnya
+         * belum diatur, dan menaruhnya di konstruktor controller berarti
+         * `store` dan `status` — yang tidak menyentuh Drive sama sekali — ikut
+         * meledak 500 untuk sekolah yang Drive-nya memang belum aktif.
+         */
+        try {
+            $drive = app(GoogleDriveService::class);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Google Drive belum aktif untuk sekolah ini, jadi jepretan aslinya tidak bisa diambil.',
+            ], 503);
+        }
+
+        $folder = $drive->resolveStudentFolder($siswa);
+
+        if (! $folder) {
+            return response()->json([
+                'message' => 'Folder Drive siswa ini belum ada, jadi tidak ada foto asli yang bisa diambil.',
+            ], 404);
+        }
+
+        $nama = StudentDriveNaming::prefix($siswa).'ori.jpg';
+        $ketemu = $drive->findFileByName($nama, $folder);
+
+        if ($ketemu === []) {
+            return response()->json([
+                'message' => 'Siswa ini belum pernah difoto lewat Tyas Studio, jadi tidak ada jepretan asli untuk dipotong ulang.',
+            ], 404);
+        }
+
+        $sementara = tempnam(sys_get_temp_dir(), 'studio-ori-');
+
+        try {
+            $drive->downloadFile($ketemu[0]['id'], $sementara);
+
+            return response()->file($sementara, [
+                'Content-Type' => 'image/jpeg',
+                // Tanpa ini browser menyimpannya sebagai "ori"; nama siswa
+                // membuatnya bisa dikenali kalau operator terlanjur mengunduh.
+                'Content-Disposition' => 'inline; filename="'.$nama.'"',
+            ])->deleteFileAfterSend();
+        } catch (Throwable $e) {
+            @unlink($sementara);
+
+            report($e);
+
+            return response()->json([
+                'message' => 'Foto asli tidak bisa diambil dari Google Drive. Coba lagi sebentar.',
+            ], 502);
+        }
     }
 
     /**

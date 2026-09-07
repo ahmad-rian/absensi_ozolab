@@ -66,5 +66,9 @@ Route::middleware(['studio-token', 'throttle:120,1'])->prefix('studio')->name('s
     Route::get('students/{student}', [StudioController::class, 'student']);
 
     Route::post('students/{student}/photo', [StudioPhotoController::class, 'store']);
+    // Jepretan asli dari folder Drive siswa, untuk memotong ULANG tanpa
+    // memfoto ulang anaknya. Salinan di server sudah dihapus begitu naik ke
+    // Drive, jadi ini satu-satunya jalan mengambilnya kembali.
+    Route::get('students/{student}/ori', [StudioPhotoController::class, 'original']);
     Route::get('uploads/{upload}', [StudioPhotoController::class, 'status']);
 });
