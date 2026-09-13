@@ -2,6 +2,13 @@
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "type": "module",
+    "browserslist": [
+        "chrome >= 87",
+        "edge >= 88",
+        "firefox >= 78",
+        "safari >= 14",
+        "ios_saf >= 14"
+    ],
     "scripts": {
         "build": "vite build",
         "build:ssr": "vite build && vite build --ssr",

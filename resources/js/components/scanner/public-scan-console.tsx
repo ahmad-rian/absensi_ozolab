@@ -113,6 +113,64 @@ const MIN_TOKEN = 6;
 const MACHINE_MS_PER_KEY = 50;
 
 /**
+ * Token CSRF baru, diambil dengan memuat ulang halaman ini di latar.
+ *
+ * GET-nya sekaligus memperpanjang sesi, jadi percobaan kedua sesudah ini
+ * punya token yang sah DAN sesi yang hidup. Meta tag di DOM ikut disegarkan
+ * supaya kode lain yang membacanya tidak tertinggal.
+ */
+async function ambilTokenCsrf(): Promise<string | null> {
+    try {
+        const res = await fetch(window.location.href, {
+            headers: { Accept: 'text/html' },
+            cache: 'no-store',
+        });
+        const html = await res.text();
+        const cocok = /name="csrf-token"\s+content="([^"]+)"/i.exec(html);
+        const baru = cocok?.[1] ?? null;
+
+        if (baru) {
+            const meta = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]');
+
+            if (meta) {
+                meta.content = baru;
+            }
+        }
+
+        return baru;
+    } catch {
+        return null;
+    }
+}
+
+/** Elemen layar-penuh saat ini, termasuk varian WebKit di iPad. */
+function layarPenuhSekarang(): Element | null {
+    const dok = document as Document & { webkitFullscreenElement?: Element | null };
+
+    return dok.fullscreenElement ?? dok.webkitFullscreenElement ?? null;
+}
+
+/**
+ * Peramban yang dibuka DI DALAM aplikasi lain, bukan peramban sungguhan.
+ *
+ * WhatsApp, Instagram, Facebook, dan Line membuka tautan di WebView sendiri.
+ * Di iOS, WebView itu MEMBLOKIR `getUserMedia` sepenuhnya — bukan menanyakan
+ * izin, langsung menolak. Tautan gerbang ini dibagikan lewat WhatsApp, jadi
+ * itu justru jalan masuk yang paling mungkin dipakai orang.
+ *
+ * Deteksi UA memang rapuh dan akan meleset suatu saat. Tapi yang dihasilkan
+ * cuma kalimat bantuan yang lebih tepat; kameranya tetap dicoba lebih dulu,
+ * dan pesan ini hanya muncul sesudah percobaan itu gagal.
+ */
+function peramban_dalam_aplikasi(): boolean {
+    if (typeof navigator === 'undefined') {
+        return false;
+    }
+
+    return /FBAN|FBAV|Instagram|Line\/|WhatsApp|; wv\)/i.test(navigator.userAgent);
+}
+
+/**
  * Konsol scan layar-penuh: kamera QR, barcode gun, kartu hasil, riwayat.
  *
  * Dipakai bersama oleh absensi sekolah dan absen sholat — dua halaman itu
@@ -155,6 +213,23 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || ''
             : '';
 
+    /** Token CSRF yang sedang berlaku. Bisa diganti saat sesinya diperbarui. */
+    const tokenCsrfRef = useRef(csrfToken);
+
+    const kirim = useCallback(
+        (token: string, csrf: string) =>
+            fetch(scanUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ token }),
+            }),
+        [scanUrl],
+    );
+
     // Live clock
     useEffect(() => {
         const tick = () => {
@@ -169,17 +244,60 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
 
     // Fullscreen state tracking
     useEffect(() => {
-        const handler = () => setIsFullscreen(!!document.fullscreenElement);
+        const handler = () => setIsFullscreen(Boolean(layarPenuhSekarang()));
         document.addEventListener('fullscreenchange', handler);
-        return () => document.removeEventListener('fullscreenchange', handler);
+        document.addEventListener('webkitfullscreenchange', handler);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handler);
+            document.removeEventListener('webkitfullscreenchange', handler);
+        };
+    }, []);
+
+    /**
+     * Tombolnya disembunyikan kalau peramban tidak punya layar penuh sama
+     * sekali.
+     *
+     * Safari di iPhone tidak mengenal `requestFullscreen` maupun
+     * `fullscreenElement` — bukan ditolak, memang tidak ada. Tombolnya
+     * terpasang, ditekan, dan tidak terjadi apa-apa. Tombol mati lebih buruk
+     * daripada tombol yang tidak ada: yang pertama membuat orang menekannya
+     * berkali-kali lalu menyimpulkan halamannya rusak.
+     */
+    const tombolPenuhRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        const akar = document.documentElement as HTMLElement & {
+            webkitRequestFullscreen?: () => Promise<void> | void;
+        };
+        const ada =
+            typeof akar.requestFullscreen === 'function' || typeof akar.webkitRequestFullscreen === 'function';
+
+        // Atribut disetel langsung, bukan lewat state: SSR tidak bisa tahu
+        // peramban mana yang akan menerima halaman ini, dan menebaknya saat
+        // render menghasilkan ketidakcocokan hidrasi.
+        if (!ada) {
+            tombolPenuhRef.current?.setAttribute('hidden', '');
+        }
     }, []);
 
     const toggleFullscreen = useCallback(() => {
-        if (document.fullscreenElement) {
-            document.exitFullscreen().catch(() => {});
-        } else {
-            document.documentElement.requestFullscreen().catch(() => {});
+        const akar = document.documentElement as HTMLElement & {
+            webkitRequestFullscreen?: () => Promise<void> | void;
+        };
+        const dok = document as Document & {
+            webkitExitFullscreen?: () => Promise<void> | void;
+        };
+
+        if (layarPenuhSekarang()) {
+            const keluar = dok.exitFullscreen?.bind(dok) ?? dok.webkitExitFullscreen?.bind(dok);
+            void Promise.resolve(keluar?.()).catch(() => {});
+
+            return;
         }
+
+        const masuk = akar.requestFullscreen?.bind(akar) ?? akar.webkitRequestFullscreen?.bind(akar);
+        void Promise.resolve(masuk?.()).catch(() => {});
     }, []);
 
     const submitScan = useCallback(
@@ -200,15 +318,61 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             setLastProbe({ len: token.length, awal: token.slice(0, 3), akhir: token.slice(-3) });
 
             try {
-                const res = await fetch(scanUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        Accept: 'application/json',
-                    },
-                    body: JSON.stringify({ token }),
-                });
+                let res = await kirim(token, tokenCsrfRef.current);
+
+                /*
+                 * 419 = token CSRF kedaluwarsa, bukan kartu yang salah.
+                 *
+                 * Halaman gerbang dibiarkan terbuka sepanjang hari. Token CSRF
+                 * ikut tercetak SEKALI saat halaman dimuat, dan sesi berakhir
+                 * setelah menganggur — jeda antara absen masuk pagi dan absen
+                 * pulang siang sudah cukup. Sesudah itu SETIAP tempelan kartu
+                 * dijawab 419 berisi HTML, `res.json()` melempar, dan layarnya
+                 * bilang "Gagal menghubungi server" — kalimat yang mengirim
+                 * orang memeriksa jaringan dan kabel, bukan memuat ulang
+                 * halaman.
+                 *
+                 * Diambil token baru lalu dicoba sekali lagi. Sekali, bukan
+                 * berulang: kalau yang baru pun ditolak, masalahnya bukan token.
+                 */
+                if (res.status === 419) {
+                    const segar = await ambilTokenCsrf();
+
+                    if (segar) {
+                        tokenCsrfRef.current = segar;
+                        res = await kirim(token, segar);
+                    }
+                }
+
+                if (!mountedRef.current) return;
+
+                if (res.status === 419) {
+                    setLastResult({
+                        success: false,
+                        message: 'Sesi halaman ini sudah kedaluwarsa. Muat ulang halaman gerbang.',
+                        student: null,
+                    });
+                    playErrorSound('Sesi kedaluwarsa, muat ulang halaman');
+
+                    return;
+                }
+
+                // Jawaban yang bukan JSON — 500, 503, atau halaman perantara
+                // jaringan sekolah — membuat `json()` melempar dan menyamar
+                // jadi "gagal menghubungi server".
+                const jenis = res.headers.get('content-type') ?? '';
+
+                if (!jenis.includes('json')) {
+                    setLastResult({
+                        success: false,
+                        message: `Server menjawab tidak seperti biasanya (kode ${res.status}). Coba lagi sebentar.`,
+                        student: null,
+                    });
+                    playErrorSound('Server bermasalah');
+
+                    return;
+                }
+
                 const data: ScanResult = await res.json();
                 if (!mountedRef.current) return;
 
@@ -246,7 +410,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 if (mountedRef.current) setLastResult(null);
             }, RESULT_MS);
         },
-        [csrfToken, scanUrl],
+        [kirim],
     );
 
     // ---- Camera (live QR) ----
@@ -297,10 +461,30 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             }
             el.innerHTML = '';
 
-            try {
-                const scanner = new Html5Qrcode(readerId);
-                scannerRef.current = scanner;
+            /*
+             * Tidak ada `mediaDevices` sama sekali — dibedakan dari izin yang
+             * ditolak, karena tindakannya berbeda jauh.
+             *
+             * Tiga sebab: halaman diakses lewat http biasa (API kamera cuma
+             * hidup di konteks aman), peramban terlalu tua, atau tautannya
+             * dibuka di dalam WhatsApp. Yang ketiga paling sering di sini, dan
+             * satu-satunya jalan keluarnya membuka tautan di peramban
+             * sungguhan — bukan menekan "Coba Lagi" berulang kali.
+             */
+            if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+                setCameraError(
+                    peramban_dalam_aplikasi()
+                        ? 'Kamera diblokir karena halaman ini dibuka di dalam aplikasi lain. Ketuk menu ⋮ lalu "Buka di peramban", atau salin tautannya ke Chrome/Safari.'
+                        : window.isSecureContext === false
+                          ? 'Kamera hanya bisa dipakai lewat alamat https. Buka halaman ini dengan https://.'
+                          : 'Peramban ini tidak mendukung kamera. Gunakan Chrome atau Safari terbaru, atau pakai barcode gun.',
+                );
+                setCameraStatus('error');
 
+                return;
+            }
+
+            try {
                 /*
                  * Dicoba berurutan sampai ada yang menyala, bukan sekali lalu
                  * menyerah.
@@ -331,18 +515,38 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 let nyala = false;
 
                 for (const constraint of kandidat) {
+                    /*
+                     * Instance BARU tiap percobaan.
+                     *
+                     * Html5Qrcode punya mesin keadaan internal, dan memanggil
+                     * `start()` lagi pada instance yang percobaan sebelumnya
+                     * baru saja gagal menghasilkan "Cannot transition to a new
+                     * state, already under transition" — galat yang menutupi
+                     * sebab aslinya dan membuat tangga percobaan ini tidak ada
+                     * gunanya. Terlihat pertama kali di harness CDP, bukan di
+                     * lapangan.
+                     */
+                    const scanner = new Html5Qrcode(readerId);
+                    scannerRef.current = scanner;
+
                     try {
                         await scanner.start(constraint, setelan, (text) => submitScan(text), () => {});
                         nyala = true;
                         break;
                     } catch (err) {
                         terakhir = err;
-                        // Percobaan yang gagal bisa meninggalkan track hidup.
+
                         try {
-                            if (scanner.isScanning) await scanner.stop();
+                            if (scanner.isScanning) {
+                                await scanner.stop();
+                            }
+                            scanner.clear();
                         } catch {
                             /* noop */
                         }
+
+                        scannerRef.current = null;
+                        el.innerHTML = '';
                     }
                 }
 
@@ -354,13 +558,26 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             } catch (err) {
                 if (!mountedRef.current) return;
                 const msg = err instanceof Error ? err.message : String(err);
+
                 if (msg.includes('Permission') || msg.includes('NotAllowed')) {
-                    setCameraError('Akses kamera ditolak. Izinkan kamera di pengaturan browser.');
+                    // Di dalam WhatsApp, iOS menolak dengan galat yang sama
+                    // persis seperti izin yang ditolak pengguna — padahal
+                    // tidak ada izin yang bisa diberikan di sana.
+                    setCameraError(
+                        peramban_dalam_aplikasi()
+                            ? 'Kamera diblokir karena halaman ini dibuka di dalam aplikasi lain. Ketuk menu ⋮ lalu "Buka di peramban", atau salin tautannya ke Chrome/Safari.'
+                            : 'Akses kamera ditolak. Izinkan kamera di pengaturan browser, lalu tekan Coba Lagi.',
+                    );
                 } else if (msg.includes('NotFound') || msg.includes('not found')) {
                     setCameraError('Kamera tidak ditemukan. Gunakan barcode gun / input manual.');
+                } else if (msg.includes('NotReadable') || msg.includes('TrackStart')) {
+                    // Kamera dipegang aplikasi lain. Sering terjadi di PC
+                    // gerbang yang juga membuka aplikasi kamera bawaan.
+                    setCameraError('Kamera sedang dipakai aplikasi lain. Tutup aplikasi kamera itu, lalu tekan Coba Lagi.');
                 } else {
                     setCameraError(`Gagal memulai kamera: ${msg}`);
                 }
+
                 setCameraStatus('error');
             }
         },
@@ -525,7 +742,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     // ---- Sekolah nonaktif / fitur belum dinyalakan ----
     if (blocked) {
         return (
-            <div className="flex min-h-dvh flex-col items-center justify-center bg-slate-50 px-6 text-center">
+            <div className="flex min-h-screen min-h-dvh flex-col items-center justify-center bg-slate-50 px-6 text-center">
                 <div className="flex size-16 items-center justify-center rounded-2xl bg-slate-200 text-slate-500">
                     <SchoolIcon className="size-8" />
                 </div>
@@ -541,9 +758,11 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     const badge = resultBadge(lastResult?.student?.type);
 
     return (
-        <div className="relative flex min-h-dvh flex-col bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-800">
-            {/* Fullscreen toggle — samar saat fullscreen */}
+        <div className="relative flex min-h-screen min-h-dvh flex-col bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-800">
+            {/* Fullscreen toggle — samar saat fullscreen, hilang di iPhone
+                yang memang tidak punya API-nya. */}
             <button
+                ref={tombolPenuhRef}
                 onClick={toggleFullscreen}
                 title={isFullscreen ? 'Keluar layar penuh' : 'Layar penuh'}
                 className={`fixed right-4 top-4 z-50 flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-sm backdrop-blur transition-all hover:bg-white hover:text-slate-900 ${
@@ -582,20 +801,29 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 {/* Camera hero */}
                 <div className="relative w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-xl">
                     <div className="relative aspect-square w-full sm:aspect-[4/3]">
-                        <div id={readerId} className="size-full [&>video]:!size-full [&>video]:!object-cover" />
+                        {/* `object-contain`, BUKAN `object-cover`.
+                            `object-cover` memangkas tepi video di layar
+                            sedangkan html5-qrcode tetap memindai bingkai utuh
+                            dari stream. Di ponsel potret selisihnya besar:
+                            operator menaruh QR tepat di dalam kotak hijau,
+                            dan kotak itu bukan yang dibaca. Kamera menyala,
+                            gambar jernih, kartu tidak pernah terbaca — tanpa
+                            satu pun petunjuk kenapa. */}
+                        <div id={readerId} className="size-full [&>video]:!size-full [&>video]:!object-contain" />
 
-                        {/* Scan frame overlay */}
-                        {cameraStatus === 'scanning' && !lastResult && (
-                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                <div className="relative size-56 sm:size-64">
-                                    <span className="absolute left-0 top-0 size-8 rounded-tl-xl border-l-4 border-t-4 border-emerald-400" />
-                                    <span className="absolute right-0 top-0 size-8 rounded-tr-xl border-r-4 border-t-4 border-emerald-400" />
-                                    <span className="absolute bottom-0 left-0 size-8 rounded-bl-xl border-b-4 border-l-4 border-emerald-400" />
-                                    <span className="absolute bottom-0 right-0 size-8 rounded-br-xl border-b-4 border-r-4 border-emerald-400" />
-                                </div>
-                            </div>
-                        )}
+                        {/*
+                            Bingkai pindai sengaja TIDAK digambar di sini.
 
+                            html5-qrcode sudah menggambar kotaknya sendiri, dan
+                            kotak itu menurut definisinya adalah area yang
+                            benar-benar dibaca. Dulu ada empat sudut hijau
+                            berukuran tetap di atasnya — hiasan yang tidak
+                            terhubung ke apa pun, dan di ponsel ia menunjuk
+                            tempat yang salah sehingga operator mengarahkan
+                            kartu ke luar area baca. Percobaan menyamakan
+                            ukurannya menghasilkan DUA bingkai bertumpuk yang
+                            tetap tidak sejajar; menghapusnya yang benar.
+                        */}
                         {cameraStatus === 'scanning' && !lastResult && (
                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent p-4 text-center">
                                 <p className="text-sm font-medium text-slate-100">Arahkan QR Code siswa ke kamera</p>

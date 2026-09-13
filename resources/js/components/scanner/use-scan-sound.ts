@@ -69,6 +69,45 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
     };
 }
 
+/**
+ * Buka kunci audio pada sentuhan pertama.
+ *
+ * Safari — di Mac maupun iPhone — melahirkan AudioContext dalam keadaan
+ * `suspended` kalau ia dibuat di luar gestur pengguna, dan menolak `resume()`
+ * yang juga di luar gestur. Akibatnya di gerbang: setiap kartu tercatat benar
+ * di server, tapi tidak ada bunyi dan tidak ada suara nama — operator mengira
+ * scan-nya gagal lalu menempelkan kartu yang sama berkali-kali.
+ *
+ * `speechSynthesis` punya aturan yang sama, dan ucapan kosong di sini yang
+ * membukanya.
+ *
+ * Sekali saja, lalu pendengarnya dilepas. Dipasang pada `pointerdown` supaya
+ * ia ikut terpicu oleh ketukan di layar sentuh maupun klik tetikus — termasuk
+ * ketukan pada dialog izin kamera yang memang selalu terjadi lebih dulu.
+ */
+if (typeof window !== 'undefined') {
+    const bukaKunci = () => {
+        window.removeEventListener('pointerdown', bukaKunci);
+        window.removeEventListener('keydown', bukaKunci);
+
+        const ctx = getContext();
+
+        if (ctx?.state === 'suspended') {
+            ctx.resume().catch(() => {});
+        }
+
+        try {
+            // Ucapan kosong: tidak terdengar, tapi cukup untuk membuka kunci.
+            window.speechSynthesis?.speak(new SpeechSynthesisUtterance(''));
+        } catch {
+            // Silent fail
+        }
+    };
+
+    window.addEventListener('pointerdown', bukaKunci, { once: false });
+    window.addEventListener('keydown', bukaKunci, { once: false });
+}
+
 export function playSuccessSound(studentName?: string) {
     // Cheerful tone first
     playTone(880, 0.12, 'sine', 0.2);
