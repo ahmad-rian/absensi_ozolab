@@ -250,6 +250,23 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     );
 
     // ---- Camera (live QR) ----
+
+    /**
+     * Kotak pindai, dihitung dari ukuran viewfinder yang sebenarnya.
+     *
+     * Dulu dipatok 260x260. Di layar ponsel yang lebih sempit dari itu,
+     * html5-qrcode menolak memulai dengan "qrbox dimensions should not be
+     * greater than the video width/height" — kamera tidak menyala sama sekali,
+     * dan di Windows angka itu tidak pernah tercapai sehingga tidak pernah
+     * terlihat.
+     */
+    const kotakPindai = useCallback((lebar: number, tinggi: number) => {
+        const kecil = Math.min(lebar, tinggi);
+        const sisi = Math.min(kecil, Math.max(120, Math.floor(kecil * 0.75)));
+
+        return { width: sisi, height: sisi };
+    }, []);
+
     const stopScanner = useCallback(async () => {
         if (scannerRef.current) {
             try {
@@ -284,18 +301,55 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 const scanner = new Html5Qrcode(readerId);
                 scannerRef.current = scanner;
 
-                await scanner.start(
-                    cameraId ? { deviceId: { exact: cameraId } } : { facingMode: 'environment' },
-                    {
-                        fps: 15,
-                        qrbox: { width: 260, height: 260 },
-                        aspectRatio: 1,
-                        disableFlip: false,
-                        experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-                    },
-                    (text) => submitScan(text),
-                    () => {},
-                );
+                /*
+                 * Dicoba berurutan sampai ada yang menyala, bukan sekali lalu
+                 * menyerah.
+                 *
+                 * `deviceId: { exact: ... }` adalah permintaan yang keras: id
+                 * kamera di Android berganti antar sesi dan sebagian peramban
+                 * bawaan OEM menolaknya dengan OverconstrainedError. Di Windows
+                 * id-nya stabil, jadi jalur itu tidak pernah gagal dan
+                 * kerapuhannya tidak pernah terlihat.
+                 *
+                 * `aspectRatio: 1` juga dibuang: memaksa 1:1 ditolak banyak
+                 * kamera ponsel, sementara webcam desktop menerimanya.
+                 */
+                const kandidat: MediaTrackConstraints[] = [
+                    ...(cameraId ? [{ deviceId: { exact: cameraId } }] : []),
+                    { facingMode: { ideal: 'environment' } },
+                    { facingMode: 'user' },
+                ];
+
+                const setelan = {
+                    fps: 15,
+                    qrbox: kotakPindai,
+                    disableFlip: false,
+                    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+                };
+
+                let terakhir: unknown = null;
+                let nyala = false;
+
+                for (const constraint of kandidat) {
+                    try {
+                        await scanner.start(constraint, setelan, (text) => submitScan(text), () => {});
+                        nyala = true;
+                        break;
+                    } catch (err) {
+                        terakhir = err;
+                        // Percobaan yang gagal bisa meninggalkan track hidup.
+                        try {
+                            if (scanner.isScanning) await scanner.stop();
+                        } catch {
+                            /* noop */
+                        }
+                    }
+                }
+
+                if (!nyala) {
+                    throw terakhir instanceof Error ? terakhir : new Error(String(terakhir));
+                }
+
                 if (mountedRef.current) setCameraStatus('scanning');
             } catch (err) {
                 if (!mountedRef.current) return;
@@ -310,7 +364,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 setCameraStatus('error');
             }
         },
-        [stopScanner, submitScan],
+        [kotakPindai, stopScanner, submitScan],
     );
 
     // Init cameras + auto-start
@@ -329,19 +383,46 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 const cams = devices.map((d) => ({ id: d.id, label: d.label || `Kamera ${d.id.slice(0, 6)}` }));
                 setCameras(cams);
 
-                const external = cams.find((c) => /usb|iware|external|back|rear|hd|web/i.test(c.label));
-                const pick = external || cams[cams.length - 1] || cams[0];
+                /*
+                 * Kamera luar dulu (rig gerbang di PC), lalu yang menghadap ke
+                 * belakang (ponsel).
+                 *
+                 * Yang DIBUANG: `cams[cams.length - 1]` sebagai jalan terakhir.
+                 * Ponsel Android sekarang memaparkan empat sampai enam kamera —
+                 * ultrawide, telefoto, sensor kedalaman, monokrom — dan yang
+                 * terakhir dalam daftar sering salah satu dari itu. Kameranya
+                 * menyala, gambarnya muncul, tapi tidak bisa fokus sedekat
+                 * kartu, jadi QR tidak pernah terbaca dan layar terlihat
+                 * seolah kartunya yang bermasalah.
+                 *
+                 * Tanpa pilihan yang meyakinkan, lebih baik menyerahkannya ke
+                 * `facingMode: environment` di `startWithCamera` — peramban
+                 * yang paling tahu kamera mana yang utama.
+                 */
+                const eksternal = cams.find((c) => /usb|iware|external|web ?cam|hd/i.test(c.label));
+                const belakang = cams.find((c) => /back|rear|environment|belakang/i.test(c.label));
+                const pilih = eksternal ?? belakang ?? null;
 
-                if (pick) {
-                    setSelectedCamera(pick.id);
-                    await startWithCamera(pick.id);
-                } else {
-                    await startWithCamera('');
+                if (pilih) {
+                    setSelectedCamera(pilih.id);
                 }
-            } catch (err) {
+
+                await startWithCamera(pilih?.id ?? '');
+            } catch {
                 if (!mountedRef.current) return;
-                setCameraError('Tidak bisa mengakses kamera: ' + (err instanceof Error ? err.message : ''));
-                setCameraStatus('error');
+
+                /*
+                 * Daftar kamera gagal diambil, TAPI itu belum tentu berarti
+                 * kameranya tidak bisa dipakai.
+                 *
+                 * `getCameras()` memanggil `enumerateDevices()`, yang di
+                 * sebagian WebView Android lama tidak ada atau mengembalikan
+                 * daftar kosong walau `getUserMedia` bekerja normal. Dulu
+                 * kegagalan ini langsung jadi layar merah; sekarang ia tetap
+                 * mencoba menyalakan kamera lewat `facingMode`, dan barulah
+                 * menyerah kalau itu pun gagal.
+                 */
+                await startWithCamera('');
             }
         }
 
