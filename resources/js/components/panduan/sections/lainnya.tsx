@@ -34,7 +34,8 @@ export function DaftarFitur() {
                     <b>Inbox Notifikasi</b> — menutup menu riwayat pesan.
                 </li>
                 <li>
-                    <b>Kartu &amp; Album</b> — menutup lima menu sekaligus.
+                    <b>Kartu &amp; Album</b> — menutup tujuh menu sekaligus, yaitu seluruh isi grup Kartu
+                    Siswa, Album &amp; Pas Foto, dan Desain Kartu &amp; Album.
                 </li>
                 <li>
                     <b>Pendaftaran Publik</b> dan <b>Pendaftaran Telegram</b> — menyembunyikan sekolahmu

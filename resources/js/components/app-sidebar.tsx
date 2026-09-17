@@ -102,16 +102,46 @@ const sections: NavSection[] = [
             { title: 'Kunjungan Perpus', href: '/admin/kunjungan-perpus', icon: BookOpen, permission: 'kunjungan-perpus.access', feature: 'kunjungan_perpustakaan' },
         ],
     },
+    /*
+        Dulu ketujuhnya berdesakan di satu grup "Kartu & Album", dengan urutan
+        yang mencampur tiga hal sekaligus: yang dipakai tiap hari, yang disetel
+        sekali di awal, dan yang sebenarnya milik album.
+
+        Sekarang dipisah antara MENGERJAKAN dan MENDESAIN. Generate dan riwayat
+        dibuka berkali-kali seminggu; layout dan frame disentuh sekali saat
+        sekolah baru disiapkan lalu praktis tidak pernah lagi. Menaruh keduanya
+        berselang-seling membuat yang sering dipakai harus dicari tiap kali.
+
+        Frame & Bingkai akhirnya punya tempat yang jujur: kategorinya
+        `osis|perpustakaan|album|kartu_bebas`, jadi ia memang melayani kartu
+        DAN album — menempelkannya ke salah satu saja selalu salah setengah.
+
+        Catatan: `NavCollapsibleGroup` menyimpan keadaan buka/tutup per label
+        (`sidebar-group:{label}`), jadi label yang berganti membuat ketiganya
+        lahir tertutup sekali. Grup yang seluruh isinya tersaring habis
+        menghilang sendiri, jadi memecah satu grup jadi tiga tidak pernah
+        meninggalkan judul kosong.
+    */
     {
-        label: 'Kartu & Album',
+        label: 'Kartu Siswa',
         items: [
-            { title: 'Frame & Bingkai', href: '/admin/frames', icon: Frame, permission: 'frames.access', feature: 'kartu_album' },
-            { title: 'Layout Kartu', href: '/admin/card-layouts', icon: LayoutTemplate, permission: 'card-layouts.access', feature: 'kartu_album' },
             { title: 'Generate Kartu', href: '/admin/generate-kartu', icon: CreditCard, permission: 'card-generation.access', feature: 'kartu_album', superAdmin: true },
             { title: 'Riwayat Kartu', href: '/admin/card-generation', icon: History, permission: 'card-generation.access', feature: 'kartu_album' },
-            { title: 'Layout Album', href: '/admin/album-layouts', icon: BookOpen, permission: 'album-layouts.access', feature: 'kartu_album' },
-            { title: 'Generate Album', href: '/admin/album-generation', icon: Printer, permission: 'album-generation.access', feature: 'kartu_album' },
+        ],
+    },
+    {
+        label: 'Album & Pas Foto',
+        items: [
             { title: 'Generate Pas Foto', href: '/admin/pas-foto', icon: Images, permission: 'photo-sheets.access', feature: 'kartu_album' },
+            { title: 'Generate Album', href: '/admin/album-generation', icon: Printer, permission: 'album-generation.access', feature: 'kartu_album' },
+        ],
+    },
+    {
+        label: 'Desain Kartu & Album',
+        items: [
+            { title: 'Layout Kartu', href: '/admin/card-layouts', icon: LayoutTemplate, permission: 'card-layouts.access', feature: 'kartu_album' },
+            { title: 'Layout Album', href: '/admin/album-layouts', icon: BookOpen, permission: 'album-layouts.access', feature: 'kartu_album' },
+            { title: 'Frame & Bingkai', href: '/admin/frames', icon: Frame, permission: 'frames.access', feature: 'kartu_album' },
         ],
     },
     {
