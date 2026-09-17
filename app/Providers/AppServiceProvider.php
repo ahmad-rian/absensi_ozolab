@@ -8,10 +8,13 @@ use App\Listeners\DispatchAttendanceNotifications;
 use App\Listeners\LogAttendanceActivity;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -38,6 +41,47 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureEvents();
         $this->configureAuthorization();
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * Batas scan gerbang dihitung per SEKOLAH, bukan per alamat IP.
+     *
+     * Limiter bawaan `throttle:120,1` berkunci IP untuk pengunjung anonim, dan
+     * satu sekolah keluar lewat satu IP publik. Tiga gerbang pada jam
+     * kedatangan pagi melewati 120 scan per menit dengan mudah, dan yang
+     * terjadi adalah 429 — di layar gerbang itu tampak persis seperti
+     * "kadang berhenti merespons", tanpa satu pun petunjuk kenapa.
+     *
+     * Pola yang sama pernah menggigit dari arah lain: `auto_ban.sh` dulu
+     * menganggap satu sekolah yang mendaftarkan ratusan siswa sebagai DDoS.
+     * Satuan yang benar untuk aplikasi ini memang sekolah, bukan IP.
+     *
+     * Batasnya tetap ada — endpoint ini publik. Yang berhenti adalah membagi
+     * satu kuota dengan seluruh perangkat di gedung yang sama. Kunci cadangan
+     * ke IP menjaga permintaan yang sekolahnya tidak terbaca tetap terbatas.
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('scan-gerbang', function (Request $request) {
+            /*
+                Parameter rutenya masih berupa STRING di sini, bukan model.
+
+                `ThrottleRequests` berada di depan `SubstituteBindings` pada
+                daftar prioritas middleware, jadi limiter berjalan sebelum
+                binding sempat mengubah token jadi objek School. Versi pertama
+                menulis `->route('school')?->id`, yang pada string menghasilkan
+                null tanpa error — lalu diam-diam jatuh ke kunci IP, yaitu
+                persis perilaku yang hendak dibuang. Tesnya yang menangkap.
+
+                Token itu sendiri sudah mengidentifikasi sekolah secara unik,
+                jadi memakainya apa adanya sebagai kunci sudah benar.
+            */
+            $sekolah = $request->route('school') ?? $request->route('kode');
+            $kunci = is_object($sekolah) ? $sekolah->id : $sekolah;
+
+            return Limit::perMinute(600)->by('scan-gerbang:'.($kunci ?: $request->ip()));
+        });
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\StudentPhotoStorage;
 use Illuminate\Support\Facades\Storage;
 
 class PhotoCropService
@@ -103,13 +104,60 @@ class PhotoCropService
         }
 
         $written = imagepng($image, $fullPath, $quality);
-        imagedestroy($image);
 
         if (! $written || ! file_exists($fullPath)) {
+            imagedestroy($image);
+
             throw new \RuntimeException('Failed to write PNG image to: '.$storagePath);
         }
 
+        // Thumbnail ditulis dari gambar yang MASIH di memori, bukan dengan
+        // membuka ulang PNG yang baru saja disimpan — dekode 1600px kedua kali
+        // adalah pekerjaan yang sudah selesai dikerjakan.
+        $this->writeThumbnail($image, $storagePath);
+
+        imagedestroy($image);
+
         return $storagePath;
+    }
+
+    /**
+     * Thumbnail kecil untuk layar gerbang.
+     *
+     * Aslinya PNG 1600 px berukuran megabita — PNG memang buruk untuk foto —
+     * sementara halaman scan ringan menggambarnya di kotak 240×320 lalu
+     * membuangnya 2,5 detik kemudian. Di box Android TV dengan wifi sekolah,
+     * satu siswa lewat berarti satu unduhan multi-megabita plus dekode PNG
+     * besar; itu yang membuat gerbangnya terasa lambat, bukan halamannya.
+     *
+     * Gagalnya sengaja TIDAK melempar: thumbnail cuma percepatan. Foto aslinya
+     * sudah tersimpan dengan selamat di baris sebelumnya, dan pembacanya jatuh
+     * ke sana sendiri lewat `StudentPhotoStorage::displayUrl()`. Menggagalkan
+     * unggahan foto gara-gara turunannya gagal ditulis adalah kerugian bersih.
+     */
+    private function writeThumbnail(\GdImage $image, string $storagePath): void
+    {
+        try {
+            $w = imagesx($image);
+            $h = imagesy($image);
+            $skala = min(StudentPhotoStorage::THUMB_WIDTH / $w, StudentPhotoStorage::THUMB_HEIGHT / $h, 1.0);
+
+            $tw = max(1, (int) round($w * $skala));
+            $th = max(1, (int) round($h * $skala));
+
+            $kecil = imagecreatetruecolor($tw, $th);
+            imagecopyresampled($kecil, $image, 0, 0, 0, 0, $tw, $th, $w, $h);
+
+            imagejpeg(
+                $kecil,
+                Storage::disk('public')->path(StudentPhotoStorage::thumbPath($storagePath)),
+                StudentPhotoStorage::THUMB_QUALITY,
+            );
+
+            imagedestroy($kecil);
+        } catch (\Throwable) {
+            // Sengaja diam — lihat docblock.
+        }
     }
 
     /**

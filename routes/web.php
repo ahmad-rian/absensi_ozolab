@@ -50,8 +50,13 @@ use App\Http\Controllers\Public\CardFormController;
 use App\Http\Controllers\PublicScannerController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StudentRegistrationController;
+use App\Http\Middleware\HandleInertiaRequests;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 // FAQ datang dari config/seo.php supaya isi yang dibaca pengunjung dan isi yang
 // dibaca mesin (skema FAQPage) tidak pernah menyimpang.
@@ -61,20 +66,62 @@ Route::get('/', fn () => Inertia\Inertia::render('welcome', ['faqs' => config('s
 Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('llms.txt', [SeoController::class, 'llms'])->name('seo.llms');
 Route::get('scan/{school:scanner_token}', [PublicScannerController::class, 'index'])->name('public.scanner');
-Route::post('scan/{school:scanner_token}', [PublicScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.scanner.scan');
+
+/*
+ | Rute perangkat gerbang: tanpa session, tanpa CSRF, tanpa Inertia.
+ |
+ | Yang membukanya box Android TV berspesifikasi rendah yang menyala sepanjang
+ | hari. Dulu tiap buka halaman DAN tiap kartu ditempel menulis satu baris
+ | session — dipicu semata oleh `csrf_token()` di dalam Blade-nya, karena
+ | `StartSession` selalu menyimpan tanpa memeriksa apakah ada yang berubah.
+ |
+ | CSRF dilepas karena di sini ia tidak menjaga apa pun: ia melindungi sesi
+ | login, sedangkan gerbang tidak punya sesi. Penjaga sebenarnya `scanner_token`
+ | di URL plus `qr_token` kartu — dan penyerang yang memegang keduanya bisa
+ | memanggil endpoint ini lewat curl tanpa terhalang CSRF sama sekali.
+ |
+ | `HandleInertiaRequests` ikut dilepas karena ia membaca session (`flash`) dan
+ | akan melempar tanpa session; ia juga menempelkan `Vary: X-Inertia` yang cuma
+ | memecah cache di depan Cloudflare untuk halaman yang bukan Inertia.
+ |
+ | Sengaja HANYA empat rute ini. Scan React, sholat, dan perpustakaan tetap
+ | bersession — masing-masing punya pertimbangan sendiri, dan ada tes yang
+ | menjaga pengecualian ini tidak melebar diam-diam.
+ */
+$tanpaSession = [
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    PreventRequestForgery::class,
+    HandleInertiaRequests::class,
+    AddLinkHeadersForPreloadedAssets::class,
+];
+
+Route::post('scan/{school:scanner_token}', [PublicScannerController::class, 'scan'])
+    ->middleware('throttle:scan-gerbang')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.scanner.scan');
 
 // Versi ringan untuk perangkat gerbang berspesifikasi rendah (box Android TV).
 // Blade polos tanpa React/Inertia/Tailwind: app.css memakai oklch() yang baru
 // dikenal Chrome 111+, sedangkan box semacam itu umumnya masih Chrome 80-100 dan
 // gagal mem-parse seluruh variabel warnanya. POST-nya tetap ke public.scanner.scan
 // supaya logika absensinya tidak punya salinan kedua.
-Route::get('scan/{school:scanner_token}/ringan', [PublicScannerController::class, 'light'])->name('public.scanner.light');
+Route::get('scan/{school:scanner_token}/ringan', [PublicScannerController::class, 'light'])
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.scanner.light');
 
 // Alamat pendek menuju halaman ringan di atas. Alamatnya diketik dengan remote
 // TV, jadi 40 karakter scanner_token tidak masuk akal. Throttle-nya rapat karena
 // rute ini satu-satunya yang mengubah tebakan pendek jadi token penuh.
-Route::get('g/{kode}', [PublicScannerController::class, 'shortLink'])->middleware('throttle:30,1')->name('public.scanner.short');
-Route::post('g/{kode}', [PublicScannerController::class, 'shortScan'])->middleware('throttle:120,1')->name('public.scanner.short.scan');
+Route::get('g/{kode}', [PublicScannerController::class, 'shortLink'])
+    ->middleware('throttle:30,1')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.scanner.short');
+
+Route::post('g/{kode}', [PublicScannerController::class, 'shortScan'])
+    ->middleware('throttle:scan-gerbang')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.scanner.short.scan');
 
 // Absen sholat dzuhur — URL terpisah supaya device mushola tidak bisa salah mode.
 Route::get('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'index'])->name('public.prayer-scanner');

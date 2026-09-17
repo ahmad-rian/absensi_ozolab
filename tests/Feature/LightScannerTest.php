@@ -17,7 +17,10 @@ test('halaman ringan tampil dan menyebut nama sekolahnya', function () {
     $this->get(route('public.scanner.light', ['school' => $school->scanner_token]))
         ->assertOk()
         ->assertSee('SMP MAJU MAKMUR')
-        ->assertSee('csrf-token', false);
+        // Justru TIDAK ada meta csrf-token lagi. Rute gerbang dikecualikan dari
+        // CSRF dan session; memanggil csrf_token() di Blade-lah yang dulu
+        // memaksa satu baris session ditulis tiap buka halaman dan tiap scan.
+        ->assertDontSee('csrf-token', false);
 });
 
 test('sekolah nonaktif menampilkan pesan, bukan 403', function () {
@@ -120,17 +123,41 @@ test('kode yang ambigu ditolak, bukan ditebak', function () {
 });
 
 /**
- * Penjaga tingkat sumber. Ketiga hal ini yang membuat aplikasi utama tidak bisa
+ * Penjaga tingkat sumber. Semua ini yang membuat aplikasi utama tidak bisa
  * dibuka di perangkat sasaran; halaman ringan tidak boleh memungutnya kembali.
  */
 test('halaman ringan tidak memungut kembali beban yang justru dihindarinya', function () {
-    // Komentar Blade dibuang dulu: catatan di kepala berkas menyebut ketiga
-    // istilah ini justru untuk menjelaskan kenapa mereka dilarang.
+    // Komentar Blade dibuang dulu: catatan di kepala berkas menyebut
+    // istilah-istilah ini justru untuk menjelaskan kenapa mereka dilarang.
     $blade = preg_replace('/\{\{--.*?--\}\}/s', '', file_get_contents(resource_path('views/scan/light.blade.php')));
 
     expect($blade)
         ->not->toContain('@vite')
         ->not->toContain('oklch(')
         ->not->toContain('color-mix(')
-        ->not->toContain('aspect-ratio');
+        ->not->toContain('aspect-ratio')
+        // Nol request eksternal. Satu berkas, satu perjalanan — itu seluruh
+        // alasan halaman ini ada.
+        ->not->toContain('<script src')
+        ->not->toContain('rel="stylesheet"')
+        // Locale non-default memaksa jalur ICU, dan jam dinding memanggilnya
+        // sekali per detik selamanya di perangkat yang paling lemah.
+        ->not->toContain('toLocaleTimeString');
+});
+
+/**
+ * Ambang ukuran, supaya halaman ini tidak menggemuk sedikit demi sedikit tanpa
+ * ada yang menyadarinya sampai gerbang terasa lambat lagi.
+ *
+ * Angkanya longgar dengan sengaja — ini pagar, bukan target. Yang dijaga adalah
+ * ordenya: puluhan kilobita, bukan ratusan.
+ */
+test('halaman ringan tetap di bawah 40 KB', function () {
+    $school = School::factory()->create();
+
+    $html = $this->get(route('public.scanner.light', ['school' => $school->scanner_token]))
+        ->assertOk()
+        ->getContent();
+
+    expect(strlen($html))->toBeLessThan(40 * 1024);
 });

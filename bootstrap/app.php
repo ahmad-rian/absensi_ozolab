@@ -74,6 +74,24 @@ return Application::configure(basePath: dirname(__DIR__))
                 ]);
             }
 
+            /*
+                Gerbang tidak pernah dibalas halaman React.
+
+                Rute gerbang sengaja dibuat Blade polos karena yang membukanya
+                box Android TV ber-Chrome tua — halaman yang bundelnya saja
+                tidak sanggup ia jalankan. Tanpa cabang ini, satu salah ketik
+                kode `/g/` justru mengirimkan bundel React ke perangkat itu:
+                halaman yang dirancang seringan mungkin, gagalnya paling berat.
+            */
+            if ($exception instanceof HttpExceptionInterface
+                && (request()->is('g/*') || request()->is('scan/*/ringan'))) {
+                return response(
+                    'Halaman absensi tidak dikenali. Periksa kembali alamatnya.',
+                    $exception->getStatusCode(),
+                    ['Content-Type' => 'text/plain; charset=UTF-8'],
+                );
+            }
+
             if ($exception instanceof HttpExceptionInterface) {
                 $status = $exception->getStatusCode();
                 $page = match ($status) {

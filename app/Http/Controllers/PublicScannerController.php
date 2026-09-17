@@ -11,6 +11,7 @@ use App\Support\ScannerShortLink;
 use App\Support\ScanRejectionLog;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
+use App\Support\StudentPhotoStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -177,9 +178,12 @@ class PublicScannerController extends Controller
                 'nis' => $student->nis,
                 'no_absen' => $student->no_absen,
                 'classroom' => $student->classroom?->name,
-                'photo_url' => $student->photo_path
-                    ? Storage::disk('public')->url($student->photo_path)
-                    : null,
+                // Thumbnail kalau ada, foto asli kalau belum. Aslinya PNG
+                // 1600 px berukuran megabita sementara layar gerbang cuma
+                // menggambarnya 240×320 — di box Android TV dengan wifi
+                // sekolah, itu yang membuat jeda antara kartu ditempel dan
+                // wajah muncul terasa panjang.
+                'photo_url' => StudentPhotoStorage::displayUrl($student->photo_path),
                 'status' => $result['attendance']?->status->label(),
                 'type' => $type?->value,
                 'type_label' => $type === AttendanceType::CheckIn ? 'Masuk' : 'Pulang',

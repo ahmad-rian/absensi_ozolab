@@ -21,9 +21,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     {{-- Alamatnya memuat kode akses sekolah. Terindeks = bocor. --}}
     <meta name="robots" content="noindex, nofollow">
+    {{-- Favicon kosong, bukan tanpa favicon sama sekali. Tanpa baris ini
+         peramban tetap meminta /favicon.ico, dan permintaan itu masuk ke
+         Laravel lengkap dengan seluruh middleware hanya untuk dijawab 404. --}}
+    <link rel="icon" href="data:,">
     <title>Absensi {{ $school->name }}</title>
     <style>
         * { box-sizing: border-box; }
@@ -200,8 +203,10 @@
                Pembaca kartu 5-20 ms; manusia tercepat pun di atas 50 ms. */
             var MACHINE_MS_PER_KEY = 50;
 
-            var meta = document.querySelector('meta[name="csrf-token"]');
-            var CSRF = meta ? meta.getAttribute('content') : '';
+            /* Bunyi dan suara bisa dimatikan lewat ?diam=1 untuk gerbang
+               yang ramai — mesin TTS Android jauh lebih berat daripada
+               halamannya sendiri. */
+            var DIAM = /[?&]diam=1\b/.test(window.location.search);
 
             var stage = document.getElementById('stage');
             var idle = document.getElementById('idle');
@@ -216,8 +221,21 @@
             /* Bentuk bacaan terakhir, dipakai hanya saat menampilkan kegagalan. */
             var terakhir = null;
 
+            /* Dirakit sendiri, bukan lewat pemformat berlokal bawaan Date.
+               Locale non-default memaksa jalur ICU, dan ini berjalan sekali per
+               detik selamanya di perangkat yang justru paling lemah. Hasilnya
+               sama persis untuk HH:MM:SS. Ada tes penjaga yang melarang
+               pemformat itu kembali ke berkas ini. */
+            function duaAngka(n) {
+                return n < 10 ? '0' + n : String(n);
+            }
+
+            function jam(d) {
+                return duaAngka(d.getHours()) + '.' + duaAngka(d.getMinutes()) + '.' + duaAngka(d.getSeconds());
+            }
+
             function tick() {
-                clockEl.textContent = new Date().toLocaleTimeString('id-ID');
+                clockEl.textContent = jam(new Date());
             }
             tick();
             setInterval(tick, 1000);
@@ -227,7 +245,7 @@
             var audio = null;
 
             function beep(freq, ms) {
-                if (!Ctx) return;
+                if (!Ctx || DIAM) return;
                 try {
                     if (!audio) audio = new Ctx();
                     var osc = audio.createOscillator();
@@ -244,9 +262,14 @@
             }
 
             function say(text) {
-                if (!text) return;
+                if (!text || DIAM) return;
                 if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) return;
                 try {
+                    /* Dibatalkan dulu. Tanpa ini antrean TTS menumpuk saat
+                       siswa datang beruntun, dan gerbang membacakan nama anak
+                       yang sudah lewat setengah menit lalu. */
+                    window.speechSynthesis.cancel();
+
                     var u = new SpeechSynthesisUtterance(text);
                     u.lang = 'id-ID';
                     window.speechSynthesis.speak(u);
@@ -312,7 +335,7 @@
                 entries.unshift({
                     ok: !!data.success,
                     text: label,
-                    at: new Date().toLocaleTimeString('id-ID'),
+                    at: jam(new Date()),
                 });
                 entries = entries.slice(0, 8);
 
@@ -346,9 +369,11 @@
 
                 fetch(SCAN_URL, {
                     method: 'POST',
+                    /* Tanpa X-CSRF-TOKEN: rute gerbang memang dikecualikan
+                       dari CSRF dan session. Penjaganya kode sekolah di URL
+                       plus token kartu. */
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': CSRF,
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({ token: token })
@@ -442,12 +467,24 @@
                 box.value = '';
             });
 
-            /* Fokus selalu direbut supaya remote TV maupun reader mendarat di tempat benar. */
+            /*
+                Fokus direbut saat benar-benar lepas, bukan tiap tiga detik.
+
+                Versi sebelumnya memanggil box.focus() lewat setInterval
+                selamanya. Selain memaksa recalc terus-menerus di perangkat
+                yang paling tidak sanggup menanggungnya, pada sebagian build
+                Android panggilan focus() berulang memunculkan papan ketik
+                layar di tengah gerbang yang sedang dipakai.
+            */
             function grabFocus() {
                 try { box.focus(); } catch (e) {}
             }
             grabFocus();
-            setInterval(grabFocus, 3000);
+            box.addEventListener('focusout', function () {
+                /* Ditunda satu putaran: focusout menyala juga saat fokus
+                   berpindah ke elemen lain di halaman yang sama. */
+                setTimeout(grabFocus, 0);
+            });
             document.addEventListener('click', grabFocus);
 
             /* Layar jangan tidur. Box lama tidak punya API ini — abaikan diam-diam. */
