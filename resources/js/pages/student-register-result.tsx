@@ -167,7 +167,7 @@ export default function StudentRegisterResult({ student, queued }: Props) {
 
                                 {statusItems.length === 0 ? (
                                     <div className="grid gap-4 sm:grid-cols-2">
-                                        {['Foto Siswa', 'Kartu OSIS', 'Kartu OSIS Belakang', 'Lembar Pas Foto 4R'].map((name) => (
+                                        {['Foto Siswa'].map((name) => (
                                             <div
                                                 key={name}
                                                 className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800"

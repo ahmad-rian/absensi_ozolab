@@ -54,10 +54,9 @@ class StudentRegistrationController extends Controller
                 'logo_path' => $school->logo_path,
             ]),
             'classrooms' => $classrooms,
-            // Tidak ada `photoGuide` maupun `registrationToken` di sini: form
-            // panjang berhenti meminta foto, dan token itu satu-satunya gunanya
-            // adalah membuka endpoint pratinjau. `quick()` masih menerbitkan
-            // tokennya sendiri karena di sana foto justru wajib.
+            // Mengikat endpoint pratinjau ke sesi yang benar-benar membuka
+            // halaman ini, supaya tidak bisa dipanggil lepas lewat curl.
+            'registrationToken' => $this->issueRegistrationToken(),
         ]);
     }
 
@@ -276,11 +275,10 @@ class StudentRegistrationController extends Controller
             'parent_phone' => ['required', 'string', 'max:20'],
             'parent_email' => ['nullable', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'parent_relation' => ['required', 'string', 'in:AYAH,IBU,WALI'],
-            // Sengaja tidak ada aturan foto di sini. Form ini tidak lagi
-            // menanyakannya, dan membiarkan `photo_drive_filename` lolos
-            // validasi berarti siapa pun yang mengirim POST langsung tetap bisa
-            // menunjuk berkas mana yang dipakai — persis wewenang yang baru
-            // saja dipindahkan ke admin.
+            // Nullable, bukan required: langkah Foto boleh dilewati, dan yang
+            // melewatinya diurus admin dari halaman siswa.
+            'photo_drive_filename' => ['nullable', 'string', 'max:500'],
+            'photo_key' => ['nullable', 'string', 'alpha_num', 'size:32'],
         ], [
             'school_id.required' => 'Pilih sekolah terlebih dahulu.',
             'school_id.exists' => 'Sekolah tidak ditemukan.',
@@ -322,6 +320,9 @@ class StudentRegistrationController extends Controller
                 'address' => $validated['address'] ?? null,
                 'parent_name' => $validated['parent_name'] ?? null,
                 'parent_phone' => $validated['parent_phone'] ?? null,
+                // Nama berkas yang diketik pendaftar disimpan supaya fotonya
+                // bisa diambil ulang nanti tanpa bertanya lagi ke orang tuanya.
+                'photo_drive_filename' => $validated['photo_drive_filename'] ?? null,
                 'is_active' => true,
             ]);
 
@@ -342,17 +343,41 @@ class StudentRegistrationController extends Controller
             return $student;
         });
 
-        // Tidak ada job yang diantrekan dari sini.
-        //
-        // Sampai versi sebelumnya satu POST publik menyeret unduhan Drive dan
-        // dua render headless Chrome sekaligus. Pas foto sekarang dipasang
-        // admin dari halaman siswa, dan kartunya dibuat dari sana — jadi
-        // endpoint ini kembali jadi apa adanya: satu INSERT.
+        /*
+            Fotonya saja — TIDAK ada kartu yang dirender dari sini.
+
+            Langkah Foto dihidupkan lagi sebagai langkah opsional, jadi
+            unduhan Drive-nya ikut kembali. Yang tidak dikembalikan adalah
+            render kartunya: dua panggilan headless Chrome per POST di endpoint
+            publik itu jalur penyalahgunaan yang jelas, dan kartu sekarang
+            memang dibuat admin dari halaman siswa atau layar generate massal.
+        */
+        $adaFoto = ! empty($validated['photo_drive_filename']);
+
+        if ($adaFoto) {
+            // Kunci ditukar jadi path di sisi server; klien tidak pernah
+            // menentukan berkas mana yang dibaca lalu dihapus job.
+            $previewPath = ! empty($validated['photo_key'])
+                ? cache()->get('registration-preview:'.$validated['photo_key'])
+                : null;
+
+            RegisterStudentCardsJob::dispatch(
+                studentId: $student->id,
+                photoFilename: $validated['photo_drive_filename'],
+                photoTemp: $previewPath,
+                generateCards: false,
+                outputs: [RegisterStudentCardsJob::OUTPUT_PHOTO],
+            );
+        }
+
         $student->load('classroom');
 
         return response()->json([
             'success' => true,
-            'message' => 'Data siswa berhasil didaftarkan! Pas foto dan kartu akan diurus admin sekolah.',
+            'message' => $adaFoto
+                ? 'Data siswa berhasil didaftarkan! Fotonya sedang diambil dari Google Drive. Kartu dibuat admin sekolah.'
+                : 'Data siswa berhasil didaftarkan! Pas foto dan kartu akan diurus admin sekolah.',
+            'queued' => $adaFoto,
             'student' => [
                 'id' => $student->id,
                 'full_name' => $student->full_name,

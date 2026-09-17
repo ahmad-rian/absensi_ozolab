@@ -1,20 +1,25 @@
 <?php
 
+use App\Jobs\RegisterStudentCardsJob;
 use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Student;
 use Illuminate\Support\Facades\Queue;
 
 /*
- | Urusan foto pindah dari pendaftar ke admin sekolah.
+ | Langkah Foto di /daftar: ada, tapi boleh dilewati.
  |
- | Sampai sebelum ini, orang tua yang mengisi /daftar mengetik nama berkas foto
- | yang ada di Google Drive, dan satu POST publik langsung menyeret unduhan
- | Drive plus dua render headless Chrome. Dua hal yang salah sekaligus: yang
- | memilih foto adalah orang yang tidak pernah melihat isi Drive, dan sebuah
- | endpoint publik bisa memaksa pekerjaan berat di antrean bersama.
+ | Dulu satu POST publik menyeret unduhan Drive PLUS dua render headless
+ | Chrome, dan fotonya wajib — pendaftar yang belum tahu nomor fotonya tidak
+ | bisa menyelesaikan formulir sama sekali.
  |
- | Yang dijaga di sini adalah hal-hal yang TIDAK boleh terjadi lagi.
+ | Sekarang dua hal dipisah. Foto boleh diisi dan boleh dikosongkan; yang
+ | mengosongkan diurus admin dari halaman siswa. Tapi KARTU tidak pernah lagi
+ | lahir dari endpoint publik ini — dua panggilan headless Chrome per POST itu
+ | jalur penyalahgunaan yang jelas, dan kartu memang sudah punya rumahnya
+ | sendiri di sisi admin.
+ |
+ | Berkas ini menjaga kedua sisi: yang boleh terjadi, dan yang tidak.
  */
 
 beforeEach(function () {
@@ -48,48 +53,53 @@ function siswaTerdaftar(): ?Student
     return Student::withoutGlobalScope('school')->firstWhere('nisn', '9988776655');
 }
 
-test('pendaftaran tanpa isian foto tetap berhasil dan tidak mengantrekan apa pun', function () {
+test('foto boleh dikosongkan — pendaftaran tetap berhasil dan nol job diantrekan', function () {
     test()->postJson('/daftar', pendaftaran())
         ->assertOk()
-        ->assertJson(['success' => true]);
+        ->assertJson(['success' => true, 'queued' => false]);
 
     expect(siswaTerdaftar())->not->toBeNull();
 
-    // Inilah pokoknya: satu INSERT, nol pekerjaan antrean. Tanpa penjagaan ini
-    // jalur lama bisa kembali tanpa ada yang menyadarinya sampai antrean
-    // `cards` penuh lagi di hari pendaftaran.
+    // Yang melewati langkah Foto tidak menyisakan pekerjaan apa pun di antrean.
     Queue::assertNothingPushed();
 });
 
-test('nama berkas Drive yang tetap dikirim diabaikan, bukan diam-diam dipakai', function () {
-    // Siapa pun bisa mem-POST endpoint publik ini langsung, bukan lewat form.
-    // Kalau field-nya masih diterima, wewenang memilih foto yang baru saja
-    // dipindahkan ke admin bocor keluar lagi lewat pintu belakang.
+test('foto yang diisi diambil dari Drive, tapi TIDAK ikut merender kartu', function () {
     test()->postJson('/daftar', pendaftaran([
         'photo_drive_filename' => 'FIC_0008.JPG',
-        'photo_key' => str_repeat('a', 32),
+    ]))
+        ->assertOk()
+        ->assertJson(['queued' => true]);
+
+    expect(siswaTerdaftar()->photo_drive_filename)->toBe('FIC_0008.JPG');
+
+    Queue::assertPushed(RegisterStudentCardsJob::class, function (RegisterStudentCardsJob $job) {
+        // Satu keluaran saja. Kalau OUTPUT_CARDS ikut lolos ke sini, endpoint
+        // publik ini kembali bisa memaksa dua render headless Chrome per POST
+        // — persis yang baru saja ditutup.
+        return $job->outputs === [RegisterStudentCardsJob::OUTPUT_PHOTO]
+            && $job->generateCards === false
+            && $job->photoFilename === 'FIC_0008.JPG';
+    });
+
+    Queue::assertPushed(RegisterStudentCardsJob::class, 1);
+});
+
+test('generate_cards yang diselundupkan lewat POST langsung tidak berpengaruh', function () {
+    // Field-nya sudah tidak divalidasi lagi, tapi yang menyelundupkannya bukan
+    // form — melainkan siapa pun yang mem-POST endpoint publik ini sendiri.
+    test()->postJson('/daftar', pendaftaran([
+        'photo_drive_filename' => 'FIC_0008.JPG',
         'generate_cards' => true,
     ]))->assertOk();
 
-    $siswa = siswaTerdaftar();
-
-    expect($siswa->photo_drive_filename)->toBeNull()
-        ->and($siswa->photo_path)->toBeNull();
-
-    Queue::assertNothingPushed();
+    Queue::assertPushed(RegisterStudentCardsJob::class, function (RegisterStudentCardsJob $job) {
+        return $job->generateCards === false
+            && ! in_array(RegisterStudentCardsJob::OUTPUT_CARDS, $job->outputs, true);
+    });
 });
 
-test('respons pendaftaran tidak lagi mengaku ada yang sedang diproses', function () {
-    // Halaman hasil memakai `queued` untuk memutuskan apakah menampilkan ubin
-    // "sedang diproses". Selama ia masih true, yang dilihat orang tua adalah
-    // empat kerangka berputar yang tidak akan pernah selesai.
-    $respons = test()->postJson('/daftar', pendaftaran())->assertOk();
-
-    expect($respons->json('queued'))->toBeNull()
-        ->and($respons->json('message'))->toContain('admin sekolah');
-});
-
-test('halaman hasil siswa baru tidak menunggu keluaran yang tidak pernah ada', function () {
+test('halaman hasil siswa tanpa foto tidak menunggu keluaran yang tidak pernah ada', function () {
     test()->postJson('/daftar', pendaftaran())->assertOk();
 
     $siswa = siswaTerdaftar();
