@@ -11,6 +11,22 @@ class SchoolCardLayout extends Model
 {
     use BelongsToSchool, HasUlids;
 
+    /**
+     * Watermark bawaan sisi belakang kartu OSIS (tipe `perpustakaan`).
+     *
+     * Dulu nilainya ada di TIGA tempat dan sudah menyimpang: `SchoolController`
+     * menulis "PERPUSTAKAAN SEKOLAH" ke layout sekolah baru, sementara fallback
+     * di `RegisterStudentCardsJob` dan default di `student-card.blade.php`
+     * berbunyi "PERPUSTAKAAN WIDYA SASTRA" — nama satu perpustakaan tertentu
+     * yang ikut tercetak di kartu sekolah mana pun yang layout-nya lahir dari
+     * jalur itu. Sekolah yang sudah menyimpan nilainya sendiri tidak tersentuh;
+     * konstanta ini hanya berlaku saat `watermark_text` memang kosong.
+     */
+    public const WATERMARK_BELAKANG = 'PERPUSTAKAAN SEKOLAH';
+
+    /** Watermark bawaan sisi depan kartu OSIS. */
+    public const WATERMARK_OSIS = 'ORGANISASI SISWA INTRA SEKOLAH';
+
     protected $fillable = [
         'school_id',
         'name',

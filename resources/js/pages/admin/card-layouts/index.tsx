@@ -18,7 +18,7 @@ type Props = { layouts: Layout[] };
 
 const typeLabels: Record<string, string> = {
     osis: 'Kartu OSIS',
-    perpustakaan: 'Kartu Perpustakaan',
+    perpustakaan: 'Kartu OSIS Belakang',
     identitas: 'Kartu Identitas',
 };
 

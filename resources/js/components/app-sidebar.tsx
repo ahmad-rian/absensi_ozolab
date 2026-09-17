@@ -54,7 +54,18 @@ import type { SchoolFeatureKey, SchoolFeatureMap } from '@/types';
  * `feature` adalah lapis kedua: fitur yang dimatikan sekolah menghilangkan
  * menunya, sejalan dengan middleware `feature:` di rute yang sama.
  */
-type GuardedNavItem = BadgedNavItem & { permission: string; feature?: SchoolFeatureKey };
+type GuardedNavItem = BadgedNavItem & {
+    permission: string;
+    feature?: SchoolFeatureKey;
+    /**
+     * Hanya untuk super admin, di luar cek permission.
+     *
+     * Dibutuhkan karena ada menu yang permission-nya dipegang admin sekolah
+     * juga (`card-generation.access`) sementara rutenya memasang `super-admin`
+     * — tanpa penanda ini, admin sekolah melihat menunya lalu ditolak 403.
+     */
+    superAdmin?: boolean;
+};
 
 type NavSection = { label: string; items: GuardedNavItem[] };
 
@@ -96,6 +107,7 @@ const sections: NavSection[] = [
         items: [
             { title: 'Frame & Bingkai', href: '/admin/frames', icon: Frame, permission: 'frames.access', feature: 'kartu_album' },
             { title: 'Layout Kartu', href: '/admin/card-layouts', icon: LayoutTemplate, permission: 'card-layouts.access', feature: 'kartu_album' },
+            { title: 'Generate Kartu', href: '/admin/generate-kartu', icon: CreditCard, permission: 'card-generation.access', feature: 'kartu_album', superAdmin: true },
             { title: 'Riwayat Kartu', href: '/admin/card-generation', icon: History, permission: 'card-generation.access', feature: 'kartu_album' },
             { title: 'Layout Album', href: '/admin/album-layouts', icon: BookOpen, permission: 'album-layouts.access', feature: 'kartu_album' },
             { title: 'Generate Album', href: '/admin/album-generation', icon: Printer, permission: 'album-generation.access', feature: 'kartu_album' },
@@ -173,6 +185,8 @@ export function AppSidebar() {
                 // `isSuperAdmin` hanya melompati cek permission, BUKAN cek
                 // fitur — sama persis dengan aturan di middleware `feature:`.
                 .filter((item) => (item.permission === '' || isSuperAdmin || granted.includes(item.permission)) && featureOn(item.feature))
+                // Menu yang rutenya memasang middleware `super-admin`.
+                .filter((item) => ! item.superAdmin || isSuperAdmin)
                 // Tanpa alamat dari server, tautan Studio disembunyikan saja —
                 // href kosong yang bisa diklik lebih membingungkan daripada
                 // menu yang tidak ada.

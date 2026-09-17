@@ -23,6 +23,15 @@ class GoogleDriveService
 
     private GoogleDrive $drive;
 
+    /**
+     * Klien mentahnya disimpan, bukan cuma pembungkus Drive-nya.
+     *
+     * `thumbnailBytes()` menembak URL thumbnail yang berada DI LUAR API Drive
+     * (`lh3.googleusercontent.com`), jadi ia butuh klien HTTP yang sudah
+     * memasang token — bukan `files->get()`.
+     */
+    private GoogleClient $client;
+
     /** @var array<string, string> Cache folder per instance supaya batch tidak menembak Drive berulang kali. */
     private array $folderCache = [];
 
@@ -31,8 +40,8 @@ class GoogleDriveService
 
     public function __construct(private SchoolDriveConfig $config)
     {
-        $client = $this->buildClient($config);
-        $this->drive = new GoogleDrive($client);
+        $this->client = $this->buildClient($config);
+        $this->drive = new GoogleDrive($this->client);
     }
 
     /**
@@ -1133,6 +1142,123 @@ class GoogleDriveService
     public function folderExists(string $folderId): bool
     {
         return $this->fileById($folderId) !== null;
+    }
+
+    /**
+     * Satu folder berikut induknya — untuk penjelajah folder di halaman admin.
+     *
+     * `fileById()` tidak cukup karena ia tidak mengambil `parents`, dan tanpa
+     * induk penjelajahnya tidak punya tombol "naik satu tingkat".
+     *
+     * @return array{id: string, name: string, parent: string|null}|null
+     */
+    public function folderDetail(string $folderId): ?array
+    {
+        try {
+            $file = $this->drive->files->get($folderId, [
+                'fields' => 'id, name, trashed, parents, mimeType',
+                'supportsAllDrives' => true,
+            ]);
+        } catch (Throwable) {
+            return null;
+        }
+
+        if ($file->getTrashed() || $file->getMimeType() !== 'application/vnd.google-apps.folder') {
+            return null;
+        }
+
+        return [
+            'id' => $file->getId(),
+            'name' => $file->getName(),
+            'parent' => ($file->getParents() ?: [null])[0],
+        ];
+    }
+
+    /**
+     * Berkas/folder ini benar-benar milik sekolah ini?
+     *
+     * Satu akun OAuth melayani SEMUA sekolah, jadi id Drive apa pun yang datang
+     * dari klien bisa dibaca kalau tidak dibatasi — termasuk berkas sekolah
+     * lain. Ini gerbang untuk setiap endpoint yang menerima id Drive dari luar.
+     * Root sekolahnya sendiri ikut dihitung "di dalam"; `isInsideFolder()` hanya
+     * menelusuri ke atas dan tidak pernah mencocokkan dirinya sendiri.
+     */
+    public function isInsideSchoolRoot(string $fileId): bool
+    {
+        $root = $this->ensureSchoolRoot();
+
+        if (! $root) {
+            return false;
+        }
+
+        return $fileId === $root || $this->isInsideFolder($fileId, $root);
+    }
+
+    /**
+     * Isi folder untuk penjelajah admin: gambar berikut penanda thumbnail.
+     *
+     * Dipisah dari `imagesInFolder()` yang dipakai jalur pencocokan otomatis —
+     * bentuk larik di sana ikut dibaca `pickPhotoCandidate()`, dan menambah
+     * kolom ke sana berarti menyentuh jalur yang sudah teruji demi keperluan
+     * tampilan.
+     *
+     * @return array<int, array{id: string, name: string, size: int|null, modifiedTime: string|null, thumb: bool}>
+     */
+    public function imagesForPicker(string $folderId, int $limit = 200): array
+    {
+        $result = $this->drive->files->listFiles([
+            'q' => "'{$folderId}' in parents and mimeType contains 'image/' and trashed = false",
+            'pageSize' => min($limit, 1000),
+            'fields' => 'files(id, name, size, modifiedTime, thumbnailLink)',
+            'orderBy' => 'name',
+            'supportsAllDrives' => true,
+            'includeItemsFromAllDrives' => true,
+        ]);
+
+        return collect($result->getFiles())->map(fn (DriveFile $f) => [
+            'id' => $f->getId(),
+            'name' => $f->getName(),
+            'size' => $f->getSize() !== null ? (int) $f->getSize() : null,
+            'modifiedTime' => $f->getModifiedTime(),
+            'thumb' => (bool) $f->getThumbnailLink(),
+        ])->all();
+    }
+
+    /**
+     * Isi thumbnail Drive sebagai bytes, atau null kalau Drive tidak punya.
+     *
+     * Diambil di server, bukan dengan menaruh `thumbnailLink` di `<img src>`:
+     * tautan itu berumur pendek dan menuntut sesi Google si pemilik berkas,
+     * sehingga di peramban admin ia hanya menghasilkan gambar rusak.
+     *
+     * Yang diambil thumbnail, BUKAN berkas aslinya. Satu folder kelas bisa
+     * berisi puluhan JPEG 24 MP; mengunduhnya utuh hanya untuk menggambar
+     * petak pratinjau akan menghabiskan kuota dan waktu.
+     */
+    public function thumbnailBytes(string $fileId): ?string
+    {
+        try {
+            $file = $this->drive->files->get($fileId, [
+                'fields' => 'thumbnailLink, trashed',
+                'supportsAllDrives' => true,
+            ]);
+        } catch (Throwable) {
+            return null;
+        }
+
+        $link = $file->getTrashed() ? null : $file->getThumbnailLink();
+
+        if (! $link) {
+            return null;
+        }
+
+        try {
+            $response = $this->client->authorize()->get($link);
+        } catch (Throwable) {
+            return null;
+        }
+
+        return (string) $response->getBody();
     }
 
     /**

@@ -750,7 +750,7 @@ export default function CardLayoutEditor({ layout, defaultElements, frames }: Pr
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="osis">Kartu OSIS</SelectItem>
-                                            <SelectItem value="perpustakaan">Kartu Perpustakaan</SelectItem>
+                                            <SelectItem value="perpustakaan">Kartu OSIS Belakang</SelectItem>
                                             <SelectItem value="identitas">Kartu Identitas</SelectItem>
                                         </SelectContent>
                                     </Select>

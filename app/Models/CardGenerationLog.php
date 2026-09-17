@@ -15,6 +15,7 @@ class CardGenerationLog extends Model
         'school_id',
         'student_id',
         'school_card_layout_id',
+        'card_generation_batch_id',
         'type',
         'status',
         'file_path',
@@ -32,5 +33,10 @@ class CardGenerationLog extends Model
     public function cardLayout(): BelongsTo
     {
         return $this->belongsTo(SchoolCardLayout::class, 'school_card_layout_id');
+    }
+
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(CardGenerationBatch::class, 'card_generation_batch_id');
     }
 }

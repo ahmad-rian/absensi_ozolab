@@ -130,7 +130,23 @@ export default function StudentRegisterResult({ student, queued }: Props) {
                                 </div>
                             </div>
 
+                            {/*
+                                Siswa yang mendaftar sesudah alur foto pindah ke
+                                admin tidak punya satu pun keluaran yang sedang
+                                diproses. Tanpa cabang ini yang tampil empat ubin
+                                kerangka yang berputar selamanya.
+                            */}
+                            {!queued && (
+                                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+                                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Foto dan kartu diurus sekolah</p>
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        Pas foto siswa dipasang oleh admin sekolah, lalu kartu OSIS dibuat dari foto itu.
+                                    </p>
+                                </div>
+                            )}
+
                             {/* Async generation results */}
+                            {queued && (
                             <div className="space-y-4">
                                 {statusDone ? (
                                     <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-100/60 p-4 dark:border-green-800 dark:bg-green-900/40">
@@ -151,7 +167,7 @@ export default function StudentRegisterResult({ student, queued }: Props) {
 
                                 {statusItems.length === 0 ? (
                                     <div className="grid gap-4 sm:grid-cols-2">
-                                        {['Foto Siswa', 'Kartu OSIS', 'Kartu Perpustakaan', 'Lembar Pas Foto 4R'].map((name) => (
+                                        {['Foto Siswa', 'Kartu OSIS', 'Kartu OSIS Belakang', 'Lembar Pas Foto 4R'].map((name) => (
                                             <div
                                                 key={name}
                                                 className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
@@ -176,6 +192,7 @@ export default function StudentRegisterResult({ student, queued }: Props) {
                                     </div>
                                 )}
                             </div>
+                            )}
 
                             <div className="mt-6 text-center">
                                 <a

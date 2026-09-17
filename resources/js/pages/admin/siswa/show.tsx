@@ -157,7 +157,7 @@ type PageProps = {
 
 const CARD_TYPES: { value: string; label: string }[] = [
     { value: 'osis', label: 'Kartu OSIS' },
-    { value: 'perpustakaan', label: 'Kartu Perpustakaan' },
+    { value: 'perpustakaan', label: 'Kartu OSIS Belakang' },
     { value: 'identitas', label: 'Kartu Identitas' },
 ];
 
@@ -1013,7 +1013,7 @@ export default function SiswaShow({
                                     ) : (
                                         <RefreshCw className="mr-2 size-4" />
                                     )}
-                                    {cardsProcessing ? 'Sedang dibuat…' : 'Generate Ulang Kartu'}
+                                    {cardsProcessing ? 'Sedang dibuat…' : 'Generate Ulang Kartu OSIS (depan + belakang)'}
                                 </Button>
                             </CardContent>
                         </Card>

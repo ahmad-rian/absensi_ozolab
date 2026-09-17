@@ -1,8 +1,7 @@
-import { router, useForm, usePage } from '@inertiajs/react';
-import { AlertTriangle, Check, CheckCircle2, Copy, CreditCard, Download, Loader2, User, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useForm, usePage } from '@inertiajs/react';
+import { Check, CheckCircle2, Loader2, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
-import type { CropGuide } from '@/components/shared/crop-guide-overlay';
 import {
     RegistrationFooter as Footer,
     RegistrationSection as FormSection,
@@ -24,34 +23,19 @@ type Classroom = { id: string; school_id: string; name: string; grade_level: num
 type Props = {
     schools: School[];
     classrooms: Classroom[];
-    photoGuide: CropGuide;
-    registrationToken: string;
 };
 
 type RegistrationResult = {
     success: boolean;
     message: string;
-    queued?: boolean;
     student: {
         id: string;
         full_name: string;
         nis: string;
         nisn: string | null;
         classroom: string | null;
-        photo_url: string | null;
     };
 };
-
-type StatusItem = {
-    type: 'photo' | 'card' | 'photo_sheet';
-    name: string;
-    status: 'processing' | 'completed' | 'failed';
-    url: string | null;
-    thumb_url: string | null;
-};
-
-/** Normalized crop rect (0..1) relative to the natural image. */
-type CropRect = { sx: number; sy: number; sw: number; sh: number };
 
 const religions = [
     { value: 'ISLAM', label: 'Islam' },
@@ -62,15 +46,22 @@ const religions = [
     { value: 'KONGHUCU', label: 'Konghucu' },
 ];
 
-const STORAGE_KEY = 'daftar_form_v1';
+/*
+    Versi 2 karena langkah Foto dibuang.
+
+    Draf yang tersimpan dari versi sebelumnya memuat `step` sampai 6 dan field
+    foto yang sudah tidak ada. Memakai kunci yang sama berarti orang yang sedang
+    mengisi form mendarat di langkah yang salah begitu versi ini tayang — dan
+    langkah itu tidak merender apa pun.
+*/
+const STORAGE_KEY = 'daftar_form_v2';
 
 const STEPS = [
     { id: 1, title: 'Sekolah' },
-    { id: 2, title: 'Foto' },
-    { id: 3, title: 'Data Siswa' },
-    { id: 4, title: 'Kelahiran & Alamat' },
-    { id: 5, title: 'Orang Tua' },
-    { id: 6, title: 'Review & Kirim' },
+    { id: 2, title: 'Data Siswa' },
+    { id: 3, title: 'Kelahiran & Alamat' },
+    { id: 4, title: 'Orang Tua' },
+    { id: 5, title: 'Review & Kirim' },
 ];
 
 const TOTAL_STEPS = STEPS.length;
@@ -91,10 +82,6 @@ type FormData = {
     parent_phone: string;
     parent_email: string;
     parent_relation: string;
-    photo_drive_filename: string;
-    photo_key: string;
-    manual_crop: CropRect | null;
-    generate_cards: boolean;
 };
 
 const INITIAL_DATA: FormData = {
@@ -113,10 +100,6 @@ const INITIAL_DATA: FormData = {
     parent_phone: '',
     parent_email: '',
     parent_relation: 'WALI',
-    photo_drive_filename: '',
-    photo_key: '',
-    manual_crop: null,
-    generate_cards: true,
 };
 
 /** Read the persisted wizard snapshot from localStorage (data minus transient preview state). */
@@ -141,36 +124,29 @@ function readPersisted(): { data: FormData; step: number } {
     return { data: INITIAL_DATA, step: 1 };
 }
 
-export default function StudentRegister({ schools, classrooms, registrationToken }: Props) {
+export default function StudentRegister({ schools, classrooms }: Props) {
     const { flash } = usePage().props as unknown as { flash: { success?: string } };
 
-    // Restore persisted wizard state once, synchronously, via lazy initializers.
-    const persistedRef = useRef(readPersisted());
+    /*
+        Draf dibaca sekali lewat inisialisator malas `useState`, bukan `useRef`.
+
+        Versi sebelumnya menyimpannya di ref lalu membaca `.current` di tengah
+        render — pelanggaran `react-hooks/refs` yang selama ini tidak terlihat
+        karena berkasnya cukup rumit sampai React Compiler menyerah
+        menganalisisnya. Begitu langkah Foto dibuang dan berkasnya menyusut,
+        penganalisisnya berhasil jalan dan keduanya muncul.
+    */
+    const [awal] = useState(readPersisted);
     const [submitted, setSubmitted] = useState(false);
     const [captchaVerified, setCaptchaVerified] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [loadingStep, setLoadingStep] = useState('');
     const [result, setResult] = useState<RegistrationResult | null>(null);
-    const [statusItems, setStatusItems] = useState<StatusItem[]>([]);
-    const [statusDone, setStatusDone] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-    const [step, setStep] = useState(() => persistedRef.current.step);
+    const [step, setStep] = useState(awal.step);
     const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
 
-    // Photo step state (transient — not persisted)
-    const [previewLoading, setPreviewLoading] = useState(false);
-    const [previewError, setPreviewError] = useState('');
-    const [photoPreview, setPhotoPreview] = useState<{ url: string; filename: string } | null>(null);
-    // Croping dimatikan — dulu di sini ada `autoCrop`, rect hasil deteksi kepala
-    // dari server yang jadi posisi awal kotak crop. Lihat catatan di
-    // `components/shared/registration-crop-reposition.tsx`.
-    // Gambar preview sudah selesai dimuat di browser (bukan sekadar respons server).
-    const [photoReady, setPhotoReady] = useState(false);
-    // Nomor urut pencarian foto — hanya respons terbaru yang boleh menulis state.
-    const photoRequestRef = useRef(0);
-
-    const { data, setData, processing, errors } = useForm<FormData>(persistedRef.current.data);
+    const { data, setData, processing, errors } = useForm<FormData>(awal.data);
 
     // ---- localStorage persist (data + current step, minus transient preview state) ----
     useEffect(() => {
@@ -200,17 +176,6 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                 e.school_id = 'Pilih sekolah terlebih dahulu.';
             }
         } else if (current === 2) {
-            // Foto wajib: tanpa foto, kartu dan lembar pas foto tidak digenerate
-            // sama sekali (lihat StudentRegistrationController::store).
-            // `photo_key` — bukan `photoPreview` — yang dipakai sebagai penanda
-            // karena ia ikut tersimpan bersama draf form, jadi kembali ke langkah
-            // ini setelah halaman dimuat ulang tidak membuat user terkunci.
-            if (!data.photo_drive_filename.trim()) {
-                e.photo_drive_filename = 'Nama file foto wajib diisi.';
-            } else if (!data.photo_key || !photoReady) {
-                e.photo_drive_filename = 'Tunggu sampai foto muncul sebelum lanjut.';
-            }
-        } else if (current === 3) {
             if (!data.full_name.trim()) {
                 e.full_name = 'Nama lengkap wajib diisi.';
             }
@@ -234,7 +199,7 @@ export default function StudentRegister({ schools, classrooms, registrationToken
             if (!data.classroom_id) {
                 e.classroom_id = 'Pilih kelas terlebih dahulu.';
             }
-        } else if (current === 4) {
+        } else if (current === 3) {
             if (!data.birth_place.trim()) {
                 e.birth_place = 'Tempat lahir wajib diisi.';
             }
@@ -246,7 +211,7 @@ export default function StudentRegister({ schools, classrooms, registrationToken
             if (!data.address.trim()) {
                 e.address = 'Alamat wajib diisi.';
             }
-        } else if (current === 5) {
+        } else if (current === 4) {
             if (!data.parent_name.trim()) {
                 e.parent_name = 'Nama orang tua wajib diisi.';
             }
@@ -295,7 +260,7 @@ export default function StudentRegister({ schools, classrooms, registrationToken
 
     function handleFinalSubmit() {
         // Validate all input steps defensively before submit.
-        for (let s = 1; s <= 5; s++) {
+        for (let s = 1; s <= 4; s++) {
             const e = validateStep(s);
 
             if (Object.keys(e).length > 0) {
@@ -306,27 +271,19 @@ export default function StudentRegister({ schools, classrooms, registrationToken
             }
         }
 
-        if (data.generate_cards) {
-            setShowConfirm(true);
-        } else {
-            doSubmit();
-        }
+        doSubmit();
     }
 
     async function doSubmit() {
-        setShowConfirm(false);
         setGenerating(true);
         setFormErrors({});
-        setLoadingStep(
-            data.photo_drive_filename
-                ? 'Menyimpan data & mengunduh foto dari Drive...'
-                : data.generate_cards
-                  ? 'Menyimpan data & generate kartu...'
-                  : 'Menyimpan data siswa...',
-        );
+        setLoadingStep('Menyimpan data siswa...');
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 120000); // 2 menit timeout
+        // Tinggal satu INSERT sekarang — tidak ada unduhan Drive atau render
+        // kartu yang menahan respons — tapi ambangnya dibiarkan longgar: yang
+        // memakainya jaringan sekolah, bukan jalur ini.
+        const timeout = setTimeout(() => controller.abort(), 120000);
 
         try {
             const res = await fetch('/daftar', {
@@ -369,13 +326,6 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                     // ignore
                 }
 
-                // Queued flow → bookmarkable result page (parent can reopen later).
-                if (json.queued && json.student?.id) {
-                    router.visit(`/daftar/${json.student.id}/hasil`);
-
-                    return;
-                }
-
                 setResult(json);
                 setSubmitted(true);
                 setData(INITIAL_DATA);
@@ -398,144 +348,14 @@ export default function StudentRegister({ schools, classrooms, registrationToken
         }
     }
 
-    const handleLoadPhoto = useCallback(async () => {
-        if (!data.photo_drive_filename.trim() || !data.school_id) {
-            return;
-        }
-
-        // Pencarian jalan tiap kali user berhenti mengetik, jadi beberapa permintaan
-        // bisa terbang bersamaan. Tanpa penanda ini, respons lama yang gagal tiba
-        // belakangan dan memunculkan banner "tidak ditemukan" di atas foto yang
-        // sudah berhasil tampil.
-        const requestId = ++photoRequestRef.current;
-        const isStale = () => requestId !== photoRequestRef.current;
-
-        setPreviewLoading(true);
-        setPreviewError('');
-        setPhotoPreview(null);
-        setPhotoReady(false);
-        setData((prev) => ({ ...prev, photo_key: '' }));
-
-        try {
-            // `preview-photo`, bukan `crop-preview`: yang kedua ikut menjalankan
-            // deteksi kepala untuk memposisikan kotak crop, dan kotak itu sudah
-            // tidak ada. Endpoint-nya sengaja dibiarkan hidup di server.
-            const res = await fetch('/daftar/preview-photo', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    Accept: 'application/json',
-                },
-                body: JSON.stringify({
-                    token: registrationToken,
-                    school_id: data.school_id,
-                    filename: data.photo_drive_filename.trim(),
-                }),
-            });
-
-            const json = await res.json();
-
-            if (isStale()) {
-                return;
-            }
-
-            if (json.found) {
-                setPreviewError('');
-                setPhotoPreview({ url: json.preview_url, filename: data.photo_drive_filename.trim() });
-                setData('photo_key', json.photo_key ?? '');
-            } else {
-                setPreviewError(json.message || 'File tidak ditemukan.');
-            }
-        } catch {
-            if (!isStale()) {
-                setPreviewError('Gagal menghubungi server.');
-            }
-        } finally {
-            if (!isStale()) {
-                setPreviewLoading(false);
-            }
-        }
-    }, [data.photo_drive_filename, data.school_id, csrfToken, registrationToken, setData]);
-
-    // Auto-search the Drive photo as the user types (debounced) — no button needed.
-    useEffect(() => {
-        const name = data.photo_drive_filename.trim();
-
-        if (!name || !data.school_id) {
-            return;
-        }
-
-        const t = setTimeout(() => {
-            handleLoadPhoto();
-        }, 650);
-
-        return () => clearTimeout(t);
-    }, [data.photo_drive_filename, data.school_id, handleLoadPhoto]);
-
-    // ---- Poll the async generation status (photo, cards, photo sheet) ----
-    const shouldPoll = submitted && result?.queued === true && !!result?.student.id && !statusDone;
-
-    useEffect(() => {
-        if (!shouldPoll) {
-            return;
-        }
-
-        const studentId = result!.student.id;
-        let cancelled = false;
-        let inFlight = false;
-
-        async function poll() {
-            if (inFlight) {
-                return;
-            }
-
-            inFlight = true;
-
-            try {
-                const res = await fetch(`/daftar/status/${studentId}`, {
-                    headers: { Accept: 'application/json' },
-                });
-
-                if (!res.ok) {
-                    return;
-                }
-
-                const json = (await res.json()) as { done: boolean; items: StatusItem[] };
-
-                if (!cancelled) {
-                    setStatusItems(Array.isArray(json.items) ? json.items : []);
-
-                    if (json.done) {
-                        setStatusDone(true);
-                    }
-                }
-            } catch {
-                // transient network error — keep polling
-            } finally {
-                inFlight = false;
-            }
-        }
-
-        poll();
-        const interval = setInterval(poll, 3000);
-
-        return () => {
-            cancelled = true;
-            clearInterval(interval);
-        };
-    }, [shouldPoll, result]);
-
     function handleNewSubmission() {
         setSubmitted(false);
         setResult(null);
-        setStatusItems([]);
-        setStatusDone(false);
         setCaptchaVerified(false);
-        setPhotoPreview(null);
     }
 
-    // Success page with async generation results
+    // Halaman sukses. Tidak ada lagi yang berjalan di latar — foto dan kartu
+    // diurus admin sekolah dari halaman siswa.
     if (submitted && result) {
         return (
             <PageWrapper>
@@ -547,17 +367,9 @@ export default function StudentRegister({ schools, classrooms, registrationToken
 
                         {/* Student info */}
                         <div className="mb-6 flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-800">
-                            {result.student.photo_url ? (
-                                <img
-                                    src={result.student.photo_url}
-                                    alt={result.student.full_name}
-                                    className="h-24 w-[72px] rounded-xl border-2 border-green-300 object-cover"
-                                />
-                            ) : (
-                                <div className="flex h-24 w-[72px] items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 dark:bg-green-900">
-                                    <User className="size-8 text-green-400" />
-                                </div>
-                            )}
+                            <div className="flex h-24 w-[72px] items-center justify-center rounded-xl border-2 border-green-300 bg-green-100 dark:bg-green-900">
+                                <User className="size-8 text-green-400" />
+                            </div>
                             <div>
                                 <h3 className="text-lg font-bold">{result.student.full_name}</h3>
                                 <p className="text-muted-foreground text-sm">
@@ -568,50 +380,22 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                             </div>
                         </div>
 
-                        {/* Async generation results */}
-                        {result.queued && (
-                            <div className="space-y-4">
-                                {/* Header */}
-                                {statusDone ? (
-                                    <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-100/60 p-4 dark:border-green-800 dark:bg-green-900/40">
-                                        <CheckCircle2 className="size-5 shrink-0 text-green-600 dark:text-green-400" />
-                                        <p className="text-sm font-semibold text-green-800 dark:text-green-200">Semua Selesai!</p>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
-                                        <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-blue-600" />
-                                        <div>
-                                            <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                                                Foto & kartu sedang diproses…
-                                            </p>
-                                            <p className="text-muted-foreground mt-0.5 text-xs">
-                                                Foto siswa, kartu, dan lembar pas foto otomatis dibuat dan tersimpan ke Google Drive.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
+                        {/*
+                            Diucapkan, bukan didiamkan.
 
-                                {/* Result tiles */}
-                                {statusItems.length === 0 ? (
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        {[0, 1, 2, 3].map((i) => (
-                                            <div
-                                                key={i}
-                                                className="flex h-48 animate-pulse items-center justify-center rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"
-                                            >
-                                                <Loader2 className="size-6 animate-spin text-zinc-400" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        {statusItems.map((item, i) => (
-                                            <ResultTile key={`${item.type}-${i}`} item={item} />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                            Sampai versi sebelumnya halaman ini memperlihatkan foto
+                            dan empat kartu yang sedang dirender. Sekarang tidak ada
+                            apa pun yang berjalan di latar, dan orang tua yang
+                            menunggu hasil di layar ini akan menunggu selamanya
+                            kalau tidak diberi tahu ke mana urusan itu pindah.
+                        */}
+                        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
+                            <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Foto dan kartu diurus sekolah</p>
+                            <p className="text-muted-foreground mt-1 text-xs">
+                                Pas foto siswa dipasang oleh admin sekolah, lalu kartu OSIS dibuat dari foto itu. Tidak ada yang perlu
+                                diunggah dari halaman ini.
+                            </p>
+                        </div>
 
                         <div className="mt-6 text-center">
                             <Button
@@ -692,8 +476,8 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                         </FormSection>
                     )}
 
-                    {step === 3 && (
-                        <FormSection number={3} title="Data Siswa">
+                    {step === 2 && (
+                        <FormSection number={2} title="Data Siswa">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
                                     <Label htmlFor="full_name" className="text-sm font-medium" required>
@@ -817,8 +601,8 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                         </FormSection>
                     )}
 
-                    {step === 4 && (
-                        <FormSection number={4} title="Data Kelahiran & Alamat">
+                    {step === 3 && (
+                        <FormSection number={3} title="Data Kelahiran & Alamat">
                             <div className="grid gap-5">
                                 <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
                                     <div className="grid gap-2">
@@ -869,8 +653,8 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                         </FormSection>
                     )}
 
-                    {step === 5 && (
-                        <FormSection number={5} title="Data Orang Tua/Wali">
+                    {step === 4 && (
+                        <FormSection number={4} title="Data Orang Tua/Wali">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
                                     <Label htmlFor="parent_name" className="text-sm font-medium" required>
@@ -942,128 +726,8 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                         </FormSection>
                     )}
 
-                    {step === 2 && (
-                        <FormSection number={2} title="Foto Siswa">
-                            <div className="grid gap-5">
-                                <div className="grid gap-2">
-                                    {/* Wajib sejak dulu — langkah 2 menolak tanpa foto —
-                                        tapi bintangnya belum pernah ikut dipasang. */}
-                                    <Label htmlFor="photo_drive_filename" className="text-sm font-medium" required>
-                                        Nama File Foto di Google Drive
-                                    </Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="photo_drive_filename"
-                                            value={data.photo_drive_filename}
-                                            onChange={(e) => {
-                                                setData((prev) => ({
-                                                    ...prev,
-                                                    photo_drive_filename: e.target.value,
-                                                    photo_key: '',
-                                                }));
-                                                setPhotoPreview(null);
-                                                setPhotoReady(false);
-                                                setPreviewError('');
-                                            }}
-                                            placeholder="Contoh: FIC_0008.JPG atau IMG_0234.png"
-                                            className="h-11 pr-10"
-                                        />
-                                        {previewLoading && (
-                                            <Loader2 className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin" />
-                                        )}
-                                    </div>
-                                    <p className="text-muted-foreground text-xs">
-                                        Ketik nama file foto yang sudah diupload ke folder Foto Siswa di Google Drive — foto muncul otomatis untuk atur posisi crop wajah.
-                                    </p>
-
-                                    {(!data.photo_key || !photoReady) && !previewError && (
-                                        <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                                            Foto wajib. Tombol Lanjut aktif setelah foto muncul di bawah.
-                                        </p>
-                                    )}
-
-                                    {err('photo_drive_filename') && (
-                                        <p className="text-xs font-medium text-red-600 dark:text-red-400">
-                                            {err('photo_drive_filename')}
-                                        </p>
-                                    )}
-
-                                    {previewError && (
-                                        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-                                            <AlertTriangle className="size-4 shrink-0" />
-                                            {previewError}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/*
-                                    Pratinjau foto Drive, apa adanya.
-
-                                    Kotak croping dimatikan atas permintaan klien:
-                                    pendaftar cukup mengetik nama berkas lalu melihat
-                                    fotonya. Komponennya masih utuh di
-                                    `components/shared/registration-crop-reposition.tsx`
-                                    — menghidupkannya kembali berarti mengembalikan
-                                    blok ini beserta state `autoCrop`.
-
-                                    `onLoad` yang menyalakan tombol Lanjut, bukan
-                                    respons server: berkasnya masih dalam perjalanan
-                                    ke browser saat JSON-nya tiba.
-                                */}
-                                {photoPreview && (
-                                    <div className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-                                        <img
-                                            src={photoPreview.url}
-                                            alt={photoPreview.filename}
-                                            onLoad={() => setPhotoReady(true)}
-                                            onError={() => {
-                                                setPhotoReady(false);
-                                                setPreviewError('Foto gagal dimuat. Coba ketik ulang nama berkasnya.');
-                                            }}
-                                            className="mx-auto max-h-80 w-auto rounded-lg object-contain"
-                                        />
-                                        <div className="mt-3 flex items-center justify-between gap-2">
-                                            <p className="text-muted-foreground truncate text-xs" title={photoPreview.filename}>
-                                                {photoPreview.filename}
-                                            </p>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setPhotoPreview(null);
-                                                    setPhotoReady(false);
-                                                    setData((prev) => ({ ...prev, photo_drive_filename: '', photo_key: '' }));
-                                                }}
-                                            >
-                                                <X className="mr-1 size-4" />
-                                                Ganti
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
-                                    <input
-                                        type="checkbox"
-                                        id="generate_cards"
-                                        checked={data.generate_cards}
-                                        onChange={(e) => setData('generate_cards', e.target.checked)}
-                                        className="size-4 rounded border-zinc-300"
-                                    />
-                                    <label htmlFor="generate_cards" className="text-sm">
-                                        <span className="font-medium text-blue-800 dark:text-blue-200">Generate Kartu OSIS & Perpustakaan</span>
-                                        <span className="text-muted-foreground block text-xs">
-                                            Kartu otomatis digenerate dan disimpan ke Google Drive setelah data tersimpan.
-                                        </span>
-                                    </label>
-                                </div>
-                            </div>
-                        </FormSection>
-                    )}
-
-                    {step === 6 && (
-                        <FormSection number={6} title="Review & Kirim">
+                    {step === 5 && (
+                        <FormSection number={5} title="Review & Kirim">
                             <div className="grid gap-5">
                                 <ReviewGroup title="Sekolah">
                                     <ReviewRow label="Sekolah" value={selectedSchool?.name} />
@@ -1087,10 +751,6 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                     <ReviewRow label="Hubungan" value={data.parent_relation} />
                                     <ReviewRow label="No. WhatsApp" value={data.parent_phone ? `+62${data.parent_phone}` : ''} />
                                     <ReviewRow label="Email" value={data.parent_email || '—'} />
-                                </ReviewGroup>
-                                <ReviewGroup title="Foto & Kartu">
-                                    <ReviewRow label="File Foto" value={data.photo_drive_filename || '(tidak ada)'} />
-                                    <ReviewRow label="Generate Kartu" value={data.generate_cards ? 'Ya (OSIS & Perpustakaan)' : 'Tidak'} />
                                 </ReviewGroup>
 
                                 {/* Captcha */}
@@ -1133,11 +793,9 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                         <Button
                             type="button"
                             onClick={goNext}
-                            disabled={step === 2 && (previewLoading || !data.photo_key || !photoReady)}
-                            className="h-11 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                            className="h-11 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
                         >
-                            {step === 2 && previewLoading && <Loader2 className="size-4 animate-spin" />}
-                            {step === 2 && previewLoading ? 'Memuat foto…' : 'Lanjut'}
+                            Lanjut
                         </Button>
                     ) : (
                         <Button
@@ -1151,44 +809,6 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                     )}
                 </div>
 
-                {/* Confirmation Dialog */}
-                {showConfirm && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900">
-                            <div className="mb-4 flex items-center gap-3">
-                                <div className="flex size-10 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
-                                    <CreditCard className="size-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <h3 className="text-lg font-bold">Konfirmasi Pendaftaran</h3>
-                            </div>
-                            <p className="mb-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                Data siswa <b>{data.full_name || '—'}</b> akan disimpan dan kartu akan digenerate:
-                            </p>
-                            <ul className="mb-4 list-inside list-disc space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
-                                <li>Kartu OSIS</li>
-                                <li>Kartu Perpustakaan</li>
-                                {data.photo_drive_filename && (
-                                    <li>
-                                        Foto diambil dari Drive: <b>{data.photo_drive_filename}</b>
-                                    </li>
-                                )}
-                                <li>Hasil disimpan ke Google Drive</li>
-                            </ul>
-                            <p className="mb-6 text-xs text-amber-600 dark:text-amber-400">
-                                Proses ini membutuhkan waktu beberapa detik. Pastikan data sudah benar.
-                            </p>
-                            <div className="flex gap-3">
-                                <Button variant="outline" className="flex-1" onClick={() => setShowConfirm(false)}>
-                                    Batal
-                                </Button>
-                                <Button className="flex-1 bg-blue-600 text-white" onClick={doSubmit}>
-                                    Ya, Daftarkan & Generate
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* Loading Overlay */}
                 {generating && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
@@ -1199,7 +819,7 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                             <div className="mx-auto h-1.5 w-48 overflow-hidden rounded-full bg-zinc-200">
                                 <div className="h-full animate-pulse rounded-full bg-blue-600" style={{ width: '60%' }} />
                             </div>
-                            <p className="text-muted-foreground mt-4 text-xs">Proses ini membutuhkan 10-30 detik. Jangan tutup halaman.</p>
+                            <p className="text-muted-foreground mt-4 text-xs">Sebentar saja. Jangan tutup halaman.</p>
                         </div>
                     </div>
                 )}
@@ -1209,7 +829,6 @@ export default function StudentRegister({ schools, classrooms, registrationToken
         </PageWrapper>
     );
 }
-
 
 function StepProgress({ current }: { current: number }) {
     return (
@@ -1264,88 +883,6 @@ function ReviewRow({ label, value }: { label: string; value?: string | null }) {
         <div className="flex items-start justify-between gap-4 text-sm">
             <dt className="text-muted-foreground shrink-0">{label}</dt>
             <dd className="text-right font-medium break-words">{value || '—'}</dd>
-        </div>
-    );
-}
-
-function ResultTile({ item }: { item: StatusItem }) {
-    const [copied, setCopied] = useState(false);
-
-    async function copyLink() {
-        if (!item.url) {
-            return;
-        }
-
-        try {
-            await navigator.clipboard.writeText(item.url);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {
-            // clipboard unavailable — ignore
-        }
-    }
-
-    return (
-        <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-            {/* Thumbnail / placeholder */}
-            <div className="flex items-center justify-center bg-zinc-50 p-3 dark:bg-zinc-900" style={{ minHeight: 140 }}>
-                {item.status === 'completed' && (item.thumb_url ?? item.url) ? (
-                    <img src={item.thumb_url ?? item.url ?? undefined} alt={item.name} className="max-h-[200px] w-full object-contain" />
-                ) : item.status === 'processing' ? (
-                    <Loader2 className="size-8 animate-spin text-amber-500" />
-                ) : (
-                    <AlertTriangle className="size-8 text-red-500" />
-                )}
-            </div>
-
-            {/* Meta + actions */}
-            <div className="flex flex-1 flex-col gap-2 p-3">
-                <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">{item.name}</span>
-                    {item.status === 'processing' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                            <Loader2 className="size-3 animate-spin" /> Diproses
-                        </span>
-                    )}
-                    {item.status === 'completed' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                            <Check className="size-3" /> Selesai
-                        </span>
-                    )}
-                    {item.status === 'failed' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-300">
-                            <X className="size-3" /> Gagal
-                        </span>
-                    )}
-                </div>
-
-                {item.status === 'completed' && item.url && (
-                    <div className="mt-auto flex gap-2">
-                        <button
-                            type="button"
-                            onClick={copyLink}
-                            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-zinc-300 px-2 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700"
-                        >
-                            {copied ? (
-                                <>
-                                    <Check className="size-3.5 text-green-600" /> Tersalin!
-                                </>
-                            ) : (
-                                <>
-                                    <Copy className="size-3.5" /> Salin Link
-                                </>
-                            )}
-                        </button>
-                        <a
-                            href={item.thumb_url ?? item.url}
-                            download
-                            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-                        >
-                            <Download className="size-3.5" /> Unduh
-                        </a>
-                    </div>
-                )}
-            </div>
         </div>
     );
 }

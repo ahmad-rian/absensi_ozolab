@@ -121,7 +121,7 @@ export default function FramesIndex({ frames, filters }: Props) {
                         <SelectContent>
                             <SelectItem value="all">Semua</SelectItem>
                             <SelectItem value="osis">Kartu OSIS</SelectItem>
-                            <SelectItem value="perpustakaan">Kartu Perpustakaan</SelectItem>
+                            <SelectItem value="perpustakaan">Kartu OSIS Belakang</SelectItem>
                             <SelectItem value="album">Album Foto</SelectItem>
                         </SelectContent>
                     </Select>
@@ -197,7 +197,7 @@ export default function FramesIndex({ frames, filters }: Props) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="osis">Kartu OSIS</SelectItem>
-                                    <SelectItem value="perpustakaan">Kartu Perpustakaan</SelectItem>
+                                    <SelectItem value="perpustakaan">Kartu OSIS Belakang</SelectItem>
                                     <SelectItem value="album">Album Foto</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -245,7 +245,7 @@ export default function FramesIndex({ frames, filters }: Props) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="osis">Kartu OSIS</SelectItem>
-                                    <SelectItem value="perpustakaan">Kartu Perpustakaan</SelectItem>
+                                    <SelectItem value="perpustakaan">Kartu OSIS Belakang</SelectItem>
                                     <SelectItem value="album">Album Foto</SelectItem>
                                 </SelectContent>
                             </Select>

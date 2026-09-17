@@ -21,7 +21,9 @@
     $hGradStart = $c['header_gradient_start'] ?? ($isOsis ? '#5dc4f5' : '#c9986a');
     $hGradEnd   = $c['header_gradient_end']   ?? ($isOsis ? '#3aa8df' : '#b07b4a');
     $hTextColor = $c['header_text_color']     ?? ($isOsis ? '#06243a' : '#1a1208');
-    $wmText     = $c['watermark_text'] ?? ($isOsis ? 'ORGANISASI SISWA INTRA SEKOLAH' : 'PERPUSTAKAAN WIDYA SASTRA');
+    $wmText     = $c['watermark_text'] ?? ($isOsis
+        ? \App\Models\SchoolCardLayout::WATERMARK_OSIS
+        : \App\Models\SchoolCardLayout::WATERMARK_BELAKANG);
 
     // Resolve a field element's display value from its data source.
     $resolveValue = function (string $source) use ($student) {

@@ -6,6 +6,7 @@ use App\Enums\PrayerType;
 use App\Enums\SchoolFeature;
 use App\Http\Controllers\Controller;
 use App\Jobs\SyncStudentPhotoToDriveJob;
+use App\Models\CardGenerationBatch;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
 use App\Models\ParentProfile;
@@ -335,10 +336,43 @@ class SiswaController extends Controller
             ->get(['id', 'user_id', 'school_id']);
 
         return Inertia::render('admin/siswa/edit', [
-            'student' => $siswa->load(['classroom', 'parentProfile.user']),
+            'student' => array_merge($siswa->load(['classroom', 'parentProfile.user'])->toArray(), [
+                'photo_url' => $siswa->photo_path
+                    ? Storage::disk('public')->url($siswa->photo_path)
+                    : null,
+            ]),
             'classrooms' => $classrooms,
             'parentProfiles' => $parentProfiles,
+            // Menyembunyikan tombol "Ambil dari Drive" ketimbang membiarkannya
+            // ditekan lalu menjawab "integrasi belum aktif": tombol yang tidak
+            // melakukan apa-apa lebih buruk daripada tombol yang tidak ada.
+            'driveAktif' => (bool) $siswa->school?->driveConfig?->is_active
+                && SchoolFeatures::for($siswa->school)->enabled(SchoolFeature::IntegrasiDrive),
+            'kartuProgres' => $this->kartuProgres($siswa),
         ]);
+    }
+
+    /**
+     * Kemajuan pembuatan kartu terakhir milik siswa ini.
+     *
+     * Diambil dari batch, bukan dihitung ulang di sini — layar generate massal
+     * membaca sumber yang sama, jadi tidak ada dua cara menghitung persen yang
+     * bisa menyimpang. Null berarti siswa ini belum pernah masuk satu batch pun.
+     *
+     * @return array{total: int, selesai: int, gagal: int, persen: int, status: string}|null
+     */
+    private function kartuProgres(Student $siswa): ?array
+    {
+        $batchId = CardGenerationLog::where('student_id', $siswa->id)
+            ->whereNotNull('card_generation_batch_id')
+            ->latest()
+            ->value('card_generation_batch_id');
+
+        if (! $batchId) {
+            return null;
+        }
+
+        return CardGenerationBatch::find($batchId)?->progres();
     }
 
     public function update(Request $request, Student $siswa): RedirectResponse

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\RegisterStudentCardsJob;
+use App\Models\CardGenerationBatch;
+use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -22,16 +24,33 @@ use Inertia\Inertia;
  */
 class StudentRegenerateController extends Controller
 {
-    /** Kartu OSIS + Perpustakaan, layout yang sama dengan hasil pendaftaran. */
+    /** Kartu OSIS depan + belakang, layout yang sama dengan hasil pendaftaran. */
     public function cards(Student $siswa): RedirectResponse
     {
+        // Batch dibuat meski isinya cuma satu siswa: bar kemajuan di halaman
+        // edit membaca sumber yang sama dengan layar generate massal, jadi
+        // tidak ada dua cara menghitung persen yang bisa menyimpang.
+        $batch = CardGenerationBatch::create([
+            'school_id' => $siswa->school_id,
+            'created_by' => auth()->id(),
+            // Satu baris log per layout aktif. Kalau sekolah ini belum punya
+            // satu pun, job membuatkan dua bawaan — jadi dua adalah lantainya,
+            // bukan tebakan.
+            'total' => max(2, SchoolCardLayout::where('school_id', $siswa->school_id)
+                ->where('is_active', true)
+                ->whereIn('type', ['osis', 'perpustakaan'])
+                ->count()),
+            'status' => 'processing',
+        ]);
+
         RegisterStudentCardsJob::dispatch(
             studentId: $siswa->id,
             outputs: [RegisterStudentCardsJob::OUTPUT_CARDS],
             generatedBy: 'admin',
+            batchId: $batch->id,
         );
 
-        return $this->queued('Kartu sedang dibuat ulang.');
+        return $this->queued('Kartu OSIS depan dan belakang sedang dibuat ulang.');
     }
 
     /** Lembar pas foto 4R. */

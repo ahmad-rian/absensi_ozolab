@@ -202,7 +202,7 @@ class SchoolController extends Controller
                 'header_gradient_start' => '#5dc4f5',
                 'header_gradient_end' => '#3aa8df',
                 'header_text_color' => '#06243a',
-                'watermark_text' => 'ORGANISASI SISWA INTRA SEKOLAH',
+                'watermark_text' => SchoolCardLayout::WATERMARK_OSIS,
                 'show_emblem' => true,
                 'show_validity' => true,
                 'validity_text' => 'BERLAKU S/D TAMAT BELAJAR',
@@ -220,7 +220,7 @@ class SchoolController extends Controller
 
         SchoolCardLayout::create([
             'school_id' => $school->id,
-            'name' => 'Kartu Perpustakaan Default',
+            'name' => 'Kartu OSIS Belakang Default',
             'type' => 'perpustakaan',
             'is_default' => true,
             'is_active' => true,
@@ -230,7 +230,7 @@ class SchoolController extends Controller
                 'header_gradient_start' => '#c9986a',
                 'header_gradient_end' => '#b07b4a',
                 'header_text_color' => '#1a1208',
-                'watermark_text' => 'PERPUSTAKAAN SEKOLAH',
+                'watermark_text' => SchoolCardLayout::WATERMARK_BELAKANG,
                 'show_emblem' => false,
                 'show_validity' => false,
                 'validity_text' => 'BERLAKU S/D TAMAT BELAJAR',

@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\CardLayoutController;
 use App\Http\Controllers\Admin\ClassPromotionController;
 use App\Http\Controllers\Admin\DriveConfigController;
 use App\Http\Controllers\Admin\FrameController;
+use App\Http\Controllers\Admin\GenerateKartuMassalController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\KunjunganPerpusController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SemuaSekolahController;
 use App\Http\Controllers\Admin\SiswaController;
+use App\Http\Controllers\Admin\StudentDrivePickerController;
 use App\Http\Controllers\Admin\StudentImportController;
 use App\Http\Controllers\Admin\StudentQuickOpenController;
 use App\Http\Controllers\Admin\StudentRegenerateController;
@@ -159,6 +161,15 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::post('siswa/{siswa}/drive-photo/refresh', [SiswaController::class, 'refreshDrivePhoto'])->name('admin.siswa.drive-photo.refresh');
         Route::post('siswa/{siswa}/foto', [SiswaController::class, 'uploadPhoto'])->name('admin.siswa.foto.upload');
 
+        // Penjelajah folder Drive: admin melihat isi foldernya lalu memilih
+        // sendiri berkasnya, untuk kasus yang tidak tertangkap pencocokan
+        // otomatis. Ketiganya memeriksa `isInsideSchoolRoot()` — satu akun
+        // OAuth melayani semua sekolah, jadi id yang datang dari klien tidak
+        // pernah dipercaya begitu saja.
+        Route::get('siswa/{siswa}/drive/jelajah', [StudentDrivePickerController::class, 'browse'])->name('admin.siswa.drive.browse');
+        Route::get('siswa/{siswa}/drive/thumb/{fileId}', [StudentDrivePickerController::class, 'thumbnail'])->name('admin.siswa.drive.thumb');
+        Route::post('siswa/{siswa}/foto/drive', [StudentDrivePickerController::class, 'use'])->name('admin.siswa.foto.drive');
+
         // Generate ulang per keluaran. Dipisah karena merender kartu memanggil
         // headless Chrome dan mengambil foto memukul Drive — memperbaiki satu
         // berkas tidak boleh menjalankan keempatnya.
@@ -250,6 +261,18 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::middleware(['permission:card-generation.access', 'feature:kartu_album'])->group(function () {
         Route::get('card-generation', [CardGenerationController::class, 'index'])->name('admin.card-generation');
         Route::post('card-generation/generate', [CardGenerationController::class, 'generate'])->name('admin.card-generation.generate');
+    });
+
+    // Generate massal per sekolah/kelas. `super-admin` wajib ikut: layar ini
+    // memilih sekolahnya dari daftar dan query-nya memakai `acrossSchools()`,
+    // jadi global scope tenant tidak menjaga apa pun di sini — sama alasannya
+    // dengan grup Sistem.
+    Route::middleware(['permission:card-generation.access', 'feature:kartu_album', 'super-admin'])->group(function () {
+        Route::get('generate-kartu', [GenerateKartuMassalController::class, 'index'])->name('admin.generate-kartu');
+        Route::post('generate-kartu', [GenerateKartuMassalController::class, 'generate'])->name('admin.generate-kartu.jalan');
+        Route::get('generate-kartu/{batch}/progres', [GenerateKartuMassalController::class, 'progres'])
+            ->middleware('throttle:120,1')
+            ->name('admin.generate-kartu.progres');
     });
 
     Route::middleware(['permission:album-layouts.access', 'feature:kartu_album'])->group(function () {

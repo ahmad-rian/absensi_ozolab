@@ -235,11 +235,16 @@ test('preview photo refuses a request without a registration session', function 
 });
 
 /**
- * Buka halaman /daftar dulu supaya token sesinya terbit, seperti browser asli.
+ * Buka /quick-regis dulu supaya token sesinya terbit, seperti browser asli.
+ *
+ * Dulu /daftar yang menerbitkannya. Form panjang berhenti meminta foto — pas
+ * foto sekarang dipasang admin dari halaman siswa — jadi ia tidak lagi punya
+ * alasan menerbitkan token pratinjau. Yang masih memakai endpoint pratinjau
+ * tinggal /quick-regis, tempat nomor foto justru wajib.
  */
 function registrationToken(): string
 {
-    test()->get('/daftar')->assertOk();
+    test()->get('/quick-regis')->assertOk();
 
     return session('registration_token');
 }

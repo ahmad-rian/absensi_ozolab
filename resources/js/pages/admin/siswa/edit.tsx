@@ -1,6 +1,9 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Camera, Check, ChevronsUpDown, CreditCard, Loader2, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { DrivePhotoPicker } from '@/components/shared/drive-photo-picker';
+import { ProgresGenerate } from '@/components/shared/progres-generate';
+import type { Progres } from '@/components/shared/progres-generate';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -35,6 +38,8 @@ type Student = {
     nisn: string | null;
     full_name: string;
     gender: string;
+    // Dipakai di form sejak dulu tapi belum pernah ikut dideklarasikan.
+    religion: string | null;
     is_active: boolean;
     classroom_id: string | null;
     parent_profile_id: string | null;
@@ -43,15 +48,19 @@ type Student = {
     birth_place: string | null;
     birth_date: string | null;
     address: string | null;
+    photo_url: string | null;
+    photo_drive_filename: string | null;
 };
 
 type PageProps = {
     student: Student;
     classrooms: Classroom[];
     parentProfiles: ParentProfile[];
+    driveAktif: boolean;
+    kartuProgres: Progres | null;
 };
 
-export default function SiswaEdit({ student, classrooms, parentProfiles }: PageProps) {
+export default function SiswaEdit({ student, classrooms, parentProfiles, driveAktif, kartuProgres }: PageProps) {
     const [parentOpen, setParentOpen] = useState(false);
 
     const { data, setData, put, processing, errors } = useForm({
@@ -74,6 +83,64 @@ export default function SiswaEdit({ student, classrooms, parentProfiles }: PageP
         put(`/admin/siswa/${student.id}`);
     }
 
+    // ---- Pas foto ----
+    const [mengantre, setMengantre] = useState<'kartu' | 'pas-foto' | null>(null);
+    const berkasRef = useRef<HTMLInputElement>(null);
+    const fotoForm = useForm<{ photo: File | null }>({ photo: null });
+
+    function pilihBerkas(e: React.ChangeEvent<HTMLInputElement>) {
+        const berkas = e.target.files?.[0];
+
+        if (!berkas) {
+            return;
+        }
+
+        // Langsung dikirim begitu dipilih. Dialog pilih-berkas sistem sudah
+        // merupakan konfirmasi; satu tombol "unggah" sesudahnya cuma langkah
+        // tambahan yang mudah dilupakan.
+        fotoForm.setData('photo', berkas);
+        fotoForm.post(`/admin/siswa/${student.id}/foto`, {
+            forceFormData: true,
+            preserveScroll: true,
+            onFinish: () => {
+                if (berkasRef.current) {
+                    berkasRef.current.value = '';
+                }
+            },
+        });
+    }
+
+    function generate(apa: 'kartu' | 'pas-foto') {
+        setMengantre(apa);
+        router.post(
+            `/admin/siswa/${student.id}/regenerate/${apa}`,
+            {},
+            { preserveScroll: true, onFinish: () => setMengantre(null) },
+        );
+    }
+
+    /*
+        Polling tiga detik selama batch terakhir belum beres.
+
+        Pola yang sama dengan halaman detail siswa dan Riwayat Kartu: muat ulang
+        satu prop lewat Inertia, bukan endpoint JSON tersendiri. Angkanya
+        dihitung dari baris log di server, jadi menutup lalu membuka halaman ini
+        tetap menunjukkan kemajuan yang benar.
+    */
+    const sedangJalan = kartuProgres?.status === 'processing';
+
+    useEffect(() => {
+        if (!sedangJalan) {
+            return;
+        }
+
+        const interval = setInterval(() => {
+            router.reload({ only: ['kartuProgres'] });
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [sedangJalan]);
+
     return (
         <>
             <Head title="Edit Siswa" />
@@ -82,6 +149,108 @@ export default function SiswaEdit({ student, classrooms, parentProfiles }: PageP
                     <h1 className="text-2xl font-bold tracking-tight">Edit Siswa</h1>
                     <p className="text-muted-foreground text-sm">Perbarui data siswa di bawah ini.</p>
                 </div>
+
+                {/*
+                    Pas foto ditaruh DI ATAS form data.
+
+                    Alur barunya menjadikan halaman ini satu-satunya tempat pas
+                    foto dipasang — pendaftar tidak lagi menentukannya — dan
+                    kartu OSIS tidak bisa dibuat sebelum fotonya ada. Menaruhnya
+                    di bawah dua belas isian teks berarti pekerjaan utama
+                    halaman ini tersembunyi di balik gulungan.
+                */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Pas Foto &amp; Kartu</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-5 sm:grid-cols-[auto_1fr] sm:items-start">
+                        <div className="shrink-0">
+                            {student.photo_url ? (
+                                <img
+                                    src={student.photo_url}
+                                    alt={student.full_name}
+                                    className="size-32 rounded-xl border-2 border-blue-200 object-cover shadow-sm"
+                                />
+                            ) : (
+                                <div className="flex size-32 items-center justify-center rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+                                    <User className="size-10 text-zinc-400" />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid gap-3">
+                            <div className="flex flex-wrap gap-2">
+                                <input
+                                    ref={berkasRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    className="hidden"
+                                    onChange={pilihBerkas}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => berkasRef.current?.click()}
+                                    disabled={fotoForm.processing}
+                                >
+                                    {fotoForm.processing ? (
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                    ) : (
+                                        <Camera className="mr-2 size-4" />
+                                    )}
+                                    {student.photo_url ? 'Ganti dari Komputer' : 'Unggah dari Komputer'}
+                                </Button>
+
+                                {driveAktif && <DrivePhotoPicker studentId={student.id} />}
+                            </div>
+
+                            {fotoForm.errors.photo && <p className="text-destructive text-sm">{fotoForm.errors.photo}</p>}
+
+                            {student.photo_drive_filename && (
+                                <p className="text-muted-foreground text-xs">
+                                    Berkas di Drive: <span className="font-medium">{student.photo_drive_filename}</span>
+                                </p>
+                            )}
+
+                            <div className="flex flex-wrap gap-2 border-t border-zinc-200 pt-3 dark:border-zinc-800">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => generate('kartu')}
+                                    disabled={!student.photo_url || mengantre !== null || sedangJalan}
+                                >
+                                    {mengantre === 'kartu' ? (
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                    ) : (
+                                        <CreditCard className="mr-2 size-4" />
+                                    )}
+                                    Generate Kartu OSIS (depan + belakang)
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => generate('pas-foto')}
+                                    disabled={!student.photo_url || mengantre !== null}
+                                >
+                                    {mengantre === 'pas-foto' ? (
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                    ) : (
+                                        <Camera className="mr-2 size-4" />
+                                    )}
+                                    Generate Lembar Pas Foto 4R
+                                </Button>
+                            </div>
+
+                            {!student.photo_url && (
+                                <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                                    Pasang pas fotonya dulu — kartu dan lembar 4R keduanya dibuat dari foto itu.
+                                </p>
+                            )}
+
+                            {kartuProgres && <ProgresGenerate progres={kartuProgres} label="Kartu OSIS siswa ini" />}
+                        </div>
+                    </CardContent>
+                </Card>
 
                 <Card>
                     <CardHeader>

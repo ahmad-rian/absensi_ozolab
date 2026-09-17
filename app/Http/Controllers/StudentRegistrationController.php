@@ -54,12 +54,10 @@ class StudentRegistrationController extends Controller
                 'logo_path' => $school->logo_path,
             ]),
             'classrooms' => $classrooms,
-            // Garis bantu overlay cropper diambil dari servis crop, bukan diketik ulang
-            // di frontend, supaya panduan visual selalu ikut kalibrasi framing server.
-            'photoGuide' => PhotoCropService::framingGuide(),
-            // Mengikat endpoint pratinjau ke sesi yang benar-benar membuka
-            // halaman ini, supaya tidak bisa dipanggil lepas lewat curl.
-            'registrationToken' => $this->issueRegistrationToken(),
+            // Tidak ada `photoGuide` maupun `registrationToken` di sini: form
+            // panjang berhenti meminta foto, dan token itu satu-satunya gunanya
+            // adalah membuka endpoint pratinjau. `quick()` masih menerbitkan
+            // tokennya sendiri karena di sana foto justru wajib.
         ]);
     }
 
@@ -278,14 +276,11 @@ class StudentRegistrationController extends Controller
             'parent_phone' => ['required', 'string', 'max:20'],
             'parent_email' => ['nullable', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             'parent_relation' => ['required', 'string', 'in:AYAH,IBU,WALI'],
-            'photo_drive_filename' => ['nullable', 'string', 'max:500'],
-            'photo_key' => ['nullable', 'string', 'alpha_num', 'size:32'],
-            'manual_crop' => ['nullable', 'array'],
-            'manual_crop.sx' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
-            'manual_crop.sy' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
-            'manual_crop.sw' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
-            'manual_crop.sh' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
-            'generate_cards' => ['nullable', 'boolean'],
+            // Sengaja tidak ada aturan foto di sini. Form ini tidak lagi
+            // menanyakannya, dan membiarkan `photo_drive_filename` lolos
+            // validasi berarti siapa pun yang mengirim POST langsung tetap bisa
+            // menunjuk berkas mana yang dipakai — persis wewenang yang baru
+            // saja dipindahkan ke admin.
         ], [
             'school_id.required' => 'Pilih sekolah terlebih dahulu.',
             'school_id.exists' => 'Sekolah tidak ditemukan.',
@@ -312,8 +307,6 @@ class StudentRegistrationController extends Controller
             $validated['nis'] = $this->placeholderNis();
         }
 
-        $school = School::with('driveConfig')->findOrFail($validated['school_id']);
-
         $student = DB::transaction(function () use ($validated, $parentProfileService, $qrGenerator) {
             $student = Student::create([
                 'school_id' => $validated['school_id'],
@@ -329,10 +322,6 @@ class StudentRegistrationController extends Controller
                 'address' => $validated['address'] ?? null,
                 'parent_name' => $validated['parent_name'] ?? null,
                 'parent_phone' => $validated['parent_phone'] ?? null,
-                // Nama berkas yang diketik pendaftar. Dulu hanya dioper ke job
-                // lalu hilang, sehingga foto tidak pernah bisa diambil ulang
-                // tanpa bertanya lagi ke orang tuanya.
-                'photo_drive_filename' => $validated['photo_drive_filename'] ?? null,
                 'is_active' => true,
             ]);
 
@@ -353,45 +342,23 @@ class StudentRegistrationController extends Controller
             return $student;
         });
 
-        // Offload the slow work (Drive photo download + crop + card render) to the
-        // queue so the request returns instantly and never hits a gateway timeout.
-        $hasPhoto = ! empty($validated['photo_drive_filename']);
-
-        // Render kartu memanggil headless Chrome. Tanpa syarat foto, endpoint
-        // publik ini bisa dipakai memaksa dua job render per request.
-        $generateCards = $hasPhoto && (bool) ($validated['generate_cards'] ?? false);
-
-        if ($hasPhoto || $generateCards) {
-            // Kunci ditukar jadi path di sisi server; klien tidak pernah
-            // menentukan berkas mana yang dibaca lalu dihapus job.
-            $previewPath = $validated['photo_key'] ?? null
-                ? cache()->get('registration-preview:'.$validated['photo_key'])
-                : null;
-
-            RegisterStudentCardsJob::dispatch(
-                $student->id,
-                $hasPhoto ? $validated['photo_drive_filename'] : null,
-                $previewPath,
-                $validated['manual_crop'] ?? null,
-                $generateCards,
-            );
-        }
-
+        // Tidak ada job yang diantrekan dari sini.
+        //
+        // Sampai versi sebelumnya satu POST publik menyeret unduhan Drive dan
+        // dua render headless Chrome sekaligus. Pas foto sekarang dipasang
+        // admin dari halaman siswa, dan kartunya dibuat dari sana — jadi
+        // endpoint ini kembali jadi apa adanya: satu INSERT.
         $student->load('classroom');
 
         return response()->json([
             'success' => true,
-            'message' => ($hasPhoto || $generateCards)
-                ? 'Data siswa berhasil didaftarkan! Foto & kartu sedang diproses dan akan tersimpan ke Google Drive.'
-                : 'Data siswa berhasil didaftarkan!',
-            'queued' => $hasPhoto || $generateCards,
+            'message' => 'Data siswa berhasil didaftarkan! Pas foto dan kartu akan diurus admin sekolah.',
             'student' => [
                 'id' => $student->id,
                 'full_name' => $student->full_name,
                 'nis' => $student->nis,
                 'nisn' => $student->nisn,
                 'classroom' => $student->classroom?->name,
-                'photo_url' => null,
             ],
         ]);
     }
@@ -441,7 +408,17 @@ class StudentRegistrationController extends Controller
                 'classroom' => $student->classroom?->name,
                 'photo_url' => $student->photo_path ? Storage::disk('public')->url($student->photo_path) : null,
             ],
-            'queued' => true,
+            // Diturunkan, bukan dipatok `true`.
+            //
+            // Pendaftaran tidak lagi mengantrekan apa pun, jadi `status()`
+            // mengembalikan daftar kosong selamanya dan `done` tidak pernah
+            // menyala — halaman akan memutar empat ubin kerangka sampai
+            // ditutup. Siswa yang mendaftar sebelum perubahan ini tetap punya
+            // riwayatnya, dan bagi mereka halaman ini masih bekerja seperti
+            // dulu.
+            'queued' => CardGenerationLog::where('student_id', $student->id)
+                ->where('generated_by', 'registration')
+                ->exists(),
         ]);
     }
 

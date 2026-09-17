@@ -55,6 +55,11 @@ class RegisterStudentCardsJob implements ShouldQueue
         public bool $generateCards = true,
         public array $outputs = self::ALL_OUTPUTS,
         public string $generatedBy = 'registration',
+        // Batch yang menaungi baris log kartu dari job ini, kalau ada. Dipakai
+        // bar kemajuan: persennya dihitung dengan mengelompokkan status baris
+        // log per batch, bukan dari penghitung yang dinaikkan job — job ini
+        // `tries = 2` dan yang dirender `tries = 3`.
+        public ?string $batchId = null,
     ) {
         $this->onQueue(config('cards.queue'));
     }
@@ -129,6 +134,7 @@ class RegisterStudentCardsJob implements ShouldQueue
                 'school_id' => $school->id,
                 'student_id' => $student->id,
                 'school_card_layout_id' => $layout->id,
+                'card_generation_batch_id' => $this->batchId,
                 'type' => 'card',
                 'status' => 'processing',
                 'generated_by' => $this->generatedBy,
@@ -265,8 +271,8 @@ class RegisterStudentCardsJob implements ShouldQueue
 
         $layouts = collect();
         $defaults = [
-            'osis' => ['name' => 'Kartu OSIS', 'config' => ['card_width' => 813, 'card_height' => 513, 'header_gradient_start' => '#5dc4f5', 'header_gradient_end' => '#3aa8df', 'header_text_color' => '#06243a', 'watermark_text' => 'ORGANISASI SISWA INTRA SEKOLAH', 'show_emblem' => true, 'show_validity' => true, 'validity_text' => 'BERLAKU S/D TAMAT BELAJAR', 'show_qr' => true, 'show_signature' => true]],
-            'perpustakaan' => ['name' => 'Kartu Perpustakaan', 'config' => ['card_width' => 813, 'card_height' => 513, 'header_gradient_start' => '#c9986a', 'header_gradient_end' => '#b07b4a', 'header_text_color' => '#1a1208', 'watermark_text' => 'PERPUSTAKAAN WIDYA SASTRA', 'show_emblem' => false, 'show_validity' => false, 'show_qr' => true, 'show_signature' => true]],
+            'osis' => ['name' => 'Kartu OSIS', 'config' => ['card_width' => 813, 'card_height' => 513, 'header_gradient_start' => '#5dc4f5', 'header_gradient_end' => '#3aa8df', 'header_text_color' => '#06243a', 'watermark_text' => SchoolCardLayout::WATERMARK_OSIS, 'show_emblem' => true, 'show_validity' => true, 'validity_text' => 'BERLAKU S/D TAMAT BELAJAR', 'show_qr' => true, 'show_signature' => true]],
+            'perpustakaan' => ['name' => 'Kartu OSIS Belakang', 'config' => ['card_width' => 813, 'card_height' => 513, 'header_gradient_start' => '#c9986a', 'header_gradient_end' => '#b07b4a', 'header_text_color' => '#1a1208', 'watermark_text' => SchoolCardLayout::WATERMARK_BELAKANG, 'show_emblem' => false, 'show_validity' => false, 'show_qr' => true, 'show_signature' => true]],
         ];
         foreach ($defaults as $type => $def) {
             $layouts->push(SchoolCardLayout::create(['school_id' => $school->id, 'name' => $def['name'], 'type' => $type, 'layout_config' => $def['config'], 'is_default' => true]));
