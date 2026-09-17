@@ -22,7 +22,7 @@ export type Progres = {
  * tetap mencapai 100%, dan tanpa angkanya ditulis terang-terangan itu terbaca
  * sebagai "selesai, semuanya beres".
  */
-export function ProgresGenerate({ progres, label }: { progres: Progres; label?: string }) {
+export function ProgresGenerate({ progres, label, unit = 'kartu' }: { progres: Progres; label?: string; unit?: string }) {
     const { total, selesai, gagal, persen, status } = progres;
     const beres = selesai + gagal;
 
@@ -57,8 +57,8 @@ export function ProgresGenerate({ progres, label }: { progres: Progres; label?: 
 
             <p className="text-muted-foreground text-xs">
                 {status === 'processing' && 'Boleh ditinggal — kemajuannya tersimpan di server dan tetap benar kalau halaman ini dibuka lagi.'}
-                {status === 'completed' && `${selesai} kartu selesai dibuat.`}
-                {status === 'failed' && `${selesai} kartu selesai, ${gagal} gagal. Buka Riwayat Kartu untuk melihat sebabnya.`}
+                {status === 'completed' && `${selesai} ${unit} selesai dibuat.`}
+                {status === 'failed' && `${selesai} ${unit} selesai, ${gagal} gagal. Buka Riwayat Kartu untuk melihat sebabnya.`}
             </p>
         </div>
     );

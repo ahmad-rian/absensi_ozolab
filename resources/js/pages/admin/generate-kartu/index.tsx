@@ -100,7 +100,7 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Generate Kartu</h1>
                     <p className="text-muted-foreground text-sm">
-                        Membuat kartu OSIS depan dan belakang untuk satu sekolah atau satu kelas sekaligus.
+                        Membuat lembar pas foto 4R serta kartu OSIS depan dan belakang untuk satu sekolah atau satu kelas sekaligus.
                     </p>
                 </div>
 
@@ -177,7 +177,7 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                                         </p>
                                         <p className="text-muted-foreground mt-0.5 text-sm">
                                             {siap
-                                                ? 'Semua siap. Kartu bisa dibuat sekarang.'
+                                                ? 'Semua siap. Pas foto 4R dan kartu OSIS bisa dibuat sekarang.'
                                                 : `${kurang} siswa belum punya pas foto. Kartu tanpa foto tetap jadi — dengan kotak kosong di tempat wajahnya — jadi generate ditahan sampai semuanya lengkap.`}
                                         </p>
                                     </div>
@@ -231,7 +231,7 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                                     ) : (
                                         <CreditCard className="mr-2 size-4" />
                                     )}
-                                    Generate Kartu OSIS (depan + belakang)
+                                    Generate Pas Foto 4R + Kartu OSIS
                                 </Button>
                             </div>
                         </CardContent>
@@ -248,7 +248,7 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                                 Dimulai {batchBerjalan.dibuat}
                                 {batchBerjalan.kelas ? ` · kelas ${batchBerjalan.kelas}` : ' · seluruh sekolah'}
                             </p>
-                            <ProgresGenerate progres={batchBerjalan.progres} />
+                            <ProgresGenerate progres={batchBerjalan.progres} label="Membuat pas foto 4R dan kartu OSIS" unit="berkas" />
                             <Link href="/admin/card-generation" className="text-sm text-blue-600 hover:underline">
                                 Buka Riwayat Kartu untuk melihat hasil per siswa
                             </Link>

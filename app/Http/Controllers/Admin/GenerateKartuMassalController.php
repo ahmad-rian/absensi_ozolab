@@ -158,13 +158,22 @@ class GenerateKartuMassalController extends Controller
                 'school_id' => $schoolId,
                 'classroom_id' => $classroomId !== '' ? $classroomId : null,
                 'created_by' => auth()->id(),
-                // Satu baris log per siswa per layout — itu yang dihitung bar
-                // kemajuan, bukan jumlah siswanya.
-                'total' => $students->count() * $layouts->count(),
+                'total' => $students->count() * ($layouts->count() + 1),
                 'status' => 'processing',
             ]);
 
             foreach ($students as $student) {
+                $sheetLog = CardGenerationLog::create([
+                    'school_id' => $student->school_id,
+                    'student_id' => $student->id,
+                    'card_generation_batch_id' => $batch->id,
+                    'type' => 'photo_sheet',
+                    'status' => 'processing',
+                    'generated_by' => 'admin',
+                ]);
+
+                GenerateStudentCardJob::dispatch($sheetLog->id)->afterCommit();
+
                 foreach ($layouts as $layout) {
                     $log = CardGenerationLog::create([
                         'school_id' => $student->school_id,
@@ -176,7 +185,7 @@ class GenerateKartuMassalController extends Controller
                         'generated_by' => 'admin',
                     ]);
 
-                    GenerateStudentCardJob::dispatch($log->id);
+                    GenerateStudentCardJob::dispatch($log->id)->afterCommit();
                 }
             }
 
@@ -185,7 +194,7 @@ class GenerateKartuMassalController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => "{$batch->total} kartu diantrekan untuk {$students->count()} siswa. Halaman ini boleh ditinggal.",
+            'message' => "{$batch->total} berkas pas foto 4R dan kartu OSIS diantrekan untuk {$students->count()} siswa. Halaman ini boleh ditinggal.",
         ]);
 
         return to_route('admin.generate-kartu', array_filter([

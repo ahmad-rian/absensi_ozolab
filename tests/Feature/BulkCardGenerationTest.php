@@ -68,7 +68,7 @@ test('server menolak generate selama masih ada siswa tanpa pas foto', function (
     Queue::assertNothingPushed();
 });
 
-test('satu batch berisi satu baris log per siswa per layout', function () {
+test('satu batch berisi lembar 4R dan kedua sisi kartu per siswa', function () {
     siswaBerfoto(3);
 
     $this->actingAs($this->super)
@@ -77,12 +77,26 @@ test('satu batch berisi satu baris log per siswa per layout', function () {
 
     $batch = CardGenerationBatch::firstOrFail();
 
-    expect($batch->total)->toBe(6)
+    expect($batch->total)->toBe(9)
         ->and(CardGenerationLog::withoutGlobalScope('school')
             ->where('card_generation_batch_id', $batch->id)
-            ->count())->toBe(6);
+            ->count())->toBe(9);
 
-    Queue::assertPushed(GenerateStudentCardJob::class, 6);
+    Queue::assertPushed(GenerateStudentCardJob::class, 9);
+
+    $logs = CardGenerationLog::withoutGlobalScope('school')
+        ->where('card_generation_batch_id', $batch->id)->get();
+
+    foreach ($logs->groupBy('student_id') as $studentLogs) {
+        expect($studentLogs->where('type', 'card'))->toHaveCount(2)
+            ->and($studentLogs->where('type', 'photo_sheet'))->toHaveCount(1)
+            ->and($studentLogs->firstWhere('type', 'photo_sheet')->school_card_layout_id)->toBeNull();
+    }
+
+    foreach ($logs as $log) {
+        Queue::assertPushed(GenerateStudentCardJob::class,
+            fn (GenerateStudentCardJob $job) => $job->logId === $log->id && $job->afterCommit === true);
+    }
 });
 
 test('memfilter satu kelas hanya mengambil siswa kelas itu', function () {
@@ -103,7 +117,7 @@ test('memfilter satu kelas hanya mengambil siswa kelas itu', function () {
         ])
         ->assertRedirect();
 
-    expect(CardGenerationBatch::firstOrFail()->total)->toBe(4);
+    expect(CardGenerationBatch::firstOrFail()->total)->toBe(6);
 });
 
 test('persen naik mengikuti status baris log', function () {
@@ -115,14 +129,14 @@ test('persen naik mengikuti status baris log', function () {
 
     $batch = CardGenerationBatch::firstOrFail();
 
-    expect($batch->progres())->toMatchArray(['total' => 4, 'selesai' => 0, 'persen' => 0, 'status' => 'processing']);
+    expect($batch->progres())->toMatchArray(['total' => 6, 'selesai' => 0, 'persen' => 0, 'status' => 'processing']);
 
     CardGenerationLog::withoutGlobalScope('school')
         ->where('card_generation_batch_id', $batch->id)
         ->limit(2)
         ->update(['status' => 'completed']);
 
-    expect($batch->fresh()->progres())->toMatchArray(['selesai' => 2, 'persen' => 50, 'status' => 'processing']);
+    expect($batch->fresh()->progres())->toMatchArray(['selesai' => 2, 'persen' => 33, 'status' => 'processing']);
 });
 
 test('batch yang sebagian jobnya gagal tetap mencapai 100 persen', function () {
@@ -140,11 +154,11 @@ test('batch yang sebagian jobnya gagal tetap mencapai 100 persen', function () {
     CardGenerationLog::withoutGlobalScope('school')->whereIn('id', $logs->take(3))->update(['status' => 'completed']);
     CardGenerationLog::withoutGlobalScope('school')->whereIn('id', $logs->skip(3))->update(['status' => 'failed']);
 
-    // Menggantung di 75% selamanya adalah kegagalan yang paling mahal di sini:
+    // Progres yang menggantung selamanya adalah kegagalan yang paling mahal di sini:
     // operator menunggu sesuatu yang tidak akan pernah datang, lalu menekan
     // tombolnya lagi dan menggandakan seluruh batch.
     expect($batch->fresh()->progres())
-        ->toMatchArray(['total' => 4, 'selesai' => 3, 'gagal' => 1, 'persen' => 100, 'status' => 'failed']);
+        ->toMatchArray(['total' => 6, 'selesai' => 3, 'gagal' => 3, 'persen' => 100, 'status' => 'failed']);
 });
 
 test('endpoint progres melaporkan angka yang sama dengan modelnya', function () {
@@ -159,7 +173,39 @@ test('endpoint progres melaporkan angka yang sama dengan modelnya', function () 
     $this->actingAs($this->super)
         ->getJson("/admin/generate-kartu/{$batch->id}/progres")
         ->assertOk()
-        ->assertJson(['total' => 2, 'selesai' => 0, 'gagal' => 0, 'persen' => 0]);
+        ->assertJson(['total' => 3, 'selesai' => 0, 'gagal' => 0, 'persen' => 0]);
+});
+
+test('batch menunggu lembar 4R dan tetap selesai ketika lembar itu gagal', function () {
+    siswaBerfoto(1);
+
+    $this->actingAs($this->super)
+        ->post('/admin/generate-kartu', ['school_id' => $this->schoolId])
+        ->assertRedirect();
+
+    $batch = CardGenerationBatch::firstOrFail();
+    $logs = CardGenerationLog::withoutGlobalScope('school')->where('card_generation_batch_id', $batch->id);
+    (clone $logs)->where('type', 'card')->update(['status' => 'completed']);
+
+    expect($batch->progres())->toMatchArray(['selesai' => 2, 'persen' => 66, 'status' => 'processing']);
+
+    (clone $logs)->where('type', 'photo_sheet')->update(['status' => 'failed']);
+
+    expect($batch->progres())->toMatchArray(['selesai' => 2, 'gagal' => 1, 'persen' => 100, 'status' => 'failed']);
+});
+
+test('generate hanya memasukkan siswa aktif sekolah terpilih', function () {
+    siswaBerfoto(1);
+    Student::factory()->create(['school_id' => $this->schoolId, 'is_active' => false, 'photo_path' => null]);
+    Student::factory()->create(['is_active' => true, 'photo_path' => null]);
+
+    $this->actingAs($this->super)
+        ->post('/admin/generate-kartu', ['school_id' => $this->schoolId])
+        ->assertRedirect()->assertSessionHasNoErrors();
+
+    expect(CardGenerationBatch::firstOrFail()->total)->toBe(3)
+        ->and(CardGenerationLog::withoutGlobalScope('school')->pluck('school_id')->unique()->all())
+        ->toBe([$this->schoolId]);
 });
 
 test('bukan super admin ditolak di ketiga rute', function () {

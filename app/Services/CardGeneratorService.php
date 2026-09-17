@@ -103,14 +103,16 @@ class CardGeneratorService
         $student = $log->student;
         $layout = $log->cardLayout;
 
-        if (! $student || ! $layout) {
+        if (! $student || ($log->type !== 'photo_sheet' && ! $layout)) {
             $log->update(['status' => 'failed', 'error_message' => 'Siswa atau layout tidak ditemukan.']);
 
             return $log->fresh();
         }
 
         try {
-            $result = $this->generateCard($student, $layout);
+            $result = $log->type === 'photo_sheet'
+                ? app(PhotoSheetGeneratorService::class)->generate($student, '4r_3x4', '')
+                : $this->generateCard($student, $layout);
 
             $log->update([
                 'status' => 'completed',
@@ -174,7 +176,7 @@ class CardGeneratorService
         }
 
         try {
-            $service = GoogleDriveService::forSchool($driveConfig);
+            $service = app(GoogleDriveService::class, ['config' => $driveConfig]);
             $service->ensureSubfolders();
 
             $fullPath = Storage::disk('public')->path($filePath);
