@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AlertTriangle, CheckCircle2, CreditCard, Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ModalPasFotoAntre } from '@/components/shared/modal-pas-foto-antre';
 import { ProgresGenerate } from '@/components/shared/progres-generate';
 import type { Progres } from '@/components/shared/progres-generate';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,14 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
             { preserveState: true, replace: true },
         );
     }
+
+    /*
+        Indeks baris yang modalnya dibuka; null berarti tertutup.
+
+        Dipakai juga sebagai `key` komponen modal, sehingga tiap pembukaan
+        adalah mount baru — di situlah modal menyalin daftar antreannya.
+    */
+    const [barisFoto, setBarisFoto] = useState<number | null>(null);
 
     const kurang = ringkasan ? ringkasan.total - ringkasan.berfoto : 0;
     const siap = ringkasan !== null && ringkasan.total > 0 && kurang === 0;
@@ -196,16 +205,26 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {ringkasan.tanpa_foto.map((s) => (
+                                            {ringkasan.tanpa_foto.map((s, i) => (
                                                 <TableRow key={s.id}>
                                                     <TableCell className="font-medium">{s.full_name}</TableCell>
                                                     <TableCell className="tabular-nums">{s.nis ?? '—'}</TableCell>
                                                     <TableCell>{s.classroom ?? '—'}</TableCell>
                                                     <TableCell className="text-right">
-                                                        {/* Tertaut supaya fotonya bisa langsung dipasang,
-                                                            bukan cuma dilaporkan kurang. */}
-                                                        <Button variant="outline" size="sm" asChild>
-                                                            <Link href={`/admin/siswa/${s.id}/edit`}>Pasang foto</Link>
+                                                        {/*
+                                                            Modal di tempat, bukan tautan ke halaman edit.
+
+                                                            Tautan lama tidak sekadar lambat — ia 404 untuk
+                                                            sekolah yang tidak sedang aktif di sesi, yaitu
+                                                            keadaan normal layar lintas sekolah ini. Lihat
+                                                            GenerateKartuMassalController::unggahFoto.
+                                                        */}
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setBarisFoto(i)}
+                                                        >
+                                                            Pasang foto
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
@@ -236,6 +255,17 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                             </div>
                         </CardContent>
                     </Card>
+                )}
+
+                {barisFoto !== null && ringkasan && (
+                    <ModalPasFotoAntre
+                        key={barisFoto}
+                        siswa={ringkasan.tanpa_foto}
+                        mulaiDari={barisFoto}
+                        schoolId={filters.school_id}
+                        urlUnggah={(id) => `/admin/generate-kartu/siswa/${id}/foto`}
+                        onTutup={() => setBarisFoto(null)}
+                    />
                 )}
 
                 {batchBerjalan && (

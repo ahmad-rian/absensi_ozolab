@@ -10,6 +10,7 @@ use App\Models\Classroom;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Models\Student;
+use App\Services\Student\StudentPhotoIntake;
 use App\Support\SchoolTime;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -201,6 +202,59 @@ class GenerateKartuMassalController extends Controller
             'school_id' => $schoolId,
             'classroom_id' => $classroomId !== '' ? $classroomId : null,
         ]));
+    }
+
+    /**
+     * Pasang pas foto seorang siswa tanpa meninggalkan layar ini.
+     *
+     * Parameternya `string $siswa`, BUKAN `Student $siswa`, dan itu bukan
+     * kelalaian. `Student` memakai global scope `school` yang menyaring
+     * `school_id = auth()->user()->school_id` — nilai yang untuk super admin
+     * diambil `SetCurrentSchool` dari `session('current_school_id')`. Layar ini
+     * memilih sekolah lewat query string dan tidak pernah menyentuh sesi, jadi
+     * begitu keduanya berbeda — keadaan normal di sini — route model binding
+     * tidak menemukan apa pun dan tombolnya 404. Itulah cacat yang diperbaiki
+     * endpoint ini; mengetik modelnya akan menghidupkannya kembali.
+     *
+     * Polanya sama dengan `StudentQuickOpenController`, yang juga menerima id
+     * mentah demi alasan yang persis sama. Bedanya di sini konteks sesi TIDAK
+     * dipindahkan: operator sedang mengurus satu layar lintas sekolah, dan
+     * menggeser sekolah aktifnya di tengah antrean unggah justru mengubah
+     * konteks yang tidak ia lihat.
+     *
+     * Karena scope tenant memang dilepas, penjagaannya ditulis eksplisit:
+     * `super-admin` di grup rutenya, dan `school_id` yang wajib cocok dengan
+     * siswanya sehingga id nyasar dari sekolah lain ditolak alih-alih
+     * diam-diam diproses.
+     */
+    public function unggahFoto(Request $request, string $siswa, StudentPhotoIntake $intake): RedirectResponse
+    {
+        $aturan = StudentPhotoIntake::aturanUnggah();
+
+        $validated = $request->validate(
+            [...$aturan['rules'], 'school_id' => ['required', 'exists:schools,id']],
+            $aturan['messages'],
+            $aturan['attributes'],
+        );
+
+        $student = Student::acrossSchools()->findOrFail($siswa);
+
+        if ($student->school_id !== $validated['school_id']) {
+            throw ValidationException::withMessages([
+                'photo' => 'Siswa ini bukan milik sekolah yang sedang dibuka.',
+            ]);
+        }
+
+        $intake->store($student, $request->file('photo')->getRealPath(), 'admin-massal');
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Pas foto '.$student->full_name.' tersimpan.',
+        ]);
+
+        // `back()`, bukan ke halaman detail siswa: modalnya harus tetap di
+        // tempatnya supaya antrean siswa berikutnya tidak terputus.
+        return back();
     }
 
     /**

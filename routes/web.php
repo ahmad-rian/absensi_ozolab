@@ -320,6 +320,12 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::get('generate-kartu/{batch}/progres', [GenerateKartuMassalController::class, 'progres'])
             ->middleware('throttle:120,1')
             ->name('admin.generate-kartu.progres');
+
+        // Unggah pas foto tanpa meninggalkan layar ini. Rute siswa yang biasa
+        // 404 di sini: bindingnya tersaring global scope tenant, sedangkan
+        // sekolah yang dibuka layar ini datang dari query string, bukan sesi.
+        Route::post('generate-kartu/siswa/{siswa}/foto', [GenerateKartuMassalController::class, 'unggahFoto'])
+            ->name('admin.generate-kartu.foto');
     });
 
     Route::middleware(['permission:album-layouts.access', 'feature:kartu_album'])->group(function () {

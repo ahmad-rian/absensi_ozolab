@@ -5,31 +5,27 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\PrayerType;
 use App\Enums\SchoolFeature;
 use App\Http\Controllers\Controller;
-use App\Jobs\SyncStudentPhotoToDriveJob;
 use App\Models\CardGenerationBatch;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
 use App\Models\ParentProfile;
 use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
-use App\Services\PhotoCropService;
 use App\Services\PhotoSheetGeneratorService;
 use App\Services\Student\StudentDrivePhotoLocator;
+use App\Services\Student\StudentPhotoIntake;
 use App\Services\Student\StudentStatsBuilder;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use App\Support\StudentAssetPurge;
-use App\Support\StudentPhotoStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-use Throwable;
 
 class SiswaController extends Controller
 {
@@ -430,68 +426,15 @@ class SiswaController extends Controller
      * balik tombolnya masing-masing supaya mengganti foto tidak menyeret render
      * headless Chrome.
      */
-    public function uploadPhoto(Request $request, Student $siswa): RedirectResponse
+    public function uploadPhoto(Request $request, Student $siswa, StudentPhotoIntake $intake): RedirectResponse
     {
-        $request->validate([
-            // `image` dan `mimes` keduanya mengendus isi berkas, bukan percaya
-            // nama atau content-type yang dikirim klien.
-            'photo' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-        ], [
-            'photo.required' => 'Pilih berkas foto terlebih dahulu.',
-            'photo.image' => 'Berkas harus berupa gambar.',
-            'photo.mimes' => 'Format foto harus JPG, PNG, atau WEBP.',
-            'photo.max' => 'Ukuran foto maksimal 5 MB.',
-        ], ['photo' => 'foto']);
+        $aturan = StudentPhotoIntake::aturanUnggah();
+        $request->validate($aturan['rules'], $aturan['messages'], $aturan['attributes']);
 
-        $fotoLama = $siswa->photo_path;
-        $jalurBaru = StudentPhotoStorage::path($siswa->school_id, $siswa);
-
-        try {
-            // `crop: false` supaya hasilnya identik dengan foto yang datang dari
-            // Drive; croping hanya berlaku di jalur kartu bebas. Keluarannya PNG,
-            // bentuk yang dibaca PhotoSheetGeneratorService dan AlbumGeneratorService.
-            (new PhotoCropService)->cropAndStore(
-                $request->file('photo')->getRealPath(),
-                $jalurBaru,
-                9,
-                null,
-                crop: false,
-            );
-        } catch (Throwable $e) {
-            // Aturan `image`/`mimes` menebak dari isi berkas, tapi gambar yang
-            // terpotong atau rusak tetap lolos dan baru meledak di sini. Tanpa
-            // penangkap ini operator mendapat galat 500, bukan pesan yang bisa
-            // ditindaklanjuti.
-            throw ValidationException::withMessages([
-                'photo' => 'Berkas foto tidak bisa dibaca. Coba simpan ulang sebagai JPG atau PNG.',
-            ]);
-        }
-
-        $siswa->update(['photo_path' => $jalurBaru]);
-
-        // Nama berkasnya memuat 16 karakter acak, jadi foto lama TIDAK tertimpa
-        // — ia tertinggal selamanya kalau tidak dibuang di sini. Disk penuh
-        // sudah pernah menjatuhkan server ini.
-        if ($fotoLama && $fotoLama !== $jalurBaru) {
-            Storage::disk('public')->delete($fotoLama);
-        }
-
-        if ($siswa->school?->driveConfig?->is_active) {
-            // Baris dibuat di sini, bukan di dalam job: lencana di halaman
-            // siswa membaca riwayat ini, dan polling-nya hanya menyala saat
-            // statusnya `processing`. Kalau job yang membuatnya, tidak ada
-            // yang dilihat halaman sampai worker sempat berjalan.
-            $log = CardGenerationLog::create([
-                'school_id' => $siswa->school_id,
-                'student_id' => $siswa->id,
-                'type' => 'photo',
-                'status' => 'processing',
-                'file_path' => $jalurBaru,
-                'generated_by' => 'admin-upload',
-            ]);
-
-            SyncStudentPhotoToDriveJob::dispatch($siswa->id, $log->id);
-        }
+        // Seluruh urutannya — crop, tulis, buang foto lama, catat dan antrekan
+        // sinkronisasi Drive — hidup di servisnya, dipakai bersama layar
+        // generate massal. Lihat catatan di kepala StudentPhotoIntake.
+        $intake->store($siswa, $request->file('photo')->getRealPath());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pas foto berhasil diperbarui.']);
 
