@@ -29,127 +29,216 @@
     <link rel="icon" href="data:,">
     <title>Absensi {{ $school->name }}</title>
     <style>
+        /*
+            Palet dipilih, bukan diwarisi.
+
+            Netral condong dingin supaya senada dengan keluarga slate yang
+            sudah dipakai aplikasinya, dengan satu hijau dan satu merah yang
+            cukup gelap untuk terbaca sebagai teks putih di atasnya. Hex saja:
+            fungsi warna modern tidak dikenal Chrome di bawah 111, dan
+            perangkat sasaran halaman ini justru di bawah itu. Daftar lengkap
+            yang dilarang ada di kepala berkas, dan ada tes yang menjaganya.
+        */
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
             padding: 0;
-            background: #0f172a;
-            color: #e2e8f0;
+            background: #ffffff;
+            color: #0f172a;
             font-family: Arial, Helvetica, sans-serif;
             -webkit-text-size-adjust: 100%;
         }
-        body { padding: 16px; }
+        body {
+            padding: 24px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Isi dibatasi lebarnya. Tanpa ini, di TV 1920px nama siswa terlempar
+           jauh ke kanan fotonya dan barisnya jadi mustahil dipindai mata. */
+        .wrap {
+            width: 100%;
+            max-width: 1180px;
+            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
 
         .bar {
             display: flex;
             align-items: center;
-            margin-bottom: 14px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 20px;
         }
-        .bar img { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; }
-        .bar .brand { margin-left: 10px; }
-        .bar .brand b { display: block; font-size: 18px; color: #f8fafc; }
-        .bar .brand span { display: block; font-size: 12px; color: #94a3b8; }
+        .bar img { width: 52px; height: 52px; object-fit: contain; }
+        .bar .brand { margin-left: 12px; }
+        .bar .brand b { display: block; font-size: 26px; font-weight: bold; }
+        .bar .brand span {
+            display: block;
+            margin-top: 2px;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            color: #64748b;
+        }
         .bar .clock {
             margin-left: auto;
-            font-size: 34px;
+            font-size: 48px;
             font-weight: bold;
-            color: #f8fafc;
             font-family: "Courier New", monospace;
+            /* Angka selebar sama, supaya jamnya tidak bergoyang tiap detik. */
+            font-variant-numeric: tabular-nums;
         }
 
         .stage {
-            min-height: 340px;
-            border-radius: 14px;
-            background: #1e293b;
-            border: 2px solid #334155;
-            padding: 20px;
+            flex: 1;
+            min-height: 420px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #f8fafc;
+            display: flex;
+            flex-direction: column;
+        }
+        /* Keadaan hasil memakai kertas putih; warnanya dibawa pita status. */
+        .stage.ok, .stage.bad { background: #ffffff; }
+        .stage.ok { border-color: #047857; }
+        .stage.bad { border-color: #b91c1c; }
+
+        .idle {
+            flex: 1;
             display: flex;
             align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 30px;
         }
-        .stage.ok { background: #064e3b; border-color: #10b981; }
-        .stage.bad { background: #7f1d1d; border-color: #ef4444; }
 
-        .idle { width: 100%; text-align: center; color: #94a3b8; font-size: 22px; }
+        /*
+            Pita status: satu bidang warna selebar panel.
+
+            Inilah yang terbaca dari seberang lorong. Lencana kecil di sudut
+            tidak cukup — operator berdiri beberapa meter dari layar dan yang
+            perlu ia tahu hanya satu hal, kartu ini diterima atau tidak.
+        */
+        .pita {
+            padding: 14px 22px;
+            color: #ffffff;
+            font-size: 34px;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .stage.ok .pita { background: #047857; }
+        .stage.bad .pita { background: #b91c1c; }
+        .pita .jam {
+            float: right;
+            font-family: "Courier New", monospace;
+            font-variant-numeric: tabular-nums;
+            font-weight: normal;
+        }
+
+        .isi { flex: 1; padding: 26px; display: flex; align-items: center; }
 
         .photo {
-            width: 240px;
-            height: 320px;
+            width: 300px;
+            height: 400px;
             object-fit: contain;
-            background: #0f172a;
-            border: 3px solid #10b981;
-            border-radius: 10px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 2px;
             flex: 0 0 auto;
         }
+        /*
+            Tanpa foto: inisial siswa, bukan ikon orang generik.
+
+            Sebelumnya di sini ada emoji 👤 — hiasan yang tidak memberi tahu
+            apa pun. Dua huruf nama masih memberi tahu siapa yang barusan
+            lewat, bahkan ketika pas fotonya memang belum dipasang.
+        */
         .photo.none {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 72px;
-            color: #475569;
+            font-size: 96px;
+            font-weight: bold;
+            color: #94a3b8;
+            letter-spacing: 0.02em;
         }
 
-        .who { margin-left: 22px; min-width: 0; }
+        .who { margin-left: 26px; min-width: 0; }
         .who .name {
-            font-size: 42px;
+            font-size: 64px;
             font-weight: bold;
-            color: #ffffff;
-            line-height: 1.1;
+            line-height: 1.05;
             word-wrap: break-word;
         }
-        .who .meta { margin-top: 10px; font-size: 22px; color: #d1fae5; }
-        .who .meta span { display: block; margin-top: 4px; }
-        .who .tag {
-            display: inline-block;
-            margin-top: 12px;
-            padding: 6px 16px;
-            border-radius: 999px;
-            background: #10b981;
-            color: #04291d;
-            font-size: 22px;
-            font-weight: bold;
+        .who .meta { margin-top: 14px; font-size: 22px; color: #64748b; }
+        .who .meta span { display: block; margin-top: 5px; }
+
+        .fail {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 22px;
+            text-align: center;
+        }
+        .fail .msg { font-size: 42px; font-weight: bold; }
+        .fail .probe {
+            margin-top: 14px;
+            font-size: 16px;
+            color: #64748b;
+            font-family: "Courier New", monospace;
         }
 
-        .fail { width: 100%; text-align: center; }
-        .fail .mark { font-size: 72px; color: #fecaca; }
-        .fail .msg { margin-top: 10px; font-size: 34px; font-weight: bold; color: #ffffff; }
-        .fail .probe { margin-top: 10px; font-size: 16px; color: #fecaca; font-family: "Courier New", monospace; }
-
-        form { margin-top: 14px; }
+        form { margin-top: 16px; }
         input[type=text] {
             width: 100%;
             padding: 14px;
             font-size: 20px;
             text-align: center;
-            border-radius: 10px;
-            border: 2px solid #334155;
-            background: #1e293b;
-            color: #f8fafc;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #0f172a;
             font-family: "Courier New", monospace;
         }
-        input[type=text]:focus { outline: none; border-color: #10b981; }
+        input[type=text]:focus { outline: none; border-color: #0f172a; }
 
-        .log { margin-top: 14px; }
+        .log { margin-top: 20px; }
         .log .row {
             display: flex;
             align-items: center;
-            padding: 8px 10px;
-            border-bottom: 1px solid #334155;
+            padding: 9px 2px;
+            border-bottom: 1px solid #e2e8f0;
             font-size: 16px;
         }
         .log .row .dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 999px;
-            background: #10b981;
+            background: #047857;
             flex: 0 0 auto;
         }
-        .log .row .dot.bad { background: #ef4444; }
-        .log .row .txt { margin-left: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .log .row .at { margin-left: auto; color: #94a3b8; font-family: "Courier New", monospace; }
+        .log .row .dot.bad { background: #b91c1c; }
+        .log .row .txt { margin-left: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .log .row .at {
+            margin-left: auto;
+            padding-left: 12px;
+            color: #64748b;
+            font-family: "Courier New", monospace;
+            font-variant-numeric: tabular-nums;
+        }
 
-        .notice { text-align: center; padding: 60px 20px; }
-        .notice h1 { font-size: 28px; color: #f8fafc; }
-        .notice p { font-size: 18px; color: #94a3b8; }
+        .notice { max-width: 640px; margin: 0 auto; text-align: center; padding: 80px 20px; }
+        .notice h1 { font-size: 30px; margin: 0; }
+        .notice p { font-size: 18px; color: #64748b; margin-top: 12px; }
     </style>
 </head>
 <body>
@@ -166,26 +255,28 @@
         </p>
     </div>
 @else
-    <div class="bar">
-        @if ($logoUrl)
-            <img src="{{ $logoUrl }}" alt="">
-        @endif
-        <div class="brand">
-            <b>{{ $school->name }}</b>
-            <span>Absensi Digital &middot; mode ringan</span>
+    <div class="wrap">
+        <div class="bar">
+            @if ($logoUrl)
+                <img src="{{ $logoUrl }}" alt="">
+            @endif
+            <div class="brand">
+                <b>{{ $school->name }}</b>
+                <span>ABSENSI DIGITAL</span>
+            </div>
+            <div class="clock" id="clock">--.--.--</div>
         </div>
-        <div class="clock" id="clock">--:--:--</div>
+
+        <div class="stage" id="stage">
+            <div class="idle" id="idle">Tempelkan kartu atau tembak QR Code siswa</div>
+        </div>
+
+        <form id="manual" autocomplete="off">
+            <input type="text" id="box" placeholder="Tempel kartu / ketik lalu Enter">
+        </form>
+
+        <div class="log" id="log"></div>
     </div>
-
-    <div class="stage" id="stage">
-        <div class="idle" id="idle">Tempelkan kartu atau tembak QR Code siswa</div>
-    </div>
-
-    <form id="manual" autocomplete="off">
-        <input type="text" id="box" placeholder="Tempel kartu / ketik lalu Enter">
-    </form>
-
-    <div class="log" id="log"></div>
 
     <script>
         (function () {
@@ -288,27 +379,72 @@
                 stage.appendChild(idle);
             }
 
+            /*
+                Inisial dari nama, maksimal dua huruf.
+
+                Dipakai saat pas fotonya belum ada. Sebelumnya di sini ada
+                emoji orang — hiasan yang tidak memberi tahu apa pun. Dua huruf
+                masih memberi tahu siapa yang barusan lewat.
+            */
+            function inisial(nama) {
+                var kata = String(nama || '').split(/\s+/);
+                var hasil = '';
+
+                for (var i = 0; i < kata.length && hasil.length < 2; i++) {
+                    if (kata[i]) { hasil += kata[i].charAt(0); }
+                }
+
+                return hasil.toUpperCase() || '?';
+            }
+
             function showResult(data) {
                 var s = data.student;
                 stage.innerHTML = '';
 
                 if (data.success && s) {
                     stage.className = 'stage ok';
+
                     var photo = s.photo_url
                         ? '<img class="photo" src="' + esc(s.photo_url) + '" alt="">'
-                        : '<div class="photo none">&#128100;</div>';
+                        : '<div class="photo none">' + esc(inisial(s.full_name)) + '</div>';
+
                     var lines = '';
                     if (s.classroom) { lines += '<span>Kelas ' + esc(s.classroom) + '</span>'; }
                     if (s.nis) { lines += '<span>NIS ' + esc(s.nis) + '</span>'; }
-                    lines += '<span>' + esc(s.status) + ' &middot; ' + esc(s.time) + '</span>';
+                    if (s.status) { lines += '<span>' + esc(s.status) + '</span>'; }
 
+                    /* Pita: satu kata besar yang terbaca dari seberang lorong,
+                       jam scan di ujung kanannya. */
                     stage.innerHTML =
-                        photo +
+                        '<div class="pita">' + esc(s.type_label) +
+                        '<span class="jam">' + esc(s.time) + '</span></div>' +
+                        '<div class="isi">' + photo +
                         '<div class="who">' +
                         '<div class="name">' + esc(s.full_name) + '</div>' +
                         '<div class="meta">' + lines + '</div>' +
-                        '<div class="tag">' + esc(s.type_label) + '</div>' +
-                        '</div>';
+                        '</div></div>';
+
+                    /*
+                        Berkas fotonya hilang dari disk: tampilkan inisial, bukan
+                        ikon gambar rusak bawaan peramban.
+
+                        Bukan kasus karangan — `photo_path` bisa menunjuk berkas
+                        yang sudah tidak ada, dan yang terlihat operator selama
+                        ini cuma kotak abu berlogo sobek di tengah layar gerbang.
+                    */
+                    var gambar = stage.querySelector('img.photo');
+
+                    if (gambar) {
+                        gambar.onerror = function () {
+                            var ganti = document.createElement('div');
+                            ganti.className = 'photo none';
+                            ganti.textContent = inisial(s.full_name);
+
+                            if (gambar.parentNode) {
+                                gambar.parentNode.replaceChild(ganti, gambar);
+                            }
+                        };
+                    }
                 } else {
                     stage.className = 'stage bad';
                     /* Bentuk bacaan ikut ditampilkan saat gagal. Operator memegang
@@ -320,8 +456,8 @@
                           esc(terakhir.awal) + '&hellip;' + esc(terakhir.akhir) + '</div>'
                         : '';
                     stage.innerHTML =
-                        '<div class="fail"><div class="mark">&#10007;</div>' +
-                        '<div class="msg">' + esc(data.message) + '</div>' + jejak + '</div>';
+                        '<div class="pita">TIDAK DITERIMA</div>' +
+                        '<div class="fail"><div class="msg">' + esc(data.message) + '</div>' + jejak + '</div>';
                 }
 
                 if (resultTimer) clearTimeout(resultTimer);

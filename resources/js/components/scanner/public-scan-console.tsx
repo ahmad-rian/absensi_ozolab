@@ -1,4 +1,4 @@
-import { Html5Qrcode } from 'html5-qrcode';
+import type { Html5Qrcode } from 'html5-qrcode';
 import {
     BookOpen,
     Camera,
@@ -17,6 +17,58 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-sound';
+
+/*
+    `html5-qrcode` diunduh saat dibutuhkan, bukan saat halaman dibuka.
+
+    Pustaka ini membawa dekoder ZXing dan sendirian berukuran ±379 KB — chunk
+    terbesar ketiga di seluruh aplikasi. Selama ia diimpor statis, setiap
+    gerbang ikut mengunduhnya: termasuk PC gerbang bersenjata barcode gun yang
+    tidak punya kamera sama sekali, dan tablet perpustakaan yang cuma
+    menempelkan kartu.
+
+    Promise-nya disimpan di tingkat modul, jadi satu halaman memuatnya paling
+    banyak sekali betapa pun seringnya jalur kamera dicoba ulang.
+*/
+type KelasHtml5Qrcode = (new (elementId: string) => Html5Qrcode) & {
+    getCameras(): Promise<Array<{ id: string; label: string }>>;
+};
+
+let pustakaKamera: Promise<KelasHtml5Qrcode> | null = null;
+
+function muatPustakaKamera(): Promise<KelasHtml5Qrcode> {
+    if (!pustakaKamera) {
+        pustakaKamera = import('html5-qrcode').then((m) => m.Html5Qrcode);
+    }
+
+    return pustakaKamera;
+}
+
+/**
+ * Apakah perangkat ini punya kamera, diperiksa TANPA memuat pustakanya.
+ *
+ * `enumerateDevices()` bawaan peramban mengisi `kind` bahkan sebelum izin
+ * diberikan — labelnya saja yang kosong — jadi keberadaan `videoinput` bisa
+ * diketahui lebih dulu. Itulah yang menghemat unduhan di gerbang tanpa kamera.
+ *
+ * Daftar yang KOSONG SAMA SEKALI sengaja dianggap "tidak bisa dipastikan", dan
+ * jawabannya `true`: sebagian WebView Android lama mengembalikan daftar kosong
+ * padahal `getUserMedia` bekerja normal, dan melewatkan kamera yang sebenarnya
+ * ada jauh lebih merugikan daripada mengunduh pustaka yang tidak terpakai.
+ */
+async function adaKamera(): Promise<boolean> {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
+        return true;
+    }
+
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+
+        return devices.length === 0 || devices.some((d) => d.kind === 'videoinput');
+    } catch {
+        return true;
+    }
+}
 
 export type ScanSchool = { name: string; logo_url: string | null; is_active: boolean };
 
@@ -485,6 +537,8 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             }
 
             try {
+                const Pustaka = await muatPustakaKamera();
+
                 /*
                  * Dicoba berurutan sampai ada yang menyala, bukan sekali lalu
                  * menyerah.
@@ -526,7 +580,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                      * gunanya. Terlihat pertama kali di harness CDP, bukan di
                      * lapangan.
                      */
-                    const scanner = new Html5Qrcode(readerId);
+                    const scanner = new Pustaka(readerId);
                     scannerRef.current = scanner;
 
                     try {
@@ -593,8 +647,24 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
         async function init() {
             await new Promise((r) => setTimeout(r, 200));
             if (!mountedRef.current) return;
+
+            // Berhenti SEBELUM pustakanya diunduh. Pesannya sama persis
+            // dengan yang selama ini muncul di ujung jalur kamera yang gagal,
+            // jadi yang berubah cuma 379 KB yang tidak jadi diambil.
+            if (!(await adaKamera())) {
+                if (!mountedRef.current) {
+                    return;
+                }
+
+                setCameraError('Kamera tidak ditemukan. Gunakan barcode gun / input manual.');
+                setCameraStatus('error');
+
+                return;
+            }
+
             try {
-                const devices = await Html5Qrcode.getCameras();
+                const Pustaka = await muatPustakaKamera();
+                const devices = await Pustaka.getCameras();
                 if (!mountedRef.current) return;
 
                 const cams = devices.map((d) => ({ id: d.id, label: d.label || `Kamera ${d.id.slice(0, 6)}` }));

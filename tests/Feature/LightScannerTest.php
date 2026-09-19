@@ -142,7 +142,21 @@ test('halaman ringan tidak memungut kembali beban yang justru dihindarinya', fun
         ->not->toContain('rel="stylesheet"')
         // Locale non-default memaksa jalur ICU, dan jam dinding memanggilnya
         // sekali per detik selamanya di perangkat yang paling lemah.
-        ->not->toContain('toLocaleTimeString');
+        ->not->toContain('toLocaleTimeString')
+        // Latarnya putih sekarang. `#0f172a` boleh tetap ada sebagai warna
+        // teks; yang dilarang ia kembali jadi latar halaman.
+        ->not->toContain('background: #0f172a')
+        // Emoji orang diganti inisial siswa — hiasan generik yang tidak
+        // memberi tahu siapa pun tidak boleh kembali.
+        ->not->toContain('&#128100;');
+});
+
+test('halaman ringan berlatar putih', function () {
+    $school = School::factory()->create();
+
+    $this->get(route('public.scanner.light', ['school' => $school->scanner_token]))
+        ->assertOk()
+        ->assertSee('background: #ffffff', false);
 });
 
 /**

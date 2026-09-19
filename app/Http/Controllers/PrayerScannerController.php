@@ -9,6 +9,7 @@ use App\Services\Attendance\StudentLookup;
 use App\Support\PrayerSchedule;
 use App\Support\ScanRejectionLog;
 use App\Support\SchoolTime;
+use App\Support\StudentPhotoStorage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -91,9 +92,11 @@ class PrayerScannerController extends Controller
                 'nis' => $student->nis,
                 'no_absen' => $student->no_absen,
                 'classroom' => $student->classroom?->name,
-                'photo_url' => $student->photo_path
-                    ? Storage::disk('public')->url($student->photo_path)
-                    : null,
+                // Thumbnail kalau ada, foto asli kalau belum. Aslinya PNG 1600 px
+                // berukuran megabita sementara layar gerbang menggambarnya di
+                // kotak 96×128 px — jalur absensi sekolah sudah dibereskan
+                // lebih dulu, dua gerbang ini terlewat.
+                'photo_url' => StudentPhotoStorage::displayUrl($student->photo_path),
                 'status' => $result['attendance']?->status->label(),
                 // `type` tetap 'PRAYER' — frontend memakainya sebagai penanda
                 // mode scanner; yang jadi dinamis adalah labelnya.

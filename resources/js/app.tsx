@@ -14,12 +14,18 @@ createInertiaApp({
         // Kelompok pertama adalah halaman publik. Tanpa disebut di sini sebuah
         // halaman jatuh ke `default` dan dirender di dalam sidebar admin —
         // tautan publik yang memamerkan menu internal.
+        //
+        // `scan/prayer` dan `scan/library` pernah terlewat persis begitu, dan
+        // baru ketahuan saat mengukur bobot halaman gerbang. Sekarang ada tes
+        // yang menuntut SETIAP berkas di `pages/scan/` disebut di bawah ini.
         switch (true) {
             case name === 'welcome':
             case name === 'student-register':
             case name === 'student-register-quick':
             case name === 'student-register-result':
             case name === 'scan/public':
+            case name === 'scan/prayer':
+            case name === 'scan/library':
             case name === 'parent-telegram':
             case name === 'public/card-form':
                 return null;
