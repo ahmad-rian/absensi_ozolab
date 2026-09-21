@@ -191,7 +191,11 @@ test('halaman ringan terkunci satu layar dengan panel riwayat', function () {
         ->assertSee('overflow: hidden', false)
         ->assertSee('flex: 3 1 0', false)
         ->assertSee('flex: 1 1 0', false)
-        ->assertSee('RIWAYAT SCAN', false);
+        ->assertSee('RIWAYAT SCAN', false)
+        // Kiri absen, kanan riwayat. `.badan` wadah mendatarnya; di bawah
+        // 768px ia kembali bertumpuk.
+        ->assertSee('class="badan"', false)
+        ->assertSee('flex-direction: column', false);
 });
 
 /**

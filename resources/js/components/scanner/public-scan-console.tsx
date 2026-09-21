@@ -828,21 +828,21 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     const badge = resultBadge(lastResult?.student?.type);
 
     return (
-        <div className="relative flex h-screen h-dvh flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-800">
+        <div className="relative flex h-screen h-dvh flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-800 lg:flex-row">
             {/* Fullscreen toggle — samar saat fullscreen, hilang di iPhone
                 yang memang tidak punya API-nya. */}
             <button
                 ref={tombolPenuhRef}
                 onClick={toggleFullscreen}
                 title={isFullscreen ? 'Keluar layar penuh' : 'Layar penuh'}
-                className={`fixed right-4 top-4 z-50 flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-sm backdrop-blur transition-all hover:bg-white hover:text-slate-900 ${
+                className={`fixed left-4 top-4 z-50 flex size-10 items-center justify-center rounded-full border border-slate-200 bg-white/80 text-slate-600 shadow-sm backdrop-blur transition-all hover:bg-white hover:text-slate-900 ${
                     isFullscreen ? 'opacity-15 hover:opacity-100' : 'opacity-100'
                 }`}
             >
                 {isFullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
             </button>
 
-            <main className="mx-auto flex w-full max-w-2xl min-h-0 flex-[3] flex-col items-center gap-4 px-5 pb-3 pt-6">
+            <main className="mx-auto flex w-full min-h-0 min-w-0 max-w-2xl flex-[3] flex-col items-center gap-4 px-5 pb-3 pt-6 lg:mx-0 lg:max-w-none lg:pb-6 lg:pr-2">
                 {/* Brand + Clock (no navbar) */}
                 <div className="flex flex-col items-center gap-4 text-center">
                     <div className="flex items-center gap-2.5">
@@ -1035,7 +1035,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 tinggi isinya dan mendorong area scan keluar layar, yang justru
                 kebalikan dari tujuannya.
             */}
-            <aside className="mx-auto flex w-full min-h-0 max-w-2xl flex-1 flex-col px-5 pb-4">
+            <aside className="mx-auto flex w-full min-h-0 min-w-0 max-w-2xl flex-1 flex-col px-5 pb-4 lg:mx-0 lg:max-w-none lg:pb-6 lg:pl-2 lg:pt-6">
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-2">
                         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Riwayat Scan</h3>

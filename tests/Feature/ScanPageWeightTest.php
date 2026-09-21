@@ -57,8 +57,10 @@ test('konsol scan terkunci satu layar dengan panel riwayat tetap', function () {
     expect($sumber)
         ->toContain('h-screen h-dvh')
         ->toContain('overflow-hidden')
-        // Tiga bagian untuk area scan, sisanya untuk riwayat.
+        // Tiga bagian untuk area scan, sisanya untuk riwayat — dan mulai
+        // 1024px keduanya berdampingan, bukan bertumpuk.
         ->toContain('flex-[3]')
+        ->toContain('lg:flex-row')
         ->toContain('Riwayat Scan');
 });
 

@@ -110,14 +110,32 @@
         }
 
         /*
-            Tiga banding satu.
+            Tiga banding satu, MENDATAR.
 
-            Panggung mengambil tiga bagian sisa tinggi layar, riwayat satu.
-            Keduanya `min-height: 0` supaya benar-benar mau menyusut, bukan
-            memaksa halaman memanjang.
+            Kiri untuk absen, kanan untuk riwayat — bukan bertumpuk. Di layar
+            gerbang yang lebar, menumpuk riwayat di bawah membuang seluruh
+            ruang kosong di samping hasil scan, sementara riwayatnya sendiri
+            cuma kebagian beberapa baris.
+
+            Di bawah 768px keduanya kembali bertumpuk; satu kolom selebar
+            seperempat dari 360px tidak muat menampung nama siapa pun.
         */
-        .stage {
+        .badan {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            align-items: stretch;
+        }
+        .kiri {
             flex: 3 1 0;
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stage {
+            flex: 1 1 auto;
             min-height: 0;
             overflow: hidden;
             border: 1px solid #334155;
@@ -255,8 +273,9 @@
         */
         .log {
             flex: 1 1 0;
+            min-width: 0;
             min-height: 0;
-            margin-top: 14px;
+            margin-left: 14px;
             display: flex;
             flex-direction: column;
             border: 1px solid #334155;
@@ -279,7 +298,7 @@
         .log .kosong { padding: 14px; font-size: 15px; color: #64748b; }
         .log .row {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             padding: 9px 14px;
             border-bottom: 1px solid #0f172a;
             font-size: 16px;
@@ -290,14 +309,31 @@
             border-radius: 999px;
             background: #10b981;
             flex: 0 0 auto;
+            /* Sejajar dengan baris nama, bukan dengan tengah dua baris. */
+            margin-top: 6px;
         }
         .log .row .dot.bad { background: #ef4444; }
-        .log .row .txt { margin-left: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .log .row .at {
-            margin-left: auto;
-            padding-left: 12px;
+        /*
+            Dua baris, bukan satu.
+
+            Kolomnya cuma seperempat layar — sekitar 290px di TV 1080p — dan
+            nama berikut jam pada satu baris menyisakan begitu sedikit ruang
+            sampai "Muhammad Rizky Ramadhan" terpotong jadi "Muhammad Riz…".
+            Nama mendapat barisnya sendiri; kelas dan jam turun ke bawahnya.
+        */
+        .log .row .txt { margin-left: 10px; min-width: 0; flex: 1; }
+        .log .row .txt b {
+            display: block;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-weight: bold;
+        }
+        .log .row .txt span {
+            display: block;
+            margin-top: 1px;
+            font-size: 13px;
             color: #64748b;
-            font-family: "Courier New", monospace;
             font-variant-numeric: tabular-nums;
         }
 
@@ -349,7 +385,11 @@
             form { margin-top: 10px; }
             input[type=text] { padding: 11px; font-size: 16px; }
 
-            .log { margin-top: 10px; }
+            /* Bertumpuk lagi: kolom seperempat dari 360px tidak muat
+               menampung nama siapa pun. */
+            .badan { flex-direction: column; }
+            .kiri { flex: 3 1 0; }
+            .log { flex: 1 1 0; margin-left: 0; margin-top: 10px; }
             .log .kepala { padding: 6px 12px; font-size: 9px; }
             .log .row { padding: 7px 12px; font-size: 13px; }
             .log .kosong { padding: 10px 12px; font-size: 13px; }
@@ -397,6 +437,12 @@
 
             .log { margin-top: 7px; }
             .log .kepala { padding: 4px 12px; }
+            /* Layar pendek TAPI lebar (ponsel mendatar): dua kolom justru
+               menolong — tingginya yang langka, bukan lebarnya. */
+            @media (min-width: 640px) {
+                .badan { flex-direction: row; }
+                .log { margin-left: 10px; margin-top: 0; }
+            }
             .log .row { padding: 4px 12px; font-size: 12px; }
         }
 
@@ -444,18 +490,22 @@
             <div class="clock" id="clock">--.--.--</div>
         </div>
 
-        <div class="stage" id="stage">
-            <div class="idle" id="idle">Tempelkan kartu atau tembak QR Code siswa</div>
-        </div>
+        <div class="badan">
+            <div class="kiri">
+                <div class="stage" id="stage">
+                    <div class="idle" id="idle">Tempelkan kartu atau tembak QR Code siswa</div>
+                </div>
 
-        <form id="manual" autocomplete="off">
-            <input type="text" id="box" placeholder="Tempel kartu / ketik lalu Enter">
-        </form>
+                <form id="manual" autocomplete="off">
+                    <input type="text" id="box" placeholder="Tempel kartu / ketik lalu Enter">
+                </form>
+            </div>
 
-        <div class="log">
-            <div class="kepala">RIWAYAT SCAN</div>
-            <div class="isi-log" id="log">
-                <div class="kosong">Belum ada kartu yang discan.</div>
+            <div class="log">
+                <div class="kepala">RIWAYAT SCAN</div>
+                <div class="isi-log" id="log">
+                    <div class="kosong">Belum ada kartu yang discan.</div>
+                </div>
             </div>
         </div>
     </div>
@@ -648,11 +698,10 @@
 
             function pushLog(data) {
                 var s = data.student;
-                var label = s && s.full_name ? s.full_name : data.message;
-                if (s && s.classroom) { label += ' · ' + s.classroom; }
                 entries.unshift({
                     ok: !!data.success,
-                    text: label,
+                    nama: s && s.full_name ? s.full_name : data.message,
+                    kelas: s && s.classroom ? s.classroom : '',
                     at: jam(new Date()),
                 });
                 /*
@@ -667,10 +716,14 @@
 
                 var html = '';
                 for (var i = 0; i < entries.length; i++) {
+                    var bawah = entries[i].kelas
+                        ? entries[i].kelas + ' \u00b7 ' + entries[i].at
+                        : entries[i].at;
+
                     html +=
                         '<div class="row"><div class="dot' + (entries[i].ok ? '' : ' bad') + '"></div>' +
-                        '<div class="txt">' + esc(entries[i].text) + '</div>' +
-                        '<div class="at">' + esc(entries[i].at) + '</div></div>';
+                        '<div class="txt"><b>' + esc(entries[i].nama) + '</b>' +
+                        '<span>' + esc(bawah) + '</span></div></div>';
                 }
                 logEl.innerHTML = html;
             }
