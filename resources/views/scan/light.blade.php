@@ -239,6 +239,93 @@
         .notice { max-width: 640px; margin: 0 auto; text-align: center; padding: 80px 20px; }
         .notice h1 { font-size: 30px; margin: 0; }
         .notice p { font-size: 18px; color: #64748b; margin-top: 12px; }
+
+        /*
+            Layar sempit: ponsel dan tablet kecil.
+
+            Halaman ini dibuat untuk box Android TV, dan seluruh ukurannya px
+            tetap tanpa satu pun media query. Begitu tautan pendeknya dibuka di
+            ponsel — dan itu memang terjadi, operator mengeceknya dari HP —
+            nama sekolah bertabrakan dengan jam, jamnya terpotong di tepi
+            kanan, dan kotak menganggur setinggi 420px memenuhi seluruh layar.
+
+            Dua ambang, bukan satu: 768px membereskan tata letaknya, 420px
+            mengurus ponsel yang benar-benar sempit.
+        */
+        @media (max-width: 768px) {
+            body { padding: 14px; }
+
+            .bar { padding-bottom: 10px; margin-bottom: 14px; }
+            .bar img { width: 36px; height: 36px; }
+            .bar .brand { margin-left: 10px; }
+            .bar .brand b { font-size: 17px; line-height: 1.15; }
+            .bar .brand span { font-size: 10px; }
+            .bar .clock {
+                /* Jam dipersempit lebih dulu: ia yang mendorong nama sekolah
+                   sampai membungkus dan menabrak. */
+                padding-left: 10px;
+                font-size: 26px;
+            }
+
+            /*
+                Panggung berhenti memanjang mengikuti tinggi layar.
+
+                Di TV ia memang harus tumbuh — hasil scan yang besar itu
+                gunanya. Di ponsel yang tinggi dan sempit, tumbuh berarti satu
+                kotak kosong sepanjang layar dengan satu kalimat mengambang di
+                tengahnya, dan riwayat scan terdorong keluar pandangan.
+            */
+            .stage { flex: 0 0 auto; min-height: 220px; }
+            .idle { font-size: 19px; padding: 26px 16px; }
+
+            .pita { padding: 10px 14px; font-size: 21px; }
+
+            /* Foto di atas nama, bukan di sampingnya: 300px foto + nama 64px
+               mustahil berdampingan di layar selebar 360. */
+            .isi {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                padding: 18px;
+            }
+            .photo { width: 150px; height: 200px; }
+            .photo.none { font-size: 52px; }
+
+            .who { margin-left: 0; margin-top: 14px; }
+            .who .name { font-size: 30px; }
+            .who .meta { margin-top: 8px; font-size: 15px; }
+            .who .meta span { margin-top: 3px; }
+
+            .fail { padding: 22px 14px; }
+            .fail .msg { font-size: 24px; }
+            .fail .probe { font-size: 13px; }
+
+            input[type=text] { padding: 12px; font-size: 16px; }
+
+            .log { margin-top: 14px; }
+            .log .row { font-size: 14px; padding: 8px 2px; }
+
+            .notice { padding: 50px 16px; }
+            .notice h1 { font-size: 22px; }
+            .notice p { font-size: 15px; }
+        }
+
+        @media (max-width: 420px) {
+            .bar img { width: 30px; height: 30px; }
+            .bar .brand b { font-size: 15px; }
+            .bar .clock { font-size: 21px; }
+
+            .pita { font-size: 18px; }
+            /* Jam di pita disembunyikan: baris log tepat di bawahnya sudah
+               mencatat waktu yang sama, dan di lebar ini ia yang pertama
+               mendorong teks status keluar layar. */
+            .pita .jam { display: none; }
+
+            .photo { width: 124px; height: 166px; }
+            .photo.none { font-size: 42px; }
+            .who .name { font-size: 25px; }
+            .fail .msg { font-size: 20px; }
+        }
     </style>
 </head>
 <body>

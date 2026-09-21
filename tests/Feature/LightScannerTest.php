@@ -151,6 +151,21 @@ test('halaman ringan tidak memungut kembali beban yang justru dihindarinya', fun
         ->not->toContain('&#128100;');
 });
 
+/**
+ * Tautan pendeknya dibuka di ponsel, bukan cuma di box TV.
+ *
+ * Seluruh ukuran halaman ini px tetap. Tanpa satu pun media query, nama
+ * sekolah bertabrakan dengan jam dan jamnya terpotong di tepi kanan — persis
+ * yang terjadi sebelum ambang ini dipasang.
+ */
+test('halaman ringan punya ambang untuk layar sempit', function () {
+    $blade = file_get_contents(resource_path('views/scan/light.blade.php'));
+
+    expect($blade)
+        ->toContain('@media (max-width: 768px)')
+        ->toContain('@media (max-width: 420px)');
+});
+
 test('halaman ringan berlatar putih', function () {
     $school = School::factory()->create();
 
