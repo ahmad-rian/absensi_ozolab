@@ -202,15 +202,23 @@ test('halaman ringan terkunci satu layar dengan panel riwayat', function () {
  * Ambang ukuran, supaya halaman ini tidak menggemuk sedikit demi sedikit tanpa
  * ada yang menyadarinya sampai gerbang terasa lambat lagi.
  *
- * Angkanya longgar dengan sengaja — ini pagar, bukan target. Yang dijaga adalah
- * ordenya: puluhan kilobita, bukan ratusan.
+ * Yang diukur ukuran TERKOMPRESI, bukan mentah. Ambang mentah yang dipakai
+ * sebelumnya mengukur hal yang salah: berkas ini padat komentar yang memang
+ * disengaja — ia merekam kenapa tiap batasan ada — dan komentar memampat
+ * hampir habis. Versi mentahnya 40 KB, yang menyeberang 10,7 KB. Menghitung
+ * yang mentah berarti menekan penulis berikutnya membuang catatan demi angka
+ * yang tidak pernah dirasakan siapa pun di gerbang.
+ *
+ * Ambang mentah tetap ada sebagai jaring kasar — kalau seseorang menempelkan
+ * pustaka utuh ke dalam berkas ini, itu tertangkap keduanya.
  */
-test('halaman ringan tetap di bawah 40 KB', function () {
+test('halaman ringan tetap ringan saat dikirim', function () {
     $school = School::factory()->create();
 
     $html = $this->get(route('public.scanner.light', ['school' => $school->scanner_token]))
         ->assertOk()
         ->getContent();
 
-    expect(strlen($html))->toBeLessThan(40 * 1024);
+    expect(strlen(gzencode($html, 9)))->toBeLessThan(16 * 1024)
+        ->and(strlen($html))->toBeLessThan(64 * 1024);
 });

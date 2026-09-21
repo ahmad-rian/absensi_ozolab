@@ -38,6 +38,26 @@
             dan perangkat sasaran halaman ini justru di bawah itu. Daftar
             lengkap yang dilarang ada di kepala berkas, berikut tesnya.
         */
+        /*
+            Dua keluarga huruf, keduanya font SISTEM.
+
+            Halaman ini dilarang menarik berkas dari luar — itu seluruh alasan
+            keberadaannya, dan ada tes yang menjaganya. Jadi tidak ada webfont;
+            yang bisa diperbaiki adalah MEMILIH font sistem yang benar alih-alih
+            jatuh ke bawaan.
+
+            Jam dulu memakai "Courier New", dan itu yang membuatnya terlihat
+            tua: ia font mesin tik 1955 yang kebetulan ada di semua komputer.
+            Sekarang jam memakai grotesk sistem — Roboto di Android TV, Segoe
+            UI di Windows, SF di Apple — dengan angka selebar sama dan spasi
+            yang dirapatkan. Itu bentuk yang sama dengan jam di ponsel mereka
+            sendiri.
+
+            Mono disisakan untuk yang memang perlu dibaca per karakter: isi
+            kotak token dan jejak bacaan kartu. Di sana pun stack-nya
+            dimodernkan; `ui-monospace` menunjuk mono bawaan sistem, dan Courier
+            baru dipakai kalau benar-benar tidak ada yang lain.
+        */
         * { box-sizing: border-box; }
 
         /*
@@ -101,12 +121,27 @@
         .bar .clock {
             margin-left: auto;
             padding-left: 14px;
-            font-size: 44px;
+            font-size: 46px;
             font-weight: bold;
             color: #f8fafc;
-            font-family: "Courier New", monospace;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             /* Angka selebar sama, supaya jamnya tidak bergoyang tiap detik. */
             font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+        /*
+            Detik dikecilkan dan diredupkan.
+
+            Yang dibaca operator dari seberang lorong jam dan menit; detik cuma
+            penanda bahwa layarnya masih hidup. Memberinya ukuran yang sama
+            membuat ketiganya berebut perhatian.
+        */
+        .bar .clock .dtk {
+            font-size: 0.55em;
+            font-weight: bold;
+            color: #64748b;
+            letter-spacing: 0;
         }
 
         /*
@@ -178,9 +213,9 @@
         .stage.bad .pita { background: #dc2626; }
         .pita .jam {
             float: right;
-            font-family: "Courier New", monospace;
             font-variant-numeric: tabular-nums;
             font-weight: normal;
+            letter-spacing: 0;
         }
 
         .isi {
@@ -244,7 +279,7 @@
             margin-top: 12px;
             font-size: 15px;
             color: #64748b;
-            font-family: "Courier New", monospace;
+            font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", "DejaVu Sans Mono", Consolas, "Courier New", monospace;
         }
 
         form { margin-top: 14px; flex: 0 0 auto; }
@@ -257,7 +292,7 @@
             border: 1px solid #334155;
             background: #1e293b;
             color: #f8fafc;
-            font-family: "Courier New", monospace;
+            font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", "DejaVu Sans Mono", Consolas, "Courier New", monospace;
         }
         input[type=text]:focus { outline: none; border-color: #10b981; }
         input[type=text]::placeholder { color: #64748b; }
@@ -487,7 +522,7 @@
                 <b>{{ $school->name }}</b>
                 <span>ABSENSI DIGITAL</span>
             </div>
-            <div class="clock" id="clock">--.--.--</div>
+            <div class="clock" id="clock">--.--<span class="dtk">.--</span></div>
         </div>
 
         <div class="badan">
@@ -558,7 +593,15 @@
             }
 
             function tick() {
-                clockEl.textContent = jam(new Date());
+                var d = new Date();
+
+                /*
+                    Detik dipisah ke elemennya sendiri supaya bisa dikecilkan.
+                    Aman memakai innerHTML di sini: isinya angka hasil `Date`,
+                    tidak ada satu pun masukan pengguna yang lewat jalur ini.
+                */
+                clockEl.innerHTML = duaAngka(d.getHours()) + '.' + duaAngka(d.getMinutes()) +
+                    '<span class="dtk">.' + duaAngka(d.getSeconds()) + '</span>';
             }
             tick();
             setInterval(tick, 1000);
