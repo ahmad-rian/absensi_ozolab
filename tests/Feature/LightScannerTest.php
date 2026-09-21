@@ -143,9 +143,6 @@ test('halaman ringan tidak memungut kembali beban yang justru dihindarinya', fun
         // Locale non-default memaksa jalur ICU, dan jam dinding memanggilnya
         // sekali per detik selamanya di perangkat yang paling lemah.
         ->not->toContain('toLocaleTimeString')
-        // Latarnya putih sekarang. `#0f172a` boleh tetap ada sebagai warna
-        // teks; yang dilarang ia kembali jadi latar halaman.
-        ->not->toContain('background: #0f172a')
         // Emoji orang diganti inisial siswa — hiasan generik yang tidak
         // memberi tahu siapa pun tidak boleh kembali.
         ->not->toContain('&#128100;');
@@ -166,12 +163,35 @@ test('halaman ringan punya ambang untuk layar sempit', function () {
         ->toContain('@media (max-width: 420px)');
 });
 
-test('halaman ringan berlatar putih', function () {
+/**
+ * Sempat diputihkan, lalu dikembalikan gelap atas permintaan: layar gerbang
+ * menyala sepanjang hari di lorong yang lampunya jarang dimatikan, dan kertas
+ * putih seukuran televisi menyilaukan dari jarak dekat.
+ */
+test('halaman ringan bertema gelap', function () {
     $school = School::factory()->create();
 
     $this->get(route('public.scanner.light', ['school' => $school->scanner_token]))
         ->assertOk()
-        ->assertSee('background: #ffffff', false);
+        ->assertSee('background: #0f172a', false)
+        ->assertDontSee('background: #ffffff', false);
+});
+
+/**
+ * Tiga banding satu: panggung hasil scan tiga bagian, riwayat satu — dan
+ * halamannya tidak pernah menggulir, karena di gerbang tidak ada yang bisa
+ * menggulir. Remote TV tidak punya caranya.
+ */
+test('halaman ringan terkunci satu layar dengan panel riwayat', function () {
+    $school = School::factory()->create();
+
+    $this->get(route('public.scanner.light', ['school' => $school->scanner_token]))
+        ->assertOk()
+        ->assertSee('height: 100vh', false)
+        ->assertSee('overflow: hidden', false)
+        ->assertSee('flex: 3 1 0', false)
+        ->assertSee('flex: 1 1 0', false)
+        ->assertSee('RIWAYAT SCAN', false);
 });
 
 /**

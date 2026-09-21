@@ -30,38 +30,51 @@
     <title>Absensi {{ $school->name }}</title>
     <style>
         /*
-            Palet dipilih, bukan diwarisi.
+            Gelap, sesuai permintaan: layar gerbang menyala sepanjang hari di
+            lorong yang lampunya jarang dimatikan, dan kertas putih seukuran
+            televisi menyilaukan dari jarak dekat.
 
-            Netral condong dingin supaya senada dengan keluarga slate yang
-            sudah dipakai aplikasinya, dengan satu hijau dan satu merah yang
-            cukup gelap untuk terbaca sebagai teks putih di atasnya. Hex saja:
-            fungsi warna modern tidak dikenal Chrome di bawah 111, dan
-            perangkat sasaran halaman ini justru di bawah itu. Daftar lengkap
-            yang dilarang ada di kepala berkas, dan ada tes yang menjaganya.
+            Hex saja. Fungsi warna modern tidak dikenal Chrome di bawah 111,
+            dan perangkat sasaran halaman ini justru di bawah itu. Daftar
+            lengkap yang dilarang ada di kepala berkas, berikut tesnya.
         */
         * { box-sizing: border-box; }
-        html, body {
+
+        /*
+            Tepat satu layar, tidak pernah menggulir.
+
+            `height` yang dipatok, bukan `min-height`: yang kedua membiarkan
+            halaman tumbuh begitu riwayat scan bertambah, dan setelah delapan
+            kartu ditempel kotak isian terdorong keluar pandangan. Di gerbang
+            tidak ada yang menggulir — tidak ada tetikus, dan remote TV tidak
+            bisa.
+
+            Konsekuensinya tiap bagian harus sanggup menyusut; `min-height: 0`
+            di setiap wadah flex yang menurunkan ruang itulah yang membuatnya
+            mungkin.
+        */
+        html, body { height: 100%; }
+        body {
             margin: 0;
-            padding: 0;
-            background: #ffffff;
-            color: #0f172a;
+            padding: 20px;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: #0f172a;
+            color: #e2e8f0;
             font-family: Arial, Helvetica, sans-serif;
             -webkit-text-size-adjust: 100%;
         }
-        body {
-            padding: 24px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
 
         /* Isi dibatasi lebarnya. Tanpa ini, di TV 1920px nama siswa terlempar
-           jauh ke kanan fotonya dan barisnya jadi mustahil dipindai mata. */
+           jauh ke kanan fotonya dan barisnya mustahil dipindai mata. */
         .wrap {
             width: 100%;
             max-width: 1180px;
             margin: 0 auto;
             flex: 1;
+            min-height: 0;
             display: flex;
             flex-direction: column;
         }
@@ -69,43 +82,52 @@
         .bar {
             display: flex;
             align-items: center;
-            padding-bottom: 14px;
-            border-bottom: 1px solid #e2e8f0;
-            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 16px;
+            flex: 0 0 auto;
         }
-        .bar img { width: 52px; height: 52px; object-fit: contain; }
+        .bar img { width: 48px; height: 48px; object-fit: contain; }
         .bar .brand { margin-left: 12px; }
-        .bar .brand b { display: block; font-size: 26px; font-weight: bold; }
+        .bar .brand b { display: block; font-size: 24px; font-weight: bold; color: #f8fafc; }
         .bar .brand span {
             display: block;
             margin-top: 2px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             letter-spacing: 0.1em;
             color: #64748b;
         }
         .bar .clock {
             margin-left: auto;
-            font-size: 48px;
+            padding-left: 14px;
+            font-size: 44px;
             font-weight: bold;
+            color: #f8fafc;
             font-family: "Courier New", monospace;
             /* Angka selebar sama, supaya jamnya tidak bergoyang tiap detik. */
             font-variant-numeric: tabular-nums;
         }
 
+        /*
+            Tiga banding satu.
+
+            Panggung mengambil tiga bagian sisa tinggi layar, riwayat satu.
+            Keduanya `min-height: 0` supaya benar-benar mau menyusut, bukan
+            memaksa halaman memanjang.
+        */
         .stage {
-            flex: 1;
-            min-height: 420px;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            background: #f8fafc;
+            flex: 3 1 0;
+            min-height: 0;
+            overflow: hidden;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            background: #1e293b;
             display: flex;
             flex-direction: column;
         }
-        /* Keadaan hasil memakai kertas putih; warnanya dibawa pita status. */
-        .stage.ok, .stage.bad { background: #ffffff; }
-        .stage.ok { border-color: #047857; }
-        .stage.bad { border-color: #b91c1c; }
+        .stage.ok { border-color: #10b981; }
+        .stage.bad { border-color: #ef4444; }
 
         .idle {
             flex: 1;
@@ -114,8 +136,8 @@
             justify-content: center;
             padding: 20px;
             text-align: center;
-            color: #64748b;
-            font-size: 30px;
+            color: #94a3b8;
+            font-size: 28px;
         }
 
         /*
@@ -123,18 +145,19 @@
 
             Inilah yang terbaca dari seberang lorong. Lencana kecil di sudut
             tidak cukup — operator berdiri beberapa meter dari layar dan yang
-            perlu ia tahu hanya satu hal, kartu ini diterima atau tidak.
+            perlu ia tahu cuma satu hal, kartu ini diterima atau tidak.
         */
         .pita {
-            padding: 14px 22px;
+            flex: 0 0 auto;
+            padding: 12px 20px;
             color: #ffffff;
-            font-size: 34px;
+            font-size: 32px;
             font-weight: bold;
             letter-spacing: 0.05em;
             text-transform: uppercase;
         }
-        .stage.ok .pita { background: #047857; }
-        .stage.bad .pita { background: #b91c1c; }
+        .stage.ok .pita { background: #059669; }
+        .stage.bad .pita { background: #dc2626; }
         .pita .jam {
             float: right;
             font-family: "Courier New", monospace;
@@ -142,91 +165,133 @@
             font-weight: normal;
         }
 
-        .isi { flex: 1; padding: 26px; display: flex; align-items: center; }
+        .isi {
+            flex: 1;
+            min-height: 0;
+            padding: 22px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
 
         .photo {
-            width: 300px;
-            height: 400px;
+            width: 260px;
+            height: 347px;
             object-fit: contain;
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            border-radius: 2px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 3px;
             flex: 0 0 auto;
         }
         /*
             Tanpa foto: inisial siswa, bukan ikon orang generik.
 
-            Sebelumnya di sini ada emoji 👤 — hiasan yang tidak memberi tahu
-            apa pun. Dua huruf nama masih memberi tahu siapa yang barusan
-            lewat, bahkan ketika pas fotonya memang belum dipasang.
+            Dua huruf nama masih memberi tahu siapa barusan lewat, bahkan
+            ketika pas fotonya memang belum dipasang.
         */
         .photo.none {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 96px;
+            font-size: 84px;
             font-weight: bold;
-            color: #94a3b8;
+            color: #475569;
             letter-spacing: 0.02em;
         }
 
-        .who { margin-left: 26px; min-width: 0; }
+        .who { margin-left: 24px; min-width: 0; }
         .who .name {
-            font-size: 64px;
+            font-size: 58px;
             font-weight: bold;
+            color: #f8fafc;
             line-height: 1.05;
             word-wrap: break-word;
         }
-        .who .meta { margin-top: 14px; font-size: 22px; color: #64748b; }
-        .who .meta span { display: block; margin-top: 5px; }
+        .who .meta { margin-top: 12px; font-size: 21px; color: #94a3b8; }
+        .who .meta span { display: block; margin-top: 4px; }
 
         .fail {
             flex: 1;
+            min-height: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 30px 22px;
+            padding: 24px 20px;
             text-align: center;
+            overflow: hidden;
         }
-        .fail .msg { font-size: 42px; font-weight: bold; }
+        .fail .msg { font-size: 38px; font-weight: bold; color: #f8fafc; }
         .fail .probe {
-            margin-top: 14px;
-            font-size: 16px;
+            margin-top: 12px;
+            font-size: 15px;
             color: #64748b;
             font-family: "Courier New", monospace;
         }
 
-        form { margin-top: 16px; }
+        form { margin-top: 14px; flex: 0 0 auto; }
         input[type=text] {
             width: 100%;
-            padding: 14px;
-            font-size: 20px;
+            padding: 13px;
+            font-size: 19px;
             text-align: center;
-            border-radius: 4px;
-            border: 1px solid #cbd5e1;
-            background: #ffffff;
-            color: #0f172a;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #f8fafc;
             font-family: "Courier New", monospace;
         }
-        input[type=text]:focus { outline: none; border-color: #0f172a; }
+        input[type=text]:focus { outline: none; border-color: #10b981; }
+        input[type=text]::placeholder { color: #64748b; }
 
-        .log { margin-top: 20px; }
+        /*
+            Seperempat sisanya: siapa saja yang barusan scan.
+
+            Berpanel sendiri, bukan daftar telanjang — operator memakainya
+            untuk memastikan kartu yang barusan ditempel memang tercatat, dan
+            batas panelnya yang memisahkan itu dari hasil scan di atasnya.
+            Yang terbaru di atas; begitu ruang habis, yang terpotong dari bawah
+            adalah yang paling lama.
+        */
+        .log {
+            flex: 1 1 0;
+            min-height: 0;
+            margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            background: #1e293b;
+            overflow: hidden;
+        }
+        .log .kepala {
+            flex: 0 0 auto;
+            padding: 8px 14px;
+            border-bottom: 1px solid #334155;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            color: #64748b;
+        }
+        /* Gulir DI DALAM panel, bukan di halaman. Tanpa ini baris terakhir
+           terpotong separuh tanpa satu pun tanda bahwa masih ada di bawahnya. */
+        .log .isi-log { flex: 1; min-height: 0; overflow-y: auto; }
+        .log .kosong { padding: 14px; font-size: 15px; color: #64748b; }
         .log .row {
             display: flex;
             align-items: center;
-            padding: 9px 2px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 9px 14px;
+            border-bottom: 1px solid #0f172a;
             font-size: 16px;
         }
         .log .row .dot {
             width: 8px;
             height: 8px;
             border-radius: 999px;
-            background: #047857;
+            background: #10b981;
             flex: 0 0 auto;
         }
-        .log .row .dot.bad { background: #b91c1c; }
+        .log .row .dot.bad { background: #ef4444; }
         .log .row .txt { margin-left: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .log .row .at {
             margin-left: auto;
@@ -236,95 +301,120 @@
             font-variant-numeric: tabular-nums;
         }
 
-        .notice { max-width: 640px; margin: 0 auto; text-align: center; padding: 80px 20px; }
-        .notice h1 { font-size: 30px; margin: 0; }
-        .notice p { font-size: 18px; color: #64748b; margin-top: 12px; }
+        .notice { max-width: 640px; margin: auto; text-align: center; padding: 40px 20px; }
+        .notice h1 { font-size: 28px; margin: 0; color: #f8fafc; }
+        .notice p { font-size: 17px; color: #94a3b8; margin-top: 12px; }
 
         /*
             Layar sempit: ponsel dan tablet kecil.
 
-            Halaman ini dibuat untuk box Android TV, dan seluruh ukurannya px
-            tetap tanpa satu pun media query. Begitu tautan pendeknya dibuka di
-            ponsel — dan itu memang terjadi, operator mengeceknya dari HP —
-            nama sekolah bertabrakan dengan jam, jamnya terpotong di tepi
-            kanan, dan kotak menganggur setinggi 420px memenuhi seluruh layar.
-
-            Dua ambang, bukan satu: 768px membereskan tata letaknya, 420px
-            mengurus ponsel yang benar-benar sempit.
+            Tautan pendeknya memang dibuka di HP — operator mengeceknya dari
+            sana. Tanpa ambang ini nama sekolah membungkus lalu menabrak jam,
+            dan jamnya terpotong di tepi kanan.
         */
         @media (max-width: 768px) {
-            body { padding: 14px; }
+            body { padding: 12px; }
 
-            .bar { padding-bottom: 10px; margin-bottom: 14px; }
-            .bar img { width: 36px; height: 36px; }
+            .bar { padding-bottom: 10px; margin-bottom: 12px; }
+            .bar img { width: 34px; height: 34px; }
             .bar .brand { margin-left: 10px; }
-            .bar .brand b { font-size: 17px; line-height: 1.15; }
-            .bar .brand span { font-size: 10px; }
-            .bar .clock {
-                /* Jam dipersempit lebih dulu: ia yang mendorong nama sekolah
-                   sampai membungkus dan menabrak. */
-                padding-left: 10px;
-                font-size: 26px;
-            }
+            .bar .brand b { font-size: 16px; line-height: 1.15; }
+            .bar .brand span { font-size: 9px; }
+            .bar .clock { padding-left: 10px; font-size: 25px; }
 
-            /*
-                Panggung berhenti memanjang mengikuti tinggi layar.
+            .idle { font-size: 18px; padding: 16px; }
+            .pita { padding: 9px 14px; font-size: 20px; }
 
-                Di TV ia memang harus tumbuh — hasil scan yang besar itu
-                gunanya. Di ponsel yang tinggi dan sempit, tumbuh berarti satu
-                kotak kosong sepanjang layar dengan satu kalimat mengambang di
-                tengahnya, dan riwayat scan terdorong keluar pandangan.
-            */
-            .stage { flex: 0 0 auto; min-height: 220px; }
-            .idle { font-size: 19px; padding: 26px 16px; }
-
-            .pita { padding: 10px 14px; font-size: 21px; }
-
-            /* Foto di atas nama, bukan di sampingnya: 300px foto + nama 64px
-               mustahil berdampingan di layar selebar 360. */
+            /* Foto di atas nama: 260px foto berdampingan dengan nama 58px
+               mustahil di layar selebar 360. */
             .isi {
                 flex-direction: column;
                 align-items: center;
+                justify-content: center;
                 text-align: center;
-                padding: 18px;
+                padding: 14px;
             }
-            .photo { width: 150px; height: 200px; }
-            .photo.none { font-size: 52px; }
+            .photo { width: 132px; height: 176px; }
+            .photo.none { font-size: 46px; }
 
-            .who { margin-left: 0; margin-top: 14px; }
-            .who .name { font-size: 30px; }
-            .who .meta { margin-top: 8px; font-size: 15px; }
-            .who .meta span { margin-top: 3px; }
+            .who { margin-left: 0; margin-top: 12px; }
+            .who .name { font-size: 27px; }
+            .who .meta { margin-top: 6px; font-size: 14px; }
+            .who .meta span { margin-top: 2px; }
 
-            .fail { padding: 22px 14px; }
-            .fail .msg { font-size: 24px; }
-            .fail .probe { font-size: 13px; }
+            .fail { padding: 16px 12px; }
+            .fail .msg { font-size: 22px; }
+            .fail .probe { margin-top: 8px; font-size: 12px; }
 
-            input[type=text] { padding: 12px; font-size: 16px; }
+            form { margin-top: 10px; }
+            input[type=text] { padding: 11px; font-size: 16px; }
 
-            .log { margin-top: 14px; }
-            .log .row { font-size: 14px; padding: 8px 2px; }
+            .log { margin-top: 10px; }
+            .log .kepala { padding: 6px 12px; font-size: 9px; }
+            .log .row { padding: 7px 12px; font-size: 13px; }
+            .log .kosong { padding: 10px 12px; font-size: 13px; }
 
-            .notice { padding: 50px 16px; }
-            .notice h1 { font-size: 22px; }
+            .notice { padding: 30px 16px; }
+            .notice h1 { font-size: 21px; }
             .notice p { font-size: 15px; }
         }
 
-        @media (max-width: 420px) {
-            .bar img { width: 30px; height: 30px; }
-            .bar .brand b { font-size: 15px; }
-            .bar .clock { font-size: 21px; }
+        /*
+            Layar PENDEK, bukan sempit: ponsel yang diputar mendatar, dan box
+            TV yang menyetel keluarannya ke 720p lalu di-overscan.
 
-            .pita { font-size: 18px; }
-            /* Jam di pita disembunyikan: baris log tepat di bawahnya sudah
+            Foto kembali berdampingan dengan nama — menumpuknya butuh tinggi
+            yang justru sedang tidak ada.
+        */
+        @media (max-height: 560px) {
+            .bar { padding-bottom: 7px; margin-bottom: 8px; }
+            .bar img { width: 28px; height: 28px; }
+            .bar .brand b { font-size: 14px; }
+            .bar .brand span { display: none; }
+            .bar .clock { font-size: 20px; }
+
+            .pita { padding: 6px 12px; font-size: 16px; }
+
+            .isi {
+                flex-direction: row;
+                align-items: center;
+                text-align: left;
+                padding: 10px;
+            }
+            .photo { width: 84px; height: 112px; }
+            .photo.none { font-size: 32px; }
+            .who { margin-left: 12px; margin-top: 0; }
+            .who .name { font-size: 22px; }
+            .who .meta { margin-top: 3px; font-size: 12px; }
+
+            .idle { font-size: 16px; padding: 10px; }
+            .fail { padding: 10px; }
+            .fail .msg { font-size: 18px; }
+            .fail .probe { margin-top: 5px; font-size: 11px; }
+
+            form { margin-top: 7px; }
+            input[type=text] { padding: 7px; font-size: 14px; }
+
+            .log { margin-top: 7px; }
+            .log .kepala { padding: 4px 12px; }
+            .log .row { padding: 4px 12px; font-size: 12px; }
+        }
+
+        @media (max-width: 420px) {
+            .bar img { width: 26px; height: 26px; }
+            .bar .brand b { font-size: 14px; }
+            .bar .clock { font-size: 19px; }
+
+            .pita { font-size: 17px; }
+            /* Jam di pita disembunyikan: baris riwayat tepat di bawahnya sudah
                mencatat waktu yang sama, dan di lebar ini ia yang pertama
                mendorong teks status keluar layar. */
             .pita .jam { display: none; }
 
-            .photo { width: 124px; height: 166px; }
-            .photo.none { font-size: 42px; }
-            .who .name { font-size: 25px; }
-            .fail .msg { font-size: 20px; }
+            .photo { width: 112px; height: 150px; }
+            .photo.none { font-size: 38px; }
+            .who .name { font-size: 23px; }
+            .fail .msg { font-size: 19px; }
         }
     </style>
 </head>
@@ -362,7 +452,12 @@
             <input type="text" id="box" placeholder="Tempel kartu / ketik lalu Enter">
         </form>
 
-        <div class="log" id="log"></div>
+        <div class="log">
+            <div class="kepala">RIWAYAT SCAN</div>
+            <div class="isi-log" id="log">
+                <div class="kosong">Belum ada kartu yang discan.</div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -560,7 +655,15 @@
                     text: label,
                     at: jam(new Date()),
                 });
-                entries = entries.slice(0, 8);
+                /*
+                    Dua belas, bukan delapan.
+
+                    Panelnya sekarang seperempat layar dan memotong sendiri
+                    apa yang tidak muat lewat `overflow: hidden`, jadi batas
+                    ini cuma menahan memori — bukan lagi yang menentukan
+                    berapa baris terlihat. Di TV 1080p muat sekitar sepuluh.
+                */
+                entries = entries.slice(0, 12);
 
                 var html = '';
                 for (var i = 0; i < entries.length; i++) {

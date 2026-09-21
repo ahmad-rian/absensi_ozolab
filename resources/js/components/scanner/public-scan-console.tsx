@@ -828,7 +828,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     const badge = resultBadge(lastResult?.student?.type);
 
     return (
-        <div className="relative flex min-h-screen min-h-dvh flex-col bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-800">
+        <div className="relative flex h-screen h-dvh flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-800">
             {/* Fullscreen toggle — samar saat fullscreen, hilang di iPhone
                 yang memang tidak punya API-nya. */}
             <button
@@ -842,7 +842,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 {isFullscreen ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
             </button>
 
-            <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-6 px-5 py-8">
+            <main className="mx-auto flex w-full max-w-2xl min-h-0 flex-[3] flex-col items-center gap-4 px-5 pb-3 pt-6">
                 {/* Brand + Clock (no navbar) */}
                 <div className="flex flex-col items-center gap-4 text-center">
                     <div className="flex items-center gap-2.5">
@@ -869,8 +869,8 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 </div>
 
                 {/* Camera hero */}
-                <div className="relative w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-xl">
-                    <div className="relative aspect-square w-full sm:aspect-[4/3]">
+                <div className="relative flex w-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 shadow-xl">
+                    <div className="relative min-h-0 w-full flex-1">
                         {/* `object-contain`, BUKAN `object-cover`.
                             `object-cover` memangkas tepi video di layar
                             sedangkan html5-qrcode tetap memindai bingkai utuh
@@ -1020,28 +1020,47 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                     />
                 </form>
 
-                {/* Recent log */}
-                {scanLog.length > 0 && (
-                    <div className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div className="border-b border-slate-100 px-5 py-3">
-                            <h3 className="text-sm font-bold text-slate-600">Riwayat Scan ({scanLog.length})</h3>
-                        </div>
-                        <div className="max-h-64 divide-y divide-slate-100 overflow-y-auto">
+            </main>
+
+            {/*
+                Seperempat layar: siapa saja yang barusan scan.
+
+                Selalu dirender, bukan hanya ketika sudah ada isinya — di
+                gerbang panel ini dipakai operator untuk memastikan kartu yang
+                barusan ditempel memang tercatat, dan panel yang muncul-hilang
+                membuat seluruh tata letak melompat tepat saat kartu pertama
+                lewat.
+
+                `min-h-0` wajib di sini: tanpa itu ia menolak menyusut di bawah
+                tinggi isinya dan mendorong area scan keluar layar, yang justru
+                kebalikan dari tujuannya.
+            */}
+            <aside className="mx-auto flex w-full min-h-0 max-w-2xl flex-1 flex-col px-5 pb-4">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-2">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Riwayat Scan</h3>
+                        {scanLog.length > 0 && <span className="font-mono text-xs text-slate-400">{scanLog.length}</span>}
+                    </div>
+
+                    {scanLog.length === 0 ? (
+                        <p className="px-4 py-3 text-sm text-slate-400">Belum ada kartu yang discan.</p>
+                    ) : (
+                        <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
                             {scanLog.map((entry) => (
-                                <div key={entry.id} className="flex items-center gap-3 px-5 py-3">
+                                <div key={entry.id} className="flex items-center gap-3 px-4 py-2">
                                     {entry.success && entry.student?.photo_url ? (
                                         <img
                                             src={entry.student.photo_url}
                                             alt=""
-                                            className="aspect-[3/4] w-9 shrink-0 rounded-lg bg-slate-100 object-contain"
+                                            className="aspect-[3/4] w-8 shrink-0 rounded-md bg-slate-100 object-contain"
                                         />
                                     ) : (
                                         <div
-                                            className={`flex aspect-[3/4] w-9 shrink-0 items-center justify-center rounded-lg ${
+                                            className={`flex aspect-[3/4] w-8 shrink-0 items-center justify-center rounded-md ${
                                                 entry.success ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'
                                             }`}
                                         >
-                                            {entry.success ? <CheckCircle2 className="size-5" /> : <XCircle className="size-5" />}
+                                            {entry.success ? <CheckCircle2 className="size-4" /> : <XCircle className="size-4" />}
                                         </div>
                                     )}
                                     <div className="min-w-0 flex-1">
@@ -1058,9 +1077,9 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
-            </main>
+                    )}
+                </div>
+            </aside>
         </div>
     );
 }

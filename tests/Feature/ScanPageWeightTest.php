@@ -41,6 +41,41 @@ test('pustaka kamera digerbangi pemeriksaan perangkat bawaan peramban', function
         ->toContain("d.kind === 'videoinput'");
 });
 
+// ------------------------------------------------ satu layar, tanpa gulir
+
+test('konsol scan terkunci satu layar dengan panel riwayat tetap', function () {
+    $sumber = file_get_contents(resource_path('js/components/scanner/public-scan-console.tsx'));
+
+    /*
+        Di gerbang tidak ada yang menggulir — tidak ada tetikus, dan remote TV
+        tidak punya caranya. Jadi tingginya dipatok dan tiap bagian harus
+        sanggup menyusut.
+
+        `h-dvh` sesudah `h-screen`, pola yang sama dengan `min-h-dvh`
+        sebelumnya: Safari lama memakai yang pertama, yang baru menimpanya.
+    */
+    expect($sumber)
+        ->toContain('h-screen h-dvh')
+        ->toContain('overflow-hidden')
+        // Tiga bagian untuk area scan, sisanya untuk riwayat.
+        ->toContain('flex-[3]')
+        ->toContain('Riwayat Scan');
+});
+
+test('panel riwayat selalu dirender, bukan muncul setelah scan pertama', function () {
+    $sumber = file_get_contents(resource_path('js/components/scanner/public-scan-console.tsx'));
+
+    /*
+        Dulu seluruh panelnya dibungkus `scanLog.length > 0 &&`, jadi ia
+        melompat masuk tepat saat kartu pertama lewat dan menggeser seluruh
+        tata letak di bawahnya. Sekarang panelnya tetap, yang berubah hanya
+        isinya.
+    */
+    expect($sumber)
+        ->not->toContain('{scanLog.length > 0 && (')
+        ->toContain('Belum ada kartu yang discan.');
+});
+
 // ------------------------------------------- halaman publik vs layout admin
 
 test('setiap halaman scan terdaftar sebagai halaman tanpa layout admin', function () {
