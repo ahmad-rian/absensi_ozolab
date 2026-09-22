@@ -56,6 +56,14 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasRole(UserRole::OrangTua) ? 'orangtua.index' : 'dashboard';
     }
 
+    public function requiresPasswordChange(): bool
+    {
+        $isParentOnly = $this->hasRole(UserRole::OrangTua)
+            && ! $this->hasAnyRole(['ADMIN', 'GURU', 'SUPER_ADMIN']);
+
+        return $this->must_change_password && ! $isParentOnly;
+    }
+
     public function isSuperAdmin(): bool
     {
         return $this->hasRole(UserRole::SuperAdmin->value);

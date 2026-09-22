@@ -13,6 +13,6 @@ class RoleLoginResponse implements LoginResponse
             return response()->json(['two_factor' => false]);
         }
 
-        return to_route($request->user()->must_change_password ? 'password.required.edit' : $request->user()->homeRoute());
+        return to_route($request->user()->requiresPasswordChange() ? 'password.required.edit' : $request->user()->homeRoute());
     }
 }

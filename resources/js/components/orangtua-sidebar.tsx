@@ -5,6 +5,7 @@ import {
     FileText,
     Images,
     LayoutDashboard,
+    LockKeyhole,
     LogOut,
     Moon,
     Users,
@@ -35,6 +36,7 @@ import {
 } from '@/components/ui/sidebar';
 import { logout } from '@/routes';
 import { absensi, galeri, index, laporan, sholat } from '@/routes/orangtua';
+import { edit as editProfile } from '@/routes/profile';
 
 type Anak = {
     id: string;
@@ -130,6 +132,16 @@ export function OrangtuaSidebar() {
                 <NavGroup label="Ringkasan" items={ringkasan} />
                 <NavGroup label="Kehadiran" items={kehadiran} />
                 <NavGroup label="Dokumen" items={dokumen} />
+                <NavGroup
+                    label="Akun"
+                    items={[
+                        {
+                            title: 'Ubah Kata Sandi',
+                            href: editProfile().url,
+                            icon: LockKeyhole,
+                        },
+                    ]}
+                />
             </SidebarContent>
 
             <SidebarFooter>

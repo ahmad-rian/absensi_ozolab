@@ -10,7 +10,7 @@ class EnsurePasswordChanged
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user()?->must_change_password && ! $request->routeIs('password.required.*', 'logout')) {
+        if ($request->user()?->requiresPasswordChange() && ! $request->routeIs('password.required.*', 'logout')) {
             return to_route('password.required.edit');
         }
         if ($request->routeIs('dashboard') && $request->user()?->hasRole('ORANG_TUA')) {

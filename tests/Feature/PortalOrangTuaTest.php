@@ -88,18 +88,43 @@ test('a parent without linked children still gets a page, not a wall', function 
         ->assertInertia(fn (Assert $page) => $page->where('student', null)->has('daftarAnak', 0));
 });
 
-test('password enforcement covers workspaces and settings and rejects the default password', function () {
+test('parents with a password flag can login and optionally change their password', function () {
     [$parent] = portalFamily();
     $parent->update(['must_change_password' => true]);
-    foreach (['/orangtua', '/settings/profile', '/admin/dashboard', '/kartu-bebas'] as $url) {
-        $this->actingAs($parent)->get($url)->assertRedirect('/ganti-password');
-    }
+    $hash = $parent->password;
+    $this->post('/login', ['email' => $parent->email, 'password' => 'password'])->assertRedirect('/orangtua');
+    $this->get('/orangtua')->assertOk();
+    $this->get('/settings/profile')->assertOk();
+    $this->get('/admin/dashboard')->assertRedirect('/orangtua');
+    expect($parent->fresh()->password)->toBe($hash);
     $this->get('/ganti-password')->assertOk();
     $this->put('/ganti-password', ['password' => 'password', 'password_confirmation' => 'password'])->assertSessionHasErrors('password');
     $this->put('/ganti-password', ['password' => '11111111', 'password_confirmation' => '11111111'])->assertSessionHasErrors('password');
     $this->put('/ganti-password', ['password' => 'RahasiaBaru!2026', 'password_confirmation' => 'RahasiaBaru!2026'])->assertRedirect('/orangtua');
     expect($parent->fresh()->must_change_password)->toBeFalse();
     expect(Hash::check('RahasiaBaru!2026', $parent->fresh()->password))->toBeTrue();
+    $this->get('/orangtua')->assertOk();
+});
+
+test('staff still must change a flagged password even with a parent role', function (bool $alsoParent) {
+    $admin = createAdminUser();
+    if ($alsoParent) {
+        $admin->assignRole('ORANG_TUA');
+    }
+    $admin->update(['must_change_password' => true]);
+    $this->post('/login', ['email' => $admin->email, 'password' => 'password'])->assertRedirect('/ganti-password');
+    $this->get('/settings/profile')->assertRedirect('/ganti-password');
+})->with([false, true]);
+
+test('parents can change their password from profile settings without being forced', function () {
+    [$parent] = portalFamily();
+    $parent->update(['must_change_password' => true]);
+    $this->actingAs($parent)->from('/settings/profile')->put('/settings/password', [
+        'current_password' => 'password',
+        'password' => 'PilihanSendiri!2026',
+        'password_confirmation' => 'PilihanSendiri!2026',
+    ])->assertSessionHasNoErrors()->assertRedirect('/settings/profile');
+    expect(Hash::check('PilihanSendiri!2026', $parent->fresh()->password))->toBeTrue();
     $this->get('/orangtua')->assertOk();
 });
 
