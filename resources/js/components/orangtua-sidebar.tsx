@@ -63,12 +63,14 @@ export function OrangtuaSidebar() {
     const aktif = props.student?.id ?? null;
     const daftar = props.daftarAnak ?? [];
 
-    const menu = [
+    const ringkasan = [
         {
             title: 'Beranda',
             href: withAnak(index().url, aktif),
             icon: LayoutDashboard,
         },
+    ];
+    const kehadiran = [
         {
             title: 'Absensi Sekolah',
             href: withAnak(absensi().url, aktif),
@@ -83,6 +85,8 @@ export function OrangtuaSidebar() {
                   },
               ]
             : []),
+    ];
+    const dokumen = [
         {
             title: 'Laporan',
             href: withAnak(laporan().url, aktif),
@@ -122,8 +126,10 @@ export function OrangtuaSidebar() {
                 )}
             </SidebarHeader>
 
-            <SidebarContent className="[&_[data-active=true]]:bg-sidebar-primary [&_[data-active=true]]:font-semibold [&_[data-active=true]]:text-sidebar-primary-foreground">
-                <NavGroup label="Menu" items={menu} />
+            <SidebarContent className="gap-4 [&_[data-active=true]]:bg-sidebar-primary [&_[data-active=true]]:font-semibold [&_[data-active=true]]:text-sidebar-primary-foreground">
+                <NavGroup label="Ringkasan" items={ringkasan} />
+                <NavGroup label="Kehadiran" items={kehadiran} />
+                <NavGroup label="Dokumen" items={dokumen} />
             </SidebarContent>
 
             <SidebarFooter>

@@ -127,10 +127,13 @@ class UserManagementController extends Controller
             'Tidak bisa mengubah role atau hak akses akun sendiri.',
         );
 
+        abort_if(! $isSuperAdmin && $user->isSuperAdmin(), 403);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/', 'unique:users,email,'.$user->id],
             'phone' => ['nullable', 'string', 'max:20'],
+            'password' => ['nullable', 'string', Password::min(8), 'confirmed'],
             'role' => ['required', 'string', Rule::in($this->assignableRoles()->pluck('name'))],
             'is_active' => ['sometimes', 'boolean'],
             'extra_permissions' => ['array'],
@@ -143,6 +146,14 @@ class UserManagementController extends Controller
             'phone' => $validated['phone'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
         ]);
+
+        if ($request->filled('password')) {
+            $user->forceFill([
+                'password' => Hash::make($validated['password']),
+                'must_change_password' => true,
+                'remember_token' => null,
+            ])->save();
+        }
 
         $user->syncRoles([$validated['role']]);
 
