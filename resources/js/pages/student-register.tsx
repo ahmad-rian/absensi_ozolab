@@ -1,7 +1,15 @@
-import { useForm, usePage } from '@inertiajs/react';
-import { AlertTriangle, Check, CheckCircle2, Loader2, User, X } from 'lucide-react';
+import { Link, useForm, usePage } from '@inertiajs/react';
+import {
+    AlertTriangle,
+    Check,
+    CheckCircle2,
+    Loader2,
+    User,
+    X,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
 import {
     RegistrationFooter as Footer,
     RegistrationSection as FormSection,
@@ -13,12 +21,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { login } from '@/routes';
 
 type School = { id: string; name: string; logo_path: string | null };
-type Classroom = { id: string; school_id: string; name: string; grade_level: number };
+type Classroom = {
+    id: string;
+    school_id: string;
+    name: string;
+    grade_level: number;
+};
 
 type Props = {
     schools: School[];
@@ -30,6 +50,7 @@ type RegistrationResult = {
     success: boolean;
     message: string;
     queued?: boolean;
+    parent_email: string;
     student: {
         id: string;
         full_name: string;
@@ -84,6 +105,8 @@ type FormData = {
     parent_name: string;
     parent_phone: string;
     parent_email: string;
+    password: string;
+    password_confirmation: string;
     parent_relation: string;
     photo_drive_filename: string;
     photo_key: string;
@@ -104,6 +127,8 @@ const INITIAL_DATA: FormData = {
     parent_name: '',
     parent_phone: '',
     parent_email: '',
+    password: '',
+    password_confirmation: '',
     parent_relation: 'WALI',
     photo_drive_filename: '',
     photo_key: '',
@@ -119,10 +144,24 @@ function readPersisted(): { data: FormData; step: number } {
         const raw = localStorage.getItem(STORAGE_KEY);
 
         if (raw) {
-            const parsed = JSON.parse(raw) as { data?: Partial<FormData>; step?: number };
-            const step = parsed.step && parsed.step >= 1 && parsed.step <= TOTAL_STEPS ? parsed.step : 1;
+            const parsed = JSON.parse(raw) as {
+                data?: Partial<FormData>;
+                step?: number;
+            };
+            const step =
+                parsed.step && parsed.step >= 1 && parsed.step <= TOTAL_STEPS
+                    ? parsed.step
+                    : 1;
 
-            return { data: { ...INITIAL_DATA, ...parsed.data }, step };
+            return {
+                data: {
+                    ...INITIAL_DATA,
+                    ...parsed.data,
+                    password: '',
+                    password_confirmation: '',
+                },
+                step,
+            };
         }
     } catch {
         // ignore corrupt storage
@@ -131,8 +170,14 @@ function readPersisted(): { data: FormData; step: number } {
     return { data: INITIAL_DATA, step: 1 };
 }
 
-export default function StudentRegister({ schools, classrooms, registrationToken }: Props) {
-    const { flash } = usePage().props as unknown as { flash: { success?: string } };
+export default function StudentRegister({
+    schools,
+    classrooms,
+    registrationToken,
+}: Props) {
+    const { flash } = usePage().props as unknown as {
+        flash: { success?: string };
+    };
 
     /*
         Draf dibaca sekali lewat inisialisator malas `useState`, bukan `useRef`.
@@ -156,7 +201,10 @@ export default function StudentRegister({ schools, classrooms, registrationToken
     // Keadaan langkah Foto — sementara, tidak ikut disimpan ke draf.
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState('');
-    const [photoPreview, setPhotoPreview] = useState<{ url: string; filename: string } | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<{
+        url: string;
+        filename: string;
+    } | null>(null);
     // Gambarnya benar-benar selesai dimuat di peramban, bukan sekadar respons
     // server sudah tiba.
     const [photoReady, setPhotoReady] = useState(false);
@@ -172,17 +220,32 @@ export default function StudentRegister({ schools, classrooms, registrationToken
         }
 
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, step }));
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify({
+                    data: {
+                        ...data,
+                        password: undefined,
+                        password_confirmation: undefined,
+                    },
+                    step,
+                }),
+            );
         } catch {
             // ignore quota errors
         }
     }, [data, step, submitted]);
 
     const selectedSchool = schools.find((s) => String(s.id) === data.school_id);
-    const filteredClassrooms = classrooms.filter((c) => String(c.school_id) === data.school_id);
+    const filteredClassrooms = classrooms.filter(
+        (c) => String(c.school_id) === data.school_id,
+    );
 
     const csrfToken =
-        typeof document !== 'undefined' ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '' : '';
+        typeof document !== 'undefined'
+            ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+                  ?.content || ''
+            : '';
 
     // ---- Step validation ----
     function validateStep(current: number): Record<string, string> {
@@ -202,8 +265,12 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                 tahu gagal setelah semuanya terkirim. Kolom yang dibiarkan
                 kosong lolos begitu saja.
             */
-            if (data.photo_drive_filename.trim() && (!data.photo_key || !photoReady)) {
-                e.photo_drive_filename = 'Tunggu sampai fotonya muncul, atau kosongkan kolomnya untuk melewati langkah ini.';
+            if (
+                data.photo_drive_filename.trim() &&
+                (!data.photo_key || !photoReady)
+            ) {
+                e.photo_drive_filename =
+                    'Tunggu sampai fotonya muncul, atau kosongkan kolomnya untuk melewati langkah ini.';
             }
         } else if (current === 3) {
             if (!data.full_name.trim()) {
@@ -250,6 +317,22 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                 e.parent_phone = 'No. WhatsApp orang tua wajib diisi.';
             }
 
+            if (!data.parent_email.trim()) {
+                e.parent_email = 'Email orang tua wajib diisi untuk login.';
+            } else if (
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.parent_email.trim())
+            ) {
+                e.parent_email = 'Format email orang tua tidak valid.';
+            }
+
+            if (data.password.length < 8) {
+                e.password = 'Kata sandi minimal 8 karakter.';
+            }
+
+            if (data.password_confirmation !== data.password) {
+                e.password_confirmation = 'Konfirmasi kata sandi tidak cocok.';
+            }
+
             if (!data.parent_relation) {
                 e.parent_relation = 'Pilih hubungan orang tua.';
             }
@@ -285,7 +368,11 @@ export default function StudentRegister({ schools, classrooms, registrationToken
     }
 
     function err(key: string): string | undefined {
-        return stepErrors[key] || (errors as Record<string, string>)[key] || formErrors[key];
+        return (
+            stepErrors[key] ||
+            (errors as Record<string, string>)[key] ||
+            formErrors[key]
+        );
     }
 
     function handleFinalSubmit() {
@@ -334,17 +421,34 @@ export default function StudentRegister({ schools, classrooms, registrationToken
 
                 if (res.status === 422 && errorJson?.errors) {
                     const errs: Record<string, string> = {};
-                    Object.entries(errorJson.errors).forEach(([key, messages]) => {
-                        errs[key] = Array.isArray(messages) ? messages[0] : String(messages);
-                    });
+                    Object.entries(errorJson.errors).forEach(
+                        ([key, messages]) => {
+                            errs[key] = Array.isArray(messages)
+                                ? messages[0]
+                                : String(messages);
+                        },
+                    );
                     setFormErrors(errs);
+
+                    if (
+                        Object.keys(errs).some(
+                            (key) =>
+                                key.startsWith('parent_') ||
+                                key.startsWith('password'),
+                        )
+                    ) {
+                        setStep(5);
+                    }
+
                     setGenerating(false);
                     setLoadingStep('');
 
                     return;
                 }
 
-                throw new Error(errorJson?.message || `Server error (${res.status})`);
+                throw new Error(
+                    errorJson?.message || `Server error (${res.status})`,
+                );
             }
 
             const json = await res.json();
@@ -419,10 +523,15 @@ export default function StudentRegister({ schools, classrooms, registrationToken
 
             if (json.found) {
                 setPreviewError('');
-                setPhotoPreview({ url: json.preview_url, filename: data.photo_drive_filename.trim() });
+                setPhotoPreview({
+                    url: json.preview_url,
+                    filename: data.photo_drive_filename.trim(),
+                });
                 setData('photo_key', json.photo_key ?? '');
             } else {
-                setPreviewError(json.message || 'Berkas tidak ditemukan di Google Drive.');
+                setPreviewError(
+                    json.message || 'Berkas tidak ditemukan di Google Drive.',
+                );
             }
         } catch {
             if (!basi()) {
@@ -433,7 +542,13 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                 setPreviewLoading(false);
             }
         }
-    }, [data.photo_drive_filename, data.school_id, csrfToken, registrationToken, setData]);
+    }, [
+        data.photo_drive_filename,
+        data.school_id,
+        csrfToken,
+        registrationToken,
+        setData,
+    ]);
 
     // Dicari sendiri begitu pengetikan berhenti — tidak ada tombol "cari".
     useEffect(() => {
@@ -464,8 +579,12 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                 <div className="mx-auto max-w-2xl px-4 py-8">
                     <div className="rounded-2xl border border-green-200 bg-green-50 p-6 dark:border-green-800 dark:bg-green-950">
                         <CheckCircle2 className="mx-auto mb-4 size-16 text-green-600 dark:text-green-400" />
-                        <h2 className="mb-2 text-center text-2xl font-bold text-green-800 dark:text-green-200">Pendaftaran Berhasil!</h2>
-                        <p className="mb-6 text-center text-green-700 dark:text-green-300">{result.message}</p>
+                        <h2 className="mb-2 text-center text-2xl font-bold text-green-800 dark:text-green-200">
+                            Pendaftaran Berhasil!
+                        </h2>
+                        <p className="mb-6 text-center text-green-700 dark:text-green-300">
+                            {result.message}
+                        </p>
 
                         {/* Student info */}
                         <div className="mb-6 flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-800">
@@ -473,12 +592,17 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                 <User className="size-8 text-green-400" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold">{result.student.full_name}</h3>
-                                <p className="text-muted-foreground text-sm">
+                                <h3 className="text-lg font-bold">
+                                    {result.student.full_name}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
                                     NIS: {result.student.nis}
-                                    {result.student.nisn && ` · NISN: ${result.student.nisn}`}
+                                    {result.student.nisn &&
+                                        ` · NISN: ${result.student.nisn}`}
                                 </p>
-                                <p className="text-muted-foreground text-sm">Kelas: {result.student.classroom}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Kelas: {result.student.classroom}
+                                </p>
                             </div>
                         </div>
 
@@ -493,13 +617,29 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                         */}
                         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
                             <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                                {result.queued ? 'Foto sedang diambil dari Google Drive' : 'Pas foto diurus sekolah'}
+                                {result.queued
+                                    ? 'Foto sedang diambil dari Google Drive'
+                                    : 'Pas foto diurus sekolah'}
                             </p>
-                            <p className="text-muted-foreground mt-1 text-xs">
+                            <p className="mt-1 text-xs text-muted-foreground">
                                 {result.queued
                                     ? 'Fotonya diunduh di latar belakang, tidak perlu ditunggu di halaman ini. Kartu OSIS dibuat admin sekolah dari foto itu.'
                                     : 'Langkah foto dilewati, jadi admin sekolah yang akan memasang pas fotonya. Kartu OSIS dibuat dari foto itu.'}
                             </p>
+                        </div>
+
+                        <div className="mt-6 space-y-3 rounded-xl border bg-background p-4">
+                            <p className="text-sm">
+                                Akun orang tua:{' '}
+                                <strong>{result.parent_email}</strong>. Masuk
+                                menggunakan kata sandi yang diisi saat
+                                pendaftaran.
+                            </p>
+                            <Button asChild>
+                                <Link href={login()}>
+                                    Masuk ke Portal Orang Tua
+                                </Link>
+                            </Button>
                         </div>
 
                         <div className="mt-6 text-center">
@@ -524,8 +664,12 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                 <div className="mx-auto max-w-2xl px-4 py-16">
                     <div className="rounded-2xl border border-green-200 bg-green-50 p-8 text-center dark:border-green-800 dark:bg-green-950">
                         <CheckCircle2 className="mx-auto mb-4 size-16 text-green-600 dark:text-green-400" />
-                        <h2 className="mb-2 text-2xl font-bold text-green-800 dark:text-green-200">Pendaftaran Berhasil!</h2>
-                        <p className="mb-6 text-green-700 dark:text-green-300">{flash.success}</p>
+                        <h2 className="mb-2 text-2xl font-bold text-green-800 dark:text-green-200">
+                            Pendaftaran Berhasil!
+                        </h2>
+                        <p className="mb-6 text-green-700 dark:text-green-300">
+                            {flash.success}
+                        </p>
                         <Button
                             onClick={handleNewSubmission}
                             className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
@@ -556,13 +700,21 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                     {step === 1 && (
                         <FormSection number={1} title="Pilih Sekolah">
                             <div className="grid gap-2">
-                                <Label htmlFor="school_id" className="text-sm font-medium" required>
+                                <Label
+                                    htmlFor="school_id"
+                                    className="text-sm font-medium"
+                                    required
+                                >
                                     Sekolah
                                 </Label>
                                 <Select
                                     value={data.school_id}
                                     onValueChange={(val) => {
-                                        setData((prev) => ({ ...prev, school_id: val, classroom_id: '' }));
+                                        setData((prev) => ({
+                                            ...prev,
+                                            school_id: val,
+                                            classroom_id: '',
+                                        }));
                                     }}
                                 >
                                     <SelectTrigger className="h-11 w-full">
@@ -570,7 +722,10 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                     </SelectTrigger>
                                     <SelectContent>
                                         {schools.map((school) => (
-                                            <SelectItem key={school.id} value={String(school.id)}>
+                                            <SelectItem
+                                                key={school.id}
+                                                value={String(school.id)}
+                                            >
                                                 {school.name}
                                             </SelectItem>
                                         ))}
@@ -586,7 +741,10 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
                                     {/* Tanpa bintang: langkah ini memang boleh dilewati. */}
-                                    <Label htmlFor="photo_drive_filename" className="text-sm font-medium">
+                                    <Label
+                                        htmlFor="photo_drive_filename"
+                                        className="text-sm font-medium"
+                                    >
                                         Nama File Foto di Google Drive
                                     </Label>
                                     <div className="relative">
@@ -596,7 +754,8 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                             onChange={(e) => {
                                                 setData((prev) => ({
                                                     ...prev,
-                                                    photo_drive_filename: e.target.value,
+                                                    photo_drive_filename:
+                                                        e.target.value,
                                                     photo_key: '',
                                                 }));
                                                 setPhotoPreview(null);
@@ -607,18 +766,22 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                             className="h-11 pr-10"
                                         />
                                         {previewLoading && (
-                                            <Loader2 className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin" />
+                                            <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
                                         )}
                                     </div>
-                                    <p className="text-muted-foreground text-xs">
-                                        Ketik nama berkas foto yang sudah ada di folder Foto Siswa di Google Drive — fotonya
-                                        muncul sendiri di bawah.
+                                    <p className="text-xs text-muted-foreground">
+                                        Ketik nama berkas foto yang sudah ada di
+                                        folder Foto Siswa di Google Drive —
+                                        fotonya muncul sendiri di bawah.
                                     </p>
 
                                     <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950">
                                         <p className="text-xs text-blue-800 dark:text-blue-200">
-                                            <b>Boleh dikosongkan.</b> Kalau nomor fotonya belum tahu, lewati saja — admin sekolah
-                                            bisa memasang pas fotonya nanti dari halaman siswa.
+                                            <b>Boleh dikosongkan.</b> Kalau
+                                            nomor fotonya belum tahu, lewati
+                                            saja — admin sekolah bisa memasang
+                                            pas fotonya nanti dari halaman
+                                            siswa.
                                         </p>
                                     </div>
 
@@ -649,12 +812,17 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                             onLoad={() => setPhotoReady(true)}
                                             onError={() => {
                                                 setPhotoReady(false);
-                                                setPreviewError('Foto gagal dimuat. Coba ketik ulang nama berkasnya.');
+                                                setPreviewError(
+                                                    'Foto gagal dimuat. Coba ketik ulang nama berkasnya.',
+                                                );
                                             }}
                                             className="mx-auto max-h-80 w-auto rounded-lg object-contain"
                                         />
                                         <div className="mt-3 flex items-center justify-between gap-2">
-                                            <p className="text-muted-foreground truncate text-xs" title={photoPreview.filename}>
+                                            <p
+                                                className="truncate text-xs text-muted-foreground"
+                                                title={photoPreview.filename}
+                                            >
                                                 {photoPreview.filename}
                                             </p>
                                             <Button
@@ -664,7 +832,12 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                                 onClick={() => {
                                                     setPhotoPreview(null);
                                                     setPhotoReady(false);
-                                                    setData((prev) => ({ ...prev, photo_drive_filename: '', photo_key: '' }));
+                                                    setData((prev) => ({
+                                                        ...prev,
+                                                        photo_drive_filename:
+                                                            '',
+                                                        photo_key: '',
+                                                    }));
                                                 }}
                                             >
                                                 <X className="mr-1 size-4" />
@@ -681,13 +854,19 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                         <FormSection number={3} title="Data Siswa">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="full_name" className="text-sm font-medium" required>
+                                    <Label
+                                        htmlFor="full_name"
+                                        className="text-sm font-medium"
+                                        required
+                                    >
                                         Nama Lengkap
                                     </Label>
                                     <Input
                                         id="full_name"
                                         value={data.full_name}
-                                        onChange={(e) => setData('full_name', e.target.value)}
+                                        onChange={(e) =>
+                                            setData('full_name', e.target.value)
+                                        }
                                         placeholder="Nama lengkap siswa"
                                         className="h-11"
                                     />
@@ -696,39 +875,59 @@ export default function StudentRegister({ schools, classrooms, registrationToken
 
                                 <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-3">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="nis" className="text-sm font-medium">
+                                        <Label
+                                            htmlFor="nis"
+                                            className="text-sm font-medium"
+                                        >
                                             NIS
                                         </Label>
                                         <Input
                                             id="nis"
                                             value={data.nis}
-                                            onChange={(e) => setData('nis', e.target.value)}
+                                            onChange={(e) =>
+                                                setData('nis', e.target.value)
+                                            }
                                             placeholder="Nomor Induk Siswa"
                                             className="h-11"
                                         />
                                         <InputError message={err('nis')} />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="no_absen" className="text-sm font-medium" required>
+                                        <Label
+                                            htmlFor="no_absen"
+                                            className="text-sm font-medium"
+                                            required
+                                        >
                                             No. Absen
                                         </Label>
                                         <Input
                                             id="no_absen"
                                             value={data.no_absen}
-                                            onChange={(e) => setData('no_absen', e.target.value)}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'no_absen',
+                                                    e.target.value,
+                                                )
+                                            }
                                             placeholder="Nomor absen"
                                             className="h-11"
                                         />
                                         <InputError message={err('no_absen')} />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="nisn" className="text-sm font-medium" required>
+                                        <Label
+                                            htmlFor="nisn"
+                                            className="text-sm font-medium"
+                                            required
+                                        >
                                             NISN
                                         </Label>
                                         <Input
                                             id="nisn"
                                             value={data.nisn}
-                                            onChange={(e) => setData('nisn', e.target.value)}
+                                            onChange={(e) =>
+                                                setData('nisn', e.target.value)
+                                            }
                                             placeholder="Nomor Induk Siswa Nasional"
                                             className="h-11"
                                         />
@@ -737,37 +936,66 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label className="text-sm font-medium" required>
+                                    <Label
+                                        className="text-sm font-medium"
+                                        required
+                                    >
                                         Jenis Kelamin
                                     </Label>
-                                    <RadioGroup value={data.gender} onValueChange={(v) => setData('gender', v)} className="flex gap-4">
+                                    <RadioGroup
+                                        value={data.gender}
+                                        onValueChange={(v) =>
+                                            setData('gender', v)
+                                        }
+                                        className="flex gap-4"
+                                    >
                                         <label
                                             htmlFor="gender-l"
                                             className={`flex flex-1 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm transition ${data.gender === 'LAKI_LAKI' ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-900'}`}
                                         >
-                                            <RadioGroupItem value="LAKI_LAKI" id="gender-l" /> Laki-laki
+                                            <RadioGroupItem
+                                                value="LAKI_LAKI"
+                                                id="gender-l"
+                                            />{' '}
+                                            Laki-laki
                                         </label>
                                         <label
                                             htmlFor="gender-p"
                                             className={`flex flex-1 cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm transition ${data.gender === 'PEREMPUAN' ? 'border-pink-500 bg-pink-50 dark:bg-pink-950' : 'border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:hover:bg-zinc-900'}`}
                                         >
-                                            <RadioGroupItem value="PEREMPUAN" id="gender-p" /> Perempuan
+                                            <RadioGroupItem
+                                                value="PEREMPUAN"
+                                                id="gender-p"
+                                            />{' '}
+                                            Perempuan
                                         </label>
                                     </RadioGroup>
                                     <InputError message={err('gender')} />
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="religion" className="text-sm font-medium" required>
+                                    <Label
+                                        htmlFor="religion"
+                                        className="text-sm font-medium"
+                                        required
+                                    >
                                         Agama
                                     </Label>
-                                    <Select value={data.religion} onValueChange={(val) => setData('religion', val)}>
+                                    <Select
+                                        value={data.religion}
+                                        onValueChange={(val) =>
+                                            setData('religion', val)
+                                        }
+                                    >
                                         <SelectTrigger className="h-11 w-full">
                                             <SelectValue placeholder="Pilih agama" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {religions.map((r) => (
-                                                <SelectItem key={r.value} value={r.value}>
+                                                <SelectItem
+                                                    key={r.value}
+                                                    value={r.value}
+                                                >
                                                     {r.label}
                                                 </SelectItem>
                                             ))}
@@ -777,20 +1005,35 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="classroom_id" className="text-sm font-medium" required>
+                                    <Label
+                                        htmlFor="classroom_id"
+                                        className="text-sm font-medium"
+                                        required
+                                    >
                                         Kelas
                                     </Label>
                                     <Select
                                         value={data.classroom_id}
-                                        onValueChange={(val) => setData('classroom_id', val)}
+                                        onValueChange={(val) =>
+                                            setData('classroom_id', val)
+                                        }
                                         disabled={!data.school_id}
                                     >
                                         <SelectTrigger className="h-11 w-full">
-                                            <SelectValue placeholder={data.school_id ? 'Pilih kelas' : 'Pilih sekolah terlebih dahulu'} />
+                                            <SelectValue
+                                                placeholder={
+                                                    data.school_id
+                                                        ? 'Pilih kelas'
+                                                        : 'Pilih sekolah terlebih dahulu'
+                                                }
+                                            />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {filteredClassrooms.map((c) => (
-                                                <SelectItem key={c.id} value={String(c.id)}>
+                                                <SelectItem
+                                                    key={c.id}
+                                                    value={String(c.id)}
+                                                >
                                                     {c.name}
                                                 </SelectItem>
                                             ))}
@@ -807,47 +1050,80 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                             <div className="grid gap-5">
                                 <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="birth_place" className="text-sm font-medium" required>
+                                        <Label
+                                            htmlFor="birth_place"
+                                            className="text-sm font-medium"
+                                            required
+                                        >
                                             Tempat Lahir
                                         </Label>
                                         <Input
                                             id="birth_place"
                                             value={data.birth_place}
-                                            onChange={(e) => setData('birth_place', e.target.value)}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'birth_place',
+                                                    e.target.value,
+                                                )
+                                            }
                                             placeholder="Kota kelahiran"
                                             className="h-11"
                                         />
-                                        <InputError message={err('birth_place')} />
+                                        <InputError
+                                            message={err('birth_place')}
+                                        />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="birth_date" className="text-sm font-medium" required>
+                                        <Label
+                                            htmlFor="birth_date"
+                                            className="text-sm font-medium"
+                                            required
+                                        >
                                             Tanggal Lahir
                                         </Label>
                                         <Input
                                             id="birth_date"
                                             type="date"
                                             value={data.birth_date}
-                                            onChange={(e) => setData('birth_date', e.target.value)}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'birth_date',
+                                                    e.target.value,
+                                                )
+                                            }
                                             className="h-11"
                                         />
-                                        <InputError message={err('birth_date')} />
+                                        <InputError
+                                            message={err('birth_date')}
+                                        />
                                     </div>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="address" className="text-sm font-medium" required>
+                                    <Label
+                                        htmlFor="address"
+                                        className="text-sm font-medium"
+                                        required
+                                    >
                                         Alamat
                                     </Label>
                                     <Textarea
                                         id="address"
                                         value={data.address}
-                                        onChange={(e) => setData('address', e.target.value.slice(0, 90))}
+                                        onChange={(e) =>
+                                            setData(
+                                                'address',
+                                                e.target.value.slice(0, 90),
+                                            )
+                                        }
                                         placeholder="Alamat lengkap siswa"
                                         rows={3}
                                         maxLength={90}
                                     />
                                     <div className="flex items-center justify-between">
                                         <InputError message={err('address')} />
-                                        <span className="text-muted-foreground ml-auto text-xs">{data.address.length}/90</span>
+                                        <span className="ml-auto text-xs text-muted-foreground">
+                                            {data.address.length}/90
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -858,70 +1134,167 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                         <FormSection number={5} title="Data Orang Tua/Wali">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="parent_name" className="text-sm font-medium" required>
+                                    <Label
+                                        htmlFor="parent_name"
+                                        className="text-sm font-medium"
+                                        required
+                                    >
                                         Nama Orang Tua/Wali
                                     </Label>
                                     <Input
                                         id="parent_name"
                                         value={data.parent_name}
-                                        onChange={(e) => setData('parent_name', e.target.value)}
+                                        onChange={(e) =>
+                                            setData(
+                                                'parent_name',
+                                                e.target.value,
+                                            )
+                                        }
                                         placeholder="Nama lengkap orang tua atau wali"
                                         className="h-11"
                                     />
                                     <InputError message={err('parent_name')} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="text-sm font-medium" required>
+                                    <Label
+                                        className="text-sm font-medium"
+                                        required
+                                    >
                                         Hubungan
                                     </Label>
-                                    <Select value={data.parent_relation} onValueChange={(v) => setData('parent_relation', v)}>
+                                    <Select
+                                        value={data.parent_relation}
+                                        onValueChange={(v) =>
+                                            setData('parent_relation', v)
+                                        }
+                                    >
                                         <SelectTrigger className="h-11">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="AYAH">Ayah</SelectItem>
-                                            <SelectItem value="IBU">Ibu</SelectItem>
-                                            <SelectItem value="WALI">Wali</SelectItem>
+                                            <SelectItem value="AYAH">
+                                                Ayah
+                                            </SelectItem>
+                                            <SelectItem value="IBU">
+                                                Ibu
+                                            </SelectItem>
+                                            <SelectItem value="WALI">
+                                                Wali
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={err('parent_relation')} />
+                                    <InputError
+                                        message={err('parent_relation')}
+                                    />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="parent_phone" className="text-sm font-medium" required>
+                                    <Label
+                                        htmlFor="parent_phone"
+                                        className="text-sm font-medium"
+                                        required
+                                    >
                                         No. WhatsApp
                                     </Label>
                                     <div className="flex">
-                                        <span className="border-input bg-muted/50 text-muted-foreground inline-flex items-center rounded-l-md border border-r-0 px-3.5 text-sm font-medium">
+                                        <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted/50 px-3.5 text-sm font-medium text-muted-foreground">
                                             +62
                                         </span>
                                         <Input
                                             id="parent_phone"
                                             type="tel"
                                             value={data.parent_phone}
-                                            onChange={(e) => setData('parent_phone', e.target.value)}
+                                            onChange={(e) =>
+                                                setData(
+                                                    'parent_phone',
+                                                    e.target.value,
+                                                )
+                                            }
                                             placeholder="812xxxxxxxx"
                                             className="h-11 rounded-l-none"
                                         />
                                     </div>
                                     <InputError message={err('parent_phone')} />
-                                    <p className="text-muted-foreground text-xs">Nomor ini akan menerima notifikasi absensi via WhatsApp.</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Nomor ini akan menerima notifikasi
+                                        absensi via WhatsApp.
+                                    </p>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="parent_email" className="text-sm font-medium">
+                                    <Label
+                                        htmlFor="parent_email"
+                                        className="text-sm font-medium"
+                                        required
+                                    >
                                         Email Orang Tua/Wali
                                     </Label>
                                     <Input
                                         id="parent_email"
                                         type="email"
+                                        required
+                                        autoComplete="email"
                                         value={data.parent_email}
-                                        onChange={(e) => setData('parent_email', e.target.value)}
+                                        onChange={(e) =>
+                                            setData(
+                                                'parent_email',
+                                                e.target.value,
+                                            )
+                                        }
                                         placeholder="email@contoh.com"
                                         className="h-11"
                                     />
                                     <InputError message={err('parent_email')} />
-                                    <p className="text-muted-foreground text-xs">
-                                        Email ini akan menerima notifikasi kehadiran (absen) siswa. Opsional.
+                                    <p className="text-xs text-muted-foreground">
+                                        Email ini digunakan untuk login portal
+                                        orang tua dan menerima notifikasi
+                                        kehadiran.
                                     </p>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="password" required>
+                                        Kata Sandi Akun Orang Tua
+                                    </Label>
+                                    <PasswordInput
+                                        id="password"
+                                        autoComplete="new-password"
+                                        required
+                                        minLength={8}
+                                        value={data.password}
+                                        onChange={(e) =>
+                                            setData('password', e.target.value)
+                                        }
+                                        className="h-11"
+                                    />
+                                    <InputError message={err('password')} />
+                                    <p className="text-xs text-muted-foreground">
+                                        Minimal 8 karakter. Jika sudah memiliki
+                                        akun, gunakan email, nomor WhatsApp, dan
+                                        kata sandi akun tersebut.
+                                    </p>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label
+                                        htmlFor="password_confirmation"
+                                        required
+                                    >
+                                        Konfirmasi Kata Sandi
+                                    </Label>
+                                    <PasswordInput
+                                        id="password_confirmation"
+                                        autoComplete="new-password"
+                                        required
+                                        minLength={8}
+                                        value={data.password_confirmation}
+                                        onChange={(e) =>
+                                            setData(
+                                                'password_confirmation',
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="h-11"
+                                    />
+                                    <InputError
+                                        message={err('password_confirmation')}
+                                    />
                                 </div>
                             </div>
                         </FormSection>
@@ -931,50 +1304,126 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                         <FormSection number={6} title="Review & Kirim">
                             <div className="grid gap-5">
                                 <ReviewGroup title="Sekolah">
-                                    <ReviewRow label="Sekolah" value={selectedSchool?.name} />
+                                    <ReviewRow
+                                        label="Sekolah"
+                                        value={selectedSchool?.name}
+                                    />
                                 </ReviewGroup>
                                 <ReviewGroup title="Data Siswa">
-                                    <ReviewRow label="Nama Lengkap" value={data.full_name} />
-                                    <ReviewRow label="NIS" value={data.nis || '(auto-generate)'} />
-                                    <ReviewRow label="No. Absen" value={data.no_absen} />
+                                    <ReviewRow
+                                        label="Nama Lengkap"
+                                        value={data.full_name}
+                                    />
+                                    <ReviewRow
+                                        label="NIS"
+                                        value={data.nis || '(auto-generate)'}
+                                    />
+                                    <ReviewRow
+                                        label="No. Absen"
+                                        value={data.no_absen}
+                                    />
                                     <ReviewRow label="NISN" value={data.nisn} />
-                                    <ReviewRow label="Jenis Kelamin" value={data.gender === 'LAKI_LAKI' ? 'Laki-laki' : data.gender === 'PEREMPUAN' ? 'Perempuan' : ''} />
-                                    <ReviewRow label="Agama" value={religions.find((r) => r.value === data.religion)?.label} />
-                                    <ReviewRow label="Kelas" value={filteredClassrooms.find((c) => String(c.id) === data.classroom_id)?.name} />
+                                    <ReviewRow
+                                        label="Jenis Kelamin"
+                                        value={
+                                            data.gender === 'LAKI_LAKI'
+                                                ? 'Laki-laki'
+                                                : data.gender === 'PEREMPUAN'
+                                                  ? 'Perempuan'
+                                                  : ''
+                                        }
+                                    />
+                                    <ReviewRow
+                                        label="Agama"
+                                        value={
+                                            religions.find(
+                                                (r) =>
+                                                    r.value === data.religion,
+                                            )?.label
+                                        }
+                                    />
+                                    <ReviewRow
+                                        label="Kelas"
+                                        value={
+                                            filteredClassrooms.find(
+                                                (c) =>
+                                                    String(c.id) ===
+                                                    data.classroom_id,
+                                            )?.name
+                                        }
+                                    />
                                 </ReviewGroup>
                                 <ReviewGroup title="Kelahiran & Alamat">
-                                    <ReviewRow label="Tempat Lahir" value={data.birth_place} />
-                                    <ReviewRow label="Tanggal Lahir" value={data.birth_date} />
-                                    <ReviewRow label="Alamat" value={data.address} />
+                                    <ReviewRow
+                                        label="Tempat Lahir"
+                                        value={data.birth_place}
+                                    />
+                                    <ReviewRow
+                                        label="Tanggal Lahir"
+                                        value={data.birth_date}
+                                    />
+                                    <ReviewRow
+                                        label="Alamat"
+                                        value={data.address}
+                                    />
                                 </ReviewGroup>
                                 <ReviewGroup title="Foto">
                                     <ReviewRow
                                         label="File Foto"
-                                        value={data.photo_drive_filename || '(dilewati — diurus admin sekolah)'}
+                                        value={
+                                            data.photo_drive_filename ||
+                                            '(dilewati — diurus admin sekolah)'
+                                        }
                                     />
                                 </ReviewGroup>
                                 <ReviewGroup title="Orang Tua/Wali">
-                                    <ReviewRow label="Nama" value={data.parent_name} />
-                                    <ReviewRow label="Hubungan" value={data.parent_relation} />
-                                    <ReviewRow label="No. WhatsApp" value={data.parent_phone ? `+62${data.parent_phone}` : ''} />
-                                    <ReviewRow label="Email" value={data.parent_email || '—'} />
+                                    <ReviewRow
+                                        label="Nama"
+                                        value={data.parent_name}
+                                    />
+                                    <ReviewRow
+                                        label="Hubungan"
+                                        value={data.parent_relation}
+                                    />
+                                    <ReviewRow
+                                        label="No. WhatsApp"
+                                        value={
+                                            data.parent_phone
+                                                ? `+62${data.parent_phone}`
+                                                : ''
+                                        }
+                                    />
+                                    <ReviewRow
+                                        label="Email"
+                                        value={data.parent_email || '—'}
+                                    />
                                 </ReviewGroup>
 
                                 {/* Captcha */}
                                 <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                                    <SimpleCaptcha onVerified={(token) => setCaptchaVerified(!!token)} />
+                                    <SimpleCaptcha
+                                        onVerified={(token) =>
+                                            setCaptchaVerified(!!token)
+                                        }
+                                    />
                                 </div>
 
                                 {/* General / server errors */}
-                                {(formErrors._general || Object.keys(formErrors).length > 0) && (
+                                {(formErrors._general ||
+                                    Object.keys(formErrors).length > 0) && (
                                     <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
                                         {formErrors._general && (
-                                            <p className="mb-2 font-semibold text-red-700 dark:text-red-300">{formErrors._general}</p>
+                                            <p className="mb-2 font-semibold text-red-700 dark:text-red-300">
+                                                {formErrors._general}
+                                            </p>
                                         )}
                                         {Object.entries(formErrors)
                                             .filter(([k]) => k !== '_general')
                                             .map(([key, msg]) => (
-                                                <p key={key} className="text-sm text-red-600 dark:text-red-400">
+                                                <p
+                                                    key={key}
+                                                    className="text-sm text-red-600 dark:text-red-400"
+                                                >
                                                     • {msg}
                                                 </p>
                                             ))}
@@ -1003,14 +1452,20 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                             disabled={step === 2 && previewLoading}
                             className="h-11 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
                         >
-                            {step === 2 && previewLoading && <Loader2 className="size-4 animate-spin" />}
-                            {step === 2 && previewLoading ? 'Memuat foto…' : 'Lanjut'}
+                            {step === 2 && previewLoading && (
+                                <Loader2 className="size-4 animate-spin" />
+                            )}
+                            {step === 2 && previewLoading
+                                ? 'Memuat foto…'
+                                : 'Lanjut'}
                         </Button>
                     ) : (
                         <Button
                             type="button"
                             onClick={handleFinalSubmit}
-                            disabled={processing || generating || !captchaVerified}
+                            disabled={
+                                processing || generating || !captchaVerified
+                            }
                             className="h-11 bg-gradient-to-r from-blue-600 to-indigo-600 font-semibold text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
                         >
                             {generating ? <Spinner /> : 'Daftarkan Siswa'}
@@ -1023,12 +1478,21 @@ export default function StudentRegister({ schools, classrooms, registrationToken
                     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
                         <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-2xl dark:bg-zinc-900">
                             <Loader2 className="mx-auto mb-4 size-12 animate-spin text-blue-600" />
-                            <h3 className="mb-2 text-lg font-bold">Memproses Pendaftaran</h3>
-                            <p className="text-muted-foreground mb-4 text-sm">{loadingStep || 'Mohon tunggu...'}</p>
+                            <h3 className="mb-2 text-lg font-bold">
+                                Memproses Pendaftaran
+                            </h3>
+                            <p className="mb-4 text-sm text-muted-foreground">
+                                {loadingStep || 'Mohon tunggu...'}
+                            </p>
                             <div className="mx-auto h-1.5 w-48 overflow-hidden rounded-full bg-zinc-200">
-                                <div className="h-full animate-pulse rounded-full bg-blue-600" style={{ width: '60%' }} />
+                                <div
+                                    className="h-full animate-pulse rounded-full bg-blue-600"
+                                    style={{ width: '60%' }}
+                                />
                             </div>
-                            <p className="text-muted-foreground mt-4 text-xs">Sebentar saja. Jangan tutup halaman.</p>
+                            <p className="mt-4 text-xs text-muted-foreground">
+                                Sebentar saja. Jangan tutup halaman.
+                            </p>
                         </div>
                     </div>
                 )}
@@ -1047,7 +1511,10 @@ function StepProgress({ current }: { current: number }) {
                 const active = s.id === current;
 
                 return (
-                    <div key={s.id} className="flex flex-1 items-center last:flex-none">
+                    <div
+                        key={s.id}
+                        className="flex flex-1 items-center last:flex-none"
+                    >
                         <div className="flex flex-col items-center">
                             <span
                                 className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition ${
@@ -1062,14 +1529,18 @@ function StepProgress({ current }: { current: number }) {
                             </span>
                             <span
                                 className={`mt-1 hidden max-w-[72px] text-center text-[10px] leading-tight sm:block ${
-                                    active ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
+                                    active
+                                        ? 'font-semibold text-blue-600 dark:text-blue-400'
+                                        : 'text-muted-foreground'
                                 }`}
                             >
                                 {s.title}
                             </span>
                         </div>
                         {i < STEPS.length - 1 && (
-                            <div className={`mx-1 h-0.5 flex-1 rounded ${done ? 'bg-green-600' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
+                            <div
+                                className={`mx-1 h-0.5 flex-1 rounded ${done ? 'bg-green-600' : 'bg-zinc-200 dark:bg-zinc-800'}`}
+                            />
                         )}
                     </div>
                 );
@@ -1078,10 +1549,18 @@ function StepProgress({ current }: { current: number }) {
     );
 }
 
-function ReviewGroup({ title, children }: { title: string; children: React.ReactNode }) {
+function ReviewGroup({
+    title,
+    children,
+}: {
+    title: string;
+    children: React.ReactNode;
+}) {
     return (
         <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
-            <h4 className="mb-2 text-xs font-bold tracking-wide text-blue-600 uppercase dark:text-blue-400">{title}</h4>
+            <h4 className="mb-2 text-xs font-bold tracking-wide text-blue-600 uppercase dark:text-blue-400">
+                {title}
+            </h4>
             <dl className="grid gap-1.5">{children}</dl>
         </div>
     );
@@ -1090,12 +1569,18 @@ function ReviewGroup({ title, children }: { title: string; children: React.React
 function ReviewRow({ label, value }: { label: string; value?: string | null }) {
     return (
         <div className="flex items-start justify-between gap-4 text-sm">
-            <dt className="text-muted-foreground shrink-0">{label}</dt>
-            <dd className="text-right font-medium break-words">{value || '—'}</dd>
+            <dt className="shrink-0 text-muted-foreground">{label}</dt>
+            <dd className="text-right font-medium break-words">
+                {value || '—'}
+            </dd>
         </div>
     );
 }
 
 function PageWrapper({ children }: { children: React.ReactNode }) {
-    return <RegistrationShell title="Pendaftaran Data Siswa Baru">{children}</RegistrationShell>;
+    return (
+        <RegistrationShell title="Pendaftaran Data Siswa Baru">
+            {children}
+        </RegistrationShell>
+    );
 }

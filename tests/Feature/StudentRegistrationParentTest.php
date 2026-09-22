@@ -25,6 +25,9 @@ test('registration with parent data creates a parent profile', function () {
         'address' => 'Jl. Melati No. 1',
         'parent_name' => 'Budi Santoso',
         'parent_phone' => '081234567890',
+        'parent_email' => 'wali-'.$school->id.'@example.com',
+        'password' => 'SandiWali123!',
+        'password_confirmation' => 'SandiWali123!',
         'parent_relation' => 'WALI',
     ]);
 
@@ -61,6 +64,9 @@ test('registration with same parent phone reuses existing parent profile', funct
         'address' => 'Jl. Melati No. 1',
         'parent_name' => 'Budi Santoso',
         'parent_phone' => '081234567890',
+        'parent_email' => 'wali-'.$school->id.'@example.com',
+        'password' => 'SandiWali123!',
+        'password_confirmation' => 'SandiWali123!',
         'parent_relation' => 'WALI',
     ]);
 
@@ -78,6 +84,9 @@ test('registration with same parent phone reuses existing parent profile', funct
         'address' => 'Jl. Melati No. 1',
         'parent_name' => 'Budi Santoso',
         'parent_phone' => '081234567890',
+        'parent_email' => 'wali-'.$school->id.'@example.com',
+        'password' => 'SandiWali123!',
+        'password_confirmation' => 'SandiWali123!',
         'parent_relation' => 'WALI',
     ]);
 

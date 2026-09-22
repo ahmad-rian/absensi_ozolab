@@ -45,7 +45,7 @@ class SetelPasswordOrangTua extends Command
 
             $query->chunkById(100, function ($users) use ($bar, &$selesai): void {
                 foreach ($users as $user) {
-                    $user->forceFill(['password' => Hash::make('password'), 'must_change_password' => true, 'remember_token' => null])->save();
+                    $user->forceFill(['password' => Hash::make('11111111'), 'must_change_password' => true, 'remember_token' => null])->save();
                     $selesai++;
                     $bar->advance();
                 }

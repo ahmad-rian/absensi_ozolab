@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 
 class ParentProfileService
 {
-    public function findOrCreateFromRegistration(string $schoolId, string $parentName, string $parentPhone, string $relation = 'WALI', ?string $email = null): ParentProfile
+    public function findOrCreateFromRegistration(string $schoolId, string $parentName, string $parentPhone, string $relation = 'WALI', ?string $email = null, ?string $password = null): ParentProfile
     {
         $phone = trim($parentPhone);
 
@@ -35,6 +35,12 @@ class ParentProfileService
             }
         }
         if ($existing) {
+            if ($password !== null && (! $existing->user
+                || ! Hash::check($password, $existing->user->password)
+                || (! AlamatLoginOrangTua::bawaanSistem($existing->user->email) && $existing->user->email !== $email))) {
+                throw ValidationException::withMessages(['password' => 'Nomor WhatsApp sudah terhubung ke akun orang tua. Gunakan email dan kata sandi akun tersebut.']);
+            }
+
             if ($email && AlamatLoginOrangTua::bawaanSistem($existing->user->email)) {
                 $existing->user->update(['email' => $email]);
             }
@@ -49,8 +55,8 @@ class ParentProfileService
         $user = User::create([
             'name' => $parentName,
             'email' => $email ?: AlamatLoginOrangTua::untuk($parentName),
-            'password' => Hash::make('password'),
-            'must_change_password' => true,
+            'password' => Hash::make($password ?? '11111111'),
+            'must_change_password' => $password === null,
             'phone' => $phone,
             'school_id' => $schoolId,
         ]);

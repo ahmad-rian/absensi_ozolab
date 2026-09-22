@@ -3,8 +3,10 @@
 namespace App\Support;
 
 use App\Models\ParentProfile;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Aturan dan penyimpanan data orang tua, dipakai bersama dua jalur masuk:
@@ -70,6 +72,14 @@ class ParentProfileForm
      */
     public static function apply(ParentProfile $parent, array $validated): void
     {
+        $notificationEmail = trim((string) ($validated['notification_email'] ?? ''));
+        if (AlamatLoginOrangTua::bawaanSistem($validated['email']) && $notificationEmail !== '' && ! AlamatLoginOrangTua::bawaanSistem($notificationEmail)) {
+            if (User::withTrashed()->whereRaw('LOWER(email) = ?', [strtolower($notificationEmail)])->whereKeyNot($parent->user_id)->exists()) {
+                throw ValidationException::withMessages(['notification_email' => 'Email sudah digunakan akun lain dan tidak dapat dipakai untuk login.']);
+            }
+            $validated['email'] = $notificationEmail;
+        }
+
         DB::transaction(function () use ($parent, $validated) {
             $parent->user?->update([
                 'name' => $validated['name'],
@@ -83,7 +93,7 @@ class ParentProfileForm
                 // Email notifikasi kosong berarti pakai email akun — kecuali
                 // akun itu sendiri memakai alamat `@internal.app` yang dibuat
                 // sistem dan tidak akan pernah sampai ke siapa pun.
-                'email' => ($validated['notification_email'] ?? null) ?: (str_contains($validated['email'], '@internal.app') ? null : $validated['email']),
+                'email' => ($validated['notification_email'] ?? null) ?: (AlamatLoginOrangTua::bawaanSistem($validated['email']) ? null : $validated['email']),
                 'relation' => $validated['relation'],
                 'nik' => $validated['nik'] ?? null,
                 'occupation' => $validated['occupation'] ?? null,

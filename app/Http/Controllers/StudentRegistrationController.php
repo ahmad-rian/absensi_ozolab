@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Rules\Unique;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -273,7 +274,8 @@ class StudentRegistrationController extends Controller
             'address' => ['required', 'string', 'max:90'],
             'parent_name' => ['required', 'string', 'max:255'],
             'parent_phone' => ['required', 'string', 'max:20'],
-            'parent_email' => ['nullable', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
+            'parent_email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
+            'password' => ['required', 'string', Password::min(8), 'confirmed'],
             'parent_relation' => ['required', 'string', 'in:AYAH,IBU,WALI'],
             // Nullable, bukan required: langkah Foto boleh dilewati, dan yang
             // melewatinya diurus admin dari halaman siswa.
@@ -297,6 +299,10 @@ class StudentRegistrationController extends Controller
             'address.required' => 'Alamat wajib diisi.',
             'parent_name.required' => 'Nama orang tua wajib diisi.',
             'parent_phone.required' => 'No. WhatsApp orang tua wajib diisi.',
+            'parent_email.required' => 'Email orang tua wajib diisi untuk login.',
+            'password.required' => 'Kata sandi akun orang tua wajib diisi.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            'password.min' => 'Kata sandi minimal 8 karakter.',
             'parent_email.email' => 'Format email orang tua tidak valid.',
             'parent_relation.required' => 'Pilih hubungan orang tua.',
         ]);
@@ -335,7 +341,8 @@ class StudentRegistrationController extends Controller
                     $validated['parent_name'],
                     $validated['parent_phone'],
                     $validated['parent_relation'] ?? 'WALI',
-                    $validated['parent_email'] ?? null,
+                    $validated['parent_email'],
+                    $validated['password'],
                 );
                 $student->update(['parent_profile_id' => $parentProfile->id]);
             }
@@ -378,6 +385,7 @@ class StudentRegistrationController extends Controller
                 ? 'Data siswa berhasil didaftarkan! Fotonya sedang diambil dari Google Drive. Kartu dibuat admin sekolah.'
                 : 'Data siswa berhasil didaftarkan! Pas foto dan kartu akan diurus admin sekolah.',
             'queued' => $adaFoto,
+            'parent_email' => $student->parentProfile->user->email,
             'student' => [
                 'id' => $student->id,
                 'full_name' => $student->full_name,

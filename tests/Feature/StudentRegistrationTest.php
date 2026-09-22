@@ -48,6 +48,9 @@ test('a student can be registered via the form', function () {
         'address' => 'Jl. Melati No. 1',
         'parent_name' => 'Budi Santoso',
         'parent_phone' => '081234567890',
+        'parent_email' => 'wali-'.$school->id.'@example.com',
+        'password' => 'SandiWali123!',
+        'password_confirmation' => 'SandiWali123!',
         'parent_relation' => 'WALI',
     ]);
 
@@ -81,6 +84,9 @@ test('a student can be registered with all optional fields', function () {
         'address' => 'Jl. Merdeka No. 10',
         'parent_name' => 'Budi Santoso',
         'parent_phone' => '812345678',
+        'parent_email' => 'wali-'.$school->id.'@example.com',
+        'password' => 'SandiWali123!',
+        'password_confirmation' => 'SandiWali123!',
         'parent_relation' => 'WALI',
     ]);
 
@@ -116,6 +122,9 @@ function registerStudent(School $school, Classroom $classroom, array $overrides 
         'address' => 'Jl. Kenanga No. 2',
         'parent_name' => 'Bapak Uji',
         'parent_phone' => '081234567890',
+        'parent_email' => 'wali-'.$school->id.'@example.com',
+        'password' => 'SandiWali123!',
+        'password_confirmation' => 'SandiWali123!',
         'parent_relation' => 'AYAH',
     ], $overrides));
 }

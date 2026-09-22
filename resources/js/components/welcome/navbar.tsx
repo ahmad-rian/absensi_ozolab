@@ -19,7 +19,6 @@ export function Navbar() {
     const { auth, name } = usePage().props as {
         auth: { user: unknown };
         name: string;
-        app?: { logo?: string | null } | null;
     };
     const { resolvedAppearance, updateAppearance } = useAppearance();
 
@@ -192,17 +191,7 @@ export function Navbar() {
                             className="flex items-center gap-2.5 font-bold"
                             onClick={() => setMobileOpen(false)}
                         >
-                            {app?.logo ? (
-                                <img
-                                    src={app.logo}
-                                    alt={name}
-                                    className="size-8 rounded-lg object-contain"
-                                />
-                            ) : (
-                                <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
-                                    <AppLogoIcon className="size-4.5 fill-current text-white" />
-                                </div>
-                            )}
+                            <BrandLogo className="size-8 rounded-lg" />
                             <span className="text-lg tracking-tight">
                                 {name}
                             </span>

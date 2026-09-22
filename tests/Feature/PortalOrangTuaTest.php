@@ -96,6 +96,7 @@ test('password enforcement covers workspaces and settings and rejects the defaul
     }
     $this->get('/ganti-password')->assertOk();
     $this->put('/ganti-password', ['password' => 'password', 'password_confirmation' => 'password'])->assertSessionHasErrors('password');
+    $this->put('/ganti-password', ['password' => '11111111', 'password_confirmation' => '11111111'])->assertSessionHasErrors('password');
     $this->put('/ganti-password', ['password' => 'RahasiaBaru!2026', 'password_confirmation' => 'RahasiaBaru!2026'])->assertRedirect('/orangtua');
     expect($parent->fresh()->must_change_password)->toBeFalse();
     expect(Hash::check('RahasiaBaru!2026', $parent->fresh()->password))->toBeTrue();
@@ -121,7 +122,7 @@ test('password command only changes parents in the selected school and dry run c
 
     $this->artisan('ortu:setel-password', ['--sekolah' => $school->id, '--force' => true])->assertSuccessful();
     expect($parent->fresh()->must_change_password)->toBeTrue();
-    expect(Hash::check('password', $parent->fresh()->password))->toBeTrue();
+    expect(Hash::check('11111111', $parent->fresh()->password))->toBeTrue();
     foreach ([$other, $admin, $teacher, $super] as $index => $user) {
         expect($user->fresh()->password)->toBe($hashes[$index + 1]);
     }

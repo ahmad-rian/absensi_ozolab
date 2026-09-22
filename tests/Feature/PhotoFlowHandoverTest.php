@@ -44,6 +44,9 @@ function pendaftaran(array $overrides = []): array
         'address' => 'Jl. Mawar 12',
         'parent_name' => 'Budi',
         'parent_phone' => '81234567890',
+        'parent_email' => 'wali-'.test()->school->id.'@example.com',
+        'password' => 'SandiWali123!',
+        'password_confirmation' => 'SandiWali123!',
         'parent_relation' => 'AYAH',
     ], $overrides);
 }

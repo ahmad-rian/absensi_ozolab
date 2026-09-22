@@ -66,6 +66,9 @@ test('public registration uppercases both the student and the parent name', func
         'address' => 'Jl. Melati No. 1',
         'parent_name' => 'siti rahmawati',
         'parent_phone' => '081234567890',
+        'parent_email' => 'wali-'.$sekolah->id.'@example.com',
+        'password' => 'SandiWali123!',
+        'password_confirmation' => 'SandiWali123!',
         'parent_relation' => 'WALI',
     ])->assertOk();
 

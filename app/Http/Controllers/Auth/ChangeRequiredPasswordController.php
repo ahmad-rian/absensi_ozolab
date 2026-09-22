@@ -19,7 +19,7 @@ class ChangeRequiredPasswordController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $data = $request->validate(['password' => ['required', 'string', 'confirmed', Password::defaults(), 'not_in:password']]);
+        $data = $request->validate(['password' => ['required', 'string', 'confirmed', Password::defaults(), 'not_in:password,11111111']]);
         $request->user()->forceFill(['password' => Hash::make($data['password']), 'must_change_password' => false, 'remember_token' => null])->save();
         $request->session()->regenerate();
 
