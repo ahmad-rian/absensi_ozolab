@@ -47,7 +47,7 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
             startsWith ? urlToCompare.startsWith(path) : path === urlToCompare;
 
         if (!urlString.startsWith('http')) {
-            return comparePath(urlString);
+            return comparePath(urlString.split(/[?#]/, 1)[0]);
         }
 
         try {

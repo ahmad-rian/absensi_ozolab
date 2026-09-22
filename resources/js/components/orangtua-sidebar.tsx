@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     LogOut,
     Moon,
+    Users,
 } from 'lucide-react';
 import { NavGroup } from '@/components/nav-main';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,9 @@ import {
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { logout } from '@/routes';
 import { absensi, galeri, index, laporan, sholat } from '@/routes/orangtua';
@@ -94,17 +98,31 @@ export function OrangtuaSidebar() {
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader className="gap-2">
-                <Link href={withAnak(index().url, aktif)} className="px-2 py-1">
-                    <span className="text-base font-bold tracking-tight">
-                        Portal Orang Tua
-                    </span>
-                </Link>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            asChild
+                            className="h-12"
+                            tooltip="Portal Orang Tua"
+                        >
+                            <Link
+                                href={withAnak(index().url, aktif)}
+                                aria-label="Portal Orang Tua"
+                            >
+                                <Users className="size-5 shrink-0 text-sidebar-primary" />
+                                <span className="truncate text-base font-bold tracking-tight group-data-[collapsible=icon]:hidden">
+                                    Portal Orang Tua
+                                </span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
                 {daftar.length > 1 && (
                     <PemilihAnak daftar={daftar} aktif={props.student} />
                 )}
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="[&_[data-active=true]]:bg-sidebar-primary [&_[data-active=true]]:font-semibold [&_[data-active=true]]:text-sidebar-primary-foreground">
                 <NavGroup label="Menu" items={menu} />
             </SidebarContent>
 
@@ -117,18 +135,23 @@ export function OrangtuaSidebar() {
                             : ''}
                     </div>
                 )}
-                <Button
-                    asChild
-                    variant="ghost"
-                    className="w-full justify-start gap-2 font-normal"
-                >
-                    <Link href={logout()} method="post" as="button">
-                        <LogOut className="size-4" />
-                        <span className="group-data-[collapsible=icon]:hidden">
-                            Keluar
-                        </span>
-                    </Link>
-                </Button>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild tooltip="Keluar">
+                            <Link
+                                href={logout()}
+                                method="post"
+                                as="button"
+                                aria-label="Keluar"
+                            >
+                                <LogOut className="size-4" />
+                                <span className="group-data-[collapsible=icon]:hidden">
+                                    Keluar
+                                </span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
             </SidebarFooter>
         </Sidebar>
     );
