@@ -37,10 +37,7 @@
         </style>
 
         @php
-            $faviconPath = App\Models\Setting::getValue('app_favicon');
-            $faviconUrl = $faviconPath
-                ? Illuminate\Support\Facades\Storage::disk('public')->url($faviconPath)
-                : null;
+            $faviconUrl = $page['props']['app']['favicon'] ?? null;
         @endphp
         @if($faviconUrl)
             <link rel="icon" href="{{ $faviconUrl }}" type="image/webp">

@@ -107,6 +107,11 @@ class HandleInertiaRequests extends Middleware
                 // lama supaya tampilan tidak berubah setelah deploy.
                 $school = app()->bound('currentSchool') ? app('currentSchool') : null;
 
+                if (! $school) {
+                    $publicSchoolId = Setting::getValue('public_branding_school_id');
+                    $school = $publicSchoolId ? School::where('is_active', true)->find($publicSchoolId) : null;
+                }
+
                 $logoPath = $school?->getSetting('app_logo') ?: Setting::getValue('app_logo');
                 $faviconPath = $school?->getSetting('app_favicon') ?: Setting::getValue('app_favicon');
 

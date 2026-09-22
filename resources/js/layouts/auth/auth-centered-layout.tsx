@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Moon, Sun } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import BrandLogo from '@/components/brand-logo';
 import { Button } from '@/components/ui/button';
 import { useAppearance } from '@/hooks/use-appearance';
 import { home } from '@/routes';
@@ -61,15 +61,13 @@ export default function AuthCenteredLayout({
                 {/* Logo + app name */}
                 <div className="mb-6 flex flex-col items-center gap-3 text-center">
                     {passwordRequired ? (
-                        <AppLogoIcon className="size-12" />
+                        <BrandLogo className="size-14" />
                     ) : (
                         <Link
                             href={home()}
                             className="group flex flex-col items-center gap-3"
                         >
-                            <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30 transition-transform group-hover:scale-105">
-                                <AppLogoIcon className="size-7 fill-current text-white" />
-                            </div>
+                            <BrandLogo className="size-14 transition-transform group-hover:scale-105" />
                             <span className="text-lg font-bold tracking-tight">
                                 {name as string}
                             </span>

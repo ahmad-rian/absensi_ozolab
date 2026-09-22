@@ -345,6 +345,17 @@ class PengaturanController extends Controller
         ];
     }
 
+    public function publishBranding(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()->isSuperAdmin(), 403);
+        $school = School::findOrFail($request->user()->school_id);
+        Setting::setValue('public_branding_school_id', $school->id);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Logo dan favicon sekolah ini digunakan pada halaman publik dan login.']);
+
+        return $this->backToTab('tampilan');
+    }
+
     public function uploadLogo(Request $request, ImageConverter $converter): RedirectResponse
     {
         $request->validate(['logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']]);

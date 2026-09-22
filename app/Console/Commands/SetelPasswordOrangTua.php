@@ -20,6 +20,11 @@ class SetelPasswordOrangTua extends Command
             ->when($this->option('sekolah'), fn ($query, $school) => $query->where('school_id', $school));
         $jumlah = $query->count();
         $this->info($jumlah.' akun orang tua'.($this->option('dry-run') ? ' (simulasi)' : ''));
+        if ($jumlah === 0) {
+            $this->info('Tidak ada akun yang perlu diproses.');
+
+            return self::SUCCESS;
+        }
         if (! $this->option('dry-run')) {
             /*
                 Hash lama ditimpa dan tidak bisa dikembalikan. Tanpa `--sekolah`
@@ -33,11 +38,21 @@ class SetelPasswordOrangTua extends Command
                 return self::FAILURE;
             }
 
-            $query->chunkById(100, function ($users): void {
+            $selesai = 0;
+            $bar = $this->output->createProgressBar($jumlah);
+            $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% | Waktu: %elapsed:6s% | Sisa: %remaining:6s%');
+            $bar->start();
+
+            $query->chunkById(100, function ($users) use ($bar, &$selesai): void {
                 foreach ($users as $user) {
                     $user->forceFill(['password' => Hash::make('password'), 'must_change_password' => true, 'remember_token' => null])->save();
+                    $selesai++;
+                    $bar->advance();
                 }
             });
+            $bar->finish();
+            $this->newLine(2);
+            $this->info($selesai.' akun berhasil diperbarui. Pengguna wajib mengganti kata sandi setelah masuk.');
         }
 
         return self::SUCCESS;

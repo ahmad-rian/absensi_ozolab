@@ -360,6 +360,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::put('pengaturan', [PengaturanController::class, 'update'])->name('admin.pengaturan.update');
         Route::post('pengaturan/upload-logo', [PengaturanController::class, 'uploadLogo'])->name('admin.pengaturan.upload-logo');
         Route::post('pengaturan/upload-favicon', [PengaturanController::class, 'uploadFavicon'])->name('admin.pengaturan.upload-favicon');
+        Route::post('pengaturan/branding-publik', [PengaturanController::class, 'publishBranding'])->name('admin.pengaturan.branding-publik');
     });
 
     Route::middleware(['permission:pengguna.access', 'feature:manajemen_pengguna'])->group(function () {
