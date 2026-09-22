@@ -6,8 +6,8 @@ use App\Enums\ParentRelation;
 use App\Enums\UserRole;
 use App\Models\ParentProfile;
 use App\Models\User;
+use App\Support\AlamatLoginOrangTua;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ParentProfileService
@@ -35,7 +35,7 @@ class ParentProfileService
             }
         }
         if ($existing) {
-            if ($email && str_ends_with($existing->user->email, '@internal.app')) {
+            if ($email && AlamatLoginOrangTua::bawaanSistem($existing->user->email)) {
                 $existing->user->update(['email' => $email]);
             }
             // Lengkapi email notifikasi jika sebelumnya kosong.
@@ -48,7 +48,7 @@ class ParentProfileService
 
         $user = User::create([
             'name' => $parentName,
-            'email' => $email ?: 'parent-'.Str::ulid().'@internal.app',
+            'email' => $email ?: AlamatLoginOrangTua::untuk($parentName),
             'password' => Hash::make('password'),
             'must_change_password' => true,
             'phone' => $phone,

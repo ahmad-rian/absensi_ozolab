@@ -1,74 +1,120 @@
-import { Head } from '@inertiajs/react';
+import { Download, ExternalLink } from 'lucide-react';
+import { KosongTanpaAnak, PortalPage } from '@/components/orangtua/portal-page';
+import type { Anak } from '@/components/orangtua/portal-page';
 import { Button } from '@/components/ui/button';
 import { download } from '@/routes/orangtua';
-import type { Child } from './anak';
+
+type Kartu = {
+    id: string;
+    name: string;
+    url: string | null;
+    drive_url: string | null;
+};
+
 export default function Galeri({
     student,
     cards,
 }: {
-    student: Child;
-    cards: {
-        id: string;
-        name: string;
-        url: string | null;
-        drive_url: string | null;
-    }[];
+    student: Anak | null;
+    cards: Kartu[];
+}) {
+    if (!student) {
+        return (
+            <PortalPage title="Foto & Kartu" student={null}>
+                <KosongTanpaAnak />
+            </PortalPage>
+        );
+    }
+
+    const kosong = !student.photo && cards.length === 0;
+
+    return (
+        <PortalPage
+            title="Foto & Kartu"
+            description={`Pas foto dan kartu OSIS ${student.name}.`}
+            student={student}
+        >
+            {kosong ? (
+                <p className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
+                    Pas foto dan kartu belum tersedia. Sekolah akan
+                    mengunggahnya setelah proses pemotretan selesai.
+                </p>
+            ) : (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {student.photo && (
+                        <Berkas
+                            judul="Pas Foto"
+                            gambar={student.photo}
+                            unduh={`${download('foto').url}?anak=${student.id}`}
+                            labelUnduh="Unduh pas foto"
+                        />
+                    )}
+                    {cards.map((card) => (
+                        <Berkas
+                            key={card.id}
+                            judul={card.name}
+                            gambar={card.url}
+                            unduh={card.url}
+                            drive={card.drive_url}
+                            labelUnduh="Unduh kartu"
+                        />
+                    ))}
+                </div>
+            )}
+        </PortalPage>
+    );
+}
+
+function Berkas({
+    judul,
+    gambar,
+    unduh,
+    drive,
+    labelUnduh,
+}: {
+    judul: string;
+    gambar: string | null;
+    unduh: string | null;
+    drive?: string | null;
+    labelUnduh: string;
 }) {
     return (
-        <main className="space-y-6 p-6">
-            <Head title="Foto dan kartu" />
-            <h1 className="text-2xl font-semibold">
-                Foto dan kartu {student.name}
-            </h1>
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {student.photo && (
-                    <section className="space-y-4 rounded-xl border p-5">
-                        <img
-                            src={student.photo}
-                            alt={`Pas foto ${student.name}`}
-                            className="h-64 w-full object-contain"
-                        />
-                        <Button asChild variant="outline">
-                            <a href={download([student.id, 'foto']).url}>
-                                Unduh pas foto
-                            </a>
-                        </Button>
-                    </section>
+        <figure className="flex flex-col overflow-hidden rounded-xl border bg-card">
+            <div className="flex h-56 items-center justify-center bg-muted/40 p-3">
+                {gambar ? (
+                    <img
+                        src={gambar}
+                        alt={judul}
+                        className="max-h-full max-w-full object-contain"
+                    />
+                ) : (
+                    <span className="text-sm text-muted-foreground">
+                        Pratinjau belum tersedia
+                    </span>
                 )}
-                {cards.map((card) => (
-                    <section
-                        className="space-y-4 rounded-xl border p-5"
-                        key={card.id}
-                    >
-                        <h2 className="font-semibold">{card.name}</h2>
-                        {card.url ? (
-                            <>
-                                <img
-                                    src={card.url}
-                                    alt={card.name}
-                                    className="h-64 w-full object-contain"
-                                />
-                                <Button asChild variant="outline">
-                                    <a href={card.url}>Unduh kartu</a>
-                                </Button>
-                            </>
-                        ) : card.drive_url ? (
-                            <a
-                                href={card.drive_url}
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                Lihat kartu di Google Drive
-                            </a>
-                        ) : (
-                            <p>Berkas belum tersedia.</p>
-                        )}
-                    </section>
-                ))}
             </div>
-            {!student.photo && cards.length === 0 && (
-                <p>Foto dan kartu belum tersedia.</p>
-            )}
-        </main>
+            <figcaption className="flex items-center justify-between gap-2 border-t p-3">
+                <span className="truncate text-sm font-medium">{judul}</span>
+                {unduh ? (
+                    <Button asChild size="sm" variant="outline">
+                        <a href={unduh} download>
+                            <Download className="size-4" />
+                            <span className="sr-only sm:not-sr-only">
+                                {labelUnduh}
+                            </span>
+                        </a>
+                    </Button>
+                ) : drive ? (
+                    <Button asChild size="sm" variant="outline">
+                        <a href={drive} target="_blank" rel="noreferrer">
+                            <ExternalLink className="size-4" />
+                            <span className="sr-only sm:not-sr-only">
+                                Lihat di Drive
+                            </span>
+                        </a>
+                    </Button>
+                ) : null}
+            </figcaption>
+        </figure>
     );
 }

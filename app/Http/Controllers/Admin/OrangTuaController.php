@@ -5,16 +5,23 @@ namespace App\Http\Controllers\Admin;
 use App\Enums\SchoolChannelType;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Classroom;
 use App\Models\ParentProfile;
+use App\Models\School;
 use App\Models\SchoolNotificationChannel;
 use App\Models\Student;
 use App\Models\User;
+use App\Support\AlamatLoginOrangTua;
 use App\Support\ParentProfileForm;
+use App\Support\SchoolTime;
 use App\Support\StudentAssetPurge;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -47,12 +54,65 @@ class OrangTuaController extends Controller
 
         return Inertia::render('admin/orang-tua/index', [
             'parents' => $parents,
+            'classrooms' => Classroom::forSchool()->orderBy('name')->get(['id', 'name']),
             'telegramActive' => $telegramActive,
             'filters' => [
                 'search' => $search,
                 'belum_login' => $request->boolean('belum_login'),
             ],
         ]);
+    }
+
+    /**
+     * Daftar akun orang tua sebagai PDF, untuk dibagikan sekolah.
+     *
+     * Sandi akun tidak diekspor. Sekolah membagikan sandi awal secara terpisah
+     * karena akun yang sudah digunakan atau dibuat manual dapat berbeda.
+     */
+    public function exportPdf(Request $request): HttpResponse
+    {
+        $request->validate(['classroom_id' => ['nullable', 'string', $this->belongsToSchool('classrooms')]]);
+
+        $sekolah = School::find(auth()->user()->school_id);
+        abort_unless($sekolah !== null, 404);
+
+        $kelas = $request->input('classroom_id')
+            ? Classroom::forSchool()->find($request->input('classroom_id'))
+            : null;
+
+        $siswa = Student::forSchool()
+            ->with(['classroom', 'parentProfile.user'])
+            ->whereNotNull('parent_profile_id')
+            ->when($kelas, fn ($query) => $query->where('classroom_id', $kelas->id))
+            ->orderBy('full_name')
+            ->get()
+            ->filter(fn (Student $student) => $student->parentProfile?->user !== null);
+
+        $baris = $siswa->map(fn (Student $student): array => [
+            'anak' => $student->full_name,
+            'kelas' => $student->classroom?->name ?? '-',
+            'nis' => (string) ($student->nis ?? '-'),
+            'wali' => $student->parentProfile->user->name,
+            'email' => $student->parentProfile->user->email,
+            'wa' => $student->parentProfile->whatsapp_number,
+            'siap' => ! str_ends_with($student->parentProfile->user->email, AlamatLoginOrangTua::DOMAIN_LAMA),
+        ])->values();
+
+        $pdf = Pdf::loadView('pdf.akun-orang-tua', [
+            'schoolName' => $sekolah->name,
+            'classroomName' => $kelas?->name,
+            'rows' => $baris,
+            'belumSiap' => $baris->where('siap', false)->count(),
+            'printedAt' => SchoolTime::now()->format('d/m/Y H:i'),
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download(sprintf(
+            'akun-orang-tua-%s-%s.pdf',
+            Str::slug($kelas?->name ?? $sekolah->name),
+            SchoolTime::now()->format('Y-m-d'),
+        ));
     }
 
     public function create(): Response

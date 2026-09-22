@@ -18,8 +18,10 @@ use App\Services\Import\StudentImportParser;
 use App\Services\ParentProfileService;
 use App\Support\XlsxDownload;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use OpenSpout\Reader\XLSX\Reader;
@@ -38,7 +40,7 @@ function portalFamily(array $settings = []): array
 test('parents login to their portal and admins keep their dashboard', function () {
     [$parent] = portalFamily();
     $this->post('/login', ['email' => $parent->email, 'password' => 'password'])->assertRedirect('/orangtua');
-    $this->get('/orangtua')->assertOk()->assertInertia(fn (Assert $page) => $page->component('orangtua/index')->has('children', 1));
+    $this->get('/orangtua')->assertOk()->assertInertia(fn (Assert $page) => $page->component('orangtua/beranda')->has('daftarAnak', 1));
     $this->get('/')->assertRedirect('/orangtua');
     $this->get('/admin/dashboard')->assertRedirect('/orangtua');
     $this->post('/logout');
@@ -46,12 +48,45 @@ test('parents login to their portal and admins keep their dashboard', function (
     $this->post('/login', ['email' => $admin->email, 'password' => 'password'])->assertRedirect('/admin/dashboard');
 });
 
-test('parents cannot access another child on any portal endpoint', function (string $suffix) {
+test('parents cannot access another child on any portal endpoint', function (string $path) {
     [$parent, $own, $school] = portalFamily();
     $other = Student::factory()->create(['school_id' => $school->id]);
-    $this->actingAs($parent)->get('/orangtua/anak/'.$other->id.$suffix)->assertForbidden();
-    $this->get('/orangtua/anak/'.$own->id)->assertOk();
-})->with(['', '/laporan', '/galeri', '/unduh/foto']);
+
+    // Anaknya kini konteks (`?anak=`), bukan segmen rute — dan id anak orang
+    // lain harus ditolak, bukan diam-diam diganti anak sendiri.
+    $this->actingAs($parent)->get($path.'?anak='.$other->id)->assertForbidden();
+    $this->get($path.'?anak='.$own->id)->assertOk();
+})->with(['/orangtua', '/orangtua/absensi', '/orangtua/sholat', '/orangtua/laporan', '/orangtua/galeri']);
+
+test('one child needs no picking and menus keep the chosen child', function () {
+    [$parent, $own] = portalFamily();
+
+    // Tanpa `?anak=` portal memakai anak pertama: keluarga dengan satu anak
+    // tidak boleh dipaksa memilih apa pun sebelum melihat datanya.
+    foreach (['/orangtua', '/orangtua/absensi', '/orangtua/laporan', '/orangtua/galeri'] as $path) {
+        $this->actingAs($parent)->get($path)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('student.id', $own->id));
+    }
+});
+
+test('the old child-scoped links still lead somewhere', function () {
+    [$parent, $own] = portalFamily();
+
+    $this->actingAs($parent)->get('/orangtua/anak/'.$own->id)->assertRedirect('/orangtua?anak='.$own->id);
+    $this->get('/orangtua/anak/'.$own->id.'/galeri')->assertRedirect('/orangtua?anak='.$own->id);
+});
+
+test('a parent without linked children still gets a page, not a wall', function () {
+    $school = School::factory()->create();
+    $user = User::factory()->create(['school_id' => $school->id]);
+    $user->assignRole('ORANG_TUA');
+    ParentProfile::factory()->create(['school_id' => $school->id, 'user_id' => $user->id]);
+
+    $this->actingAs($user)->get('/orangtua')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('student', null)->has('daftarAnak', 0));
+});
 
 test('password enforcement covers workspaces and settings and rejects the default password', function () {
     [$parent] = portalFamily();
@@ -94,10 +129,10 @@ test('password command only changes parents in the selected school and dry run c
 
 test('disabled prayer panels and downloads are unavailable', function () {
     [$parent, $student] = portalFamily(['prayer_dhuha_enabled' => false, 'prayer_enabled' => true]);
-    $this->actingAs($parent)->get('/orangtua/anak/'.$student->id)->assertOk()->assertInertia(fn (Assert $page) => $page->missing('panels.dhuha')->has('panels.dzuhur'));
-    $this->get('/orangtua/anak/'.$student->id.'/laporan?download=1&jenis=dhuha')->assertForbidden();
-    $this->get('/orangtua/anak/'.$student->id.'/laporan?download=1&jenis=semuanya')->assertOk()->assertHeader('content-type', 'application/pdf');
-    $this->get('/orangtua/anak/'.$student->id.'?start_date[]=bad')->assertSessionHasErrors('start_date');
+    $this->actingAs($parent)->get('/orangtua/sholat?anak='.$student->id)->assertOk()->assertInertia(fn (Assert $page) => $page->missing('panels.dhuha')->has('panels.dzuhur'));
+    $this->get('/orangtua/laporan?anak='.$student->id.'&download=1&jenis=dhuha')->assertForbidden();
+    $this->get('/orangtua/laporan?anak='.$student->id.'&download=1&jenis=semuanya')->assertOk()->assertHeader('content-type', 'application/pdf');
+    $this->get('/orangtua/absensi?anak='.$student->id.'&start_date[]=bad')->assertSessionHasErrors('start_date');
 });
 
 test('renaming permissions preserves custom role and direct user grants', function () {
@@ -205,12 +240,12 @@ test('gallery returns latest successful card per layout and protects downloads',
     $latest = CardGenerationLog::create($base);
     $latest->forceFill(['created_at' => now()->subDay()])->save();
     CardGenerationLog::create([...$base, 'status' => 'failed']);
-    $this->actingAs($parent)->get('/orangtua/anak/'.$student->id.'/galeri')->assertOk()->assertInertia(fn (Assert $page) => $page->has('cards', 1)->where('cards.0.id', $latest->id));
+    $this->actingAs($parent)->get('/orangtua/galeri?anak='.$student->id)->assertOk()->assertInertia(fn (Assert $page) => $page->has('cards', 1)->where('cards.0.id', $latest->id));
 
-    $this->get('/orangtua/anak/'.$student->id.'/unduh/foto')->assertDownload();
+    $this->get('/orangtua/unduh/foto?anak='.$student->id)->assertDownload();
     $foreign = Student::factory()->create(['school_id' => $school->id]);
     $log = CardGenerationLog::create(['school_id' => $school->id, 'student_id' => $foreign->id, 'type' => 'card', 'status' => 'completed', 'file_path' => 'photos/own.jpg']);
-    $this->get('/orangtua/anak/'.$student->id.'/unduh/'.$log->id)->assertNotFound();
+    $this->get('/orangtua/unduh/'.$log->id.'?anak='.$student->id)->assertNotFound();
 });
 
 test('xlsx sheet names are bounded and invalid characters are rejected', function () {
@@ -259,4 +294,91 @@ test('password command preserves admin accounts with an additional parent role',
     $this->artisan('ortu:setel-password', ['--force' => true])->assertSuccessful();
     expect($admin->fresh()->password)->toBe($hash);
     expect($admin->fresh()->must_change_password)->toBeFalse();
+});
+
+test('login addresses become sayable slugs and stay unique', function () {
+    $school = School::factory()->create();
+    $service = app(ParentProfileService::class);
+
+    // Nama yang wajar jadi slug apa adanya.
+    expect($service->findOrCreateFromRegistration($school->id, 'Siti Aminah', '628100000001')->user->email)
+        ->toBe('siti-aminah@tyas.app');
+
+    // Nama yang sama memang lumrah di satu sekolah; yang kedua dapat angka,
+    // bukan galat unique.
+    expect($service->findOrCreateFromRegistration($school->id, 'Siti Aminah', '628100000002')->user->email)
+        ->toBe('siti-aminah2@tyas.app');
+});
+
+test('unusable parent names fall back instead of producing nonsense addresses', function () {
+    $school = School::factory()->create();
+    $service = app(ParentProfileService::class);
+
+    // Data nyata memuat nomor telepon dan satu-dua huruf di kolom nama.
+    // Keduanya menghasilkan alamat yang tidak bisa dieja lewat telepon.
+    foreach (['+62 813-3056-7658', 'Aa', '...'] as $index => $nama) {
+        $email = $service->findOrCreateFromRegistration($school->id, $nama, '62899000000'.$index)->user->email;
+        expect($email)->toStartWith('wali')->toEndWith('@tyas.app');
+    }
+});
+
+test('the slug command rewrites only system addresses', function () {
+    [$parent, , $school] = portalFamily();
+    $parent->forceFill(['name' => 'Bapak Joko', 'email' => 'parent-'.Str::ulid().'@internal.app'])->save();
+
+    $asli = User::factory()->create(['school_id' => $school->id, 'email' => 'wali.asli@gmail.com']);
+    $asli->assignRole('ORANG_TUA');
+
+    $this->artisan('ortu:email-slug', ['--sekolah' => $school->id, '--dry-run' => true])->assertSuccessful();
+    expect($parent->fresh()->email)->toEndWith('@internal.app');
+
+    $this->artisan('ortu:email-slug', ['--sekolah' => $school->id])->assertSuccessful();
+
+    expect($parent->fresh()->email)->toBe('bapak-joko@tyas.app')
+        // Email sungguhan tidak pernah ditimpa: itu satu-satunya alamat yang
+        // bisa dipakai memulihkan sandi.
+        ->and($asli->fresh()->email)->toBe('wali.asli@gmail.com');
+});
+
+test('the parent account sheet lists children of the current school only', function () {
+    $admin = createAdminUser();
+    $kelas = Classroom::factory()->create(['school_id' => $admin->school_id, 'name' => '8G']);
+    $parent = ParentProfile::factory()->create(['school_id' => $admin->school_id]);
+    $parent->user->forceFill(['name' => 'Ibu Rahma', 'email' => 'ibu-rahma@tyas.app'])->save();
+    Student::factory()->create([
+        'school_id' => $admin->school_id,
+        'classroom_id' => $kelas->id,
+        'parent_profile_id' => $parent->id,
+        'full_name' => 'Anak Sekolah Ini',
+    ]);
+
+    // Sekolah lain tidak boleh ikut terbawa ke lembar yang dibagikan.
+    $lain = ParentProfile::factory()->create();
+    Student::factory()->create(['school_id' => $lain->school_id, 'parent_profile_id' => $lain->id]);
+
+    // Isi PDF-nya biner terkompresi, jadi yang diperiksa data yang masuk ke
+    // template — itu yang menentukan benar atau tidaknya, bukan ukuran berkas.
+    $baris = null;
+    Event::listen('composing: pdf.akun-orang-tua', function ($view) use (&$baris): void {
+        $baris = $view->getData()['rows'];
+    });
+
+    $this->actingAs($admin)->get('/admin/orang-tua/export-pdf')
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+
+    expect($baris)->toHaveCount(1)
+        // Nama siswa disimpan huruf besar oleh aplikasi ini, bukan oleh ekspor.
+        ->and($baris[0]['anak'])->toBe('ANAK SEKOLAH INI')
+        ->and($baris[0]['kelas'])->toBe('8G')
+        ->and($baris[0]['wali'])->toBe('Ibu Rahma')
+        ->and($baris[0]['email'])->toBe('ibu-rahma@tyas.app');
+});
+
+test('the account sheet route is not swallowed by the resource parameter', function () {
+    $admin = createAdminUser();
+
+    // `orang-tua/{parentProfile}` akan menelan `orang-tua/export-pdf` kalau
+    // urutan pendaftarannya terbalik, dan hasilnya 404 yang membingungkan.
+    $this->actingAs($admin)->get('/admin/orang-tua/export-pdf')->assertOk();
 });

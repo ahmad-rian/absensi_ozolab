@@ -1,6 +1,15 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Eye, Pencil, Plus, Search, Send, Trash2 } from 'lucide-react';
+import {
+    Eye,
+    FileDown,
+    Pencil,
+    Plus,
+    Search,
+    Send,
+    Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
+import { exportPdf } from '@/actions/App/Http/Controllers/Admin/OrangTuaController';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -49,6 +58,7 @@ type Filters = {
 
 type PageProps = {
     parents: PaginatedParents;
+    classrooms: { id: string; name: string }[];
     telegramActive: boolean;
     filters: Filters;
 };
@@ -65,9 +75,11 @@ function relationLabel(relation: string): string {
 
 export default function OrangTuaIndex({
     parents,
+    classrooms,
     telegramActive,
     filters,
 }: PageProps) {
+    const [classroomId, setClassroomId] = useState('');
     const [search, setSearch] = useState(filters.search ?? '');
 
     function handleSearch(value: string) {
@@ -96,12 +108,52 @@ export default function OrangTuaIndex({
                             Kelola data orang tua/wali dan nomor WhatsApp.
                         </p>
                     </div>
-                    <Button asChild>
-                        <Link href="/admin/orang-tua/create">
-                            <Plus className="mr-2 size-4" />
-                            Tambah Orang Tua
-                        </Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        {/* Tautan biasa, bukan Link Inertia: balasannya berkas
+                            unduhan yang tidak bisa diterima navigasi Inertia. */}
+                        <label className="flex items-center gap-2 text-sm">
+                            Kelas untuk PDF
+                            <select
+                                aria-label="Kelas untuk PDF akun"
+                                value={classroomId}
+                                onChange={(event) =>
+                                    setClassroomId(event.target.value)
+                                }
+                                className="h-9 rounded-md border bg-background px-3"
+                            >
+                                <option value="">Semua kelas</option>
+                                {classrooms.map((classroom) => (
+                                    <option
+                                        key={classroom.id}
+                                        value={classroom.id}
+                                    >
+                                        {classroom.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <Button asChild variant="outline">
+                            <a
+                                href={
+                                    exportPdf({
+                                        query: {
+                                            classroom_id:
+                                                classroomId || undefined,
+                                        },
+                                    }).url
+                                }
+                            >
+                                <FileDown className="mr-2 size-4" />
+                                Unduh Daftar Akun
+                            </a>
+                        </Button>
+                        <Button asChild>
+                            <Link href="/admin/orang-tua/create">
+                                <Plus className="mr-2 size-4" />
+                                Tambah Orang Tua
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Search */}

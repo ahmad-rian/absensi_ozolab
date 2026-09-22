@@ -250,6 +250,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     });
 
     Route::middleware(['permission:orang-tua.access', 'feature:master_siswa'])->group(function () {
+        // Wajib sebelum resource: `orang-tua/{parentProfile}` akan menelan
+        // `orang-tua/export-pdf` dan menjadikannya pencarian id.
+        Route::get('orang-tua/export-pdf', [OrangTuaController::class, 'exportPdf'])->name('admin.orang-tua.export-pdf');
         Route::resource('orang-tua', OrangTuaController::class)->parameter('orang-tua', 'parentProfile')->names('admin.orang-tua');
 
         // Pintasan dari halaman detail siswa. Sengaja di grup ini, bukan grup
@@ -471,12 +474,28 @@ Route::middleware('auth')->group(function () {
     Route::put('ganti-password', [ChangeRequiredPasswordController::class, 'update'])->middleware('throttle:6,1')->name('password.required.update');
 });
 
-Route::middleware(['auth', 'permission:portal-orang-tua.access', 'password.ganti'])->prefix('orangtua')->name('orangtua.')->group(function () {
-    Route::get('/', [PortalController::class, 'index'])->name('index');
-    Route::middleware(EnsureAnakSendiri::class)->prefix('anak/{anak}')->group(function () {
-        Route::get('/', [PortalController::class, 'show'])->name('anak');
+/*
+ | Portal orang tua.
+ |
+ | Anaknya TIDAK lagi jadi segmen rute. Dulu setiap menu berada di bawah
+ | `anak/{anak}/…`, jadi orang tua harus membuka anaknya dulu sebelum bisa
+ | melihat apa pun — satu klik tambahan di setiap kunjungan, dan bagi mayoritas
+ | yang hanya punya satu anak klik itu tidak memilih apa-apa.
+ |
+ | Sekarang anaknya adalah konteks (`?anak=`), dipilih di sidebar dan diingat
+ | lewat tautan antar menu. EnsureAnakSendiri yang membacanya, menetapkan anak
+ | pertama bila tidak disebut, dan tetap menolak anak milik orang lain.
+ */
+Route::middleware(['auth', 'permission:portal-orang-tua.access', 'password.ganti', EnsureAnakSendiri::class])
+    ->prefix('orangtua')->name('orangtua.')->group(function () {
+        Route::get('/', [PortalController::class, 'index'])->name('index');
+        Route::get('absensi', [PortalController::class, 'absensi'])->name('absensi');
+        Route::get('sholat', [PortalController::class, 'sholat'])->name('sholat');
         Route::get('laporan', [PortalController::class, 'laporan'])->name('laporan');
         Route::get('galeri', [PortalController::class, 'galeri'])->name('galeri');
         Route::get('unduh/{asset}', [PortalController::class, 'download'])->name('download');
+
+        // Bentuk lama yang sudah beredar sebagai tautan; diarahkan, bukan 404.
+        Route::get('anak/{anak}/{sisa?}', fn (string $anak) => redirect()->route('orangtua.index', ['anak' => $anak]))
+            ->where('sisa', '.*')->name('anak');
     });
-});
