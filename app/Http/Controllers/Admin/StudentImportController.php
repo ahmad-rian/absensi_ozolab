@@ -34,13 +34,13 @@ class StudentImportController extends Controller
     /** @var list<string> */
     private const TEMPLATE_HEADER = [
         'NISN', 'NIS', 'Nama', 'Kelas', 'JK', 'Agama', 'No Absen',
-        'Tempat Lahir', 'Tanggal Lahir', 'Alamat', 'Nama Orang Tua', 'No HP',
+        'Tempat Lahir', 'Tanggal Lahir', 'Alamat', 'Nama Orang Tua', 'No HP', 'Email Orang Tua',
     ];
 
     /** @var list<list<string>> */
     private const TEMPLATE_SAMPLE_ROWS = [
-        ['0071234567', '2025001', 'Ahmad Fauzi', '7A', 'L', 'Islam', '1', 'Bandung', '12/03/2012', 'Jl. Merdeka No. 10', 'Budi Santoso', '081234567890'],
-        ['0071234568', '2025002', 'Siti Aminah', '7A', 'P', 'Islam', '2', 'Cimahi', '25/07/2012', 'Jl. Melati No. 4', 'Rahmat Hidayat', '081298765432'],
+        ['0071234567', '2025001', 'Ahmad Fauzi', '7A', 'L', 'Islam', '1', 'Bandung', '12/03/2012', 'Jl. Merdeka No. 10', 'Budi Santoso', '081234567890', 'budi@example.com'],
+        ['0071234568', '2025002', 'Siti Aminah', '7A', 'P', 'Islam', '2', 'Cimahi', '25/07/2012', 'Jl. Melati No. 4', 'Rahmat Hidayat', '081298765432', 'rahmat@example.com'],
     ];
 
     public function index(): Response

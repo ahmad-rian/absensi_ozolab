@@ -16,7 +16,6 @@ use App\Support\WhatsAppQuota;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Validator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,11 +42,11 @@ class PengaturanController extends Controller
         ],
         'sholat' => [
             'prayer_dhuha_enabled' => ['required', 'boolean'],
-            'prayer_dhuha_start' => ['required', 'date_format:H:i'],
-            'prayer_dhuha_end' => ['required', 'date_format:H:i', 'after:prayer_dhuha_start'],
+            'prayer_dhuha_start' => ['sometimes', 'date_format:H:i'],
+            'prayer_dhuha_end' => ['sometimes', 'date_format:H:i', 'after:prayer_dhuha_start'],
             'prayer_enabled' => ['required', 'boolean'],
-            'prayer_start' => ['required', 'date_format:H:i'],
-            'prayer_end' => ['required', 'date_format:H:i', 'after:prayer_start'],
+            'prayer_start' => ['sometimes', 'date_format:H:i'],
+            'prayer_end' => ['sometimes', 'date_format:H:i', 'after:prayer_start'],
             'prayer_all_religions' => ['required', 'boolean'],
         ],
         'notifikasi' => [
@@ -223,7 +222,7 @@ class PengaturanController extends Controller
         $validator = validator($request->all(), $rules);
 
         if ($section === 'sholat') {
-            $this->assertPrayerWindowsDoNotOverlap($validator);
+            PrayerSchedule::assertWindowsDoNotOverlap($validator, app('currentSchool')->settings ?? []);
         }
 
         $validated = $validator->validate();
@@ -315,37 +314,6 @@ class PengaturanController extends Controller
      * tidak beririsan. Batas jendela inklusif di kedua ujung, jadi "selesai
      * 09:00" + "mulai 09:00" pun sudah ambigu.
      */
-    private function assertPrayerWindowsDoNotOverlap(Validator $validator): void
-    {
-        $validator->after(function (Validator $validator) {
-            $data = $validator->getData();
-
-            if (! ($data['prayer_dhuha_enabled'] ?? false) || ! ($data['prayer_enabled'] ?? false)) {
-                return;
-            }
-
-            if ($validator->errors()->isNotEmpty()) {
-                return;
-            }
-
-            $school = new School(['settings' => [
-                'prayer_dhuha_enabled' => true,
-                'prayer_dhuha_start' => $data['prayer_dhuha_start'],
-                'prayer_dhuha_end' => $data['prayer_dhuha_end'],
-                'prayer_enabled' => true,
-                'prayer_start' => $data['prayer_start'],
-                'prayer_end' => $data['prayer_end'],
-            ]]);
-
-            if (PrayerSchedule::for($school)->overlapping() !== []) {
-                $validator->errors()->add(
-                    'prayer_dhuha_end',
-                    'Jendela Dhuha tidak boleh beririsan dengan jendela Dzuhur.'
-                );
-            }
-        });
-    }
-
     /**
      * Kembali ke tab yang barusan disimpan; tanpa parameter ini redirect
      * membuang query string dan admin terlempar ke tab pertama.

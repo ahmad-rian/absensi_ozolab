@@ -13,7 +13,7 @@ class ImpersonationController extends Controller
     private const SESSION_KEY = 'impersonator_id';
 
     /**
-     * Masuk sebagai user lain. Hanya untuk pemegang `impersonate.access`
+     * Masuk sebagai user lain. Hanya untuk pemegang `masuk-sebagai.access`
      * (default: SUPER_ADMIN saja).
      */
     public function store(Request $request, User $user): RedirectResponse
@@ -21,7 +21,7 @@ class ImpersonationController extends Controller
         $impersonator = $request->user();
 
         // Gate super-admin sebelumnya hanya ada di JSX; endpointnya bisa
-        // dipanggil langsung oleh siapa pun yang memegang impersonate.access,
+        // dipanggil langsung oleh siapa pun yang memegang masuk-sebagai.access,
         // termasuk untuk user sekolah lain.
         abort_unless($impersonator->isSuperAdmin(), 403, 'Hanya Super Admin yang bisa menyamar.');
         abort_if($request->session()->has(self::SESSION_KEY), 403, 'Anda sudah dalam mode menyamar.');

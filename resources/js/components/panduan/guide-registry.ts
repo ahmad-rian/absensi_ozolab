@@ -176,7 +176,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
                 title: 'Kartu & Album',
                 summary: 'Frame, layout, generate kartu, dan album foto.',
                 keywords: ['kartu', 'osis', 'perpustakaan', 'album', 'frame', 'cetak'],
-                permission: 'card-layouts.access',
+                permission: 'layout-kartu.access',
                 feature: 'kartu_album',
             },
             {
@@ -184,7 +184,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
                 title: 'Pengguna',
                 summary: 'Menambah admin dan guru, serta hak akses tambahan.',
                 keywords: ['pengguna', 'user', 'admin', 'guru', 'akses'],
-                permission: 'users.access',
+                permission: 'pengguna.access',
                 feature: 'manajemen_pengguna',
             },
             {
@@ -192,7 +192,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
                 title: 'Google Drive',
                 summary: 'Folder foto siswa dan hasil kartu.',
                 keywords: ['drive', 'google', 'foto', 'folder'],
-                permission: 'drive-config.access',
+                permission: 'google-drive.access',
                 feature: 'integrasi_drive',
             },
             {
@@ -200,7 +200,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
                 title: 'WhatsApp',
                 summary: 'Status gateway notifikasi sekolah.',
                 keywords: ['whatsapp', 'wa', 'gateway', 'fonnte'],
-                permission: 'wa-config.access',
+                permission: 'whatsapp.access',
                 feature: 'integrasi_whatsapp',
             },
             {
@@ -215,7 +215,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
                 title: 'Sekolah',
                 summary: 'Membuat dan mengelola sekolah, serta token scan.',
                 keywords: ['sekolah', 'tenant', 'token', 'scanner'],
-                permission: 'schools.access',
+                permission: 'sekolah.access',
                 superAdminOnly: true,
             },
             {
@@ -223,7 +223,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
                 title: 'Role & Hak Akses',
                 summary: 'Role bawaan dan role custom.',
                 keywords: ['role', 'permission', 'hak akses'],
-                permission: 'roles.access',
+                permission: 'hak-akses.access',
                 superAdminOnly: true,
             },
             {
@@ -231,7 +231,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
                 title: 'Gateway Notifikasi',
                 summary: 'Kredensial WhatsApp, Telegram, dan SMTP per sekolah.',
                 keywords: ['gateway', 'smtp', 'telegram', 'fonnte', 'kredensial'],
-                permission: 'notification-gateways.access',
+                permission: 'gateway-notifikasi.access',
                 superAdminOnly: true,
             },
             {

@@ -10,32 +10,33 @@ namespace App\Enums;
  */
 enum AppModule: string
 {
-    case Dashboard = 'dashboard';
+    case PortalOrangTua = 'portal-orang-tua';
+    case Dashboard = 'beranda';
     case Siswa = 'siswa';
     case OrangTua = 'orang-tua';
     case Kelas = 'kelas';
     case JadwalAbsensi = 'jadwal-absensi';
     case Absensi = 'absensi';
-    case RfidCards = 'rfid-cards';
+    case RfidCards = 'kartu-rfid';
     case KunjunganPerpus = 'kunjungan-perpus';
     case Laporan = 'laporan';
     case Notifikasi = 'notifikasi';
-    case Frames = 'frames';
-    case CardLayouts = 'card-layouts';
-    case CardGeneration = 'card-generation';
-    case AlbumLayouts = 'album-layouts';
-    case AlbumGeneration = 'album-generation';
-    case PhotoSheets = 'photo-sheets';
+    case Frames = 'bingkai';
+    case CardLayouts = 'layout-kartu';
+    case CardGeneration = 'generate-kartu';
+    case AlbumLayouts = 'layout-album';
+    case AlbumGeneration = 'generate-album';
+    case PhotoSheets = 'pas-foto';
     case Pengaturan = 'pengaturan';
-    case Users = 'users';
-    case DriveConfig = 'drive-config';
-    case WaConfig = 'wa-config';
-    case Roles = 'roles';
-    case Schools = 'schools';
-    case NotificationGateways = 'notification-gateways';
-    case CardForms = 'card-forms';
+    case Users = 'pengguna';
+    case DriveConfig = 'google-drive';
+    case WaConfig = 'whatsapp';
+    case Roles = 'hak-akses';
+    case Schools = 'sekolah';
+    case NotificationGateways = 'gateway-notifikasi';
+    case CardForms = 'form-kartu';
     case KartuBebas = 'kartu-bebas';
-    case Impersonate = 'impersonate';
+    case Impersonate = 'masuk-sebagai';
     case SemuaSekolah = 'semua-sekolah';
 
     public function permission(): string
@@ -46,7 +47,8 @@ enum AppModule: string
     public function label(): string
     {
         return match ($this) {
-            self::Dashboard => 'Dashboard',
+            self::PortalOrangTua => 'Portal Orang Tua',
+            self::Dashboard => 'Beranda',
             self::Siswa => 'Siswa',
             self::OrangTua => 'Orang Tua',
             self::Kelas => 'Kelas',
@@ -82,7 +84,7 @@ enum AppModule: string
             self::Dashboard, self::Siswa, self::OrangTua, self::Kelas,
             self::JadwalAbsensi, self::Absensi, self::RfidCards,
             self::KunjunganPerpus, self::Laporan,
-            self::Notifikasi => 'Akademik',
+            self::PortalOrangTua, self::Notifikasi => 'Akademik',
 
             self::Frames, self::CardLayouts, self::CardGeneration,
             self::AlbumLayouts, self::AlbumGeneration, self::PhotoSheets => 'Kartu & Album',
@@ -128,7 +130,7 @@ enum AppModule: string
                 self::Laporan, self::Notifikasi,
             ],
 
-            UserRole::OrangTua => [],
+            UserRole::OrangTua => [self::PortalOrangTua],
         };
     }
 }

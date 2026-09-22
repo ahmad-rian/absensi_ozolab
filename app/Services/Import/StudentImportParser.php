@@ -50,6 +50,7 @@ class StudentImportParser
         'birth_place' => ['tempatlahir', 'birthplace'],
         'birth_date' => ['tanggallahir', 'birthdate', 'tgllahir'],
         'address' => ['alamat', 'address'],
+        'parent_email' => ['emailortu', 'emailorangtua', 'emailwali', 'parentemail'],
         'parent_name' => ['namaorangtua', 'namaortu', 'parentname'],
         'parent_phone' => ['nohp', 'nomorhp', 'whatsapp', 'parentphone'],
     ];
@@ -202,6 +203,13 @@ class StudentImportParser
             if (($fields[$field] ?? '') !== '') {
                 $data[$field] = $fields[$field];
             }
+        }
+
+        if (($fields['parent_email'] ?? '') !== '') {
+            if (! filter_var($fields['parent_email'], FILTER_VALIDATE_EMAIL)) {
+                return $this->reject($rowNumber, 'Format email orang tua tidak valid.');
+            }
+            $data['parent_email'] = $fields['parent_email'];
         }
 
         if (($fields['parent_phone'] ?? '') !== '') {

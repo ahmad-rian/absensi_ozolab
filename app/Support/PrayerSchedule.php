@@ -6,6 +6,7 @@ use App\Enums\PrayerType;
 use App\Models\School;
 use App\Models\Student;
 use Carbon\Carbon;
+use Illuminate\Validation\Validator;
 
 /**
  * Kumpulan jendela sholat satu sekolah.
@@ -152,5 +153,29 @@ class PrayerSchedule
             'windows_sentence' => $this->anyEnabled() ? $this->windowsSentence() : null,
             'windows_label' => $this->anyEnabled() ? $this->windowsLabel() : null,
         ];
+    }
+
+    public static function assertWindowsDoNotOverlap(Validator $validator, array $settings = []): void
+    {
+        $validator->after(function (Validator $validator) use ($settings) {
+            $data = array_replace($settings, $validator->getData());
+
+            if (! ($data['prayer_dhuha_enabled'] ?? false) || ! ($data['prayer_enabled'] ?? false)) {
+                return;
+            }
+
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $school = new School(['settings' => $data]);
+
+            if (PrayerSchedule::for($school)->overlapping() !== []) {
+                $validator->errors()->add(
+                    'prayer_dhuha_end',
+                    'Jendela Dhuha tidak boleh beririsan dengan jendela Dzuhur.'
+                );
+            }
+        });
     }
 }

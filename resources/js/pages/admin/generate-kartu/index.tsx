@@ -7,8 +7,21 @@ import type { Progres } from '@/components/shared/progres-generate';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
 type Opsi = { id: string; name: string };
@@ -35,7 +48,7 @@ type Batch = {
 
 type PageProps = {
     filters: { school_id: string; classroom_id: string };
-    schools: Opsi[];
+    schoolName: string | null;
     classrooms: Opsi[];
     ringkasan: Ringkasan | null;
     batchBerjalan: Batch | null;
@@ -46,24 +59,22 @@ type PageProps = {
 // halaman daftar siswa.
 const SEMUA = 'all';
 
-export default function GenerateKartuMassal({ filters, schools, classrooms, ringkasan, batchBerjalan }: PageProps) {
+export default function GenerateKartuMassal({
+    filters,
+    schoolName,
+    classrooms,
+    ringkasan,
+    batchBerjalan,
+}: PageProps) {
     const { post, processing, errors } = useForm({
         school_id: filters.school_id,
         classroom_id: filters.classroom_id,
     });
 
-    function pilihSekolah(schoolId: string) {
-        // Kelas ikut dikosongkan: nama kelas berulang di setiap sekolah, dan
-        // membawa `classroom_id` lama ke sekolah baru hanya menghasilkan filter
-        // yang menunjuk kelas milik orang lain.
-        router.get('/admin/generate-kartu', { school_id: schoolId }, { preserveState: true, replace: true });
-    }
-
     function pilihKelas(classroomId: string) {
         router.get(
             '/admin/generate-kartu',
             {
-                school_id: filters.school_id,
                 ...(classroomId === SEMUA ? {} : { classroom_id: classroomId }),
             },
             { preserveState: true, replace: true },
@@ -107,9 +118,12 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
             <Head title="Generate Kartu" />
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Generate Kartu</h1>
-                    <p className="text-muted-foreground text-sm">
-                        Membuat lembar pas foto 4R serta kartu OSIS depan dan belakang untuk satu sekolah atau satu kelas sekaligus.
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        Generate Kartu
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Membuat lembar pas foto 4R serta kartu OSIS depan dan
+                        belakang untuk satu sekolah atau satu kelas sekaligus.
                     </p>
                 </div>
 
@@ -120,19 +134,14 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                     <CardContent className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
                             <Label>Sekolah</Label>
-                            <Select value={filters.school_id || undefined} onValueChange={pilihSekolah}>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Pilih sekolah" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {schools.map((s) => (
-                                        <SelectItem key={s.id} value={s.id}>
-                                            {s.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {errors.school_id && <p className="text-destructive text-sm">{errors.school_id}</p>}
+                            <p className="font-medium">
+                                {schoolName ?? 'Pilih sekolah di sidebar'}
+                            </p>
+                            {errors.school_id && (
+                                <p className="text-sm text-destructive">
+                                    {errors.school_id}
+                                </p>
+                            )}
                         </div>
 
                         <div className="grid gap-2">
@@ -143,10 +152,18 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                                 disabled={!filters.school_id}
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue placeholder={filters.school_id ? 'Semua kelas' : 'Pilih sekolah dulu'} />
+                                    <SelectValue
+                                        placeholder={
+                                            filters.school_id
+                                                ? 'Semua kelas'
+                                                : 'Pilih sekolah dulu'
+                                        }
+                                    />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={SEMUA}>Semua kelas</SelectItem>
+                                    <SelectItem value={SEMUA}>
+                                        Semua kelas
+                                    </SelectItem>
                                     {classrooms.map((c) => (
                                         <SelectItem key={c.id} value={c.id}>
                                             {c.name}
@@ -154,7 +171,11 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {errors.classroom_id && <p className="text-destructive text-sm">{errors.classroom_id}</p>}
+                            {errors.classroom_id && (
+                                <p className="text-sm text-destructive">
+                                    {errors.classroom_id}
+                                </p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -166,7 +187,9 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                         </CardHeader>
                         <CardContent className="grid gap-4">
                             {ringkasan.total === 0 ? (
-                                <p className="text-muted-foreground text-sm">Tidak ada siswa aktif pada pilihan ini.</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Tidak ada siswa aktif pada pilihan ini.
+                                </p>
                             ) : (
                                 <div
                                     className={`flex items-start gap-3 rounded-lg border p-4 ${
@@ -182,9 +205,11 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                                     )}
                                     <div>
                                         <p className="text-sm font-semibold">
-                                            {ringkasan.berfoto} dari {ringkasan.total} siswa punya pas foto
+                                            {ringkasan.berfoto} dari{' '}
+                                            {ringkasan.total} siswa punya pas
+                                            foto
                                         </p>
-                                        <p className="text-muted-foreground mt-0.5 text-sm">
+                                        <p className="mt-0.5 text-sm text-muted-foreground">
                                             {siap
                                                 ? 'Semua siap. Pas foto 4R dan kartu OSIS bisa dibuat sekarang.'
                                                 : `${kurang} siswa belum punya pas foto. Kartu tanpa foto tetap jadi — dengan kotak kosong di tempat wajahnya — jadi generate ditahan sampai semuanya lengkap.`}
@@ -201,17 +226,26 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                                                 <TableHead>Nama</TableHead>
                                                 <TableHead>NIS</TableHead>
                                                 <TableHead>Kelas</TableHead>
-                                                <TableHead className="text-right">Aksi</TableHead>
+                                                <TableHead className="text-right">
+                                                    Aksi
+                                                </TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {ringkasan.tanpa_foto.map((s, i) => (
-                                                <TableRow key={s.id}>
-                                                    <TableCell className="font-medium">{s.full_name}</TableCell>
-                                                    <TableCell className="tabular-nums">{s.nis ?? '—'}</TableCell>
-                                                    <TableCell>{s.classroom ?? '—'}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        {/*
+                                            {ringkasan.tanpa_foto.map(
+                                                (s, i) => (
+                                                    <TableRow key={s.id}>
+                                                        <TableCell className="font-medium">
+                                                            {s.full_name}
+                                                        </TableCell>
+                                                        <TableCell className="tabular-nums">
+                                                            {s.nis ?? '—'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {s.classroom ?? '—'}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            {/*
                                                             Modal di tempat, bukan tautan ke halaman edit.
 
                                                             Tautan lama tidak sekadar lambat — ia 404 untuk
@@ -219,22 +253,29 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                                                             keadaan normal layar lintas sekolah ini. Lihat
                                                             GenerateKartuMassalController::unggahFoto.
                                                         */}
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => setBarisFoto(i)}
-                                                        >
-                                                            Pasang foto
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    setBarisFoto(
+                                                                        i,
+                                                                    )
+                                                                }
+                                                            >
+                                                                Pasang foto
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ),
+                                            )}
                                         </TableBody>
                                     </Table>
 
                                     {kurang > ringkasan.tanpa_foto.length && (
-                                        <p className="text-muted-foreground mt-2 text-xs">
-                                            Menampilkan {ringkasan.tanpa_foto.length} dari {kurang} siswa tanpa foto.
+                                        <p className="mt-2 text-xs text-muted-foreground">
+                                            Menampilkan{' '}
+                                            {ringkasan.tanpa_foto.length} dari{' '}
+                                            {kurang} siswa tanpa foto.
                                         </p>
                                     )}
                                 </div>
@@ -242,7 +283,11 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
 
                             <div>
                                 <Button
-                                    onClick={() => post('/admin/generate-kartu', { preserveScroll: true })}
+                                    onClick={() =>
+                                        post('/admin/generate-kartu', {
+                                            preserveScroll: true,
+                                        })
+                                    }
                                     disabled={!siap || processing || berjalan}
                                 >
                                     {processing ? (
@@ -263,7 +308,9 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                         siswa={ringkasan.tanpa_foto}
                         mulaiDari={barisFoto}
                         schoolId={filters.school_id}
-                        urlUnggah={(id) => `/admin/generate-kartu/siswa/${id}/foto`}
+                        urlUnggah={(id) =>
+                            `/admin/generate-kartu/siswa/${id}/foto`
+                        }
                         onTutup={() => setBarisFoto(null)}
                     />
                 )}
@@ -274,12 +321,21 @@ export default function GenerateKartuMassal({ filters, schools, classrooms, ring
                             <CardTitle>Kemajuan</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-3">
-                            <p className="text-muted-foreground text-sm">
+                            <p className="text-sm text-muted-foreground">
                                 Dimulai {batchBerjalan.dibuat}
-                                {batchBerjalan.kelas ? ` · kelas ${batchBerjalan.kelas}` : ' · seluruh sekolah'}
+                                {batchBerjalan.kelas
+                                    ? ` · kelas ${batchBerjalan.kelas}`
+                                    : ' · seluruh sekolah'}
                             </p>
-                            <ProgresGenerate progres={batchBerjalan.progres} label="Membuat pas foto 4R dan kartu OSIS" unit="berkas" />
-                            <Link href="/admin/card-generation" className="text-sm text-blue-600 hover:underline">
+                            <ProgresGenerate
+                                progres={batchBerjalan.progres}
+                                label="Membuat pas foto 4R dan kartu OSIS"
+                                unit="berkas"
+                            />
+                            <Link
+                                href="/admin/card-generation"
+                                className="text-sm text-blue-600 hover:underline"
+                            >
                                 Buka Riwayat Kartu untuk melihat hasil per siswa
                             </Link>
                         </CardContent>

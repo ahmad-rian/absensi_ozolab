@@ -1,4 +1,11 @@
-import { Head, Link, router, useForm, usePage, WhenVisible } from '@inertiajs/react';
+import {
+    Head,
+    Link,
+    router,
+    useForm,
+    usePage,
+    WhenVisible,
+} from '@inertiajs/react';
 import {
     AlarmClock,
     Aperture,
@@ -22,28 +29,60 @@ import {
     UserCheck,
     UserX,
 } from 'lucide-react';
-import { type FormEvent, useEffect, useState } from 'react';
+import {  useEffect, useState } from 'react';
+import type {FormEvent} from 'react';
 import { refreshDrivePhoto as refreshDrivePhotoRoute } from '@/actions/App/Http/Controllers/Admin/SiswaController';
+import { combinedPdf } from '@/actions/App/Http/Controllers/Admin/StudentReportController';
 import InputError from '@/components/input-error';
-import { ATTENDANCE_SERIES, PRAYER_SERIES } from '@/components/student/daily-bar-chart';
+import {
+    ATTENDANCE_SERIES,
+    PRAYER_SERIES,
+} from '@/components/student/daily-bar-chart';
 import { PrayerMembershipCard } from '@/components/student/prayer-membership-card';
 import { reportExports } from '@/components/student/range-bar';
-import { StatsPanel, type TileSpec } from '@/components/student/stats-panel';
-import { attendanceSlices, prayerSlices } from '@/components/student/status-pie';
+import { StatsPanel  } from '@/components/student/stats-panel';
+import type {TileSpec} from '@/components/student/stats-panel';
+import {
+    attendanceSlices,
+    prayerSlices,
+} from '@/components/student/status-pie';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { dashboard } from '@/routes';
 import type { SchoolFeatureMap } from '@/types';
 import type { ParentProfile as ParentProfileModel } from '@/types/models';
-import type { AttendanceStats, PrayerStats, RangeFilters } from '@/types/student-stats';
+import type {
+    AttendanceStats,
+    PrayerStats,
+    RangeFilters,
+} from '@/types/student-stats';
 
 type Classroom = {
     id: string;
@@ -161,21 +200,24 @@ const CARD_TYPES: { value: string; label: string }[] = [
     { value: 'identitas', label: 'Kartu Identitas' },
 ];
 
-
-const sheetStatusConfig: Record<string, { label: string; className: string }> = {
-    completed: {
-        label: 'Selesai',
-        className: 'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900 dark:text-green-300',
-    },
-    failed: {
-        label: 'Gagal',
-        className: 'border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900 dark:text-red-300',
-    },
-    processing: {
-        label: 'Proses',
-        className: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900 dark:text-amber-300',
-    },
-};
+const sheetStatusConfig: Record<string, { label: string; className: string }> =
+    {
+        completed: {
+            label: 'Selesai',
+            className:
+                'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900 dark:text-green-300',
+        },
+        failed: {
+            label: 'Gagal',
+            className:
+                'border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900 dark:text-red-300',
+        },
+        processing: {
+            label: 'Proses',
+            className:
+                'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900 dark:text-amber-300',
+        },
+    };
 
 /**
  * Penanda keadaan pas foto siswa.
@@ -185,7 +227,10 @@ const sheetStatusConfig: Record<string, { label: string; className: string }> = 
  * tanpa berkas Drive berarti fotonya tersimpan di server sementara integrasi
  * Drive sekolahnya mati — itu bukan kegagalan, jadi tidak diberi warna merah.
  */
-function photoStatusBadge(status: PhotoStatus | null): { label: string; className: string } {
+function photoStatusBadge(status: PhotoStatus | null): {
+    label: string;
+    className: string;
+} {
     const netral = 'border-muted bg-muted text-muted-foreground';
 
     if (!status) {
@@ -193,15 +238,24 @@ function photoStatusBadge(status: PhotoStatus | null): { label: string; classNam
     }
 
     if (status.status === 'processing') {
-        return { label: 'Sedang diunggah', className: sheetStatusConfig.processing.className };
+        return {
+            label: 'Sedang diunggah',
+            className: sheetStatusConfig.processing.className,
+        };
     }
 
     if (status.status === 'failed') {
-        return { label: 'Gagal diunggah', className: sheetStatusConfig.failed.className };
+        return {
+            label: 'Gagal diunggah',
+            className: sheetStatusConfig.failed.className,
+        };
     }
 
     return status.uploaded
-        ? { label: 'Tersimpan di Drive', className: sheetStatusConfig.completed.className }
+        ? {
+              label: 'Tersimpan di Drive',
+              className: sheetStatusConfig.completed.className,
+          }
         : { label: 'Hanya di server', className: netral };
 }
 
@@ -211,20 +265,31 @@ function photoStatusBadge(status: PhotoStatus | null): { label: string; classNam
  * "Belum digenerate" saja tidak cukup: setelah menekan Generate Ulang, operator
  * perlu melihat bedanya antara sedang dirender, sudah selesai, dan gagal.
  */
-function cardStatusBadge(card: GeneratedCard | undefined): { label: string; className: string } | null {
+function cardStatusBadge(
+    card: GeneratedCard | undefined,
+): { label: string; className: string } | null {
     if (!card) {
         return null;
     }
 
     if (card.status === 'processing') {
-        return { label: 'Sedang dibuat', className: sheetStatusConfig.processing.className };
+        return {
+            label: 'Sedang dibuat',
+            className: sheetStatusConfig.processing.className,
+        };
     }
 
     if (card.status === 'failed') {
-        return { label: 'Gagal', className: sheetStatusConfig.failed.className };
+        return {
+            label: 'Gagal',
+            className: sheetStatusConfig.failed.className,
+        };
     }
 
-    return { label: 'Selesai', className: sheetStatusConfig.completed.className };
+    return {
+        label: 'Selesai',
+        className: sheetStatusConfig.completed.className,
+    };
 }
 
 function genderLabel(gender: string): string {
@@ -235,6 +300,7 @@ function formatDate(date: string | null): string {
     if (!date) {
         return '-';
     }
+
     return new Date(date).toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'long',
@@ -245,7 +311,9 @@ function formatDate(date: string | null): string {
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
     return (
         <div className="grid grid-cols-3 gap-2 border-b py-2.5 last:border-b-0">
-            <dt className="text-muted-foreground text-sm font-medium">{label}</dt>
+            <dt className="text-sm font-medium text-muted-foreground">
+                {label}
+            </dt>
             <dd className="col-span-2 text-sm">{value || '-'}</dd>
         </div>
     );
@@ -283,17 +351,35 @@ export default function SiswaShow({
     // ditampilkan lalu kosong — flag-nya ada di prop non-defer supaya tidak
     // ada kedip panel kosong sebelum payload statistiknya tiba.
     const prayerTabs = [
-        { value: 'dhuha', label: 'Sholat Dhuha', prop: 'prayerDhuha', feature: 'sholat_dhuha' as const },
-        { value: 'dzuhur', label: 'Sholat Dzuhur', prop: 'prayerDzuhur', feature: 'sholat_dzuhur' as const },
+        {
+            value: 'dhuha',
+            label: 'Sholat Dhuha',
+            prop: 'prayerDhuha',
+            feature: 'sholat_dhuha' as const,
+        },
+        {
+            value: 'dzuhur',
+            label: 'Sholat Dzuhur',
+            prop: 'prayerDzuhur',
+            feature: 'sholat_dzuhur' as const,
+        },
     ].filter((entry) => features?.[entry.feature] !== false);
 
-    const allowedTabs = ['profil', 'absensi', ...prayerTabs.map((entry) => entry.value)];
+    const allowedTabs = [
+        'profil',
+        'absensi',
+        ...prayerTabs.map((entry) => entry.value),
+    ];
 
-    const [template, setTemplate] = useState(photoSheetTemplates[0]?.value ?? '');
+    const [template, setTemplate] = useState(
+        photoSheetTemplates[0]?.value ?? '',
+    );
     const [caption, setCaption] = useState('');
     const [generating, setGenerating] = useState(false);
     const [drivePhotoLoading, setDrivePhotoLoading] = useState(false);
-    const [regenerating, setRegenerating] = useState<'kartu' | 'pas-foto' | 'foto' | null>(null);
+    const [regenerating, setRegenerating] = useState<
+        'kartu' | 'pas-foto' | 'foto' | null
+    >(null);
     const [tab, setTab] = useState(() => initialTab(allowedTabs));
     const [startDate, setStartDate] = useState(filters.start);
     const [endDate, setEndDate] = useState(filters.end);
@@ -323,7 +409,9 @@ export default function SiswaShow({
 
     const photoBadge = photoStatusBadge(photoStatus);
 
-    const hasProcessingSheet = photoSheets.some((sheet) => sheet.status === 'processing');
+    const hasProcessingSheet = photoSheets.some(
+        (sheet) => sheet.status === 'processing',
+    );
 
     useEffect(() => {
         if (!hasProcessingSheet) {
@@ -335,6 +423,7 @@ export default function SiswaShow({
             if (reloading) {
                 return;
             }
+
             reloading = true;
             router.reload({
                 only: ['photoSheets'],
@@ -360,6 +449,7 @@ export default function SiswaShow({
             if (reloading) {
                 return;
             }
+
             reloading = true;
             router.reload({
                 only: ['photoStatus'],
@@ -384,6 +474,7 @@ export default function SiswaShow({
             if (reloading) {
                 return;
             }
+
             reloading = true;
             router.reload({
                 only: ['cards', 'cardsProcessing'],
@@ -527,16 +618,20 @@ export default function SiswaShow({
 
     // URL objek pratinjau harus dilepas, kalau tidak berkasnya ditahan di
     // memori sampai tab ditutup.
-    useEffect(() => () => {
-        if (fotoPreview) {
-            URL.revokeObjectURL(fotoPreview);
-        }
-    }, [fotoPreview]);
+    useEffect(
+        () => () => {
+            if (fotoPreview) {
+                URL.revokeObjectURL(fotoPreview);
+            }
+        },
+        [fotoPreview],
+    );
 
     function handleGenerateSheet() {
         if (!template) {
             return;
         }
+
         router.post(
             `/admin/siswa/${student.id}/photo-sheet`,
             { template, caption },
@@ -561,13 +656,35 @@ export default function SiswaShow({
                             </Link>
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight">{student.full_name}</h1>
-                            <p className="text-muted-foreground text-sm">Detail informasi siswa</p>
+                            <h1 className="text-2xl font-bold tracking-tight">
+                                {student.full_name}
+                            </h1>
+                            <p className="text-sm text-muted-foreground">
+                                Detail informasi siswa
+                            </p>
                         </div>
                     </div>
-                    <Button variant="outline" asChild>
-                        <Link href={`/admin/siswa/${student.id}/edit`}>Edit Data</Link>
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" asChild>
+                            <a
+                                href={
+                                    combinedPdf(student.id, {
+                                        query: {
+                                            start_date: startDate,
+                                            end_date: endDate,
+                                        },
+                                    }).url
+                                }
+                            >
+                                Unduh PDF gabungan
+                            </a>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href={`/admin/siswa/${student.id}/edit`}>
+                                Edit Data
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <Tabs value={tab} onValueChange={changeTab}>
@@ -589,436 +706,749 @@ export default function SiswaShow({
                     </TabsList>
 
                     <TabsContent value="profil">
-                {/* Content */}
-                <div className="grid gap-6 lg:grid-cols-3">
-                    {/* Left: Student Info */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Photo + Name Header */}
-                        <Card>
-                            <CardContent className="flex items-center gap-5 p-5">
-                                <div className="shrink-0 space-y-2">
-                                    {student.photo_url ? (
-                                        <a href={student.photo_url} target="_blank" rel="noreferrer" title="Lihat ukuran penuh">
-                                            <img
-                                                src={student.photo_url}
-                                                alt={student.full_name}
-                                                className="size-28 rounded-xl border-2 border-blue-200 object-cover shadow-md"
-                                            />
-                                        </a>
-                                    ) : (
-                                        <div className="flex size-28 items-center justify-center rounded-xl border-2 border-zinc-200 bg-zinc-100 dark:bg-zinc-800">
-                                            <User className="size-10 text-zinc-400" />
-                                        </div>
-                                    )}
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="w-28 print:hidden"
-                                        onClick={() => setFotoDialog(true)}
-                                    >
-                                        <Camera className="mr-1.5 size-3.5" />
-                                        {student.photo_url ? 'Ganti Foto' : 'Unggah Foto'}
-                                    </Button>
-                                    {studioUrl && (
-                                        // Aplikasi lain, tab lain. Studio menaruh
-                                        // hasil jepretan di folder Drive siswa; pas
-                                        // foto kartu di atas TIDAK ikut berubah.
-                                        <Button variant="ghost" size="sm" className="w-28 print:hidden" asChild>
-                                            <a
-                                                href={`${studioUrl}/sesi?siswa=${student.id}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                <Aperture className="mr-1.5 size-3.5" />
-                                                Foto di Studio
-                                            </a>
-                                        </Button>
-                                    )}
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold">{student.full_name}</h2>
-                                    <p className="text-muted-foreground text-sm">
-                                        {student.nis && `NIS: ${student.nis}`}
-                                        {student.nisn && ` · NISN: ${student.nisn}`}
-                                    </p>
-                                    <p className="text-muted-foreground text-sm">
-                                        {student.classroom?.name}
-                                        {student.no_absen && ` · No. Absen: ${student.no_absen}`}
-                                    </p>
-                                    <Badge variant={student.is_active ? 'default' : 'secondary'} className="mt-2">
-                                        {student.is_active ? 'Aktif' : 'Nonaktif'}
-                                    </Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {fotoDiganti && (
-                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200 print:hidden">
-                                Pas foto sudah diganti. Kartu digital yang sudah ada masih memakai foto lama —
-                                tekan <b>Generate Ulang Kartu</b> kalau ingin ikut diperbarui.
-                            </div>
-                        )}
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                                <CardTitle>Informasi Siswa</CardTitle>
-                                {bolehUbahOrangTua && ortu && (
-                                    <Button variant="outline" size="sm" className="print:hidden" onClick={bukaDialogOrangTua}>
-                                        <Pencil className="mr-1.5 size-3.5" />
-                                        Ubah Orang Tua
-                                    </Button>
-                                )}
-                            </CardHeader>
-                            <CardContent>
-                                <dl>
-                                    <InfoRow label="NIS" value={student.nis} />
-                                    <InfoRow label="NISN" value={student.nisn} />
-                                    <InfoRow label="Nama Lengkap" value={student.full_name} />
-                                    <InfoRow label="Kelas" value={student.classroom?.name} />
-                                    <InfoRow label="Jenis Kelamin" value={genderLabel(student.gender)} />
-                                    <InfoRow label="Agama" value={student.religion_label} />
-                                    <InfoRow
-                                        label="Tempat, Tanggal Lahir"
-                                        value={
-                                            student.birth_place || student.birth_date
-                                                ? `${student.birth_place ?? '-'}, ${formatDate(student.birth_date)}`
-                                                : '-'
-                                        }
-                                    />
-                                    <InfoRow label="Alamat" value={student.address} />
-                                    <InfoRow
-                                        label="Orang Tua / Wali"
-                                        value={
-                                            ortu?.user?.name ??
-                                            student.parent_name ?? (
-                                                // Belum tertaut: dialog ubah tidak berlaku, jadi
-                                                // operator diarahkan ke halaman yang memang bisa
-                                                // menautkan atau membuat orang tua.
-                                                <Link href={`/admin/siswa/${student.id}/edit`} className="text-primary underline print:hidden">
-                                                    Belum tertaut — hubungkan orang tua
-                                                </Link>
-                                            )
-                                        }
-                                    />
-                                    <InfoRow label="Hubungan" value={student.parent_profile?.relation_label} />
-                                    <InfoRow label="No. WhatsApp" value={student.parent_profile?.whatsapp_number ?? student.parent_phone} />
-                                    <InfoRow
-                                        label="Email Notifikasi"
-                                        value={
-                                            student.parent_profile?.email && !student.parent_profile.email.endsWith('@internal.app')
-                                                ? student.parent_profile.email
-                                                : 'Belum diisi'
-                                        }
-                                    />
-                                    <InfoRow
-                                        label="Status"
-                                        value={
-                                            <Badge variant={student.is_active ? 'default' : 'secondary'}>
-                                                {student.is_active ? 'Aktif' : 'Nonaktif'}
-                                            </Badge>
-                                        }
-                                    />
-                                </dl>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Right: QR Code */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>QR Code Absensi</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-col items-center gap-4">
-                                    {/* QR Frame — this div is the only thing visible when printing */}
-                                    <div className="print-area rounded-xl border-2 border-dashed border-gray-300 bg-white p-6 print:border-solid print:border-gray-800">
-                                        <div
-                                            className="mx-auto w-full max-w-[250px] [&>svg]:h-auto [&>svg]:w-full"
-                                            dangerouslySetInnerHTML={{ __html: qrSvg }}
-                                        />
-                                        <div className="mt-3 text-center">
-                                            <p className="text-sm font-semibold text-gray-900">{student.full_name}</p>
-                                            <p className="text-xs text-gray-500">{student.nis ?? 'Tanpa NIS'}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className="flex w-full flex-col gap-2 print:hidden">
-                                        <Button variant="outline" className="w-full" asChild>
-                                            <a href={`/admin/siswa/${student.id}/qr`} download>
-                                                <Download className="mr-2 size-4" />
-                                                Download QR
-                                            </a>
-                                        </Button>
-                                        <Button variant="outline" className="w-full" onClick={handlePrint}>
-                                            <Printer className="mr-2 size-4" />
-                                            Cetak Kartu
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Pas foto asli di Drive — dicari saat diminta, tidak disimpan di DB */}
-                        <Card className="print:hidden">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    <HardDrive className="size-4" /> Pas Foto di Google Drive
-                                </CardTitle>
-                                <CardDescription>Buka atau unduh berkas aslinya tanpa mencari manual di Drive.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {/* Dibaca dari riwayat generate, bukan dari Drive —
-                                    memukul API Drive di tiap kunjungan halaman
-                                    terlalu mahal. Pencarian sungguhannya ada di
-                                    tombol "Cari di Drive" di bawah. */}
-                                <div className="flex items-center justify-between gap-2">
-                                    <Badge variant="outline" className={`gap-1 ${photoBadge.className}`}>
-                                        {photoStatus?.status === 'processing' && <Loader2 className="size-3 animate-spin" />}
-                                        {photoBadge.label}
-                                    </Badge>
-                                    {photoStatus && <span className="text-muted-foreground text-xs">{photoStatus.created_at}</span>}
-                                </div>
-
-                                {drivePhotoLoading ? (
-                                    <div className="space-y-2">
-                                        <Skeleton className="h-4 w-3/4 animate-pulse" />
-                                        <Skeleton className="h-9 w-full animate-pulse" />
-                                    </div>
-                                ) : !drivePhoto ? (
-                                    <Button variant="outline" className="w-full" onClick={loadDrivePhoto}>
-                                        <Search className="mr-2 size-4" />
-                                        Cari di Drive
-                                    </Button>
-                                ) : !drivePhoto.feature_enabled ? (
-                                    <p className="text-muted-foreground text-xs">Integrasi Google Drive dimatikan untuk sekolah ini.</p>
-                                ) : drivePhoto.file ? (
-                                    <>
-                                        <p className="text-muted-foreground truncate text-xs" title={drivePhoto.file.name}>
-                                            {drivePhoto.file.name}
-                                        </p>
-                                        <div className="flex flex-col gap-2">
-                                            <Button variant="outline" className="w-full" asChild>
-                                                <a href={drivePhoto.file.view_url} target="_blank" rel="noreferrer">
-                                                    <HardDrive className="mr-2 size-4" />
-                                                    Buka di Drive
+                        {/* Content */}
+                        <div className="grid gap-6 lg:grid-cols-3">
+                            {/* Left: Student Info */}
+                            <div className="space-y-6 lg:col-span-2">
+                                {/* Photo + Name Header */}
+                                <Card>
+                                    <CardContent className="flex items-center gap-5 p-5">
+                                        <div className="shrink-0 space-y-2">
+                                            {student.photo_url ? (
+                                                <a
+                                                    href={student.photo_url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    title="Lihat ukuran penuh"
+                                                >
+                                                    <img
+                                                        src={student.photo_url}
+                                                        alt={student.full_name}
+                                                        className="size-28 rounded-xl border-2 border-blue-200 object-cover shadow-md"
+                                                    />
                                                 </a>
-                                            </Button>
-                                            <Button variant="outline" className="w-full" asChild>
-                                                <a href={drivePhoto.file.download_url} target="_blank" rel="noreferrer">
-                                                    <Download className="mr-2 size-4" />
-                                                    Unduh Langsung
-                                                </a>
-                                            </Button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p className="text-muted-foreground text-xs">
-                                            Tidak ditemukan. Dicari berkas bernama{' '}
-                                            <span className="text-foreground font-medium">{drivePhoto.expected_file_name}</span> di folder{' '}
-                                            <span className="text-foreground font-medium">{drivePhoto.expected_folder}</span>.
-                                        </p>
-                                        <Button variant="outline" className="w-full" onClick={researchDrivePhoto}>
-                                            <Search className="mr-2 size-4" />
-                                            Cari Ulang
-                                        </Button>
-                                    </>
-                                )}
-
-                                {/* Nama berkas yang diketik saat mendaftar baru
-                                    disimpan sejak migrasi kolom Drive; siswa lama
-                                    belum punya, jadi tombolnya dimatikan dan
-                                    alasannya ditulis, bukan menebak nama. */}
-                                <Button
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={() => regenerate('foto')}
-                                    disabled={regenerating !== null || !student.photo_drive_filename}
-                                    title={
-                                        student.photo_drive_filename
-                                            ? `Ambil ulang ${student.photo_drive_filename} dari Drive`
-                                            : 'Nama berkas foto di Drive tidak tersimpan untuk siswa ini.'
-                                    }
-                                >
-                                    {regenerating === 'foto' ? (
-                                        <Loader2 className="mr-2 size-4 animate-spin" />
-                                    ) : (
-                                        <RefreshCw className="mr-2 size-4" />
-                                    )}
-                                    Ambil Ulang Foto
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        {/* Cetak Pas Foto */}
-                        <Card className="print:hidden">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    <Images className="size-4" /> Cetak Pas Foto
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="sheet-template">Template</Label>
-                                        <Select value={template} onValueChange={setTemplate}>
-                                            <SelectTrigger id="sheet-template" className="w-full">
-                                                <SelectValue placeholder="Pilih template" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {photoSheetTemplates.map((t) => (
-                                                    <SelectItem key={t.value} value={t.value}>
-                                                        {t.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <Label htmlFor="sheet-caption">Keterangan (opsional)</Label>
-                                        <Input
-                                            id="sheet-caption"
-                                            value={caption}
-                                            onChange={(e) => setCaption(e.target.value)}
-                                            placeholder="Contoh: Nama & Kelas"
-                                            maxLength={255}
-                                        />
-                                    </div>
-                                    <Button className="w-full" onClick={handleGenerateSheet} disabled={generating || !student.photo_url || !template}>
-                                        {generating ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Images className="mr-2 size-4" />}
-                                        Generate
-                                    </Button>
-                                    {/* Lembar 4R bawaan, sama dengan yang keluar saat
-                                        siswa mendaftar — tanpa memilih template lagi. */}
-                                    <Button
-                                        variant="outline"
-                                        className="w-full"
-                                        onClick={() => regenerate('pas-foto')}
-                                        disabled={regenerating !== null || !student.photo_url}
-                                    >
-                                        {regenerating === 'pas-foto' ? (
-                                            <Loader2 className="mr-2 size-4 animate-spin" />
-                                        ) : (
-                                            <RefreshCw className="mr-2 size-4" />
-                                        )}
-                                        Ulangi Lembar Bawaan (4R)
-                                    </Button>
-                                    {!student.photo_url && (
-                                        <p className="text-muted-foreground text-xs">Siswa belum memiliki foto. Unggah foto terlebih dahulu.</p>
-                                    )}
-
-                                    {photoSheets.length > 0 && (
-                                        <div className="mt-2 flex flex-col gap-2 border-t pt-3">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-muted-foreground text-xs font-medium">Riwayat</p>
-                                                {hasProcessingSheet && (
-                                                    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-                                                        <Loader2 className="size-3 animate-spin" /> memperbarui…
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {photoSheets.map((sheet) => {
-                                                const status = sheetStatusConfig[sheet.status] ?? { label: sheet.status, className: '' };
-                                                const url = sheet.drive_url ?? sheet.file_url;
-                                                return (
-                                                    <div key={sheet.id} className="flex items-center justify-between gap-2 text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge variant="outline" className={`gap-1 ${status.className}`}>
-                                                                {sheet.status === 'processing' && <Loader2 className="size-3 animate-spin" />}
-                                                                {status.label}
-                                                            </Badge>
-                                                            <span className="text-muted-foreground text-xs">{sheet.created_at}</span>
-                                                        </div>
-                                                        {url ? (
-                                                            <Button variant="ghost" size="icon" asChild title="Buka berkas">
-                                                                <a href={url} target="_blank" rel="noreferrer">
-                                                                    {sheet.drive_url ? <HardDrive className="size-4" /> : <Download className="size-4" />}
-                                                                </a>
-                                                            </Button>
-                                                        ) : (
-                                                            <span className="text-muted-foreground text-xs">-</span>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Kartu Digital — tautan langsung ke berkas di Google Drive */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <CreditCard className="size-5" />
-                                    Kartu Digital
-                                </CardTitle>
-                                <CardDescription>Buka langsung kartunya, tanpa perlu mencari di Google Drive.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                {CARD_TYPES.map((type) => {
-                                    const card = cards.find((item) => item.layout_type === type.value);
-                                    const url = card?.drive_url ?? card?.file_url ?? null;
-                                    const badge = cardStatusBadge(card);
-
-                                    return (
-                                        <div key={type.value} className="flex items-center justify-between gap-2 border-b py-2 last:border-b-0">
-                                            <div className="min-w-0">
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                    <p className="truncate text-sm font-medium">{card?.layout_name ?? type.label}</p>
-                                                    {badge && (
-                                                        <Badge variant="outline" className={badge.className}>
-                                                            {card?.status === 'processing' && (
-                                                                <Loader2 className="mr-1 size-3 animate-spin" />
-                                                            )}
-                                                            {badge.label}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                <p className="text-muted-foreground text-xs">
-                                                    {card?.status === 'processing'
-                                                        ? 'Sedang dirender, halaman ini menyegarkan sendiri.'
-                                                        : card?.status === 'failed'
-                                                          ? (card.error_message ?? 'Render gagal. Coba generate ulang.')
-                                                          : (card?.created_at ?? 'Belum digenerate')}
-                                                </p>
-                                            </div>
-                                            {url ? (
-                                                <Button variant="outline" size="sm" asChild>
-                                                    <a href={url} target="_blank" rel="noreferrer">
-                                                        {card?.drive_url ? <HardDrive className="mr-1.5 size-4" /> : <Download className="mr-1.5 size-4" />}
-                                                        Buka
-                                                    </a>
-                                                </Button>
                                             ) : (
-                                                <Button variant="outline" size="sm" disabled>
-                                                    Buka
+                                                <div className="flex size-28 items-center justify-center rounded-xl border-2 border-zinc-200 bg-zinc-100 dark:bg-zinc-800">
+                                                    <User className="size-10 text-zinc-400" />
+                                                </div>
+                                            )}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-28 print:hidden"
+                                                onClick={() =>
+                                                    setFotoDialog(true)
+                                                }
+                                            >
+                                                <Camera className="mr-1.5 size-3.5" />
+                                                {student.photo_url
+                                                    ? 'Ganti Foto'
+                                                    : 'Unggah Foto'}
+                                            </Button>
+                                            {studioUrl && (
+                                                // Aplikasi lain, tab lain. Studio menaruh
+                                                // hasil jepretan di folder Drive siswa; pas
+                                                // foto kartu di atas TIDAK ikut berubah.
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="w-28 print:hidden"
+                                                    asChild
+                                                >
+                                                    <a
+                                                        href={`${studioUrl}/sesi?siswa=${student.id}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                    >
+                                                        <Aperture className="mr-1.5 size-3.5" />
+                                                        Foto di Studio
+                                                    </a>
                                                 </Button>
                                             )}
                                         </div>
-                                    );
-                                })}
+                                        <div>
+                                            <h2 className="text-xl font-bold">
+                                                {student.full_name}
+                                            </h2>
+                                            <p className="text-sm text-muted-foreground">
+                                                {student.nis &&
+                                                    `NIS: ${student.nis}`}
+                                                {student.nisn &&
+                                                    ` · NISN: ${student.nisn}`}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {student.classroom?.name}
+                                                {student.no_absen &&
+                                                    ` · No. Absen: ${student.no_absen}`}
+                                            </p>
+                                            <Badge
+                                                variant={
+                                                    student.is_active
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
+                                                className="mt-2"
+                                            >
+                                                {student.is_active
+                                                    ? 'Aktif'
+                                                    : 'Nonaktif'}
+                                            </Badge>
+                                        </div>
+                                    </CardContent>
+                                </Card>
 
-                                <Button
-                                    variant="outline"
-                                    className="mt-2 w-full print:hidden"
-                                    onClick={() => regenerate('kartu')}
-                                    disabled={regenerating !== null || cardsProcessing}
-                                >
-                                    {cardsProcessing ? (
-                                        <Loader2 className="mr-2 size-4 animate-spin" />
-                                    ) : (
-                                        <RefreshCw className="mr-2 size-4" />
-                                    )}
-                                    {cardsProcessing ? 'Sedang dibuat…' : 'Generate Ulang Kartu OSIS (depan + belakang)'}
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
+                                {fotoDiganti && (
+                                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200 print:hidden">
+                                        Pas foto sudah diganti. Kartu digital
+                                        yang sudah ada masih memakai foto lama —
+                                        tekan <b>Generate Ulang Kartu</b> kalau
+                                        ingin ikut diperbarui.
+                                    </div>
+                                )}
+
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                                        <CardTitle>Informasi Siswa</CardTitle>
+                                        {bolehUbahOrangTua && ortu && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="print:hidden"
+                                                onClick={bukaDialogOrangTua}
+                                            >
+                                                <Pencil className="mr-1.5 size-3.5" />
+                                                Ubah Orang Tua
+                                            </Button>
+                                        )}
+                                    </CardHeader>
+                                    <CardContent>
+                                        <dl>
+                                            <InfoRow
+                                                label="NIS"
+                                                value={student.nis}
+                                            />
+                                            <InfoRow
+                                                label="NISN"
+                                                value={student.nisn}
+                                            />
+                                            <InfoRow
+                                                label="Nama Lengkap"
+                                                value={student.full_name}
+                                            />
+                                            <InfoRow
+                                                label="Kelas"
+                                                value={student.classroom?.name}
+                                            />
+                                            <InfoRow
+                                                label="Jenis Kelamin"
+                                                value={genderLabel(
+                                                    student.gender,
+                                                )}
+                                            />
+                                            <InfoRow
+                                                label="Agama"
+                                                value={student.religion_label}
+                                            />
+                                            <InfoRow
+                                                label="Tempat, Tanggal Lahir"
+                                                value={
+                                                    student.birth_place ||
+                                                    student.birth_date
+                                                        ? `${student.birth_place ?? '-'}, ${formatDate(student.birth_date)}`
+                                                        : '-'
+                                                }
+                                            />
+                                            <InfoRow
+                                                label="Alamat"
+                                                value={student.address}
+                                            />
+                                            <InfoRow
+                                                label="Orang Tua / Wali"
+                                                value={
+                                                    ortu?.user?.name ??
+                                                    student.parent_name ?? (
+                                                        // Belum tertaut: dialog ubah tidak berlaku, jadi
+                                                        // operator diarahkan ke halaman yang memang bisa
+                                                        // menautkan atau membuat orang tua.
+                                                        <Link
+                                                            href={`/admin/siswa/${student.id}/edit`}
+                                                            className="text-primary underline print:hidden"
+                                                        >
+                                                            Belum tertaut —
+                                                            hubungkan orang tua
+                                                        </Link>
+                                                    )
+                                                }
+                                            />
+                                            <InfoRow
+                                                label="Hubungan"
+                                                value={
+                                                    student.parent_profile
+                                                        ?.relation_label
+                                                }
+                                            />
+                                            <InfoRow
+                                                label="No. WhatsApp"
+                                                value={
+                                                    student.parent_profile
+                                                        ?.whatsapp_number ??
+                                                    student.parent_phone
+                                                }
+                                            />
+                                            <InfoRow
+                                                label="Email Notifikasi"
+                                                value={
+                                                    student.parent_profile
+                                                        ?.email &&
+                                                    !student.parent_profile.email.endsWith(
+                                                        '@internal.app',
+                                                    )
+                                                        ? student.parent_profile
+                                                              .email
+                                                        : 'Belum diisi'
+                                                }
+                                            />
+                                            <InfoRow
+                                                label="Status"
+                                                value={
+                                                    <Badge
+                                                        variant={
+                                                            student.is_active
+                                                                ? 'default'
+                                                                : 'secondary'
+                                                        }
+                                                    >
+                                                        {student.is_active
+                                                            ? 'Aktif'
+                                                            : 'Nonaktif'}
+                                                    </Badge>
+                                                }
+                                            />
+                                        </dl>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Right: QR Code */}
+                            <div className="space-y-6 lg:col-span-1">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>QR Code Absensi</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex flex-col items-center gap-4">
+                                            {/* QR Frame — this div is the only thing visible when printing */}
+                                            <div className="print-area rounded-xl border-2 border-dashed border-gray-300 bg-white p-6 print:border-solid print:border-gray-800">
+                                                <div
+                                                    className="mx-auto w-full max-w-[250px] [&>svg]:h-auto [&>svg]:w-full"
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: qrSvg,
+                                                    }}
+                                                />
+                                                <div className="mt-3 text-center">
+                                                    <p className="text-sm font-semibold text-gray-900">
+                                                        {student.full_name}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {student.nis ??
+                                                            'Tanpa NIS'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div className="flex w-full flex-col gap-2 print:hidden">
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    asChild
+                                                >
+                                                    <a
+                                                        href={`/admin/siswa/${student.id}/qr`}
+                                                        download
+                                                    >
+                                                        <Download className="mr-2 size-4" />
+                                                        Download QR
+                                                    </a>
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={handlePrint}
+                                                >
+                                                    <Printer className="mr-2 size-4" />
+                                                    Cetak Kartu
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Pas foto asli di Drive — dicari saat diminta, tidak disimpan di DB */}
+                                <Card className="print:hidden">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-base">
+                                            <HardDrive className="size-4" /> Pas
+                                            Foto di Google Drive
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Buka atau unduh berkas aslinya tanpa
+                                            mencari manual di Drive.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {/* Dibaca dari riwayat generate, bukan dari Drive —
+                                    memukul API Drive di tiap kunjungan halaman
+                                    terlalu mahal. Pencarian sungguhannya ada di
+                                    tombol "Cari di Drive" di bawah. */}
+                                        <div className="flex items-center justify-between gap-2">
+                                            <Badge
+                                                variant="outline"
+                                                className={`gap-1 ${photoBadge.className}`}
+                                            >
+                                                {photoStatus?.status ===
+                                                    'processing' && (
+                                                    <Loader2 className="size-3 animate-spin" />
+                                                )}
+                                                {photoBadge.label}
+                                            </Badge>
+                                            {photoStatus && (
+                                                <span className="text-xs text-muted-foreground">
+                                                    {photoStatus.created_at}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {drivePhotoLoading ? (
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-4 w-3/4 animate-pulse" />
+                                                <Skeleton className="h-9 w-full animate-pulse" />
+                                            </div>
+                                        ) : !drivePhoto ? (
+                                            <Button
+                                                variant="outline"
+                                                className="w-full"
+                                                onClick={loadDrivePhoto}
+                                            >
+                                                <Search className="mr-2 size-4" />
+                                                Cari di Drive
+                                            </Button>
+                                        ) : !drivePhoto.feature_enabled ? (
+                                            <p className="text-xs text-muted-foreground">
+                                                Integrasi Google Drive dimatikan
+                                                untuk sekolah ini.
+                                            </p>
+                                        ) : drivePhoto.file ? (
+                                            <>
+                                                <p
+                                                    className="truncate text-xs text-muted-foreground"
+                                                    title={drivePhoto.file.name}
+                                                >
+                                                    {drivePhoto.file.name}
+                                                </p>
+                                                <div className="flex flex-col gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full"
+                                                        asChild
+                                                    >
+                                                        <a
+                                                            href={
+                                                                drivePhoto.file
+                                                                    .view_url
+                                                            }
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                        >
+                                                            <HardDrive className="mr-2 size-4" />
+                                                            Buka di Drive
+                                                        </a>
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        className="w-full"
+                                                        asChild
+                                                    >
+                                                        <a
+                                                            href={
+                                                                drivePhoto.file
+                                                                    .download_url
+                                                            }
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                        >
+                                                            <Download className="mr-2 size-4" />
+                                                            Unduh Langsung
+                                                        </a>
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Tidak ditemukan. Dicari
+                                                    berkas bernama{' '}
+                                                    <span className="font-medium text-foreground">
+                                                        {
+                                                            drivePhoto.expected_file_name
+                                                        }
+                                                    </span>{' '}
+                                                    di folder{' '}
+                                                    <span className="font-medium text-foreground">
+                                                        {
+                                                            drivePhoto.expected_folder
+                                                        }
+                                                    </span>
+                                                    .
+                                                </p>
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={researchDrivePhoto}
+                                                >
+                                                    <Search className="mr-2 size-4" />
+                                                    Cari Ulang
+                                                </Button>
+                                            </>
+                                        )}
+
+                                        {/* Nama berkas yang diketik saat mendaftar baru
+                                    disimpan sejak migrasi kolom Drive; siswa lama
+                                    belum punya, jadi tombolnya dimatikan dan
+                                    alasannya ditulis, bukan menebak nama. */}
+                                        <Button
+                                            variant="outline"
+                                            className="w-full"
+                                            onClick={() => regenerate('foto')}
+                                            disabled={
+                                                regenerating !== null ||
+                                                !student.photo_drive_filename
+                                            }
+                                            title={
+                                                student.photo_drive_filename
+                                                    ? `Ambil ulang ${student.photo_drive_filename} dari Drive`
+                                                    : 'Nama berkas foto di Drive tidak tersimpan untuk siswa ini.'
+                                            }
+                                        >
+                                            {regenerating === 'foto' ? (
+                                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                            ) : (
+                                                <RefreshCw className="mr-2 size-4" />
+                                            )}
+                                            Ambil Ulang Foto
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Cetak Pas Foto */}
+                                <Card className="print:hidden">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-base">
+                                            <Images className="size-4" /> Cetak
+                                            Pas Foto
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="sheet-template">
+                                                    Template
+                                                </Label>
+                                                <Select
+                                                    value={template}
+                                                    onValueChange={setTemplate}
+                                                >
+                                                    <SelectTrigger
+                                                        id="sheet-template"
+                                                        className="w-full"
+                                                    >
+                                                        <SelectValue placeholder="Pilih template" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {photoSheetTemplates.map(
+                                                            (t) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        t.value
+                                                                    }
+                                                                    value={
+                                                                        t.value
+                                                                    }
+                                                                >
+                                                                    {t.label}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                <Label htmlFor="sheet-caption">
+                                                    Keterangan (opsional)
+                                                </Label>
+                                                <Input
+                                                    id="sheet-caption"
+                                                    value={caption}
+                                                    onChange={(e) =>
+                                                        setCaption(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Contoh: Nama & Kelas"
+                                                    maxLength={255}
+                                                />
+                                            </div>
+                                            <Button
+                                                className="w-full"
+                                                onClick={handleGenerateSheet}
+                                                disabled={
+                                                    generating ||
+                                                    !student.photo_url ||
+                                                    !template
+                                                }
+                                            >
+                                                {generating ? (
+                                                    <Loader2 className="mr-2 size-4 animate-spin" />
+                                                ) : (
+                                                    <Images className="mr-2 size-4" />
+                                                )}
+                                                Generate
+                                            </Button>
+                                            {/* Lembar 4R bawaan, sama dengan yang keluar saat
+                                        siswa mendaftar — tanpa memilih template lagi. */}
+                                            <Button
+                                                variant="outline"
+                                                className="w-full"
+                                                onClick={() =>
+                                                    regenerate('pas-foto')
+                                                }
+                                                disabled={
+                                                    regenerating !== null ||
+                                                    !student.photo_url
+                                                }
+                                            >
+                                                {regenerating === 'pas-foto' ? (
+                                                    <Loader2 className="mr-2 size-4 animate-spin" />
+                                                ) : (
+                                                    <RefreshCw className="mr-2 size-4" />
+                                                )}
+                                                Ulangi Lembar Bawaan (4R)
+                                            </Button>
+                                            {!student.photo_url && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    Siswa belum memiliki foto.
+                                                    Unggah foto terlebih dahulu.
+                                                </p>
+                                            )}
+
+                                            {photoSheets.length > 0 && (
+                                                <div className="mt-2 flex flex-col gap-2 border-t pt-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="text-xs font-medium text-muted-foreground">
+                                                            Riwayat
+                                                        </p>
+                                                        {hasProcessingSheet && (
+                                                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                                                <Loader2 className="size-3 animate-spin" />{' '}
+                                                                memperbarui…
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {photoSheets.map(
+                                                        (sheet) => {
+                                                            const status =
+                                                                sheetStatusConfig[
+                                                                    sheet.status
+                                                                ] ?? {
+                                                                    label: sheet.status,
+                                                                    className:
+                                                                        '',
+                                                                };
+                                                            const url =
+                                                                sheet.drive_url ??
+                                                                sheet.file_url;
+
+                                                            return (
+                                                                <div
+                                                                    key={
+                                                                        sheet.id
+                                                                    }
+                                                                    className="flex items-center justify-between gap-2 text-sm"
+                                                                >
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className={`gap-1 ${status.className}`}
+                                                                        >
+                                                                            {sheet.status ===
+                                                                                'processing' && (
+                                                                                <Loader2 className="size-3 animate-spin" />
+                                                                            )}
+                                                                            {
+                                                                                status.label
+                                                                            }
+                                                                        </Badge>
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            {
+                                                                                sheet.created_at
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                    {url ? (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            asChild
+                                                                            title="Buka berkas"
+                                                                        >
+                                                                            <a
+                                                                                href={
+                                                                                    url
+                                                                                }
+                                                                                target="_blank"
+                                                                                rel="noreferrer"
+                                                                            >
+                                                                                {sheet.drive_url ? (
+                                                                                    <HardDrive className="size-4" />
+                                                                                ) : (
+                                                                                    <Download className="size-4" />
+                                                                                )}
+                                                                            </a>
+                                                                        </Button>
+                                                                    ) : (
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            -
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        },
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Kartu Digital — tautan langsung ke berkas di Google Drive */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <CreditCard className="size-5" />
+                                            Kartu Digital
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Buka langsung kartunya, tanpa perlu
+                                            mencari di Google Drive.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2">
+                                        {CARD_TYPES.map((type) => {
+                                            const card = cards.find(
+                                                (item) =>
+                                                    item.layout_type ===
+                                                    type.value,
+                                            );
+                                            const url =
+                                                card?.drive_url ??
+                                                card?.file_url ??
+                                                null;
+                                            const badge = cardStatusBadge(card);
+
+                                            return (
+                                                <div
+                                                    key={type.value}
+                                                    className="flex items-center justify-between gap-2 border-b py-2 last:border-b-0"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-1.5">
+                                                            <p className="truncate text-sm font-medium">
+                                                                {card?.layout_name ??
+                                                                    type.label}
+                                                            </p>
+                                                            {badge && (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className={
+                                                                        badge.className
+                                                                    }
+                                                                >
+                                                                    {card?.status ===
+                                                                        'processing' && (
+                                                                        <Loader2 className="mr-1 size-3 animate-spin" />
+                                                                    )}
+                                                                    {
+                                                                        badge.label
+                                                                    }
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {card?.status ===
+                                                            'processing'
+                                                                ? 'Sedang dirender, halaman ini menyegarkan sendiri.'
+                                                                : card?.status ===
+                                                                    'failed'
+                                                                  ? (card.error_message ??
+                                                                    'Render gagal. Coba generate ulang.')
+                                                                  : (card?.created_at ??
+                                                                    'Belum digenerate')}
+                                                        </p>
+                                                    </div>
+                                                    {url ? (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            asChild
+                                                        >
+                                                            <a
+                                                                href={url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                            >
+                                                                {card?.drive_url ? (
+                                                                    <HardDrive className="mr-1.5 size-4" />
+                                                                ) : (
+                                                                    <Download className="mr-1.5 size-4" />
+                                                                )}
+                                                                Buka
+                                                            </a>
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled
+                                                        >
+                                                            Buka
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+
+                                        <Button
+                                            variant="outline"
+                                            className="mt-2 w-full print:hidden"
+                                            onClick={() => regenerate('kartu')}
+                                            disabled={
+                                                regenerating !== null ||
+                                                cardsProcessing
+                                            }
+                                        >
+                                            {cardsProcessing ? (
+                                                <Loader2 className="mr-2 size-4 animate-spin" />
+                                            ) : (
+                                                <RefreshCw className="mr-2 size-4" />
+                                            )}
+                                            {cardsProcessing
+                                                ? 'Sedang dibuat…'
+                                                : 'Generate Ulang Kartu OSIS (depan + belakang)'}
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="absensi">
@@ -1029,7 +1459,12 @@ export default function SiswaShow({
                             onStartChange={setStartDate}
                             onEndChange={setEndDate}
                             onApply={applyRange}
-                            exports={reportExports(student.id, 'absensi', filters.start, filters.end)}
+                            exports={reportExports(
+                                student.id,
+                                'absensi',
+                                filters.start,
+                                filters.end,
+                            )}
                             tiles={attendanceTiles(attendance)}
                             daily={attendance?.daily}
                             dailySeries={ATTENDANCE_SERIES}
@@ -1064,7 +1499,11 @@ export default function SiswaShow({
                                 <PrayerPanel
                                     studentId={student.id}
                                     jenis={entry.value}
-                                    stats={entry.value === 'dhuha' ? prayerDhuha : prayerDzuhur}
+                                    stats={
+                                        entry.value === 'dhuha'
+                                            ? prayerDhuha
+                                            : prayerDzuhur
+                                    }
                                     filters={filters}
                                     startDate={startDate}
                                     endDate={endDate}
@@ -1078,57 +1517,95 @@ export default function SiswaShow({
                 </Tabs>
 
                 {/* Ubah orang tua tanpa meninggalkan halaman siswa */}
-                <Dialog open={ortuDialog} onOpenChange={(open) => !open && setOrtuDialog(false)}>
+                <Dialog
+                    open={ortuDialog}
+                    onOpenChange={(open) => !open && setOrtuDialog(false)}
+                >
                     <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>Ubah Data Orang Tua</DialogTitle>
                             <DialogDescription>
-                                Perubahan berlaku untuk seluruh anak yang tertaut ke orang tua ini, bukan hanya {student.full_name}.
+                                Perubahan berlaku untuk seluruh anak yang
+                                tertaut ke orang tua ini, bukan hanya{' '}
+                                {student.full_name}.
                             </DialogDescription>
                         </DialogHeader>
 
-                        <form onSubmit={simpanOrangTua} className="grid gap-4 sm:grid-cols-2">
+                        <form
+                            onSubmit={simpanOrangTua}
+                            className="grid gap-4 sm:grid-cols-2"
+                        >
                             <div className="grid gap-2 sm:col-span-2">
                                 <Label htmlFor="ortu-name">Nama Lengkap</Label>
                                 <Input
                                     id="ortu-name"
                                     value={ortuForm.data.name}
-                                    onChange={(e) => ortuForm.setData('name', e.target.value)}
+                                    onChange={(e) =>
+                                        ortuForm.setData('name', e.target.value)
+                                    }
                                 />
                                 <InputError message={ortuForm.errors.name} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="ortu-email">Email Akun (Login)</Label>
+                                <Label htmlFor="ortu-email">
+                                    Email Akun (Login)
+                                </Label>
                                 <Input
                                     id="ortu-email"
                                     type="email"
                                     value={ortuForm.data.email}
-                                    onChange={(e) => ortuForm.setData('email', e.target.value)}
+                                    onChange={(e) =>
+                                        ortuForm.setData(
+                                            'email',
+                                            e.target.value,
+                                        )
+                                    }
                                 />
                                 <InputError message={ortuForm.errors.email} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="ortu-notif-email">Email Notifikasi Absensi</Label>
+                                <Label htmlFor="ortu-notif-email">
+                                    Email Notifikasi Absensi
+                                </Label>
                                 <Input
                                     id="ortu-notif-email"
                                     type="email"
                                     value={ortuForm.data.notification_email}
-                                    onChange={(e) => ortuForm.setData('notification_email', e.target.value)}
+                                    onChange={(e) =>
+                                        ortuForm.setData(
+                                            'notification_email',
+                                            e.target.value,
+                                        )
+                                    }
                                 />
-                                <p className="text-muted-foreground text-xs">Kosong = pakai email akun.</p>
-                                <InputError message={ortuForm.errors.notification_email} />
+                                <p className="text-xs text-muted-foreground">
+                                    Kosong = pakai email akun.
+                                </p>
+                                <InputError
+                                    message={ortuForm.errors.notification_email}
+                                />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="ortu-phone">No. WhatsApp</Label>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground text-sm">+62</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        +62
+                                    </span>
                                     <Input
                                         id="ortu-phone"
                                         value={ortuForm.data.phone}
-                                        onChange={(e) => ortuForm.setData('phone', e.target.value.replace(/\D/g, ''))}
+                                        onChange={(e) =>
+                                            ortuForm.setData(
+                                                'phone',
+                                                e.target.value.replace(
+                                                    /\D/g,
+                                                    '',
+                                                ),
+                                            )
+                                        }
                                     />
                                 </div>
                                 <InputError message={ortuForm.errors.phone} />
@@ -1136,17 +1613,28 @@ export default function SiswaShow({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="ortu-relation">Hubungan</Label>
-                                <Select value={ortuForm.data.relation} onValueChange={(v) => ortuForm.setData('relation', v)}>
+                                <Select
+                                    value={ortuForm.data.relation}
+                                    onValueChange={(v) =>
+                                        ortuForm.setData('relation', v)
+                                    }
+                                >
                                     <SelectTrigger id="ortu-relation">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="AYAH">Ayah</SelectItem>
+                                        <SelectItem value="AYAH">
+                                            Ayah
+                                        </SelectItem>
                                         <SelectItem value="IBU">Ibu</SelectItem>
-                                        <SelectItem value="WALI">Wali</SelectItem>
+                                        <SelectItem value="WALI">
+                                            Wali
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <InputError message={ortuForm.errors.relation} />
+                                <InputError
+                                    message={ortuForm.errors.relation}
+                                />
                             </div>
 
                             <div className="grid gap-2">
@@ -1154,29 +1642,52 @@ export default function SiswaShow({
                                 <Input
                                     id="ortu-nik"
                                     value={ortuForm.data.nik}
-                                    onChange={(e) => ortuForm.setData('nik', e.target.value.replace(/\D/g, ''))}
+                                    onChange={(e) =>
+                                        ortuForm.setData(
+                                            'nik',
+                                            e.target.value.replace(/\D/g, ''),
+                                        )
+                                    }
                                 />
                                 <InputError message={ortuForm.errors.nik} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="ortu-telegram">Telegram Chat ID</Label>
+                                <Label htmlFor="ortu-telegram">
+                                    Telegram Chat ID
+                                </Label>
                                 <Input
                                     id="ortu-telegram"
                                     value={ortuForm.data.telegram_chat_id}
-                                    onChange={(e) => ortuForm.setData('telegram_chat_id', e.target.value.replace(/\D/g, ''))}
+                                    onChange={(e) =>
+                                        ortuForm.setData(
+                                            'telegram_chat_id',
+                                            e.target.value.replace(/\D/g, ''),
+                                        )
+                                    }
                                 />
-                                <InputError message={ortuForm.errors.telegram_chat_id} />
+                                <InputError
+                                    message={ortuForm.errors.telegram_chat_id}
+                                />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="ortu-occupation">Pekerjaan</Label>
+                                <Label htmlFor="ortu-occupation">
+                                    Pekerjaan
+                                </Label>
                                 <Input
                                     id="ortu-occupation"
                                     value={ortuForm.data.occupation}
-                                    onChange={(e) => ortuForm.setData('occupation', e.target.value)}
+                                    onChange={(e) =>
+                                        ortuForm.setData(
+                                            'occupation',
+                                            e.target.value,
+                                        )
+                                    }
                                 />
-                                <InputError message={ortuForm.errors.occupation} />
+                                <InputError
+                                    message={ortuForm.errors.occupation}
+                                />
                             </div>
 
                             <div className="grid gap-2">
@@ -1184,7 +1695,9 @@ export default function SiswaShow({
                                 <Input
                                     id="ortu-city"
                                     value={ortuForm.data.city}
-                                    onChange={(e) => ortuForm.setData('city', e.target.value)}
+                                    onChange={(e) =>
+                                        ortuForm.setData('city', e.target.value)
+                                    }
                                 />
                                 <InputError message={ortuForm.errors.city} />
                             </div>
@@ -1195,17 +1708,31 @@ export default function SiswaShow({
                                     id="ortu-address"
                                     rows={2}
                                     value={ortuForm.data.address}
-                                    onChange={(e) => ortuForm.setData('address', e.target.value)}
+                                    onChange={(e) =>
+                                        ortuForm.setData(
+                                            'address',
+                                            e.target.value,
+                                        )
+                                    }
                                 />
                                 <InputError message={ortuForm.errors.address} />
                             </div>
 
                             <DialogFooter className="sm:col-span-2">
-                                <Button type="button" variant="outline" onClick={() => setOrtuDialog(false)}>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setOrtuDialog(false)}
+                                >
                                     Batal
                                 </Button>
-                                <Button type="submit" disabled={ortuForm.processing}>
-                                    {ortuForm.processing && <Loader2 className="mr-2 size-4 animate-spin" />}
+                                <Button
+                                    type="submit"
+                                    disabled={ortuForm.processing}
+                                >
+                                    {ortuForm.processing && (
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
+                                    )}
                                     Simpan
                                 </Button>
                             </DialogFooter>
@@ -1214,12 +1741,20 @@ export default function SiswaShow({
                 </Dialog>
 
                 {/* Ganti pas foto */}
-                <Dialog open={fotoDialog} onOpenChange={(open) => !open && tutupDialogFoto()}>
+                <Dialog
+                    open={fotoDialog}
+                    onOpenChange={(open) => !open && tutupDialogFoto()}
+                >
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>{student.photo_url ? 'Ganti Pas Foto' : 'Unggah Pas Foto'}</DialogTitle>
+                            <DialogTitle>
+                                {student.photo_url
+                                    ? 'Ganti Pas Foto'
+                                    : 'Unggah Pas Foto'}
+                            </DialogTitle>
                             <DialogDescription>
-                                Foto lama di server dan di Google Drive akan diganti. Kartu digital tidak ikut dibuat ulang.
+                                Foto lama di server dan di Google Drive akan
+                                diganti. Kartu digital tidak ikut dibuat ulang.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -1230,24 +1765,44 @@ export default function SiswaShow({
                                     id="foto-berkas"
                                     type="file"
                                     accept="image/*"
-                                    onChange={(e) => pilihFoto(e.target.files?.[0] ?? null)}
+                                    onChange={(e) =>
+                                        pilihFoto(e.target.files?.[0] ?? null)
+                                    }
                                 />
-                                <p className="text-muted-foreground text-xs">JPG, PNG, atau WEBP. Maksimal 5 MB.</p>
+                                <p className="text-xs text-muted-foreground">
+                                    JPG, PNG, atau WEBP. Maksimal 5 MB.
+                                </p>
                                 <InputError message={fotoForm.errors.photo} />
                             </div>
 
                             {fotoPreview && (
                                 <div className="flex items-center gap-4">
-                                    <img src={fotoPreview} alt="Pratinjau" className="size-32 rounded-lg border object-cover" />
-                                    <p className="text-muted-foreground text-xs">Pratinjau foto yang akan disimpan.</p>
+                                    <img
+                                        src={fotoPreview}
+                                        alt="Pratinjau"
+                                        className="size-32 rounded-lg border object-cover"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Pratinjau foto yang akan disimpan.
+                                    </p>
                                 </div>
                             )}
 
                             <DialogFooter>
-                                <Button type="button" variant="outline" onClick={tutupDialogFoto}>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={tutupDialogFoto}
+                                >
                                     Batal
                                 </Button>
-                                <Button type="submit" disabled={!fotoForm.data.photo || fotoForm.processing}>
+                                <Button
+                                    type="submit"
+                                    disabled={
+                                        !fotoForm.data.photo ||
+                                        fotoForm.processing
+                                    }
+                                >
                                     {fotoForm.processing ? (
                                         <Loader2 className="mr-2 size-4 animate-spin" />
                                     ) : (
@@ -1281,8 +1836,18 @@ function initialTab(allowed: string[]): string {
 
 function attendanceTiles(attendance?: AttendanceStats): TileSpec[] {
     return [
-        { label: 'Hadir', value: attendance?.summary.hadir ?? '—', icon: UserCheck, tone: 'green' },
-        { label: 'Terlambat', value: attendance?.summary.terlambat ?? '—', icon: AlarmClock, tone: 'amber' },
+        {
+            label: 'Hadir',
+            value: attendance?.summary.hadir ?? '—',
+            icon: UserCheck,
+            tone: 'green',
+        },
+        {
+            label: 'Terlambat',
+            value: attendance?.summary.terlambat ?? '—',
+            icon: AlarmClock,
+            tone: 'amber',
+        },
         {
             label: 'Tidak Hadir',
             value: attendance
@@ -1341,12 +1906,15 @@ function PrayerPanel({
                 <CardHeader>
                     <CardTitle>Absen sholat belum diaktifkan</CardTitle>
                     <CardDescription>
-                        Nyalakan dulu di Pengaturan → tab Absen Sholat, lengkap dengan jam mulai dan selesai.
+                        Nyalakan dulu di Pengaturan → tab Absen Sholat, lengkap
+                        dengan jam mulai dan selesai.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Button variant="outline" asChild>
-                        <Link href="/admin/pengaturan?tab=sholat">Buka Pengaturan</Link>
+                        <Link href="/admin/pengaturan?tab=sholat">
+                            Buka Pengaturan
+                        </Link>
                     </Button>
                 </CardContent>
             </Card>
@@ -1354,9 +1922,24 @@ function PrayerPanel({
     }
 
     const tiles: TileSpec[] = [
-        { label: 'Ikut Sholat', value: detail?.summary.hadir ?? '—', icon: MoonStar, tone: 'green' },
-        { label: 'Tidak Ikut', value: detail?.summary.tidak_hadir ?? '—', icon: UserX, tone: 'red' },
-        { label: 'Hari Efektif', value: detail?.summary.effective_days ?? '—', icon: CalendarDays, tone: 'slate' },
+        {
+            label: 'Ikut Sholat',
+            value: detail?.summary.hadir ?? '—',
+            icon: MoonStar,
+            tone: 'green',
+        },
+        {
+            label: 'Tidak Ikut',
+            value: detail?.summary.tidak_hadir ?? '—',
+            icon: UserX,
+            tone: 'red',
+        },
+        {
+            label: 'Hari Efektif',
+            value: detail?.summary.effective_days ?? '—',
+            icon: CalendarDays,
+            tone: 'slate',
+        },
         {
             label: 'Kehadiran',
             value: detail?.summary.rate ?? '—',
@@ -1375,7 +1958,13 @@ function PrayerPanel({
             onStartChange={onStartChange}
             onEndChange={onEndChange}
             onApply={onApply}
-            exports={reportExports(studentId, 'sholat', filters.start, filters.end, jenis)}
+            exports={reportExports(
+                studentId,
+                'sholat',
+                filters.start,
+                filters.end,
+                jenis,
+            )}
             tiles={tiles}
             daily={detail?.daily}
             dailySeries={PRAYER_SERIES}
@@ -1391,7 +1980,9 @@ function PrayerPanel({
             historyTitle="Riwayat Absen Sholat"
             historyEmpty="Belum ada catatan absen sholat pada rentang ini."
         >
-            {stats && <PrayerMembershipCard studentId={studentId} prayer={stats} />}
+            {stats && (
+                <PrayerMembershipCard studentId={studentId} prayer={stats} />
+            )}
         </StatsPanel>
     );
 }

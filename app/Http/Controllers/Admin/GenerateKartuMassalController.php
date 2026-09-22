@@ -7,7 +7,6 @@ use App\Jobs\GenerateStudentCardJob;
 use App\Models\CardGenerationBatch;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
-use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use App\Services\Student\StudentPhotoIntake;
@@ -37,11 +36,9 @@ use Inertia\Response;
  *      headless Chrome berjalan jauh lebih lama daripada kesabaran siapa pun
  *      menatap layar; operator harus bisa menutup halamannya.
  *
- * Lintas sekolah, jadi seluruh query siswa memakai `acrossSchools()` berikut
- * `where('school_id', ...)` eksplisit. Global scope `school` tidak bisa dipakai
- * di sini: sekolah yang dituju super admin belum tentu sekolah aktif di
- * sesinya, dan mengandalkannya berarti layar ini diam-diam memproses sekolah
- * yang salah.
+ * Sekolah sasaran berasal dari sidebar. Query lintas sekolah tetap memakai
+ * filter school_id eksplisit agar pekerjaan batch dan unggah foto memeriksa
+ * konteks yang sama, termasuk saat operator berpindah sekolah.
  */
 class GenerateKartuMassalController extends Controller
 {
@@ -50,7 +47,7 @@ class GenerateKartuMassalController extends Controller
 
     public function index(Request $request): Response
     {
-        $schoolId = (string) $request->query('school_id', '');
+        $schoolId = (string) (app()->bound('currentSchool') ? app('currentSchool')->id : '');
         $classroomId = (string) $request->query('classroom_id', '');
 
         // Kelas milik sekolah lain diabaikan diam-diam, bukan ditolak: itu
@@ -62,7 +59,7 @@ class GenerateKartuMassalController extends Controller
 
         return Inertia::render('admin/generate-kartu/index', [
             'filters' => ['school_id' => $schoolId, 'classroom_id' => $classroomId],
-            'schools' => School::where('is_active', true)->orderBy('name')->get(['id', 'name'])->all(),
+            'schoolName' => app()->bound('currentSchool') ? app('currentSchool')->name : null,
             'classrooms' => $schoolId !== '' ? $this->classroomOptions($schoolId) : [],
             'ringkasan' => $schoolId !== '' ? $this->ringkasan($schoolId, $classroomId) : null,
             'batchBerjalan' => $schoolId !== '' ? $this->batchTerakhir($schoolId) : null,
@@ -111,7 +108,7 @@ class GenerateKartuMassalController extends Controller
             'classroom_id' => ['nullable', 'string'],
         ]);
 
-        $schoolId = $validated['school_id'];
+        $schoolId = app('currentSchool')->id;
         $classroomId = (string) ($validated['classroom_id'] ?? '');
 
         if ($classroomId !== '' && ! $this->classroomBelongsTo($classroomId, $schoolId)) {
@@ -207,31 +204,17 @@ class GenerateKartuMassalController extends Controller
     /**
      * Pasang pas foto seorang siswa tanpa meninggalkan layar ini.
      *
-     * Parameternya `string $siswa`, BUKAN `Student $siswa`, dan itu bukan
-     * kelalaian. `Student` memakai global scope `school` yang menyaring
-     * `school_id = auth()->user()->school_id` — nilai yang untuk super admin
-     * diambil `SetCurrentSchool` dari `session('current_school_id')`. Layar ini
-     * memilih sekolah lewat query string dan tidak pernah menyentuh sesi, jadi
-     * begitu keduanya berbeda — keadaan normal di sini — route model binding
-     * tidak menemukan apa pun dan tombolnya 404. Itulah cacat yang diperbaiki
-     * endpoint ini; mengetik modelnya akan menghidupkannya kembali.
-     *
-     * Polanya sama dengan `StudentQuickOpenController`, yang juga menerima id
-     * mentah demi alasan yang persis sama. Bedanya di sini konteks sesi TIDAK
-     * dipindahkan: operator sedang mengurus satu layar lintas sekolah, dan
-     * menggeser sekolah aktifnya di tengah antrean unggah justru mengubah
-     * konteks yang tidak ia lihat.
-     *
-     * Karena scope tenant memang dilepas, penjagaannya ditulis eksplisit:
-     * `super-admin` di grup rutenya, dan `school_id` yang wajib cocok dengan
-     * siswanya sehingga id nyasar dari sekolah lain ditolak alih-alih
-     * diam-diam diproses.
+     * Id tetap diterima sebagai string agar pencocokan sekolah ditangani
+     * eksplisit sesudah konteks sidebar ditetapkan. Ini mempertahankan jalur
+     * unggah lintas sekolah untuk super admin tanpa mengandalkan model binding.
+     * Siswa wajib berasal dari sekolah aktif; tab lama yang masih membawa id
+     * siswa sekolah sebelumnya mendapat pesan validasi.
      */
     public function unggahFoto(Request $request, string $siswa, StudentPhotoIntake $intake): RedirectResponse
     {
         $aturan = StudentPhotoIntake::aturanUnggah();
 
-        $validated = $request->validate(
+        $request->validate(
             [...$aturan['rules'], 'school_id' => ['required', 'exists:schools,id']],
             $aturan['messages'],
             $aturan['attributes'],
@@ -239,7 +222,7 @@ class GenerateKartuMassalController extends Controller
 
         $student = Student::acrossSchools()->findOrFail($siswa);
 
-        if ($student->school_id !== $validated['school_id']) {
+        if ($student->school_id !== (app()->bound('currentSchool') ? app('currentSchool')->id : null)) {
             throw ValidationException::withMessages([
                 'photo' => 'Siswa ini bukan milik sekolah yang sedang dibuka.',
             ]);

@@ -41,7 +41,7 @@ test('no system-group module is mapped to a feature', function () {
 test('dashboard and pengaturan can never be switched off', function () {
     $alwaysOn = collect(SchoolFeature::alwaysOnModules())->map(fn (AppModule $m) => $m->value);
 
-    expect($alwaysOn)->toContain('dashboard')
+    expect($alwaysOn)->toContain('beranda')
         ->and($alwaysOn)->toContain('pengaturan');
 });
 

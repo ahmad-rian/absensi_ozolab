@@ -4,6 +4,7 @@ namespace App\Services\Import;
 
 use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
+use App\Services\ParentProfileService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -59,13 +60,13 @@ class StudentImportApplier
                         $isCreate = $row['action'] === 'create';
 
                         if ($isCreate) {
-                            $this->createStudent($row['data'], $schoolId);
+                            DB::transaction(fn () => $this->createStudent($row['data'], $schoolId));
                             $created++;
 
                             continue;
                         }
 
-                        $this->updateStudent((string) $row['student_id'], $row['data'], $schoolId);
+                        DB::transaction(fn () => $this->updateStudent((string) $row['student_id'], $row['data'], $schoolId));
                         $updated++;
                     } catch (Throwable $e) {
                         $failed++;
@@ -92,7 +93,10 @@ class StudentImportApplier
     private function createStudent(array $data, string $schoolId): void
     {
         $student = new Student;
+        $parentEmail = $data['parent_email'] ?? null;
+        unset($data['parent_email']);
         $student->fill($data);
+        $this->linkParent($student, $schoolId, $parentEmail);
         $student->school_id = $schoolId;
 
         // Kolom nis NOT NULL di database walau opsional di berkas impor.
@@ -126,7 +130,25 @@ class StudentImportApplier
         }
 
         // Kolom kosong di berkas berarti "biarkan apa adanya", bukan "kosongkan".
+        $parentEmail = $data['parent_email'] ?? null;
+        unset($data['parent_email']);
         $student->fill(array_filter($data, static fn (mixed $value): bool => $value !== null && $value !== ''));
+        $this->linkParent($student, $schoolId, $parentEmail);
         $student->save();
+    }
+
+    private function linkParent(Student $student, string $schoolId, ?string $email): void
+    {
+        if (! $student->parent_phone || ! $student->parent_name) {
+            if ($email) {
+                throw new \RuntimeException('Nama dan nomor WhatsApp orang tua wajib diisi bersama email.');
+            }
+
+            return;
+        }
+        $profile = app(ParentProfileService::class)->findOrCreateFromRegistration(
+            $schoolId, $student->parent_name, $student->parent_phone, email: $email,
+        );
+        $student->parent_profile_id = $profile->id;
     }
 }

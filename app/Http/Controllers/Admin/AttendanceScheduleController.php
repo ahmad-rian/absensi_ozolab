@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceSchedule;
 use App\Models\Classroom;
 use App\Services\Attendance\ScheduleProvisioner;
+use App\Support\PrayerSchedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,6 +29,7 @@ class AttendanceScheduleController extends Controller
         return Inertia::render('admin/jadwal-absensi/index', [
             'schedules' => $schedules,
             'classrooms' => $classrooms,
+            'prayer' => app()->bound('currentSchool') ? PrayerSchedule::for(app('currentSchool'))->toArray() : ['any_enabled' => false, 'windows' => []],
         ]);
     }
 
@@ -81,5 +83,21 @@ class AttendanceScheduleController extends Controller
         $result = $provisioner->provision(auth()->user()->school_id);
 
         return back()->with('success', "{$result['created']} jadwal default berhasil dibuat (Senin-Sabtu).");
+    }
+
+    public function updatePrayer(Request $request): RedirectResponse
+    {
+        $school = app('currentSchool');
+        $validator = validator($request->all(), [
+            'prayer_dhuha_start' => ['required', 'date_format:H:i'],
+            'prayer_dhuha_end' => ['required', 'date_format:H:i', 'after:prayer_dhuha_start'],
+            'prayer_start' => ['required', 'date_format:H:i'],
+            'prayer_end' => ['required', 'date_format:H:i', 'after:prayer_start'],
+        ]);
+        PrayerSchedule::assertWindowsDoNotOverlap($validator, $school->settings ?? []);
+        $school->settings = array_replace($school->settings ?? [], $validator->validate());
+        $school->save();
+
+        return back()->with('success', 'Jadwal sholat berhasil diperbarui.');
     }
 }

@@ -1,6 +1,8 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Form, Head, router, useForm } from '@inertiajs/react';
 import { CalendarPlus, Clock, Edit, Plus, Trash2 } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import InputError from '@/components/input-error';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -25,8 +27,15 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { dashboard } from '@/routes';
+import { sholat } from '@/routes/admin/jadwal-absensi';
 
 type Schedule = {
     id: string;
@@ -44,6 +53,16 @@ type Schedule = {
 type Classroom = { id: string; name: string };
 
 type Props = {
+    prayer: {
+        any_enabled: boolean;
+        windows: {
+            type: string;
+            type_label: string;
+            start: string;
+            end: string;
+            enabled: boolean;
+        }[];
+    };
     schedules: Schedule[];
     classrooms: Classroom[];
 };
@@ -60,14 +79,24 @@ type FormData = {
 };
 
 const DAY_LABELS: Record<number, string> = {
-    1: 'Senin', 2: 'Selasa', 3: 'Rabu', 4: 'Kamis', 5: 'Jumat', 6: 'Sabtu', 7: 'Minggu',
+    1: 'Senin',
+    2: 'Selasa',
+    3: 'Rabu',
+    4: 'Kamis',
+    5: 'Jumat',
+    6: 'Sabtu',
+    7: 'Minggu',
 };
 
 function fmt(t: string) {
     return t?.substring(0, 5) ?? '-';
 }
 
-export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
+export default function JadwalAbsensiIndex({
+    schedules,
+    classrooms,
+    prayer,
+}: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -105,15 +134,26 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
 
     function handleSubmit(e: FormEvent) {
         e.preventDefault();
+
         if (editingId) {
-            form.put(`/admin/jadwal-absensi/${editingId}`, { preserveScroll: true, onSuccess: () => setIsOpen(false) });
+            form.put(`/admin/jadwal-absensi/${editingId}`, {
+                preserveScroll: true,
+                onSuccess: () => setIsOpen(false),
+            });
         } else {
-            form.post('/admin/jadwal-absensi', { preserveScroll: true, onSuccess: () => setIsOpen(false) });
+            form.post('/admin/jadwal-absensi', {
+                preserveScroll: true,
+                onSuccess: () => setIsOpen(false),
+            });
         }
     }
 
     function handleGenerateDefaults() {
-        router.post('/admin/jadwal-absensi/generate-defaults', {}, { preserveScroll: true });
+        router.post(
+            '/admin/jadwal-absensi/generate-defaults',
+            {},
+            { preserveScroll: true },
+        );
     }
 
     const hasSchedules = schedules.length > 0;
@@ -124,12 +164,20 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Jadwal Absensi</h1>
-                        <p className="text-muted-foreground text-sm">Atur jadwal masuk, batas terlambat, dan pulang per hari.</p>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Jadwal Absensi
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Atur jadwal masuk, batas terlambat, dan pulang per
+                            hari.
+                        </p>
                     </div>
                     <div className="flex gap-2">
                         {!hasSchedules && (
-                            <Button variant="outline" onClick={handleGenerateDefaults}>
+                            <Button
+                                variant="outline"
+                                onClick={handleGenerateDefaults}
+                            >
                                 <CalendarPlus className="mr-1.5 size-4" />
                                 Generate Default (Sen-Sab)
                             </Button>
@@ -141,6 +189,79 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
                     </div>
                 </div>
 
+                {prayer.any_enabled && (
+                    <Card>
+                        <CardContent className="space-y-4 pt-6">
+                            <h2 className="text-lg font-semibold">
+                                Jadwal Sholat
+                            </h2>
+                            <Form {...sholat.form()}>
+                                {({ errors, processing }) => (
+                                    <div className="space-y-4">
+                                        {prayer.windows.map((window) => {
+                                            const prefix =
+                                                window.type === 'DHUHA'
+                                                    ? 'prayer_dhuha'
+                                                    : 'prayer';
+
+                                            return (
+                                                <div
+                                                    key={window.type}
+                                                    className="grid gap-3 sm:grid-cols-3"
+                                                >
+                                                    <p>
+                                                        {window.type_label}
+                                                        {!window.enabled &&
+                                                            ' (nonaktif)'}
+                                                    </p>
+                                                    <label>
+                                                        Mulai
+                                                        <Input
+                                                            name={`${prefix}_start`}
+                                                            type="time"
+                                                            defaultValue={
+                                                                window.start
+                                                            }
+                                                            required
+                                                        />
+                                                        <InputError
+                                                            message={
+                                                                errors[
+                                                                    `${prefix}_start`
+                                                                ]
+                                                            }
+                                                        />
+                                                    </label>
+                                                    <label>
+                                                        Selesai
+                                                        <Input
+                                                            name={`${prefix}_end`}
+                                                            type="time"
+                                                            defaultValue={
+                                                                window.end
+                                                            }
+                                                            required
+                                                        />
+                                                        <InputError
+                                                            message={
+                                                                errors[
+                                                                    `${prefix}_end`
+                                                                ]
+                                                            }
+                                                        />
+                                                    </label>
+                                                </div>
+                                            );
+                                        })}
+                                        <Button disabled={processing}>
+                                            Simpan jadwal sholat
+                                        </Button>
+                                    </div>
+                                )}
+                            </Form>
+                        </CardContent>
+                    </Card>
+                )}
                 {/* Table */}
                 <Card>
                     <CardContent className="p-0">
@@ -148,74 +269,162 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b bg-muted/50">
-                                        <th className="px-4 py-3 text-left font-semibold">Hari</th>
-                                        <th className="px-4 py-3 text-left font-semibold">Kelas</th>
-                                        <th className="px-4 py-3 text-left font-semibold">Jam Masuk</th>
-                                        <th className="px-4 py-3 text-left font-semibold">Batas Terlambat</th>
-                                        <th className="px-4 py-3 text-left font-semibold">Jam Pulang</th>
-                                        <th className="px-4 py-3 text-left font-semibold">Status</th>
-                                        <th className="px-4 py-3 text-right font-semibold">Aksi</th>
+                                        <th className="px-4 py-3 text-left font-semibold">
+                                            Hari
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-semibold">
+                                            Kelas
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-semibold">
+                                            Jam Masuk
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-semibold">
+                                            Batas Terlambat
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-semibold">
+                                            Jam Pulang
+                                        </th>
+                                        <th className="px-4 py-3 text-left font-semibold">
+                                            Status
+                                        </th>
+                                        <th className="px-4 py-3 text-right font-semibold">
+                                            Aksi
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {!hasSchedules && (
                                         <tr>
-                                            <td colSpan={7} className="px-4 py-12 text-center">
-                                                <Clock className="text-muted-foreground mx-auto mb-3 size-10" />
-                                                <p className="text-muted-foreground font-medium">Belum ada jadwal absensi.</p>
-                                                <p className="text-muted-foreground mt-1 text-xs">Klik "Generate Default" untuk membuat jadwal Senin-Sabtu otomatis.</p>
+                                            <td
+                                                colSpan={7}
+                                                className="px-4 py-12 text-center"
+                                            >
+                                                <Clock className="mx-auto mb-3 size-10 text-muted-foreground" />
+                                                <p className="font-medium text-muted-foreground">
+                                                    Belum ada jadwal absensi.
+                                                </p>
+                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                    Klik "Generate Default"
+                                                    untuk membuat jadwal
+                                                    Senin-Sabtu otomatis.
+                                                </p>
                                             </td>
                                         </tr>
                                     )}
                                     {schedules.map((s) => (
-                                        <tr key={s.id} className={`border-b last:border-0 ${!s.is_active ? 'opacity-50' : ''}`}>
-                                            <td className="px-4 py-3 font-medium">{DAY_LABELS[s.day_of_week] ?? s.day_of_week}</td>
+                                        <tr
+                                            key={s.id}
+                                            className={`border-b last:border-0 ${!s.is_active ? 'opacity-50' : ''}`}
+                                        >
+                                            <td className="px-4 py-3 font-medium">
+                                                {DAY_LABELS[s.day_of_week] ??
+                                                    s.day_of_week}
+                                            </td>
                                             <td className="px-4 py-3">
                                                 {s.classroom?.name ?? (
-                                                    <span className="text-muted-foreground">Semua Kelas</span>
+                                                    <span className="text-muted-foreground">
+                                                        Semua Kelas
+                                                    </span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className="font-mono">{fmt(s.check_in_start)}</span>
-                                                <span className="text-muted-foreground mx-1">-</span>
-                                                <span className="font-mono">{fmt(s.check_in_end)}</span>
+                                                <span className="font-mono">
+                                                    {fmt(s.check_in_start)}
+                                                </span>
+                                                <span className="mx-1 text-muted-foreground">
+                                                    -
+                                                </span>
+                                                <span className="font-mono">
+                                                    {fmt(s.check_in_end)}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className="font-mono font-semibold text-orange-600">{fmt(s.late_threshold)}</span>
+                                                <span className="font-mono font-semibold text-orange-600">
+                                                    {fmt(s.late_threshold)}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className="font-mono">{fmt(s.check_out_start)}</span>
-                                                <span className="text-muted-foreground mx-1">-</span>
-                                                <span className="font-mono">{fmt(s.check_out_end)}</span>
+                                                <span className="font-mono">
+                                                    {fmt(s.check_out_start)}
+                                                </span>
+                                                <span className="mx-1 text-muted-foreground">
+                                                    -
+                                                </span>
+                                                <span className="font-mono">
+                                                    {fmt(s.check_out_end)}
+                                                </span>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <Badge variant={s.is_active ? 'default' : 'secondary'}>
-                                                    {s.is_active ? 'Aktif' : 'Nonaktif'}
+                                                <Badge
+                                                    variant={
+                                                        s.is_active
+                                                            ? 'default'
+                                                            : 'secondary'
+                                                    }
+                                                >
+                                                    {s.is_active
+                                                        ? 'Aktif'
+                                                        : 'Nonaktif'}
                                                 </Badge>
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex justify-end gap-1">
-                                                    <Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(s)}>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="size-8"
+                                                        onClick={() =>
+                                                            openEdit(s)
+                                                        }
+                                                    >
                                                         <Edit className="size-3.5" />
                                                     </Button>
                                                     <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="size-8">
-                                                                <Trash2 className="text-destructive size-3.5" />
+                                                        <AlertDialogTrigger
+                                                            asChild
+                                                        >
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="size-8"
+                                                            >
+                                                                <Trash2 className="size-3.5 text-destructive" />
                                                             </Button>
                                                         </AlertDialogTrigger>
                                                         <AlertDialogContent>
                                                             <AlertDialogHeader>
-                                                                <AlertDialogTitle>Hapus Jadwal</AlertDialogTitle>
+                                                                <AlertDialogTitle>
+                                                                    Hapus Jadwal
+                                                                </AlertDialogTitle>
                                                                 <AlertDialogDescription>
-                                                                    Hapus jadwal {DAY_LABELS[s.day_of_week]} {s.classroom?.name ? `(${s.classroom.name})` : '(Semua Kelas)'}?
+                                                                    Hapus jadwal{' '}
+                                                                    {
+                                                                        DAY_LABELS[
+                                                                            s
+                                                                                .day_of_week
+                                                                        ]
+                                                                    }{' '}
+                                                                    {s.classroom
+                                                                        ?.name
+                                                                        ? `(${s.classroom.name})`
+                                                                        : '(Semua Kelas)'}
+                                                                    ?
                                                                 </AlertDialogDescription>
                                                             </AlertDialogHeader>
                                                             <AlertDialogFooter>
-                                                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                                <AlertDialogCancel>
+                                                                    Batal
+                                                                </AlertDialogCancel>
                                                                 <AlertDialogAction
                                                                     className="bg-destructive text-white hover:bg-destructive/90"
-                                                                    onClick={() => router.delete(`/admin/jadwal-absensi/${s.id}`, { preserveScroll: true })}
+                                                                    onClick={() =>
+                                                                        router.delete(
+                                                                            `/admin/jadwal-absensi/${s.id}`,
+                                                                            {
+                                                                                preserveScroll: true,
+                                                                            },
+                                                                        )
+                                                                    }
                                                                 >
                                                                     Hapus
                                                                 </AlertDialogAction>
@@ -237,30 +446,64 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{editingId ? 'Edit' : 'Tambah'} Jadwal Absensi</DialogTitle>
+                        <DialogTitle>
+                            {editingId ? 'Edit' : 'Tambah'} Jadwal Absensi
+                        </DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">
                                 <Label>Hari</Label>
-                                <Select value={form.data.day_of_week} onValueChange={(v) => form.setData('day_of_week', v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                <Select
+                                    value={form.data.day_of_week}
+                                    onValueChange={(v) =>
+                                        form.setData('day_of_week', v)
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(DAY_LABELS).map(([val, label]) => (
-                                            <SelectItem key={val} value={val}>{label}</SelectItem>
-                                        ))}
+                                        {Object.entries(DAY_LABELS).map(
+                                            ([val, label]) => (
+                                                <SelectItem
+                                                    key={val}
+                                                    value={val}
+                                                >
+                                                    {label}
+                                                </SelectItem>
+                                            ),
+                                        )}
                                     </SelectContent>
                                 </Select>
-                                {form.errors.day_of_week && <p className="text-destructive text-sm">{form.errors.day_of_week}</p>}
+                                {form.errors.day_of_week && (
+                                    <p className="text-sm text-destructive">
+                                        {form.errors.day_of_week}
+                                    </p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label>Kelas</Label>
-                                <Select value={form.data.classroom_id || 'all'} onValueChange={(v) => form.setData('classroom_id', v === 'all' ? '' : v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                <Select
+                                    value={form.data.classroom_id || 'all'}
+                                    onValueChange={(v) =>
+                                        form.setData(
+                                            'classroom_id',
+                                            v === 'all' ? '' : v,
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">Semua Kelas</SelectItem>
+                                        <SelectItem value="all">
+                                            Semua Kelas
+                                        </SelectItem>
                                         {classrooms.map((c) => (
-                                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                            <SelectItem key={c.id} value={c.id}>
+                                                {c.name}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -271,32 +514,89 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
                             <Label>Jam Masuk</Label>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                    <Label className="text-muted-foreground text-xs">Mulai</Label>
-                                    <Input type="time" value={form.data.check_in_start} onChange={(e) => form.setData('check_in_start', e.target.value)} />
+                                    <Label className="text-xs text-muted-foreground">
+                                        Mulai
+                                    </Label>
+                                    <Input
+                                        type="time"
+                                        value={form.data.check_in_start}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'check_in_start',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-muted-foreground text-xs">Selesai</Label>
-                                    <Input type="time" value={form.data.check_in_end} onChange={(e) => form.setData('check_in_end', e.target.value)} />
+                                    <Label className="text-xs text-muted-foreground">
+                                        Selesai
+                                    </Label>
+                                    <Input
+                                        type="time"
+                                        value={form.data.check_in_end}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'check_in_end',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
                                 </div>
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <Label>Batas Terlambat</Label>
-                            <Input type="time" value={form.data.late_threshold} onChange={(e) => form.setData('late_threshold', e.target.value)} />
-                            {form.errors.late_threshold && <p className="text-destructive text-sm">{form.errors.late_threshold}</p>}
+                            <Input
+                                type="time"
+                                value={form.data.late_threshold}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'late_threshold',
+                                        e.target.value,
+                                    )
+                                }
+                            />
+                            {form.errors.late_threshold && (
+                                <p className="text-sm text-destructive">
+                                    {form.errors.late_threshold}
+                                </p>
+                            )}
                         </div>
 
                         <div className="space-y-2">
                             <Label>Jam Pulang</Label>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                    <Label className="text-muted-foreground text-xs">Mulai</Label>
-                                    <Input type="time" value={form.data.check_out_start} onChange={(e) => form.setData('check_out_start', e.target.value)} />
+                                    <Label className="text-xs text-muted-foreground">
+                                        Mulai
+                                    </Label>
+                                    <Input
+                                        type="time"
+                                        value={form.data.check_out_start}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'check_out_start',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-muted-foreground text-xs">Selesai</Label>
-                                    <Input type="time" value={form.data.check_out_end} onChange={(e) => form.setData('check_out_end', e.target.value)} />
+                                    <Label className="text-xs text-muted-foreground">
+                                        Selesai
+                                    </Label>
+                                    <Input
+                                        type="time"
+                                        value={form.data.check_out_end}
+                                        onChange={(e) =>
+                                            form.setData(
+                                                'check_out_end',
+                                                e.target.value,
+                                            )
+                                        }
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -305,13 +605,21 @@ export default function JadwalAbsensiIndex({ schedules, classrooms }: Props) {
                             <Checkbox
                                 id="is_active"
                                 checked={form.data.is_active}
-                                onCheckedChange={(c) => form.setData('is_active', c === true)}
+                                onCheckedChange={(c) =>
+                                    form.setData('is_active', c === true)
+                                }
                             />
                             <Label htmlFor="is_active">Aktif</Label>
                         </div>
 
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Batal</Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                Batal
+                            </Button>
                             <Button type="submit" disabled={form.processing}>
                                 {editingId ? 'Perbarui' : 'Simpan'}
                             </Button>

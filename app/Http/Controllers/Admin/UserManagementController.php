@@ -80,6 +80,7 @@ class UserManagementController extends Controller
             'email' => $validated['email'],
             'phone' => $validated['phone'] ?? null,
             'password' => Hash::make($validated['password']),
+            'must_change_password' => true,
             'email_verified_at' => now(),
             'school_id' => auth()->user()->school_id,
             'is_active' => true,

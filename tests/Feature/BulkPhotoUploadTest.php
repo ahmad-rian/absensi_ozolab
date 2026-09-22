@@ -7,31 +7,13 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
-/*
- | Memasang pas foto dari layar generate massal, lintas sekolah.
- |
- | Layar `/admin/generate-kartu` memilih sekolah lewat query string dan tidak
- | pernah menyentuh sesi. Sementara itu `Student` disaring global scope `school`
- | yang membaca `auth()->user()->school_id` — nilai yang untuk super admin
- | diambil `SetCurrentSchool` dari `session('current_school_id')`.
- |
- | Akibatnya tombol "Pasang foto" yang menautkan ke halaman siswa 404 setiap
- | kali sekolah yang dipilih berbeda dari sekolah aktif di sesi, yaitu keadaan
- | normal layar ini. Endpoint di sini yang memperbaikinya, dan tes pertama di
- | bawah adalah seluruh alasan keberadaannya.
- |
- | Yang TIDAK boleh ikut longgar: admin biasa tetap terkunci di sekolahnya.
- | Penjagaan itu diuji di StudentPhotoUploadTest dan harus tetap 404 di sana.
- */
-
 beforeEach(function () {
     Storage::fake('public');
     Queue::fake();
 
     $this->super = createSuperAdminUser();
 
-    // Sekolah SASARAN, sengaja bukan sekolah super admin dan bukan sekolah
-    // yang akan dipasang di sesi.
+    // Sekolah sasaran berbeda dari sekolah asal akun super admin.
     $this->sasaran = School::factory()->create();
     $this->kelas = Classroom::factory()->create(['school_id' => $this->sasaran->id]);
     $this->siswa = Student::factory()->create([
@@ -43,9 +25,8 @@ beforeEach(function () {
 function unggahMassal(Student $siswa, array $ganti = [])
 {
     return test()->actingAs(test()->super)
-        // Sesi menunjuk sekolah milik super admin, BUKAN sekolah siswanya.
-        // Inilah pemisahan yang dulu menghasilkan 404.
-        ->withSession(['current_school_id' => test()->super->school_id])
+        // Sekolah sasaran dipilih melalui sidebar.
+        ->withSession(['current_school_id' => $ganti['school_id'] ?? $siswa->school_id])
         ->post("/admin/generate-kartu/siswa/{$siswa->id}/foto", array_merge([
             'photo' => UploadedFile::fake()->image('pasfoto.jpg', 600, 800),
             'school_id' => $siswa->school_id,
@@ -67,7 +48,7 @@ test('balasannya kembali ke layar generate, bukan ke halaman detail siswa', func
     // Kalau redirect jalur lama ikut terbawa, modalnya hilang di tengah
     // antrean dan operator harus membukanya lagi untuk tiap anak.
     test()->actingAs($this->super)
-        ->withSession(['current_school_id' => $this->super->school_id])
+        ->withSession(['current_school_id' => $this->sasaran->id])
         ->from('/admin/generate-kartu?school_id='.$this->sasaran->id)
         ->post("/admin/generate-kartu/siswa/{$this->siswa->id}/foto", [
             'photo' => UploadedFile::fake()->image('pasfoto.jpg', 600, 800),
@@ -92,7 +73,7 @@ test('foto lama dibuang saat diganti', function () {
         ->and(Storage::disk('public')->exists($baru))->toBeTrue();
 });
 
-test('school_id yang tidak cocok dengan siswanya ditolak', function () {
+test('sekolah sidebar yang tidak cocok dengan siswanya ditolak', function () {
     $sekolahLain = School::factory()->create();
 
     // Scope tenant sengaja dilepas di endpoint ini, jadi pencocokan sekolah
@@ -115,7 +96,7 @@ test('siswa yang tidak ada dijawab 404', function () {
 test('non-superadmin ditolak di endpoint ini', function () {
     $admin = createAdminUser();
 
-    // Permission `card-generation.access` dipegang ADMIN juga — yang menutup
+    // Permission `generate-kartu.access` dipegang ADMIN juga — yang menutup
     // pintu di sini middleware `super-admin`, bukan permission-nya.
     test()->actingAs($admin)
         ->post("/admin/generate-kartu/siswa/{$this->siswa->id}/foto", [
@@ -151,6 +132,7 @@ test('ringkasan layar ikut berubah setelah foto terpasang', function () {
     ]);
 
     $layar = fn () => test()->actingAs($this->super)
+        ->withSession(['current_school_id' => $this->sasaran->id])
         ->get('/admin/generate-kartu?school_id='.$this->sasaran->id);
 
     $layar()->assertInertia(fn ($page) => $page

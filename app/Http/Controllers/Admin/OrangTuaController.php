@@ -28,6 +28,7 @@ class OrangTuaController extends Controller
 
         $parents = ParentProfile::forSchool()
             ->with(['user', 'students.classroom'])
+            ->when($request->boolean('belum_login'), fn ($query) => $query->whereHas('user', fn ($user) => $user->where('email', 'like', '%@internal.app')))
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('user', function ($userQuery) use ($search) {
@@ -49,6 +50,7 @@ class OrangTuaController extends Controller
             'telegramActive' => $telegramActive,
             'filters' => [
                 'search' => $search,
+                'belum_login' => $request->boolean('belum_login'),
             ],
         ]);
     }
@@ -100,6 +102,7 @@ class OrangTuaController extends Controller
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],
                 'password' => Hash::make($validated['password']),
+                'must_change_password' => true,
                 'school_id' => $schoolId,
             ]);
 

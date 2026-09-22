@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\StudentReportController;
 use App\Http\Controllers\Admin\StudioTokenController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
+use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KartuBebas\DashboardController as KartuBebasDashboardController;
 use App\Http\Controllers\KartuBebas\DatasetController;
@@ -44,12 +45,14 @@ use App\Http\Controllers\KartuBebas\LayoutController;
 use App\Http\Controllers\KartuBebas\RecordController;
 use App\Http\Controllers\KartuBebas\RiwayatController;
 use App\Http\Controllers\LibraryScannerController;
+use App\Http\Controllers\OrangTua\PortalController;
 use App\Http\Controllers\ParentTelegramController;
 use App\Http\Controllers\PrayerScannerController;
 use App\Http\Controllers\Public\CardFormController;
 use App\Http\Controllers\PublicScannerController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StudentRegistrationController;
+use App\Http\Middleware\EnsureAnakSendiri;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
@@ -60,7 +63,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 // FAQ datang dari config/seo.php supaya isi yang dibaca pengunjung dan isi yang
 // dibaca mesin (skema FAQPage) tidak pernah menyimpang.
-Route::get('/', fn () => Inertia\Inertia::render('welcome', ['faqs' => config('seo.faq')]))->name('home');
+Route::get('/', fn () => auth()->check() ? to_route(auth()->user()->homeRoute()) : Inertia\Inertia::render('welcome', ['faqs' => config('seo.faq')]))->name('home');
 
 // Berkas yang dibaca mesin. robots.txt tetap berkas statis di public/.
 Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
@@ -190,7 +193,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // sudah dibagikan lewat shared props.
     Route::get('panduan', [PanduanController::class, 'index'])->name('admin.panduan');
 
-    Route::middleware('permission:dashboard.access')
+    Route::middleware('permission:beranda.access')
         ->get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::middleware(['permission:siswa.access', 'feature:master_siswa'])->group(function () {
@@ -223,6 +226,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::post('siswa/{siswa}/regenerate/kartu', [StudentRegenerateController::class, 'cards'])->name('admin.siswa.regenerate.cards');
         Route::post('siswa/{siswa}/regenerate/pas-foto', [StudentRegenerateController::class, 'photoSheet'])->name('admin.siswa.regenerate.photo-sheet');
         Route::post('siswa/{siswa}/regenerate/foto', [StudentRegenerateController::class, 'photo'])->name('admin.siswa.regenerate.photo');
+        Route::get('siswa/{siswa}/laporan/semuanya/pdf', [StudentReportController::class, 'combinedPdf'])->name('admin.siswa.laporan.semuanya.pdf');
         Route::get('siswa/{siswa}/laporan/absensi/xlsx', [StudentReportController::class, 'attendanceXlsx'])->name('admin.siswa.laporan.absensi.xlsx');
         Route::get('siswa/{siswa}/laporan/absensi/pdf', [StudentReportController::class, 'attendancePdf'])->name('admin.siswa.laporan.absensi.pdf');
         Route::get('siswa/{siswa}/laporan/sholat/xlsx', [StudentReportController::class, 'prayerXlsx'])->name('admin.siswa.laporan.sholat.xlsx');
@@ -239,7 +243,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::get('kunjungan-perpus', [KunjunganPerpusController::class, 'index'])->name('admin.kunjungan-perpus');
     });
 
-    Route::middleware(['permission:rfid-cards.access', 'feature:absensi_rfid'])->group(function () {
+    Route::middleware(['permission:kartu-rfid.access', 'feature:absensi_rfid'])->group(function () {
         Route::get('rfid-cards', [RfidCardController::class, 'index'])->name('admin.rfid-cards');
         Route::post('rfid-cards/{siswa}', [RfidCardController::class, 'store'])->name('admin.rfid-cards.store');
         Route::delete('rfid-cards/{siswa}', [RfidCardController::class, 'destroy'])->name('admin.rfid-cards.destroy');
@@ -265,6 +269,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     });
 
     Route::middleware(['permission:jadwal-absensi.access', 'feature:absensi_sekolah'])->group(function () {
+        Route::put('jadwal-absensi/sholat', [AttendanceScheduleController::class, 'updatePrayer'])->name('admin.jadwal-absensi.sholat');
         Route::resource('jadwal-absensi', AttendanceScheduleController::class)->except(['show', 'create', 'edit'])->parameter('jadwal-absensi', 'attendanceSchedule');
         Route::post('jadwal-absensi/generate-defaults', [AttendanceScheduleController::class, 'generateDefaults'])->name('jadwal-absensi.generate-defaults');
     });
@@ -289,14 +294,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     });
 
     // Kartu & Album
-    Route::middleware(['permission:frames.access', 'feature:kartu_album'])->group(function () {
+    Route::middleware(['permission:bingkai.access', 'feature:kartu_album'])->group(function () {
         Route::get('frames', [FrameController::class, 'index'])->name('admin.frames');
         Route::post('frames', [FrameController::class, 'store'])->name('admin.frames.store');
         Route::put('frames/{frame}', [FrameController::class, 'update'])->name('admin.frames.update');
         Route::delete('frames/{frame}', [FrameController::class, 'destroy'])->name('admin.frames.destroy');
     });
 
-    Route::middleware(['permission:card-layouts.access', 'feature:kartu_album'])->group(function () {
+    Route::middleware(['permission:layout-kartu.access', 'feature:kartu_album'])->group(function () {
         Route::get('card-layouts', [CardLayoutController::class, 'index'])->name('admin.card-layouts');
         Route::get('card-layouts/create', [CardLayoutController::class, 'create'])->name('admin.card-layouts.create');
         Route::post('card-layouts', [CardLayoutController::class, 'store'])->name('admin.card-layouts.store');
@@ -305,7 +310,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::delete('card-layouts/{cardLayout}', [CardLayoutController::class, 'destroy'])->name('admin.card-layouts.destroy');
     });
 
-    Route::middleware(['permission:card-generation.access', 'feature:kartu_album'])->group(function () {
+    Route::middleware(['permission:generate-kartu.access', 'feature:kartu_album'])->group(function () {
         Route::get('card-generation', [CardGenerationController::class, 'index'])->name('admin.card-generation');
         Route::post('card-generation/generate', [CardGenerationController::class, 'generate'])->name('admin.card-generation.generate');
     });
@@ -314,7 +319,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // memilih sekolahnya dari daftar dan query-nya memakai `acrossSchools()`,
     // jadi global scope tenant tidak menjaga apa pun di sini — sama alasannya
     // dengan grup Sistem.
-    Route::middleware(['permission:card-generation.access', 'feature:kartu_album', 'super-admin'])->group(function () {
+    Route::middleware(['permission:generate-kartu.access', 'feature:kartu_album', 'super-admin'])->group(function () {
         Route::get('generate-kartu', [GenerateKartuMassalController::class, 'index'])->name('admin.generate-kartu');
         Route::post('generate-kartu', [GenerateKartuMassalController::class, 'generate'])->name('admin.generate-kartu.jalan');
         Route::get('generate-kartu/{batch}/progres', [GenerateKartuMassalController::class, 'progres'])
@@ -328,19 +333,19 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
             ->name('admin.generate-kartu.foto');
     });
 
-    Route::middleware(['permission:album-layouts.access', 'feature:kartu_album'])->group(function () {
+    Route::middleware(['permission:layout-album.access', 'feature:kartu_album'])->group(function () {
         Route::get('album-layouts', [AlbumLayoutController::class, 'index'])->name('admin.album-layouts');
         Route::post('album-layouts', [AlbumLayoutController::class, 'store'])->name('admin.album-layouts.store');
         Route::put('album-layouts/{albumLayout}', [AlbumLayoutController::class, 'update'])->name('admin.album-layouts.update');
         Route::delete('album-layouts/{albumLayout}', [AlbumLayoutController::class, 'destroy'])->name('admin.album-layouts.destroy');
     });
 
-    Route::middleware(['permission:album-generation.access', 'feature:kartu_album'])->group(function () {
+    Route::middleware(['permission:generate-album.access', 'feature:kartu_album'])->group(function () {
         Route::get('album-generation', [AlbumGenerationController::class, 'index'])->name('admin.album-generation');
         Route::get('album-generation/download', [AlbumGenerationController::class, 'generate'])->name('admin.album-generation.generate');
     });
 
-    Route::middleware(['permission:photo-sheets.access', 'feature:kartu_album'])->group(function () {
+    Route::middleware(['permission:pas-foto.access', 'feature:kartu_album'])->group(function () {
         Route::get('pas-foto', [PhotoSheetBatchController::class, 'index'])->name('admin.photo-sheets');
         Route::post('pas-foto', [PhotoSheetBatchController::class, 'store'])->name('admin.photo-sheets.store');
         Route::get('pas-foto/{batch}/berkas', [PhotoSheetBatchController::class, 'download'])->name('admin.photo-sheets.download');
@@ -354,49 +359,49 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::post('pengaturan/upload-favicon', [PengaturanController::class, 'uploadFavicon'])->name('admin.pengaturan.upload-favicon');
     });
 
-    Route::middleware(['permission:users.access', 'feature:manajemen_pengguna'])->group(function () {
+    Route::middleware(['permission:pengguna.access', 'feature:manajemen_pengguna'])->group(function () {
         Route::resource('users', UserManagementController::class)->except(['show'])->names('admin.users');
     });
 
-    Route::middleware(['permission:drive-config.access', 'feature:integrasi_drive'])->group(function () {
+    Route::middleware(['permission:google-drive.access', 'feature:integrasi_drive'])->group(function () {
         Route::get('drive-config', [DriveConfigController::class, 'index'])->name('admin.drive-config');
         Route::post('drive-config', [DriveConfigController::class, 'update'])->name('admin.drive-config.update');
         Route::post('drive-config/test', [DriveConfigController::class, 'test'])->name('admin.drive-config.test');
         Route::get('drive-config/callback', [DriveConfigController::class, 'oauthCallback'])->name('admin.drive-config.callback');
     });
 
-    Route::middleware(['permission:wa-config.access', 'feature:integrasi_whatsapp'])
+    Route::middleware(['permission:whatsapp.access', 'feature:integrasi_whatsapp'])
         ->get('wa-config', [WaConfigController::class, 'index'])->name('admin.wa-config');
 
     // Sistem — modul yang menyentuh data lintas sekolah. Permission saja
     // tidak cukup di sini: School, Role, dan SchoolNotificationChannel tidak
     // ber-tenant, jadi global scope tidak melindungi apa pun.
-    Route::middleware(['permission:impersonate.access', 'super-admin'])->group(function () {
+    Route::middleware(['permission:masuk-sebagai.access', 'super-admin'])->group(function () {
         Route::post('users/{user}/impersonate', [ImpersonationController::class, 'store'])->name('admin.users.impersonate');
     });
 
     // Kredensial Tyas Studio. `super-admin` wajib: token boleh diterbitkan
     // lintas sekolah, dan `StudioToken` sengaja tidak ber-tenant supaya
     // pencariannya tetap bekerja saat tidak ada user yang login.
-    Route::middleware(['permission:schools.access', 'super-admin'])->group(function () {
+    Route::middleware(['permission:sekolah.access', 'super-admin'])->group(function () {
         Route::get('studio-tokens', [StudioTokenController::class, 'index'])->name('admin.studio-tokens');
         Route::post('studio-tokens', [StudioTokenController::class, 'store'])->name('admin.studio-tokens.store');
         Route::delete('studio-tokens/{studioToken}', [StudioTokenController::class, 'destroy'])->name('admin.studio-tokens.destroy');
     });
 
-    Route::middleware(['permission:notification-gateways.access', 'super-admin'])->group(function () {
+    Route::middleware(['permission:gateway-notifikasi.access', 'super-admin'])->group(function () {
         Route::get('notification-gateways', [NotificationGatewayController::class, 'index'])->name('admin.notification-gateways');
         Route::put('notification-gateways/{school}', [NotificationGatewayController::class, 'update'])->name('admin.notification-gateways.update');
         Route::delete('notification-gateways/{school}', [NotificationGatewayController::class, 'destroy'])->name('admin.notification-gateways.destroy');
         Route::post('notification-gateways/{school}/test', [NotificationGatewayController::class, 'test'])->name('admin.notification-gateways.test');
     });
 
-    Route::middleware(['permission:schools.access', 'super-admin'])->group(function () {
+    Route::middleware(['permission:sekolah.access', 'super-admin'])->group(function () {
         Route::resource('schools', SchoolController::class)->except(['show'])->names('admin.schools');
         Route::post('schools/{school}/scanner-token', [SchoolController::class, 'regenerateScannerToken'])->name('admin.schools.regenerate-scanner');
     });
 
-    Route::middleware(['permission:roles.access', 'super-admin'])->group(function () {
+    Route::middleware(['permission:hak-akses.access', 'super-admin'])->group(function () {
         Route::get('roles', [RolePermissionController::class, 'index'])->name('admin.roles');
         Route::post('roles', [RolePermissionController::class, 'store'])->name('admin.roles.store');
         Route::put('roles/{role}', [RolePermissionController::class, 'update'])->name('admin.roles.update');
@@ -404,7 +409,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     });
 
     // Kartu Bebas / Haji — dynamic card form builder
-    Route::middleware(['permission:card-forms.access', 'super-admin'])->group(function () {
+    Route::middleware(['permission:form-kartu.access', 'super-admin'])->group(function () {
         Route::get('card-forms', [AdminCardFormController::class, 'index'])->name('admin.card-forms');
         Route::get('card-forms/create', [AdminCardFormController::class, 'create'])->name('admin.card-forms.create');
         Route::post('card-forms', [AdminCardFormController::class, 'store'])->name('admin.card-forms.store');
@@ -460,3 +465,18 @@ Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-a
 });
 
 require __DIR__.'/settings.php';
+
+Route::middleware('auth')->group(function () {
+    Route::get('ganti-password', [ChangeRequiredPasswordController::class, 'edit'])->name('password.required.edit');
+    Route::put('ganti-password', [ChangeRequiredPasswordController::class, 'update'])->middleware('throttle:6,1')->name('password.required.update');
+});
+
+Route::middleware(['auth', 'permission:portal-orang-tua.access', 'password.ganti'])->prefix('orangtua')->name('orangtua.')->group(function () {
+    Route::get('/', [PortalController::class, 'index'])->name('index');
+    Route::middleware(EnsureAnakSendiri::class)->prefix('anak/{anak}')->group(function () {
+        Route::get('/', [PortalController::class, 'show'])->name('anak');
+        Route::get('laporan', [PortalController::class, 'laporan'])->name('laporan');
+        Route::get('galeri', [PortalController::class, 'galeri'])->name('galeri');
+        Route::get('unduh/{asset}', [PortalController::class, 'download'])->name('download');
+    });
+});

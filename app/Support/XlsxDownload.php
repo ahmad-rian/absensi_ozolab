@@ -20,6 +20,46 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class XlsxDownload
 {
+    /** @param array<string, array{header: array, rows: array}> $sheets */
+    public static function sheets(string $filename, array $sheets): BinaryFileResponse
+    {
+        if ($sheets === []) {
+            throw new \InvalidArgumentException('Minimal satu sheet diperlukan.');
+        }
+        $names = [];
+        foreach (array_keys($sheets) as $name) {
+            if (strpbrk($name, '[]:*?/\\') !== false || trim($name) === '') {
+                throw new \InvalidArgumentException('Nama sheet tidak valid.');
+            }
+            $short = mb_substr($name, 0, 31);
+            if (in_array(mb_strtolower($short), $names, true)) {
+                throw new \InvalidArgumentException('Nama sheet harus unik.');
+            }
+            $names[] = mb_strtolower($short);
+        }
+        $path = tempnam(sys_get_temp_dir(), 'xlsx');
+        $writer = new Writer;
+        try {
+            $writer->openToFile($path);
+            foreach ($sheets as $name => $sheet) {
+                if ($name !== array_key_first($sheets)) {
+                    $writer->addNewSheetAndMakeItCurrent();
+                }
+                $writer->getCurrentSheet()->setName(mb_substr($name, 0, 31));
+                $writer->addRow(self::row($sheet['header'], (new Style)->withFontBold(true)));
+                foreach ($sheet['rows'] as $row) {
+                    $writer->addRow(self::row($row));
+                }
+            }
+            $writer->close();
+        } catch (\Throwable $exception) {
+            @unlink($path);
+            throw $exception;
+        }
+
+        return response()->download($path, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])->deleteFileAfterSend();
+    }
+
     /**
      * @param  array<int, string>  $header
      * @param  array<int, array<int, mixed>>  $rows

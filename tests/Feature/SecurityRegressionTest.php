@@ -26,11 +26,11 @@ test('C-1: a school admin cannot grant themselves system permissions', function 
             'name' => $this->admin->name,
             'email' => $this->admin->email,
             'role' => 'ADMIN',
-            'extra_permissions' => ['schools.access'],
+            'extra_permissions' => ['sekolah.access'],
         ])
         ->assertForbidden();
 
-    expect($this->admin->fresh()->can('schools.access'))->toBeFalse();
+    expect($this->admin->fresh()->can('sekolah.access'))->toBeFalse();
 });
 
 test('C-1: a school admin cannot grant system permissions to a colleague either', function () {
@@ -42,11 +42,11 @@ test('C-1: a school admin cannot grant system permissions to a colleague either'
             'name' => $colleague->name,
             'email' => $colleague->email,
             'role' => 'GURU',
-            'extra_permissions' => ['schools.access', 'impersonate.access'],
+            'extra_permissions' => ['sekolah.access', 'masuk-sebagai.access'],
         ])
         ->assertSessionHasErrors('extra_permissions.0');
 
-    expect($colleague->fresh()->can('schools.access'))->toBeFalse();
+    expect($colleague->fresh()->can('sekolah.access'))->toBeFalse();
 });
 
 test('C-1: a super admin may still grant anything', function () {
@@ -59,17 +59,17 @@ test('C-1: a super admin may still grant anything', function () {
             'name' => $target->name,
             'email' => $target->email,
             'role' => 'ADMIN',
-            'extra_permissions' => ['schools.access'],
+            'extra_permissions' => ['sekolah.access'],
         ])
         ->assertSessionHasNoErrors();
 
-    expect($target->fresh()->can('schools.access'))->toBeTrue();
+    expect($target->fresh()->can('sekolah.access'))->toBeTrue();
 });
 
 // ---------------------------------------------------------------- H-1, H-4, M-1
 
 test('H-1/H-4/M-1: system modules are super-admin only even with the permission', function () {
-    $this->admin->givePermissionTo(['schools.access', 'notification-gateways.access', 'roles.access']);
+    $this->admin->givePermissionTo(['sekolah.access', 'gateway-notifikasi.access', 'hak-akses.access']);
 
     $this->actingAs($this->admin)->get(route('admin.schools.index'))->assertForbidden();
     $this->actingAs($this->admin)->get(route('admin.notification-gateways'))->assertForbidden();
@@ -99,7 +99,7 @@ test('H-2: a role without siswa.access cannot read the student API', function ()
 // ---------------------------------------------------------------- H-3
 
 test('H-3: impersonation is refused for anyone but a super admin', function () {
-    $this->admin->givePermissionTo('impersonate.access');
+    $this->admin->givePermissionTo('masuk-sebagai.access');
 
     $victim = User::factory()->create(['school_id' => $this->otherSchool->id]);
     $victim->assignRole('GURU');
@@ -195,12 +195,12 @@ test('the public registration form only accepts a safe name', function () {
 
 test('every system-module route is guarded by the super-admin middleware', function () {
     $systemPermissions = [
-        'schools.access',
-        'roles.access',
-        'notification-gateways.access',
-        'card-forms.access',
+        'sekolah.access',
+        'hak-akses.access',
+        'gateway-notifikasi.access',
+        'form-kartu.access',
         'kartu-bebas.access',
-        'impersonate.access',
+        'masuk-sebagai.access',
         'semua-sekolah.access',
     ];
 

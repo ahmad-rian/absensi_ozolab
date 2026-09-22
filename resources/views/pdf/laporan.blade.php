@@ -3,77 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Laporan Kehadiran</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 11px;
-            color: #333;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
-        }
-        .header h1 {
-            font-size: 18px;
-            margin-bottom: 2px;
-        }
-        .header h2 {
-            font-size: 14px;
-            font-weight: normal;
-            margin-bottom: 4px;
-        }
-        .header p {
-            font-size: 11px;
-            color: #555;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            border: 1px solid #999;
-            padding: 5px 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-            font-size: 10px;
-            text-transform: uppercase;
-        }
-        td {
-            font-size: 11px;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .text-right {
-            text-align: right;
-        }
-        .summary-row td {
-            font-weight: bold;
-            background-color: #f9f9f9;
-        }
-        .footer {
-            margin-top: 15px;
-            font-size: 9px;
-            color: #777;
-            text-align: right;
-        }
-    </style>
+    @include('pdf.report-style')
 </head>
 <body>
     <div class="header">
         <h1>{{ $schoolName }}</h1>
-        <h2>Laporan Kehadiran</h2>
+        <h2>Laporan {{ ($reportKind ?? 'absensi') === 'semuanya' ? 'Kehadiran & Sholat' : ($kinds[$reportKind ?? 'absensi'] ?? 'Kehadiran') }}</h2>
         <p>Periode: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
     </div>
 
@@ -88,7 +23,7 @@
                 <th class="text-center">Terlambat</th>
                 <th class="text-center">Izin</th>
                 <th class="text-center">Sakit</th>
-                <th class="text-center">Alpa</th>
+                <th class="text-center">{{ in_array($reportKind ?? '', ['dhuha', 'dzuhur']) ? 'Tidak Ikut' : 'Alpa' }}</th>
                 <th class="text-center">% Kehadiran</th>
             </tr>
         </thead>
@@ -119,8 +54,14 @@
         </tbody>
     </table>
 
-    <div class="footer">
-        Dicetak pada: {{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}
-    </div>
+    @if (($reportKind ?? '') === 'semuanya')
+    @foreach ($kinds as $slug => $label)
+    @if ($slug !== 'absensi')
+    <h3>{{ $label }}</h3><table><thead><tr><th>NIS</th><th>Nama</th><th>Kelas</th><th>Ikut</th><th>Tidak ikut</th><th>Hari efektif</th><th>Kehadiran</th></tr></thead><tbody>@foreach ($reportData as $row)<tr><td>{{ $row['nis'] }}</td><td>{{ $row['full_name'] }}</td><td>{{ $row['classroom_name'] }}</td><td>{{ $row['prayers'][$slug]['hadir'] }}</td><td>{{ $row['prayers'][$slug]['tidak_hadir'] }}</td><td>{{ $row['prayers'][$slug]['effective_days'] }}</td><td>{{ $row['prayers'][$slug]['rate'] }}%</td></tr>@endforeach</tbody></table>
+    @endif
+    @endforeach
+    @endif
+
+<div class="footer">Dicetak: {{ $printedAt ?? \App\Support\SchoolTime::now()->format('d/m/Y H:i') }} · Halaman <span class="page-number"></span></div>
 </body>
 </html>

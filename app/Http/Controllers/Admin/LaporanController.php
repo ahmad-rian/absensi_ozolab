@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Enums\AttendanceStatus;
+use App\Enums\PrayerType;
+use App\Enums\SchoolFeature;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Setting;
+use App\Models\Student;
+use App\Services\Student\StudentStatsBuilder;
+use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use App\Support\XlsxDownload;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -23,6 +26,7 @@ class LaporanController extends Controller
 {
     public function index(Request $request): Response
     {
+        $kind = $this->reportKind($request);
         $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
         $classroomId = $request->input('classroom_id');
@@ -34,7 +38,7 @@ class LaporanController extends Controller
             ->distinct('attendance_date')
             ->count('attendance_date');
 
-        $reportData = $this->getReportData($startDate, $endDate, $classroomId, $schoolId);
+        $reportData = $this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind);
 
         $summary = [
             'effective_days' => $effectiveDays,
@@ -47,24 +51,31 @@ class LaporanController extends Controller
 
         return Inertia::render('admin/laporan/index', [
             'reportData' => $reportData->values(),
+            'kinds' => $this->availableKinds(),
             'summary' => $summary,
             'classrooms' => $classrooms,
             'filters' => [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
                 'classroom_id' => $classroomId ?? '',
+                'jenis' => $kind,
             ],
         ]);
     }
 
     public function export(Request $request): BinaryFileResponse
     {
+        $kind = $this->reportKind($request);
         $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
         $classroomId = $request->input('classroom_id');
         $schoolId = auth()->user()->school_id;
 
-        $reportData = $this->getReportData($startDate, $endDate, $classroomId, $schoolId);
+        if ($kind !== 'absensi') {
+            return XlsxDownload::sheets('laporan-'.$startDate.'.xlsx', $this->reportSheets($startDate, $endDate, $classroomId, $schoolId, $kind));
+        }
+
+        $reportData = $this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind);
 
         return XlsxDownload::make(
             'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d').'.xlsx',
@@ -97,12 +108,13 @@ class LaporanController extends Controller
 
     public function exportPdf(Request $request): HttpResponse
     {
+        $kind = $this->reportKind($request);
         $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
         $classroomId = $request->input('classroom_id');
         $schoolId = auth()->user()->school_id;
 
-        $reportData = $this->getReportData($startDate, $endDate, $classroomId, $schoolId);
+        $reportData = $this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind);
 
         $summary = [
             'total_hadir' => $reportData->sum('hadir'),
@@ -121,6 +133,8 @@ class LaporanController extends Controller
             'startDate' => $startDate,
             'endDate' => $endDate,
             'schoolName' => $schoolName,
+            'reportKind' => $kind,
+            'kinds' => $this->availableKinds(),
         ]);
 
         $pdf->setPaper('a4', 'landscape');
@@ -130,46 +144,67 @@ class LaporanController extends Controller
         return $pdf->download($filename);
     }
 
-    /**
-     * @return Collection<int, array{student_id: int, nis: string, full_name: string, classroom_name: string, hadir: int, terlambat: int, izin: int, sakit: int, alpa: int, attendance_rate: float}>
-     */
-    private function getReportData(string $startDate, string $endDate, ?string $classroomId, ?string $schoolId): Collection
+    private function availableKinds(): array
     {
-        $query = Attendance::when($schoolId, fn ($q) => $q->whereHas('student', fn ($sq) => $sq->where('school_id', $schoolId)))
-            ->select(
-                'student_id',
-                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Hadir->value.'\' THEN 1 END) as hadir_count'),
-                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Terlambat->value.'\' THEN 1 END) as terlambat_count'),
-                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Izin->value.'\' THEN 1 END) as izin_count'),
-                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Sakit->value.'\' THEN 1 END) as sakit_count'),
-                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Alpa->value.'\' THEN 1 END) as alpa_count'),
-                DB::raw('COUNT(*) as total_records'),
-            )
-            ->whereBetween('attendance_date', [$startDate, $endDate])
-            ->when($classroomId, function ($q) use ($classroomId) {
-                $q->whereHas('student', fn ($sq) => $sq->where('classroom_id', $classroomId));
-            })
-            ->groupBy('student_id')
-            ->with('student:id,nis,full_name,classroom_id', 'student.classroom:id,name');
+        $kinds = ['absensi' => 'Absensi Sekolah'];
+        $school = app()->bound('currentSchool') ? app('currentSchool') : null;
+        foreach (['dhuha' => SchoolFeature::SholatDhuha, 'dzuhur' => SchoolFeature::SholatDzuhur] as $slug => $feature) {
+            if ($school && SchoolFeatures::for($school)->enabled($feature)) {
+                $kinds[$slug] = ucfirst($slug);
+            }
+        }
 
-        return $query->get()->map(function ($row) {
-            $totalPresent = $row->hadir_count + $row->terlambat_count;
-            $attendanceRate = $row->total_records > 0
-                ? round(($totalPresent / $row->total_records) * 100, 1)
-                : 0;
+        return $kinds;
+    }
+
+    private function reportKind(Request $request): string
+    {
+        $request->validate(['jenis' => ['nullable', 'string', 'in:absensi,dhuha,dzuhur,semuanya'], 'start_date' => ['nullable', 'date_format:Y-m-d'], 'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'], 'classroom_id' => ['nullable', 'string']]);
+        $kind = $request->input('jenis', 'absensi');
+        abort_unless($kind === 'semuanya' || isset($this->availableKinds()[$kind]), 403);
+
+        return $kind;
+    }
+
+    private function dataFor(string $start, string $end, ?string $classroom, ?string $school, string $kind): Collection
+    {
+        $classroom = $classroom === 'all' ? null : $classroom;
+        $stats = app(StudentStatsBuilder::class);
+
+        return Student::where('school_id', $school)->when($classroom, fn ($q) => $q->where('classroom_id', $classroom))->with(['school', 'classroom'])->orderBy('full_name')->get()->map(function ($student) use ($stats, $start, $end, $kind): array {
+            $attendance = $stats->attendanceFor($student, $start, $end)['summary'];
+            $prayers = [];
+            foreach ($this->availableKinds() as $slug => $label) {
+                if ($slug !== 'absensi') {
+                    $prayers[$slug] = $stats->prayerFor($student, $start, $end, PrayerType::fromSlug($slug))['summary'];
+                }
+            }
+            $summary = in_array($kind, ['semuanya', 'absensi'], true) ? $attendance : $prayers[$kind];
 
             return [
-                'student_id' => $row->student_id,
-                'nis' => $row->student?->nis ?? '-',
-                'full_name' => $row->student?->full_name ?? '-',
-                'classroom_name' => $row->student?->classroom?->name ?? '-',
-                'hadir' => $row->hadir_count,
-                'terlambat' => $row->terlambat_count,
-                'izin' => $row->izin_count,
-                'sakit' => $row->sakit_count,
-                'alpa' => $row->alpa_count,
-                'attendance_rate' => $attendanceRate,
+                'student_id' => $student->id, 'nis' => $student->nis, 'full_name' => $student->full_name, 'classroom_name' => $student->classroom?->name ?? '-',
+                'hadir' => $summary['hadir'], 'terlambat' => $summary['terlambat'] ?? 0, 'izin' => $summary['izin'] ?? 0, 'sakit' => $summary['sakit'] ?? 0,
+                'alpa' => $summary['alpa'] ?? $summary['tidak_hadir'] ?? 0, 'attendance_rate' => $summary['rate'], 'effective_days' => $summary['effective_days'], 'prayers' => $prayers,
             ];
         });
+    }
+
+    private function reportSheets(string $start, string $end, ?string $classroom, ?string $school, string $kind): array
+    {
+        $rows = $this->dataFor($start, $end, $classroom, $school, 'semuanya');
+        $sheets = [];
+        $kinds = $this->availableKinds();
+        if ($kind === 'semuanya') {
+            $sheets['Ringkasan'] = ['header' => ['NIS', 'Nama Siswa', 'Kelas', ...array_map(fn ($label) => '% '.$label, array_values($kinds))], 'rows' => $rows->map(fn ($row) => [(string) $row['nis'], $row['full_name'], $row['classroom_name'], $row['attendance_rate'].'%', ...array_map(fn ($summary) => $summary['rate'].'%', array_values($row['prayers']))])->all()];
+            $sheets['Absensi Sekolah'] = ['header' => ['NIS', 'Nama Siswa', 'Kelas', 'Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpa', '% Kehadiran'], 'rows' => $rows->map(fn ($row) => [(string) $row['nis'], $row['full_name'], $row['classroom_name'], $row['hadir'], $row['terlambat'], $row['izin'], $row['sakit'], $row['alpa'], $row['attendance_rate'].'%'])->all()];
+        }
+        foreach ($kinds as $slug => $label) {
+            if ($slug === 'absensi' || ! in_array($kind, ['semuanya', $slug], true)) {
+                continue;
+            }
+            $sheets[$label] = ['header' => ['NIS', 'Nama Siswa', 'Kelas', 'Ikut', 'Tidak Ikut', 'Hari Efektif', '% Kehadiran'], 'rows' => $rows->map(fn ($row) => [(string) $row['nis'], $row['full_name'], $row['classroom_name'], $row['prayers'][$slug]['hadir'], $row['prayers'][$slug]['tidak_hadir'], $row['prayers'][$slug]['effective_days'], $row['prayers'][$slug]['rate'].'%'])->all()];
+        }
+
+        return $sheets;
     }
 }

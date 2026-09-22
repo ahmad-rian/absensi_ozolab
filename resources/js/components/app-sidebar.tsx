@@ -61,7 +61,7 @@ type GuardedNavItem = BadgedNavItem & {
      * Hanya untuk super admin, di luar cek permission.
      *
      * Dibutuhkan karena ada menu yang permission-nya dipegang admin sekolah
-     * juga (`card-generation.access`) sementara rutenya memasang `super-admin`
+     * juga (`generate-kartu.access`) sementara rutenya memasang `super-admin`
      * — tanpa penanda ini, admin sekolah melihat menunya lalu ditolak 403.
      */
     superAdmin?: boolean;
@@ -79,7 +79,7 @@ type NavSection = { label: string; items: GuardedNavItem[] };
 const STUDIO_PLACEHOLDER = 'studio:url';
 
 const overviewItems: GuardedNavItem[] = [
-    { title: 'Dashboard', href: dashboard(), icon: LayoutGrid, permission: 'dashboard.access' },
+    { title: 'Dashboard', href: dashboard(), icon: LayoutGrid, permission: 'beranda.access' },
 ];
 
 const sections: NavSection[] = [
@@ -98,7 +98,7 @@ const sections: NavSection[] = [
         items: [
             { title: 'Absensi', href: '/admin/absensi', icon: CalendarCheck, permission: 'absensi.access', feature: 'absensi_sekolah' },
             { title: 'Jadwal Absensi', href: '/admin/jadwal-absensi', icon: Clock, permission: 'jadwal-absensi.access', feature: 'absensi_sekolah' },
-            { title: 'Kartu RFID', href: '/admin/rfid-cards', icon: CreditCard, permission: 'rfid-cards.access', feature: 'absensi_rfid' },
+            { title: 'Kartu RFID', href: '/admin/rfid-cards', icon: CreditCard, permission: 'kartu-rfid.access', feature: 'absensi_rfid' },
             { title: 'Kunjungan Perpus', href: '/admin/kunjungan-perpus', icon: BookOpen, permission: 'kunjungan-perpus.access', feature: 'kunjungan_perpustakaan' },
         ],
     },
@@ -125,23 +125,23 @@ const sections: NavSection[] = [
     {
         label: 'Kartu Siswa',
         items: [
-            { title: 'Generate Kartu', href: '/admin/generate-kartu', icon: CreditCard, permission: 'card-generation.access', feature: 'kartu_album', superAdmin: true },
-            { title: 'Riwayat Kartu', href: '/admin/card-generation', icon: History, permission: 'card-generation.access', feature: 'kartu_album' },
+            { title: 'Generate Kartu', href: '/admin/generate-kartu', icon: CreditCard, permission: 'generate-kartu.access', feature: 'kartu_album', superAdmin: true },
+            { title: 'Riwayat Kartu', href: '/admin/card-generation', icon: History, permission: 'generate-kartu.access', feature: 'kartu_album' },
         ],
     },
     {
         label: 'Album & Pas Foto',
         items: [
-            { title: 'Generate Pas Foto', href: '/admin/pas-foto', icon: Images, permission: 'photo-sheets.access', feature: 'kartu_album' },
-            { title: 'Generate Album', href: '/admin/album-generation', icon: Printer, permission: 'album-generation.access', feature: 'kartu_album' },
+            { title: 'Generate Pas Foto', href: '/admin/pas-foto', icon: Images, permission: 'pas-foto.access', feature: 'kartu_album' },
+            { title: 'Generate Album', href: '/admin/album-generation', icon: Printer, permission: 'generate-album.access', feature: 'kartu_album' },
         ],
     },
     {
         label: 'Desain Kartu & Album',
         items: [
-            { title: 'Layout Kartu', href: '/admin/card-layouts', icon: LayoutTemplate, permission: 'card-layouts.access', feature: 'kartu_album' },
-            { title: 'Layout Album', href: '/admin/album-layouts', icon: BookOpen, permission: 'album-layouts.access', feature: 'kartu_album' },
-            { title: 'Frame & Bingkai', href: '/admin/frames', icon: Frame, permission: 'frames.access', feature: 'kartu_album' },
+            { title: 'Layout Kartu', href: '/admin/card-layouts', icon: LayoutTemplate, permission: 'layout-kartu.access', feature: 'kartu_album' },
+            { title: 'Layout Album', href: '/admin/album-layouts', icon: BookOpen, permission: 'layout-album.access', feature: 'kartu_album' },
+            { title: 'Frame & Bingkai', href: '/admin/frames', icon: Frame, permission: 'bingkai.access', feature: 'kartu_album' },
         ],
     },
     {
@@ -154,20 +154,20 @@ const sections: NavSection[] = [
     {
         label: 'Pengguna & Akses',
         items: [
-            { title: 'Pengguna', href: '/admin/users', icon: UserCog, permission: 'users.access', feature: 'manajemen_pengguna' },
-            { title: 'Role & Hak Akses', href: '/admin/roles', icon: ShieldCheck, permission: 'roles.access' },
+            { title: 'Pengguna', href: '/admin/users', icon: UserCog, permission: 'pengguna.access', feature: 'manajemen_pengguna' },
+            { title: 'Role & Hak Akses', href: '/admin/roles', icon: ShieldCheck, permission: 'hak-akses.access' },
         ],
     },
     {
         label: 'Sekolah',
         items: [
-            { title: 'Sekolah', href: '/admin/schools', icon: Building2, permission: 'schools.access' },
+            { title: 'Sekolah', href: '/admin/schools', icon: Building2, permission: 'sekolah.access' },
             { title: 'Semua Sekolah', href: '/admin/semua-sekolah', icon: Globe, permission: 'semua-sekolah.access' },
             { title: 'Kartu Bebas / Haji', href: '/kartu-bebas', icon: FileText, newTab: true, permission: 'kartu-bebas.access' },
             // Aplikasi lain di subdomain lain. Alamatnya datang dari server
             // (shared prop `studioUrl`), jadi href-nya baru diisi saat render —
             // lihat STUDIO_PLACEHOLDER.
-            { title: 'Tyas Studio', href: STUDIO_PLACEHOLDER, icon: Camera, newTab: true, permission: 'schools.access' },
+            { title: 'Tyas Studio', href: STUDIO_PLACEHOLDER, icon: Camera, newTab: true, permission: 'sekolah.access' },
         ],
     },
     {
@@ -182,10 +182,10 @@ const sections: NavSection[] = [
     {
         label: 'Integrasi & Pengaturan',
         items: [
-            { title: 'Gateway Notifikasi', href: '/admin/notification-gateways', icon: MessageSquare, permission: 'notification-gateways.access' },
-            { title: 'WhatsApp', href: '/admin/wa-config', icon: MessageSquare, permission: 'wa-config.access', feature: 'integrasi_whatsapp' },
-            { title: 'Google Drive', href: '/admin/drive-config', icon: HardDrive, permission: 'drive-config.access', feature: 'integrasi_drive' },
-            { title: 'Token Tyas Studio', href: '/admin/studio-tokens', icon: KeyRound, permission: 'schools.access' },
+            { title: 'Gateway Notifikasi', href: '/admin/notification-gateways', icon: MessageSquare, permission: 'gateway-notifikasi.access' },
+            { title: 'WhatsApp', href: '/admin/wa-config', icon: MessageSquare, permission: 'whatsapp.access', feature: 'integrasi_whatsapp' },
+            { title: 'Google Drive', href: '/admin/drive-config', icon: HardDrive, permission: 'google-drive.access', feature: 'integrasi_drive' },
+            { title: 'Token Tyas Studio', href: '/admin/studio-tokens', icon: KeyRound, permission: 'sekolah.access' },
             { title: 'Pengaturan', href: '/admin/pengaturan', icon: Settings, permission: 'pengaturan.access' },
         ],
     },

@@ -27,7 +27,7 @@ class RolePermissionSeeder extends Seeder
         }
 
         // Buang permission per-aksi versi lama (student.view, attendance.create, …)
-        Permission::whereNotIn('name', $permissions)->delete();
+        Permission::whereNotIn('name', $permissions)->where('name', 'not like', '%.access')->delete();
 
         foreach (UserRole::cases() as $role) {
             $modules = AppModule::defaultsFor($role);

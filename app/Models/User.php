@@ -22,7 +22,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'avatar_path', 'is_active', 'school_id'])]
+#[Fillable(['name', 'email', 'password', 'phone', 'avatar_path', 'is_active', 'school_id', 'must_change_password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -36,6 +36,7 @@ class User extends Authenticatable implements PasskeyUser
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
             'last_login_at' => 'datetime',
         ];
     }
@@ -48,6 +49,11 @@ class User extends Authenticatable implements PasskeyUser
     public static function schoolScopeApplies(): bool
     {
         return false;
+    }
+
+    public function homeRoute(): string
+    {
+        return $this->hasRole(UserRole::OrangTua) ? 'orangtua.index' : 'dashboard';
     }
 
     public function isSuperAdmin(): bool

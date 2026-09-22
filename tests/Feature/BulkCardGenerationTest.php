@@ -216,7 +216,7 @@ test('bukan super admin ditolak di ketiga rute', function () {
         'status' => 'processing',
     ]);
 
-    // Permission `card-generation.access` dipegang ADMIN juga — yang menutup
+    // Permission `generate-kartu.access` dipegang ADMIN juga — yang menutup
     // pintu di sini middleware `super-admin`, bukan permission-nya.
     $this->actingAs($admin)->get('/admin/generate-kartu')->assertForbidden();
     $this->actingAs($admin)->post('/admin/generate-kartu', ['school_id' => $admin->school_id])->assertForbidden();

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuthenticateStudioToken;
 use App\Http\Middleware\EnsureFeatureEnabled;
+use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            'password.ganti' => EnsurePasswordChanged::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'super-admin' => EnsureSuperAdmin::class,
@@ -44,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             SetCurrentSchool::class,
+            EnsurePasswordChanged::class,
         ]);
 
         // Konteks sekolah HARUS ditetapkan sebelum route model binding.

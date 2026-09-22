@@ -65,7 +65,7 @@ class StudentStatsBuilder
     /**
      * @return array<string, mixed>
      */
-    public function attendanceFor(Student $student, string $start, string $end): array
+    public function attendanceFor(Student $student, string $start, string $end, ?int $limit = 30): array
     {
         $rows = $this->attendanceRows($student, $start, $end);
         $checkIns = $rows->where('type', AttendanceType::CheckIn);
@@ -119,7 +119,7 @@ class StudentStatsBuilder
             'daily' => $this->fillDailySeries($effectiveDates, $checkIns),
             'recent' => $rows
                 ->sortByDesc(fn (Attendance $row) => $row->attendance_date->toDateString().' '.($row->recorded_at?->format('H:i:s') ?? ''))
-                ->take(30)
+                ->when($limit !== null, fn ($rows) => $rows->take($limit))
                 ->map(fn (Attendance $row) => [
                     'id' => $row->id,
                     'date' => $row->attendance_date->format('d M Y'),
@@ -145,7 +145,7 @@ class StudentStatsBuilder
      * @param  ?PrayerType  $only  batasi ke satu jenis; null = semua yang aktif
      * @return array<string, mixed>
      */
-    public function prayerFor(Student $student, string $start, string $end, ?PrayerType $only = null): array
+    public function prayerFor(Student $student, string $start, string $end, ?PrayerType $only = null, ?int $limit = 30): array
     {
         $schedule = $student->school ? PrayerSchedule::for($student->school) : null;
 
@@ -212,7 +212,7 @@ class StudentStatsBuilder
                 'by_weekday' => $this->weekdayBuckets($student, $effectiveDates, $typeRows, 'prayer_date'),
                 'heatmap' => $this->prayerHeatmap($effectiveDates, $presentDates),
                 'daily' => $this->prayerDailySeries($effectiveDates, $presentDates),
-                'recent' => $typeRows->take(30)->map(fn (PrayerAttendance $row) => [
+                'recent' => $typeRows->when($limit !== null, fn ($rows) => $rows->take($limit))->map(fn (PrayerAttendance $row) => [
                     'id' => $row->id,
                     'date' => $row->prayer_date->format('d M Y'),
                     'sort_key' => $row->prayer_date->toDateString().' '.($row->recorded_at?->format('H:i') ?? '00:00'),
@@ -256,7 +256,7 @@ class StudentStatsBuilder
             'recent' => collect($perType)
                 ->flatMap(fn (array $type) => $type['recent'])
                 ->sortByDesc('sort_key')
-                ->take(30)
+                ->when($limit !== null, fn ($rows) => $rows->take($limit))
                 ->map(fn (array $row) => Arr::except($row, 'sort_key'))
                 ->values()
                 ->all(),

@@ -8,6 +8,7 @@ use App\Models\ParentProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ParentProfileService
 {
@@ -22,11 +23,21 @@ class ParentProfileService
             $email = null;
         }
 
-        $existing = ParentProfile::where('school_id', $schoolId)
+        $existing = ParentProfile::withoutGlobalScope('school')->where('school_id', $schoolId)
             ->where('whatsapp_number', $phone)
             ->first();
 
+        if ($email) {
+            $owner = User::withTrashed()->where('email', $email)->first();
+            if ($owner && $owner->id !== $existing?->user_id) {
+                throw ValidationException::withMessages(['parent_email' => $owner->school_id !== $schoolId
+                    ? 'Email sudah dipakai akun orang tua di sekolah lain.' : 'Email sudah dipakai akun lain.']);
+            }
+        }
         if ($existing) {
+            if ($email && str_ends_with($existing->user->email, '@internal.app')) {
+                $existing->user->update(['email' => $email]);
+            }
             // Lengkapi email notifikasi jika sebelumnya kosong.
             if ($email && empty($existing->email)) {
                 $existing->update(['email' => $email]);
@@ -37,8 +48,9 @@ class ParentProfileService
 
         $user = User::create([
             'name' => $parentName,
-            'email' => 'parent-'.Str::ulid().'@internal.app',
-            'password' => Hash::make(Str::random(16)),
+            'email' => $email ?: 'parent-'.Str::ulid().'@internal.app',
+            'password' => Hash::make('password'),
+            'must_change_password' => true,
             'phone' => $phone,
             'school_id' => $schoolId,
         ]);
