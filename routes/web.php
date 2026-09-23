@@ -126,14 +126,21 @@ Route::post('g/{kode}', [PublicScannerController::class, 'shortScan'])
     ->withoutMiddleware($tanpaSession)
     ->name('public.scanner.short.scan');
 
-// Absen sholat dzuhur — URL terpisah supaya device mushola tidak bisa salah mode.
+// Absen sholat — URL tersendiri untuk sekolah yang memisahkan perangkat mushola
+// dari gerbang. Sejak gerbang utama ikut mencatat sholat (GerbangRecorder), ini
+// bukan lagi satu-satunya jalan, tapi tautannya sudah tersebar dan tetap hidup.
+//
+// Batas lajunya disamakan dengan gerbang utama: `throttle:120,1` bawaan dihitung
+// per ALAMAT IP, dan satu gedung berbagi satu IP publik — saat jamaah bubar dan
+// puluhan kartu ditempel berbarengan, batas itu tersentuh dan scan ditolak karena
+// alasan yang tidak ada hubungannya dengan absensi.
 Route::get('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'index'])->name('public.prayer-scanner');
-Route::post('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.prayer-scanner.scan');
+Route::post('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'scan'])->middleware('throttle:scan-gerbang')->name('public.prayer-scanner.scan');
 
 // Kunjungan perpustakaan — URL terpisah, alasan yang sama seperti sholat: tablet
 // di perpustakaan tidak boleh bisa salah mode.
 Route::get('scan/{school:scanner_token}/perpustakaan', [LibraryScannerController::class, 'index'])->name('public.library-scanner');
-Route::post('scan/{school:scanner_token}/perpustakaan', [LibraryScannerController::class, 'scan'])->middleware('throttle:120,1')->name('public.library-scanner.scan');
+Route::post('scan/{school:scanner_token}/perpustakaan', [LibraryScannerController::class, 'scan'])->middleware('throttle:scan-gerbang')->name('public.library-scanner.scan');
 
 Route::get('daftar', [StudentRegistrationController::class, 'index'])->name('student.register');
 Route::post('daftar', [StudentRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('student.register.store');

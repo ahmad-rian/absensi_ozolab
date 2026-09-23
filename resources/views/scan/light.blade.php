@@ -185,6 +185,11 @@
         .idle {
             flex: 1;
             display: flex;
+            /* Kolom, bukan baris: sejak baris jendela sholat ikut di sini,
+               `row` menaruhnya di SAMPING ajakan menempel kartu alih-alih di
+               bawahnya. `gap` tidak dipakai — Chrome lama di box Android TV
+               belum mengenalnya pada flexbox. */
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px;
@@ -211,6 +216,16 @@
         }
         .stage.ok .pita { background: #059669; }
         .stage.bad .pita { background: #dc2626; }
+        /* Sholat dibedakan warnanya, bukan hanya katanya. Operator di ujung
+           lorong membaca bidang warna jauh sebelum sempat membaca hurufnya, dan
+           satu gerbang ini kini mencatat empat jenis absen yang berbeda.
+           Indigo dipilih karena jelas bukan hijau maupun merah pada layar TV
+           murah yang warnanya cenderung pudar. */
+        .jendela { display: block; margin-top: 14px; font-size: 15px; color: #64748b; }
+        .jendela span { display: inline-block; margin: 0 8px; }
+        .jendela .buka { color: #a5b4fc; font-weight: bold; }
+        .stage.sholat { border-color: #6366f1; }
+        .stage.sholat .pita { background: #4f46e5; }
         .pita .jam {
             float: right;
             font-variant-numeric: tabular-nums;
@@ -528,7 +543,20 @@
         <div class="badan">
             <div class="kiri">
                 <div class="stage" id="stage">
-                    <div class="idle" id="idle">Tempelkan kartu atau tembak QR Code siswa</div>
+                    <div class="idle" id="idle">
+                        Tempelkan kartu atau tembak QR Code siswa
+                        @if (! empty($jendelaSholat))
+                            {{-- Satu gerbang mencatat datang, sholat, dan pulang;
+                                 tanpa baris ini operator tidak punya cara tahu
+                                 kenapa kartu yang sama menghasilkan catatan yang
+                                 berbeda di jam yang berbeda. --}}
+                            <span class="jendela">
+                                @foreach ($jendelaSholat as $jendela)
+                                    <span class="{{ $jendela['aktif'] ? 'buka' : '' }}">{{ $jendela['label'] }} {{ $jendela['jam'] }}{{ $jendela['aktif'] ? ' · sedang dibuka' : '' }}</span>
+                                @endforeach
+                            </span>
+                        @endif
+                    </div>
                 </div>
 
                 <form id="manual" autocomplete="off">
@@ -677,7 +705,7 @@
                 stage.innerHTML = '';
 
                 if (data.success && s) {
-                    stage.className = 'stage ok';
+                    stage.className = s.type === 'PRAYER' ? 'stage ok sholat' : 'stage ok';
 
                     var photo = s.photo_url
                         ? '<img class="photo" src="' + esc(s.photo_url) + '" alt="">'

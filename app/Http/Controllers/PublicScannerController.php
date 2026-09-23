@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AttendanceType;
 use App\Enums\SchoolFeature;
 use App\Models\School;
-use App\Services\Attendance\AttendanceRecorder;
+use App\Services\Attendance\GerbangRecorder;
 use App\Services\Attendance\StudentLookup;
+use App\Support\PrayerSchedule;
 use App\Support\ScannerShortLink;
 use App\Support\ScanRejectionLog;
 use App\Support\SchoolFeatures;
@@ -25,6 +25,38 @@ class PublicScannerController extends Controller
         private readonly StudentLookup $studentLookup,
     ) {}
 
+    /**
+     * Apakah gerbang ini punya sesuatu untuk dicatat sama sekali.
+     *
+     * Bukan hanya `AbsensiSekolah`: sejak satu gerbang melayani datang, sholat,
+     * dan pulang sekaligus, sekolah yang mematikan absensi sekolah tapi memakai
+     * absen sholat akan terkunci dari pintunya sendiri kalau penjaganya cuma
+     * melihat satu fitur. Yang mati tetap ditolak saat pencatatan, dengan pesan
+     * yang menyebut sebabnya.
+     */
+    private static function gerbangTerbuka(School $school): bool
+    {
+        return SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiSekolah)
+            || PrayerSchedule::for($school)->anyEnabled();
+    }
+
+    /**
+     * Ringkasan jendela sholat untuk layar gerbang.
+     *
+     * @return array<int, array{label: string, jam: string, aktif: bool}>
+     */
+    private static function jendelaSholat(School $school): array
+    {
+        $jadwal = PrayerSchedule::for($school);
+        $sekarang = $jadwal->resolveFor(SchoolTime::now());
+
+        return array_map(fn ($jendela): array => [
+            'label' => $jendela->type->shortLabel(),
+            'jam' => $jendela->windowLabel(),
+            'aktif' => $sekarang !== null && $sekarang->type === $jendela->type,
+        ], $jadwal->enabled());
+    }
+
     public function index(School $school): Response
     {
         return Inertia::render('scan/public', [
@@ -34,10 +66,11 @@ class PublicScannerController extends Controller
                 'is_active' => $school->is_active,
             ],
             'scanToken' => $school->scanner_token,
+            'jendelaSholat' => self::jendelaSholat($school),
             // Dipisah dari is_active supaya operator tahu bedanya "sekolah
             // nonaktif" dan "fitur absensi dimatikan admin". Halaman tetap 200:
             // tablet di dinding harus menampilkan pesan, bukan layar 403.
-            'featureEnabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiSekolah),
+            'featureEnabled' => self::gerbangTerbuka($school),
         ]);
     }
 
@@ -83,7 +116,7 @@ class PublicScannerController extends Controller
      * `scanner_token` di dalam HTML-nya, karena alamatnya sengaja gampang
      * ditebak. Logikanya tidak digandakan — keduanya masuk ke recordScan().
      */
-    public function shortScan(Request $request, string $kode, AttendanceRecorder $recorder): JsonResponse
+    public function shortScan(Request $request, string $kode, GerbangRecorder $recorder): JsonResponse
     {
         $school = ScannerShortLink::resolve($kode);
 
@@ -103,16 +136,21 @@ class PublicScannerController extends Controller
             'school' => $school,
             'logoUrl' => $school->logo_path ? Storage::disk('public')->url($school->logo_path) : null,
             'scanUrl' => route('public.scanner.short.scan', ['kode' => ScannerShortLink::codeFor($school)]),
-            'featureEnabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiSekolah),
+            'featureEnabled' => self::gerbangTerbuka($school),
+            // Jendela sholat yang berlaku hari ini, supaya layar menganggur
+            // bisa menyebut apa yang sedang dibuka. Operator tidak perlu
+            // menghafal jam Dhuha untuk tahu kenapa kartu yang sama menghasilkan
+            // catatan berbeda di jam yang berbeda.
+            'jendelaSholat' => self::jendelaSholat($school),
         ]);
     }
 
-    public function scan(Request $request, School $school, AttendanceRecorder $recorder): JsonResponse
+    public function scan(Request $request, School $school, GerbangRecorder $recorder): JsonResponse
     {
         return $this->recordScan($request, $school, $recorder);
     }
 
-    private function recordScan(Request $request, School $school, AttendanceRecorder $recorder): JsonResponse
+    private function recordScan(Request $request, School $school, GerbangRecorder $recorder): JsonResponse
     {
         if (! $school->is_active) {
             return response()->json([
@@ -124,7 +162,7 @@ class PublicScannerController extends Controller
         // Guard fitur sengaja di controller, bukan middleware: `abort(403)`
         // menghasilkan halaman HTML/Inertia, sedangkan konsol scan memanggil
         // endpoint ini dengan fetch dan hanya membaca {success, message}.
-        if (SchoolFeatures::for($school)->disabled(SchoolFeature::AbsensiSekolah)) {
+        if (! self::gerbangTerbuka($school)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Absensi sekolah sedang dimatikan oleh admin.',
@@ -158,14 +196,9 @@ class PublicScannerController extends Controller
             ], 404);
         }
 
-        // Tipe (masuk/pulang) ditentukan server dari jendela waktu jadwal.
-        $result = $recorder->record(
-            student: $student,
-            recordedBy: null,
-            deviceId: 'PUBLIC-SCAN',
-        );
-
-        $type = $result['attendance']?->type;
+        // Jenisnya ditentukan server, bukan client: masuk, Dhuha, Dzuhur, atau
+        // pulang — yang mana pun yang belum tercatat pada jam ini.
+        $result = $recorder->record(sekolahSiswa: $school, student: $student, deviceId: 'PUBLIC-SCAN');
 
         return response()->json([
             'success' => $result['success'],
@@ -184,9 +217,9 @@ class PublicScannerController extends Controller
                 // sekolah, itu yang membuat jeda antara kartu ditempel dan
                 // wajah muncul terasa panjang.
                 'photo_url' => StudentPhotoStorage::displayUrl($student->photo_path),
-                'status' => $result['attendance']?->status->label(),
-                'type' => $type?->value,
-                'type_label' => $type === AttendanceType::CheckIn ? 'Masuk' : 'Pulang',
+                'status' => $result['status'],
+                'type' => $result['jenis'],
+                'type_label' => $result['label'],
                 'time' => SchoolTime::now()->format('H:i:s'),
             ] : null,
         ], $result['success'] ? 200 : 422);
