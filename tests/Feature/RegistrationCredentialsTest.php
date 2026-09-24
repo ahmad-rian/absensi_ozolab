@@ -4,6 +4,7 @@ use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\ParentProfileService;
 use Illuminate\Support\Facades\Hash;
 
 beforeEach(function () {
@@ -40,8 +41,44 @@ test('registration requires valid confirmed credentials', function (array $overr
     'invalid email' => [['parent_email' => 'not-email'], 'parent_email'],
     'password required' => [['password' => ''], 'password'],
     'short password' => [['password' => 'short', 'password_confirmation' => 'short'], 'password'],
+    // Panjangnya cukup, kekuatannya tidak. Ini yang lolos sebelum aturannya
+    // dinaikkan — akun ini bisa melihat data kehadiran seorang anak.
+    'lowercase only' => [['password' => 'sandiwali', 'password_confirmation' => 'sandiwali'], 'password'],
+    'no number' => [['password' => 'SandiWali', 'password_confirmation' => 'SandiWali'], 'password'],
     'confirmation mismatch' => [['password_confirmation' => 'different'], 'password'],
 ]);
+
+test('orang tua lama bersandi lemah tidak terkunci dari anak keduanya', function () {
+    /*
+        Kolom sandi di /daftar bermakna ganda: membuat sandi baru, atau
+        mencocokkan sandi akun yang sudah ada. Aturan kekuatan hanya boleh
+        mengikat yang pertama — ribuan akun hasil impor masih memegang sandi
+        bawaan `password`, yang lolos aturan lama dan gagal aturan baru. Kalau
+        aturannya dipasang polos, mereka ditolak validator sebelum sandinya
+        sempat dicocokkan, dan anak keduanya tidak bisa didaftarkan sama sekali.
+    */
+    app(ParentProfileService::class)->findOrCreateFromRegistration(
+        $this->payload['school_id'],
+        'Budi Santoso',
+        '081234567890',
+        'AYAH',
+        'budi@example.com',
+        'password',
+    );
+
+    $hash = User::where('email', 'budi@example.com')->firstOrFail()->password;
+
+    $this->postJson('/daftar', [
+        ...$this->payload,
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertOk();
+
+    $student = Student::firstOrFail();
+
+    expect($student->parent_profile_id)->not->toBeNull()
+        ->and(User::where('email', 'budi@example.com')->firstOrFail()->password)->toBe($hash);
+});
 
 test('existing parent credentials allow another child without resetting password', function () {
     $this->postJson('/daftar', $this->payload)->assertOk();

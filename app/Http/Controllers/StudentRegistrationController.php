@@ -8,6 +8,7 @@ use App\Enums\SchoolFeature;
 use App\Jobs\RegisterStudentCardsJob;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
+use App\Models\ParentProfile;
 use App\Models\School;
 use App\Models\Student;
 use App\Rules\SchoolFeatureEnabled;
@@ -253,6 +254,27 @@ class StudentRegistrationController extends Controller
 
     public function store(Request $request, ParentProfileService $parentProfileService, QrTokenGenerator $qrGenerator): JsonResponse|RedirectResponse
     {
+        /*
+            Kolom sandi di form ini bermakna ganda: pendaftar baru MEMBUAT sandi,
+            sedangkan orang tua yang sudah punya akun (mendaftarkan anak kedua)
+            MENCOCOKKAN sandi lamanya — lihat Hash::check di
+            ParentProfileService::findOrCreateFromRegistration().
+
+            Karena itu aturan kekuatan hanya boleh mengikat kasus pertama. Kalau
+            dipasang polos, orang tua lama terkunci dari pendaftaran anak
+            keduanya: sandi aslinya ditolak validator sebelum sempat sampai ke
+            pencocokan. Ribuan akun hasil impor masih memegang sandi bawaan
+            `password` yang lolos aturan lama dan gagal aturan baru.
+
+            Pencariannya sengaja identik dengan milik service (school_id +
+            whatsapp_number yang di-trim) supaya keduanya tidak bisa berbeda
+            pendapat soal "akun ini sudah ada atau belum".
+        */
+        $akunLamaAda = ParentProfile::withoutGlobalScope('school')
+            ->where('school_id', $request->school_id)
+            ->where('whatsapp_number', trim((string) $request->parent_phone))
+            ->exists();
+
         $validated = $request->validate([
             'school_id' => ['required', 'exists:schools,id', new SchoolFeatureEnabled(SchoolFeature::PendaftaranPublik)],
             // Nama & NIS dari form publik ini berakhir di export CSV dan header
@@ -275,7 +297,14 @@ class StudentRegistrationController extends Controller
             'parent_name' => ['required', 'string', 'max:255'],
             'parent_phone' => ['required', 'string', 'max:20'],
             'parent_email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
-            'password' => ['required', 'string', Password::min(8), 'confirmed'],
+            // Simbol sengaja tidak diwajibkan: form ini diisi orang tua dari
+            // ponsel, dan simbol wajib menghasilkan sandi yang ditulis di kertas.
+            // `uncompromised()` juga tidak dipakai — itu panggilan HTTP keluar di
+            // dalam endpoint publik, satu ketergantungan jaringan yang bisa
+            // menggantungkan pendaftaran.
+            'password' => $akunLamaAda
+                ? ['required', 'string', 'confirmed']
+                : ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
             'parent_relation' => ['required', 'string', 'in:AYAH,IBU,WALI'],
             // Nullable, bukan required: langkah Foto boleh dilewati, dan yang
             // melewatinya diurus admin dari halaman siswa.
@@ -303,6 +332,8 @@ class StudentRegistrationController extends Controller
             'password.required' => 'Kata sandi akun orang tua wajib diisi.',
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
             'password.min' => 'Kata sandi minimal 8 karakter.',
+            'password.mixed' => 'Kata sandi harus memuat huruf besar dan huruf kecil.',
+            'password.numbers' => 'Kata sandi harus memuat setidaknya satu angka.',
             'parent_email.email' => 'Format email orang tua tidak valid.',
             'parent_relation.required' => 'Pilih hubungan orang tua.',
         ]);

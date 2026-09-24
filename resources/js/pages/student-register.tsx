@@ -17,6 +17,7 @@ import {
     RegistrationShell,
 } from '@/components/shared/registration-shell';
 import { SimpleCaptcha } from '@/components/simple-captcha';
+import SyaratSandi from '@/components/syarat-sandi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1251,8 +1252,23 @@ export default function StudentRegister({
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="password" required>
-                                        Kata Sandi Akun Orang Tua
+                                        Buat Kata Sandi Portal Orang Tua
                                     </Label>
+                                    {/*
+                                        Peringatan ini berdiri SEBELUM kolomnya,
+                                        bukan sesudah. Kolom sandi ini duduk
+                                        tepat di bawah kolom email, dan urutan
+                                        itu membuat banyak orang tua membacanya
+                                        sebagai permintaan sandi email mereka —
+                                        lalu berhenti mendaftar, atau benar-benar
+                                        mengetikkannya.
+                                    */}
+                                    <p className="rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                                        Kata sandi <strong>baru</strong> yang
+                                        Anda tentukan sendiri untuk masuk ke
+                                        portal ini —{' '}
+                                        <strong>bukan sandi email Anda</strong>.
+                                    </p>
                                     <PasswordInput
                                         id="password"
                                         autoComplete="new-password"
@@ -1265,10 +1281,10 @@ export default function StudentRegister({
                                         className="h-11"
                                     />
                                     <InputError message={err('password')} />
+                                    <SyaratSandi password={data.password} />
                                     <p className="text-xs text-muted-foreground">
-                                        Minimal 8 karakter. Jika sudah memiliki
-                                        akun, gunakan email, nomor WhatsApp, dan
-                                        kata sandi akun tersebut.
+                                        Sudah punya akun? Isi dengan kata sandi
+                                        akun itu.
                                     </p>
                                 </div>
                                 <div className="grid gap-2">
@@ -1276,7 +1292,7 @@ export default function StudentRegister({
                                         htmlFor="password_confirmation"
                                         required
                                     >
-                                        Konfirmasi Kata Sandi
+                                        Ulangi Kata Sandi
                                     </Label>
                                     <PasswordInput
                                         id="password_confirmation"
