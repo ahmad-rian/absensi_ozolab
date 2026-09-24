@@ -35,6 +35,20 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentRegistrationController extends Controller
 {
+    /**
+     * Logo yang dipajang di kepala formulir pendaftaran.
+     *
+     * Dua tempat penyimpanan logo hidup berdampingan: kolom `logo_path` (logo
+     * sekolah dari data master) dan `settings.app_logo` (logo yang diunggah
+     * admin lewat Pengaturan → Tampilan). Halaman ini dulu hanya membaca yang
+     * pertama, jadi sekolah yang logonya diunggah lewat Pengaturan tampil
+     * dengan lambang Laravel bawaan. Keduanya path di disk `public`.
+     */
+    private static function logoSekolah(School $school): ?string
+    {
+        return $school->logo_path ?: $school->getSetting('app_logo');
+    }
+
     public function index(): Response
     {
         // Kolom `settings` ikut ditarik hanya untuk menilai fitur, lalu dibuang
@@ -54,7 +68,7 @@ class StudentRegistrationController extends Controller
             'schools' => $schools->map(fn (School $school) => [
                 'id' => $school->id,
                 'name' => $school->name,
-                'logo_path' => $school->logo_path,
+                'logo_path' => self::logoSekolah($school),
             ]),
             'classrooms' => $classrooms,
             // Mengikat endpoint pratinjau ke sesi yang benar-benar membuka
@@ -94,7 +108,7 @@ class StudentRegistrationController extends Controller
             'schools' => $schools->map(fn (School $school) => [
                 'id' => $school->id,
                 'name' => $school->name,
-                'logo_path' => $school->logo_path,
+                'logo_path' => self::logoSekolah($school),
             ]),
             'classrooms' => $classrooms,
             'registrationToken' => $this->issueRegistrationToken(),

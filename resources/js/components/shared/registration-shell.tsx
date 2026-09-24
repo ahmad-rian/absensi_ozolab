@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 
@@ -52,10 +52,15 @@ export function RegistrationHeader({
     title: string;
     subtitle: string;
 }) {
+    // Sebelum sekolah dipilih: logo aplikasi dari branding publik, baru
+    // lambang bawaan kalau branding itu pun belum diunggah.
+    const { app } = usePage<{ app?: { logo?: string | null } | null }>().props;
+    const src = logoPath ? `/storage/${logoPath}` : (app?.logo ?? null);
+
     return (
         <div className="mb-6 text-center">
-            {logoPath ? (
-                <img src={`/storage/${logoPath}`} alt={schoolName ?? title} className="mx-auto mb-4 size-16 rounded-xl object-contain" />
+            {src ? (
+                <img src={src} alt={schoolName ?? title} className="mx-auto mb-4 size-16 rounded-xl object-contain" />
             ) : (
                 <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600">
                     <AppLogoIcon className="size-8 fill-current text-white" />

@@ -257,3 +257,24 @@ function registrationToken(): string
 
     return session('registration_token');
 }
+
+test('logo yang diunggah lewat pengaturan tampil di kepala formulir pendaftaran', function () {
+    /*
+        Logo sekolah bisa tersimpan di dua tempat: kolom `logo_path` dan
+        `settings.app_logo` (unggahan Pengaturan → Tampilan). Halaman ini dulu
+        hanya membaca kolomnya, jadi sekolah yang logonya diunggah lewat
+        Pengaturan tampil dengan lambang Laravel bawaan.
+    */
+    $school = School::factory()->create([
+        'logo_path' => null,
+        'settings' => ['app_logo' => 'images/branding/unggahan.webp'],
+    ]);
+
+    $this->get('/daftar')->assertOk()->assertInertia(fn ($page) => $page
+        ->where('schools', fn ($schools) => collect($schools)->firstWhere('id', $school->id)['logo_path'] === 'images/branding/unggahan.webp'));
+
+    $school->update(['logo_path' => 'logos/sekolah.png']);
+
+    $this->get('/daftar')->assertInertia(fn ($page) => $page
+        ->where('schools', fn ($schools) => collect($schools)->firstWhere('id', $school->id)['logo_path'] === 'logos/sekolah.png'));
+});
