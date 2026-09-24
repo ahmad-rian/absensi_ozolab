@@ -7,6 +7,7 @@ use App\Events\StudentCheckedOut;
 use App\Listeners\DispatchAttendanceNotifications;
 use App\Listeners\LogAttendanceActivity;
 use App\Models\User;
+use App\Support\AturanSandi;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -112,14 +113,9 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        // Definisinya di AturanSandi, bukan di sini: halaman ganti sandi
+        // memajang syaratnya sebagai daftar centang, dan daftar itu harus
+        // dibangkitkan dari aturan yang sama persis dengan yang menolak.
+        Password::defaults(fn (): Password => AturanSandi::bawaan());
     }
 }

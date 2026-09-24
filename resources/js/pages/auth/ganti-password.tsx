@@ -1,18 +1,30 @@
 import { Form, Head } from '@inertiajs/react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import SyaratSandi from '@/components/syarat-sandi';
+import type { Syarat } from '@/components/syarat-sandi';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { update } from '@/routes/password/required';
 
 /*
-    `orangTua` datang dari server karena aturan sandinya memang berbeda per
-    peran (lihat ChangeRequiredPasswordController::aturan). Orang tua diberi
-    tahu ambangnya apa adanya — delapan karakter, tanpa aturan komposisi;
-    peran lain memakai Password::defaults() yang di produksi jauh lebih ketat,
-    dan menyebut angka yang salah kepada mereka lebih buruk daripada diam.
+    `syarat` dan `catatan` datang dari server (App\Support\AturanSandi) karena
+    ambangnya berbeda per peran: orang tua delapan karakter tanpa aturan
+    komposisi, peran lain dua belas plus simbol plus pemeriksaan kebocoran.
+    Halaman ini tidak boleh menebaknya sendiri — sebelum props ini ada, ia
+    memajang "minimal 8 karakter" kepada admin yang sebenarnya dituntut 12,
+    dan sandi sembilan karakter ditolak tanpa alasan yang masuk akal.
 */
-export default function GantiPassword({ orangTua }: { orangTua: boolean }) {
+export default function GantiPassword({
+    orangTua,
+    sandi,
+}: {
+    orangTua: boolean;
+    sandi: { syarat: Syarat[]; catatan: string | null };
+}) {
+    const [password, setPassword] = useState('');
+
     return (
         <>
             <Head title="Ganti kata sandi" />
@@ -38,15 +50,15 @@ export default function GantiPassword({ orangTua }: { orangTua: boolean }) {
                                 name="password"
                                 autoComplete="new-password"
                                 required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                             />
                             <InputError message={errors.password} />
-                            {orangTua && (
-                                <p className="text-xs text-muted-foreground">
-                                    Minimal 8 karakter, bebas huruf atau angka.
-                                    Jangan pakai yang gampang ditebak seperti
-                                    12345678.
-                                </p>
-                            )}
+                            <SyaratSandi
+                                password={password}
+                                syarat={sandi.syarat}
+                                catatan={sandi.catatan}
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="password_confirmation">

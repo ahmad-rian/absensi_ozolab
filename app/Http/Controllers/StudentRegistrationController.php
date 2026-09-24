@@ -17,6 +17,7 @@ use App\Services\Attendance\QrTokenGenerator;
 use App\Services\GoogleDriveService;
 use App\Services\ParentProfileService;
 use App\Services\PhotoCropService;
+use App\Support\AturanSandi;
 use App\Support\SchoolFeatures;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -27,7 +28,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Rules\Unique;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -60,6 +60,10 @@ class StudentRegistrationController extends Controller
             // Mengikat endpoint pratinjau ke sesi yang benar-benar membuka
             // halaman ini, supaya tidak bisa dipanggil lepas lewat curl.
             'registrationToken' => $this->issueRegistrationToken(),
+            // Syarat sandi dibangkitkan dari aturan yang sama dengan yang
+            // menolak di store(), supaya daftar centang di langkah 5 tidak
+            // bisa menjanjikan sesuatu yang validatornya tidak setujui.
+            'sandi' => AturanSandi::deskripsi(ketat: false),
         ]);
     }
 
@@ -306,7 +310,7 @@ class StudentRegistrationController extends Controller
             // sama. Lihat kelas itu untuk alasan lengkapnya.
             'password' => $akunLamaAda
                 ? ['required', 'string', 'confirmed']
-                : ['required', 'string', Password::min(8), new SandiUmum([
+                : ['required', 'string', AturanSandi::longgar(), new SandiUmum([
                     $request->parent_phone,
                     $request->parent_email,
                     Str::before((string) $request->parent_email, '@'),

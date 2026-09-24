@@ -1,7 +1,10 @@
 <?php
 
+use App\Models\School;
 use App\Models\User;
+use App\Support\AturanSandi;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /*
@@ -31,6 +34,48 @@ test('halaman menandai orang tua supaya ketentuan sandinya bisa ditampilkan', fu
         ->get(route('password.required.edit'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('orangTua', false));
+});
+
+test('syarat yang dipajang berasal dari aturan yang menolak, bukan dari teks yang ditulis terpisah', function () {
+    /*
+        Halaman ini pernah memajang "Kata sandi minimal 8 karakter." kepada
+        akun yang sebenarnya dituntut dua belas, jadi sandi sembilan karakter
+        ditolak dengan alasan yang tidak masuk akal. Yang dijaga di sini:
+        angka pada daftar centang dan angka yang dipakai validator berasal dari
+        sumber yang sama.
+    */
+    $this->actingAs(penggunaWajibGanti('ORANG_TUA'))
+        ->get(route('password.required.edit'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('sandi.syarat.0.kunci', 'panjang')
+            ->where('sandi.syarat.0.nilai', AturanSandi::MIN_LONGGAR)
+            // Orang tua tidak dikenai aturan komposisi, jadi tidak boleh ada
+            // centang yang menuntutnya.
+            ->has('sandi.syarat', 1)
+            ->has('sandi.catatan'));
+
+    $panjangDitolak = str_repeat('a', AturanSandi::MIN_LONGGAR - 1);
+
+    $this->actingAs(penggunaWajibGanti('ORANG_TUA'))
+        ->put(route('password.required.update'), ['password' => $panjangDitolak, 'password_confirmation' => $panjangDitolak])
+        ->assertSessionHasErrors(['password' => 'Kata sandi minimal '.AturanSandi::MIN_LONGGAR.' karakter.']);
+});
+
+test('logo sekolah muncul di halaman ganti sandi', function () {
+    /*
+        Rute ini berada di luar grup yang memasang SetCurrentSchool, jadi
+        `currentSchool` kosong di sini. Sebelum ada fallback ke sekolah milik
+        akunnya, halaman menampilkan logo Laravel bawaan padahal logonya sudah
+        diunggah — logo itu tersimpan di kolom settings sekolah, bukan di tabel
+        settings global.
+    */
+    $school = School::factory()->create(['settings' => ['app_logo' => 'images/branding/logo.webp']]);
+    $user = User::factory()->create(['school_id' => $school->id, 'must_change_password' => true]);
+    $user->assignRole('ORANG_TUA');
+
+    $this->actingAs($user)
+        ->get(route('password.required.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('app.logo', Storage::disk('public')->url('images/branding/logo.webp')));
 });
 
 test('sandi orang tua yang tidak memenuhi ketentuan ditolak dengan alasannya', function (string $sandi) {

@@ -17,6 +17,8 @@ import {
     RegistrationShell,
 } from '@/components/shared/registration-shell';
 import { SimpleCaptcha } from '@/components/simple-captcha';
+import SyaratSandi from '@/components/syarat-sandi';
+import type { Syarat } from '@/components/syarat-sandi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,6 +46,7 @@ type Props = {
     schools: School[];
     classrooms: Classroom[];
     registrationToken: string;
+    sandi: { syarat: Syarat[]; catatan: string | null };
 };
 
 type RegistrationResult = {
@@ -174,6 +177,7 @@ export default function StudentRegister({
     schools,
     classrooms,
     registrationToken,
+    sandi,
 }: Props) {
     const { flash } = usePage().props as unknown as {
         flash: { success?: string };
@@ -1280,10 +1284,16 @@ export default function StudentRegister({
                                         className="h-11"
                                     />
                                     <InputError message={err('password')} />
+                                    <SyaratSandi
+                                        password={data.password}
+                                        syarat={sandi.syarat}
+                                        catatan={sandi.catatan}
+                                        larangan={[
+                                            data.parent_phone,
+                                            data.parent_email,
+                                        ]}
+                                    />
                                     <p className="text-xs text-muted-foreground">
-                                        Minimal 8 karakter, bebas huruf atau
-                                        angka. Jangan pakai yang gampang ditebak
-                                        seperti 12345678 atau nomor HP Anda.
                                         Sudah punya akun? Isi dengan kata sandi
                                         akun itu.
                                     </p>
