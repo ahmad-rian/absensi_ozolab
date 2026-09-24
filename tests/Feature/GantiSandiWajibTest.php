@@ -116,10 +116,22 @@ test('orang tua menyimpan sandi delapan huruf biasa tanpa aturan komposisi', fun
         ->and(Hash::check('sandiwali', $user->password))->toBeTrue();
 });
 
-test('aturan peran lain tidak ikut dilonggarkan atau diperketat', function () {
-    // Peran non-orang-tua tetap pada Password::defaults(), yang di produksi jauh
-    // lebih ketat (12 karakter, simbol, cek kebocoran). Yang diperiksa di sini:
-    // percabangan peran tidak diam-diam memasang aturan orang tua pada mereka.
+test('admin dan staf memakai ambang sederhana yang sama di halaman ini', function () {
+    /*
+        Sempat dikenai 12 karakter + huruf besar-kecil + angka + simbol. Dinilai
+        terlalu sulit oleh pemilik aplikasi; halaman ini kini satu ambang untuk
+        semua peran. Daftar-tolaknya tetap berlaku untuk mereka.
+    */
+    $this->actingAs(penggunaWajibGanti('ADMIN'))
+        ->get(route('password.required.edit'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('sandi.syarat.0.nilai', AturanSandi::MIN_LONGGAR)
+            ->has('sandi.syarat', 2));
+
+    $this->actingAs(penggunaWajibGanti('ADMIN'))
+        ->put(route('password.required.update'), ['password' => '12345678', 'password_confirmation' => '12345678'])
+        ->assertSessionHasErrors('password');
+
     $admin = penggunaWajibGanti('ADMIN');
 
     $this->actingAs($admin)

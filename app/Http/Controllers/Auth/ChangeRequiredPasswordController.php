@@ -24,16 +24,16 @@ class ChangeRequiredPasswordController extends Controller
             // Syaratnya dibangkitkan dari aturan yang sama dengan yang menolak,
             // jadi daftar centang di halaman tidak bisa menjanjikan sesuatu
             // yang validatornya tidak setujui.
-            'sandi' => AturanSandi::deskripsi(self::ketat($request)),
+            'sandi' => AturanSandi::deskripsi(ketat: false),
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
-        $minimal = self::ketat($request) ? AturanSandi::MIN_KETAT : AturanSandi::MIN_LONGGAR;
+        $minimal = AturanSandi::MIN_LONGGAR;
 
         $data = $request->validate([
-            'password' => ['required', 'string', 'confirmed', ...self::aturan($request), 'not_in:password,11111111'],
+            'password' => ['required', 'string', 'confirmed', ...self::aturan(), 'not_in:password,11111111'],
         ], [
             'password.min' => "Kata sandi minimal {$minimal} karakter.",
             'password.mixed' => 'Kata sandi harus memuat huruf besar dan huruf kecil.',
@@ -56,27 +56,23 @@ class ChangeRequiredPasswordController extends Controller
     }
 
     /**
-     * Apakah pengguna ini dikenai ambang ketat.
+     * Semua peran di halaman ini memakai ambang yang sama: delapan karakter
+     * plus daftar-tolak SandiUmum.
      *
-     * Orang tua tidak pernah, siapa pun dia: halaman ini muncul pada login
-     * pertama, tepat di depan orang yang baru saja membuat sandinya di
-     * /daftar. Menolak sandi yang kemarin diterima berarti menuntut tebakan
-     * tentang apa yang berubah.
-     */
-    private static function ketat(Request $request): bool
-    {
-        return ! self::orangTua($request) && app()->isProduction();
-    }
-
-    /**
+     * Sempat dibedakan — admin dan staf dikenai Password::defaults() yang di
+     * produksi menuntut 12 karakter, huruf besar-kecil, angka, simbol, dan cek
+     * kebocoran. Dilonggarkan atas keputusan pemilik aplikasi (24 Sep 2026):
+     * halaman ini muncul pada login pertama akun yang dibuatkan admin, dan
+     * empat syarat komposisi di depan staf sekolah terbukti terlalu sulit.
+     * Pintu login tetap dibatasi 5 percobaan per menit per email+IP.
+     *
+     * Hanya halaman ini. Password::defaults() — dipakai ganti sandi di
+     * pengaturan profil dan reset sandi — tidak disentuh.
+     *
      * @return list<Password|SandiUmum>
      */
-    private static function aturan(Request $request): array
+    private static function aturan(): array
     {
-        if (self::orangTua($request)) {
-            return [AturanSandi::longgar(), new SandiUmum];
-        }
-
-        return [AturanSandi::bawaan()];
+        return [AturanSandi::longgar(), new SandiUmum];
     }
 }
