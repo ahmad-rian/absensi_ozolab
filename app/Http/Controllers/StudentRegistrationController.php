@@ -11,6 +11,7 @@ use App\Models\Classroom;
 use App\Models\ParentProfile;
 use App\Models\School;
 use App\Models\Student;
+use App\Rules\SandiUmum;
 use App\Rules\SchoolFeatureEnabled;
 use App\Services\Attendance\QrTokenGenerator;
 use App\Services\GoogleDriveService;
@@ -297,14 +298,19 @@ class StudentRegistrationController extends Controller
             'parent_name' => ['required', 'string', 'max:255'],
             'parent_phone' => ['required', 'string', 'max:20'],
             'parent_email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
-            // Simbol sengaja tidak diwajibkan: form ini diisi orang tua dari
-            // ponsel, dan simbol wajib menghasilkan sandi yang ditulis di kertas.
-            // `uncompromised()` juga tidak dipakai — itu panggilan HTTP keluar di
-            // dalam endpoint publik, satu ketergantungan jaringan yang bisa
-            // menggantungkan pendaftaran.
+            // Delapan karakter, tanpa aturan komposisi. Yang mengisi form ini
+            // orang tua, dan menuntut huruf besar/angka/simbol dari mereka
+            // menghasilkan sandi yang ditulis di kertas — bukan akun yang lebih
+            // aman. Penggantinya ada di SandiUmum: daftar-tolak, plus larangan
+            // memakai nomor WhatsApp atau email yang diketik di formulir yang
+            // sama. Lihat kelas itu untuk alasan lengkapnya.
             'password' => $akunLamaAda
                 ? ['required', 'string', 'confirmed']
-                : ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
+                : ['required', 'string', Password::min(8), new SandiUmum([
+                    $request->parent_phone,
+                    $request->parent_email,
+                    Str::before((string) $request->parent_email, '@'),
+                ]), 'confirmed'],
             'parent_relation' => ['required', 'string', 'in:AYAH,IBU,WALI'],
             // Nullable, bukan required: langkah Foto boleh dilewati, dan yang
             // melewatinya diurus admin dari halaman siswa.
@@ -332,8 +338,6 @@ class StudentRegistrationController extends Controller
             'password.required' => 'Kata sandi akun orang tua wajib diisi.',
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
             'password.min' => 'Kata sandi minimal 8 karakter.',
-            'password.mixed' => 'Kata sandi harus memuat huruf besar dan huruf kecil.',
-            'password.numbers' => 'Kata sandi harus memuat setidaknya satu angka.',
             'parent_email.email' => 'Format email orang tua tidak valid.',
             'parent_relation.required' => 'Pilih hubungan orang tua.',
         ]);

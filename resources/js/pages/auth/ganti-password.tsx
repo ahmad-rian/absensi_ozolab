@@ -1,22 +1,18 @@
 import { Form, Head } from '@inertiajs/react';
-import { useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
-import SyaratSandi from '@/components/syarat-sandi';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { update } from '@/routes/password/required';
 
 /*
-    `orangTua` datang dari server karena aturan kekuatan sandinya memang
-    berbeda per peran (lihat ChangeRequiredPasswordController::aturan). Daftar
-    centang hanya ditampilkan kepada yang aturannya dijanjikan halaman ini;
-    peran lain memakai Password::defaults() yang di produksi lebih ketat, dan
-    menampilkan daftar yang tidak sesuai aturannya sama saja berbohong.
+    `orangTua` datang dari server karena aturan sandinya memang berbeda per
+    peran (lihat ChangeRequiredPasswordController::aturan). Orang tua diberi
+    tahu ambangnya apa adanya — delapan karakter, tanpa aturan komposisi;
+    peran lain memakai Password::defaults() yang di produksi jauh lebih ketat,
+    dan menyebut angka yang salah kepada mereka lebih buruk daripada diam.
 */
 export default function GantiPassword({ orangTua }: { orangTua: boolean }) {
-    const [password, setPassword] = useState('');
-
     return (
         <>
             <Head title="Ganti kata sandi" />
@@ -42,11 +38,15 @@ export default function GantiPassword({ orangTua }: { orangTua: boolean }) {
                                 name="password"
                                 autoComplete="new-password"
                                 required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
                             />
                             <InputError message={errors.password} />
-                            {orangTua && <SyaratSandi password={password} />}
+                            {orangTua && (
+                                <p className="text-xs text-muted-foreground">
+                                    Minimal 8 karakter, bebas huruf atau angka.
+                                    Jangan pakai yang gampang ditebak seperti
+                                    12345678.
+                                </p>
+                            )}
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="password_confirmation">

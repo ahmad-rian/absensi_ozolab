@@ -41,12 +41,33 @@ test('registration requires valid confirmed credentials', function (array $overr
     'invalid email' => [['parent_email' => 'not-email'], 'parent_email'],
     'password required' => [['password' => ''], 'password'],
     'short password' => [['password' => 'short', 'password_confirmation' => 'short'], 'password'],
-    // Panjangnya cukup, kekuatannya tidak. Ini yang lolos sebelum aturannya
-    // dinaikkan — akun ini bisa melihat data kehadiran seorang anak.
-    'lowercase only' => [['password' => 'sandiwali', 'password_confirmation' => 'sandiwali'], 'password'],
-    'no number' => [['password' => 'SandiWali', 'password_confirmation' => 'SandiWali'], 'password'],
+    // Panjangnya cukup, tapi ada di puncak setiap daftar bocoran.
+    'common password' => [['password' => '12345678', 'password_confirmation' => '12345678'], 'password'],
+    'common password with caps' => [['password' => 'Password', 'password_confirmation' => 'Password'], 'password'],
+    // Nomor WhatsApp diketik dua kolom di atas kolom sandi; siapa pun yang
+    // memegang formulirnya sudah memegang tebakan terbaiknya.
+    'same as phone' => [['password' => '081234567890', 'password_confirmation' => '081234567890'], 'password'],
+    'same as email name' => [['password' => 'budi@example.com', 'parent_email' => 'budi@example.com', 'password_confirmation' => 'budi@example.com'], 'password'],
     'confirmation mismatch' => [['password_confirmation' => 'different'], 'password'],
 ]);
+
+test('sandi delapan huruf biasa diterima apa adanya', function () {
+    /*
+        Diputuskan setelah melihat lapangan: yang mengisi form ini orang tua,
+        dan aturan komposisi (huruf besar, angka, simbol) pada kelompok itu
+        menghasilkan sandi yang ditulis di kertas atau seragam sekeluarga —
+        bukan akun yang lebih aman. Penggantinya daftar-tolak di SandiUmum plus
+        pembatasan laju login. Tes ini mengunci keputusan itu supaya aturan
+        komposisi tidak diam-diam kembali.
+    */
+    $this->postJson('/daftar', [
+        ...$this->payload,
+        'password' => 'sandiwali',
+        'password_confirmation' => 'sandiwali',
+    ])->assertOk();
+
+    expect(Hash::check('sandiwali', User::where('email', 'budi@example.com')->firstOrFail()->password))->toBeTrue();
+});
 
 test('orang tua lama bersandi lemah tidak terkunci dari anak keduanya', function () {
     /*

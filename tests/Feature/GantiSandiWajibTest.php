@@ -42,25 +42,31 @@ test('sandi orang tua yang tidak memenuhi ketentuan ditolak dengan alasannya', f
 
     expect($user->fresh()->must_change_password)->toBeTrue();
 })->with([
-    'terlalu pendek' => 'Sandi1',
-    'tanpa huruf besar' => 'sandiwali1',
-    'tanpa angka' => 'SandiWali',
+    'terlalu pendek' => 'sandi',
     // Sandi bawaan yang dipakai massal saat impor — persis yang halaman ini ada
     // untuk menggantikan.
     'sandi bawaan' => '11111111',
+    'sandi umum' => '12345678',
+    'sandi umum berhuruf besar' => 'Password',
 ]);
 
-test('orang tua menyimpan sandi yang memenuhi ketentuan dan halaman berhenti memaksa', function () {
+test('orang tua menyimpan sandi delapan huruf biasa tanpa aturan komposisi', function () {
+    /*
+        Ambangnya sengaja sama persis dengan /daftar. Halaman ini muncul pada
+        login pertama, di depan orang yang baru saja membuat sandinya di
+        halaman pendaftaran; menolak sandi yang kemarin diterima berarti
+        menuntut tebakan tentang apa yang berubah.
+    */
     $user = penggunaWajibGanti('ORANG_TUA');
 
     $this->actingAs($user)
-        ->put(route('password.required.update'), ['password' => 'SandiWali123', 'password_confirmation' => 'SandiWali123'])
+        ->put(route('password.required.update'), ['password' => 'sandiwali', 'password_confirmation' => 'sandiwali'])
         ->assertSessionHasNoErrors();
 
     $user = $user->fresh();
 
     expect($user->must_change_password)->toBeFalse()
-        ->and(Hash::check('SandiWali123', $user->password))->toBeTrue();
+        ->and(Hash::check('sandiwali', $user->password))->toBeTrue();
 });
 
 test('aturan peran lain tidak ikut dilonggarkan atau diperketat', function () {

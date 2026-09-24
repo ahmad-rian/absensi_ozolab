@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Rules\SandiUmum;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -23,11 +24,9 @@ class ChangeRequiredPasswordController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'password' => ['required', 'string', 'confirmed', self::aturan($request), 'not_in:password,11111111'],
+            'password' => ['required', 'string', 'confirmed', ...self::aturan($request), 'not_in:password,11111111'],
         ], [
             'password.min' => 'Kata sandi minimal 8 karakter.',
-            'password.mixed' => 'Kata sandi harus memuat huruf besar dan huruf kecil.',
-            'password.numbers' => 'Kata sandi harus memuat setidaknya satu angka.',
             'password.not_in' => 'Kata sandi itu terlalu umum. Pilih yang lain.',
         ]);
 
@@ -40,21 +39,23 @@ class ChangeRequiredPasswordController extends Controller
     /**
      * Aturan kekuatan sandi, dibedakan per audiens.
      *
-     * Orang tua memakai aturan yang sama persis dengan yang dipakai saat
-     * sandinya dibuat di /daftar, dan halaman ini menampilkannya sebagai daftar
-     * centang. Kalau keduanya boleh berbeda, daftar centang itu berbohong:
-     * `Password::defaults()` di produksi menuntut 12 karakter plus simbol plus
-     * pemeriksaan kebocoran, jadi orang tua bisa mencentang semuanya dan tetap
-     * ditolak tanpa tahu apa yang kurang.
+     * Orang tua memakai aturan yang sama persis dengan saat sandinya dibuat di
+     * /daftar: delapan karakter tanpa aturan komposisi, ditambah daftar-tolak
+     * `SandiUmum`. Kalau keduanya boleh berbeda, halaman ini menolak sandi yang
+     * kemarin diterima halaman pendaftaran, dan pemiliknya tidak punya cara
+     * menebak apa yang berubah — di produksi `Password::defaults()` menuntut 12
+     * karakter plus simbol plus pemeriksaan kebocoran.
      *
      * Peran lain — admin, staf, superadmin — tetap pada `Password::defaults()`
      * yang lebih ketat. Akun mereka memegang data seluruh sekolah, bukan satu
-     * anak, dan halaman ini tidak menjanjikan apa pun kepada mereka.
+     * anak, dan tidak diisi oleh orang yang baru pertama kali membuka portal.
+     *
+     * @return list<Password|SandiUmum>
      */
-    private static function aturan(Request $request): Password
+    private static function aturan(Request $request): array
     {
         return $request->user()->hasRole(UserRole::OrangTua->value)
-            ? Password::min(8)->mixedCase()->numbers()
-            : Password::defaults();
+            ? [Password::min(8), new SandiUmum]
+            : [Password::defaults()];
     }
 }

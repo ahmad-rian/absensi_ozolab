@@ -17,7 +17,6 @@ import {
     RegistrationShell,
 } from '@/components/shared/registration-shell';
 import { SimpleCaptcha } from '@/components/simple-captcha';
-import SyaratSandi from '@/components/syarat-sandi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1281,8 +1280,10 @@ export default function StudentRegister({
                                         className="h-11"
                                     />
                                     <InputError message={err('password')} />
-                                    <SyaratSandi password={data.password} />
                                     <p className="text-xs text-muted-foreground">
+                                        Minimal 8 karakter, bebas huruf atau
+                                        angka. Jangan pakai yang gampang ditebak
+                                        seperti 12345678 atau nomor HP Anda.
                                         Sudah punya akun? Isi dengan kata sandi
                                         akun itu.
                                     </p>
