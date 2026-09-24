@@ -1,6 +1,11 @@
-import { Check } from 'lucide-react';
+import { CheckCircle2, Circle, XCircle } from 'lucide-react';
 
-export type Syarat = { kunci: string; label: string; nilai?: number };
+export type Syarat = {
+    kunci: string;
+    label: string;
+    nilai?: number;
+    daftar?: string[];
+};
 
 /*
     Daftar syarat sandi yang mencentang dirinya sendiri saat diketik.
@@ -15,9 +20,8 @@ export type Syarat = { kunci: string; label: string; nilai?: number };
     sandi tidak boleh sama dengan nomor WhatsApp atau email yang baru saja
     diketik beberapa kolom di atasnya.
 
-    Yang tidak bisa diperiksa di peramban — daftar-tolak sandi umum dan
-    pemeriksaan kebocoran — muncul sebagai `catatan`, bukan sebagai centang
-    yang berbohong.
+    Yang tidak bisa diperiksa di peramban — pemeriksaan kebocoran — muncul
+    sebagai `catatan`, bukan sebagai centang yang berbohong.
 */
 export default function SyaratSandi({
     password,
@@ -40,40 +44,94 @@ export default function SyaratSandi({
             ? [
                   {
                       label: 'Bukan nomor HP atau email Anda',
-                      ok: !terpakai.includes(password.trim().toLowerCase()),
+                      ok:
+                          password !== '' &&
+                          !terpakai.includes(password.trim().toLowerCase()),
                   },
               ]
             : []),
     ];
 
+    const semua = daftar.every((item) => item.ok);
+
     return (
-        <div className="grid gap-1">
-            <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
+        <div
+            className={
+                semua
+                    ? 'grid gap-1.5 rounded-md border border-emerald-200 bg-emerald-50/60 px-3 py-2 dark:border-emerald-900 dark:bg-emerald-950/40'
+                    : 'grid gap-1.5 rounded-md border border-border bg-muted/40 px-3 py-2'
+            }
+            aria-live="polite"
+        >
+            <ul className="grid gap-1 text-xs">
                 {daftar.map((item) => (
-                    <li
-                        key={item.label}
-                        className={
-                            item.ok
-                                ? 'flex items-center gap-1 text-emerald-600 dark:text-emerald-400'
-                                : 'flex items-center gap-1 text-muted-foreground'
-                        }
-                    >
-                        {item.ok ? (
-                            <Check className="size-3.5" aria-hidden />
-                        ) : (
-                            <span
-                                className="size-1.5 rounded-full bg-current"
-                                aria-hidden
-                            />
-                        )}
+                    <Butir key={item.label} ok={item.ok}>
                         {item.label}
-                    </li>
+                    </Butir>
                 ))}
             </ul>
             {catatan && (
                 <p className="text-xs text-muted-foreground">{catatan}</p>
             )}
         </div>
+    );
+}
+
+/*
+    Penanda di bawah kolom ulangi sandi. Merah hanya sesudah orang mulai
+    mengetik di kolom itu — kolom kosong belum salah, baru belum diisi.
+*/
+export function CocokSandi({
+    password,
+    konfirmasi,
+}: {
+    password: string;
+    konfirmasi: string;
+}) {
+    if (konfirmasi === '') {
+        return null;
+    }
+
+    const cocok = konfirmasi === password;
+
+    return (
+        <p
+            className={
+                cocok
+                    ? 'flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400'
+                    : 'flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400'
+            }
+            aria-live="polite"
+        >
+            {cocok ? (
+                <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+            ) : (
+                <XCircle className="size-4 shrink-0" aria-hidden />
+            )}
+            {cocok ? 'Kata sandi sama' : 'Kata sandi belum sama'}
+        </p>
+    );
+}
+
+function Butir({ ok, children }: { ok: boolean; children: React.ReactNode }) {
+    return (
+        <li
+            className={
+                ok
+                    ? 'flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400'
+                    : 'flex items-center gap-1.5 text-muted-foreground'
+            }
+        >
+            {ok ? (
+                <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+            ) : (
+                <Circle className="size-4 shrink-0" aria-hidden />
+            )}
+            <span>{children}</span>
+            <span className="sr-only">
+                {ok ? '(terpenuhi)' : '(belum terpenuhi)'}
+            </span>
+        </li>
     );
 }
 
@@ -87,6 +145,13 @@ function penuhi(password: string, syarat: Syarat): boolean {
             return /[0-9]/.test(password);
         case 'simbol':
             return /[^A-Za-z0-9]/.test(password);
+        case 'umum':
+            // Kolom kosong belum memenuhi apa pun; centang hijau pada kolom
+            // kosong membuat daftar ini tampak "sudah beres" sebelum diisi.
+            return (
+                password.trim() !== '' &&
+                !(syarat.daftar ?? []).includes(password.trim().toLowerCase())
+            );
         default:
             return false;
     }

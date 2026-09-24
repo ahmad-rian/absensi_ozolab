@@ -42,7 +42,7 @@ class SandiUmum implements ValidationRule
      *
      * @var list<string>
      */
-    private const DAFTAR_TOLAK = [
+    public const DAFTAR_TOLAK = [
         'password', 'password1', 'password123', 'passw0rd',
         '12345678', '123456789', '1234567890', '12341234', '87654321',
         '11111111', '00000000', '88888888', '12312312',

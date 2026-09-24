@@ -17,7 +17,7 @@ import {
     RegistrationShell,
 } from '@/components/shared/registration-shell';
 import { SimpleCaptcha } from '@/components/simple-captcha';
-import SyaratSandi from '@/components/syarat-sandi';
+import SyaratSandi, { CocokSandi } from '@/components/syarat-sandi';
 import type { Syarat } from '@/components/syarat-sandi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1321,6 +1321,10 @@ export default function StudentRegister({
                                     />
                                     <InputError
                                         message={err('password_confirmation')}
+                                    />
+                                    <CocokSandi
+                                        password={data.password}
+                                        konfirmasi={data.password_confirmation}
                                     />
                                 </div>
                             </div>

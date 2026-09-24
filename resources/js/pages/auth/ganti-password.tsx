@@ -2,7 +2,7 @@ import { Form, Head } from '@inertiajs/react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
-import SyaratSandi from '@/components/syarat-sandi';
+import SyaratSandi, { CocokSandi } from '@/components/syarat-sandi';
 import type { Syarat } from '@/components/syarat-sandi';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -24,6 +24,7 @@ export default function GantiPassword({
     sandi: { syarat: Syarat[]; catatan: string | null };
 }) {
     const [password, setPassword] = useState('');
+    const [konfirmasi, setKonfirmasi] = useState('');
 
     return (
         <>
@@ -69,6 +70,12 @@ export default function GantiPassword({
                                 name="password_confirmation"
                                 autoComplete="new-password"
                                 required
+                                value={konfirmasi}
+                                onChange={(e) => setKonfirmasi(e.target.value)}
+                            />
+                            <CocokSandi
+                                password={password}
+                                konfirmasi={konfirmasi}
                             />
                         </div>
                         <Button disabled={processing}>Simpan kata sandi</Button>

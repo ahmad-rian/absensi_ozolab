@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Rules\SandiUmum;
 use Illuminate\Validation\Rules\Password;
 
 /**
@@ -65,7 +66,7 @@ final class AturanSandi
      * diketik. `catatan` memuat syarat yang tidak bisa diperiksa di peramban —
      * daftar-tolak dan pemeriksaan kebocoran hanya ada di server.
      *
-     * @return array{syarat: list<array{kunci: string, label: string, nilai?: int}>, catatan: ?string}
+     * @return array{syarat: list<array{kunci: string, label: string, nilai?: int, daftar?: list<string>}>, catatan: ?string}
      */
     public static function deskripsi(bool $ketat): array
     {
@@ -79,13 +80,17 @@ final class AturanSandi
             $syarat[] = ['kunci' => 'huruf', 'label' => 'Huruf besar dan kecil'];
             $syarat[] = ['kunci' => 'angka', 'label' => 'Ada angka'];
             $syarat[] = ['kunci' => 'simbol', 'label' => 'Ada simbol, misal ! @ #'];
+        } else {
+            // Daftar-tolaknya ikut dikirim supaya centangnya bisa hidup di
+            // peramban. Isinya memang bukan rahasia — ini sandi yang ada di
+            // puncak setiap daftar bocoran — dan servernya tetap penentu.
+            $syarat[] = ['kunci' => 'umum', 'label' => 'Bukan sandi pasaran (12345678, password)', 'daftar' => SandiUmum::DAFTAR_TOLAK];
         }
 
         return [
             'syarat' => $syarat,
-            'catatan' => $ketat
-                ? 'Sandi yang pernah bocor di internet akan ditolak.'
-                : 'Jangan pakai yang gampang ditebak seperti 12345678.',
+            // Hanya untuk yang tidak bisa diperiksa di peramban.
+            'catatan' => $ketat ? 'Sandi yang pernah bocor di internet akan ditolak.' : null,
         ];
     }
 }

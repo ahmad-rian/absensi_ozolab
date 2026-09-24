@@ -2,6 +2,7 @@
 
 use App\Models\School;
 use App\Models\User;
+use App\Rules\SandiUmum;
 use App\Support\AturanSandi;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -49,10 +50,11 @@ test('syarat yang dipajang berasal dari aturan yang menolak, bukan dari teks yan
         ->assertInertia(fn (Assert $page) => $page
             ->where('sandi.syarat.0.kunci', 'panjang')
             ->where('sandi.syarat.0.nilai', AturanSandi::MIN_LONGGAR)
-            // Orang tua tidak dikenai aturan komposisi, jadi tidak boleh ada
-            // centang yang menuntutnya.
-            ->has('sandi.syarat', 1)
-            ->has('sandi.catatan'));
+            // Orang tua tidak dikenai aturan komposisi: yang dipajang hanya
+            // panjang dan daftar-tolak, keduanya memang ditegakkan server.
+            ->has('sandi.syarat', 2)
+            ->where('sandi.syarat.1.kunci', 'umum')
+            ->where('sandi.syarat.1.daftar', SandiUmum::DAFTAR_TOLAK));
 
     $panjangDitolak = str_repeat('a', AturanSandi::MIN_LONGGAR - 1);
 
