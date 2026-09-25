@@ -3,6 +3,7 @@ import {
     AlertTriangle,
     Check,
     CheckCircle2,
+    ChevronDown,
     Loader2,
     User,
     X,
@@ -23,13 +24,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { login } from '@/routes';
@@ -711,30 +705,22 @@ export default function StudentRegister({
                                 >
                                     Sekolah
                                 </Label>
-                                <Select
+                                <PilihanAsli
+                                    id="school_id"
                                     value={data.school_id}
-                                    onValueChange={(val) => {
+                                    placeholder="Pilih sekolah"
+                                    onChange={(val) => {
                                         setData((prev) => ({
                                             ...prev,
                                             school_id: val,
                                             classroom_id: '',
                                         }));
                                     }}
-                                >
-                                    <SelectTrigger className="h-11 w-full">
-                                        <SelectValue placeholder="Pilih sekolah" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {schools.map((school) => (
-                                            <SelectItem
-                                                key={school.id}
-                                                value={String(school.id)}
-                                            >
-                                                {school.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    options={schools.map((school) => ({
+                                        value: String(school.id),
+                                        label: school.name,
+                                    }))}
+                                />
                                 <InputError message={err('school_id')} />
                             </div>
                         </FormSection>
@@ -985,26 +971,15 @@ export default function StudentRegister({
                                     >
                                         Agama
                                     </Label>
-                                    <Select
+                                    <PilihanAsli
+                                        id="religion"
                                         value={data.religion}
-                                        onValueChange={(val) =>
+                                        placeholder="Pilih agama"
+                                        onChange={(val) =>
                                             setData('religion', val)
                                         }
-                                    >
-                                        <SelectTrigger className="h-11 w-full">
-                                            <SelectValue placeholder="Pilih agama" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {religions.map((r) => (
-                                                <SelectItem
-                                                    key={r.value}
-                                                    value={r.value}
-                                                >
-                                                    {r.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        options={religions}
+                                    />
                                     <InputError message={err('religion')} />
                                 </div>
 
@@ -1016,33 +991,25 @@ export default function StudentRegister({
                                     >
                                         Kelas
                                     </Label>
-                                    <Select
+                                    <PilihanAsli
+                                        id="classroom_id"
                                         value={data.classroom_id}
-                                        onValueChange={(val) =>
-                                            setData('classroom_id', val)
+                                        placeholder={
+                                            data.school_id
+                                                ? 'Pilih kelas'
+                                                : 'Pilih sekolah terlebih dahulu'
                                         }
                                         disabled={!data.school_id}
-                                    >
-                                        <SelectTrigger className="h-11 w-full">
-                                            <SelectValue
-                                                placeholder={
-                                                    data.school_id
-                                                        ? 'Pilih kelas'
-                                                        : 'Pilih sekolah terlebih dahulu'
-                                                }
-                                            />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {filteredClassrooms.map((c) => (
-                                                <SelectItem
-                                                    key={c.id}
-                                                    value={String(c.id)}
-                                                >
-                                                    {c.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        onChange={(val) =>
+                                            setData('classroom_id', val)
+                                        }
+                                        options={filteredClassrooms.map(
+                                            (c) => ({
+                                                value: String(c.id),
+                                                label: c.name,
+                                            }),
+                                        )}
+                                    />
                                     <InputError message={err('classroom_id')} />
                                 </div>
                             </div>
@@ -1166,27 +1133,18 @@ export default function StudentRegister({
                                     >
                                         Hubungan
                                     </Label>
-                                    <Select
+                                    <PilihanAsli
+                                        id="parent_relation"
                                         value={data.parent_relation}
-                                        onValueChange={(v) =>
+                                        onChange={(v) =>
                                             setData('parent_relation', v)
                                         }
-                                    >
-                                        <SelectTrigger className="h-11">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="AYAH">
-                                                Ayah
-                                            </SelectItem>
-                                            <SelectItem value="IBU">
-                                                Ibu
-                                            </SelectItem>
-                                            <SelectItem value="WALI">
-                                                Wali
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                        options={[
+                                            { value: 'AYAH', label: 'Ayah' },
+                                            { value: 'IBU', label: 'Ibu' },
+                                            { value: 'WALI', label: 'Wali' },
+                                        ]}
+                                    />
                                     <InputError
                                         message={err('parent_relation')}
                                     />
@@ -1604,6 +1562,66 @@ function ReviewRow({ label, value }: { label: string; value?: string | null }) {
             <dd className="text-right font-medium break-words">
                 {value || '—'}
             </dd>
+        </div>
+    );
+}
+
+/*
+    Pilihan bawaan peramban, bukan Radix Select.
+
+    Di HP, Radix membuka daftarnya DI BAWAH kotak dengan tinggi yang dibatasi
+    sisa layar. Kotak Kelas berada di dasar kartu, jadi sisa layarnya cuma
+    beberapa piksel dan daftarnya muncul sebagai garis tipis — "kelasnya susah
+    muncul" yang dilaporkan dari lapangan. `<select>` asli membuka pemilih
+    layar penuh milik Android/iOS: besar, bisa digulir, tanpa perlu ruang di
+    bawah kotaknya.
+*/
+function PilihanAsli({
+    id,
+    value,
+    onChange,
+    options,
+    placeholder,
+    disabled,
+}: {
+    id: string;
+    value: string;
+    onChange: (value: string) => void;
+    options: { value: string; label: string }[];
+    placeholder?: string;
+    disabled?: boolean;
+}) {
+    return (
+        <div className="relative">
+            <select
+                id={id}
+                value={value}
+                disabled={disabled}
+                onChange={(e) => onChange(e.target.value)}
+                className={
+                    'h-11 w-full appearance-none rounded-md border border-zinc-300 bg-transparent pr-10 pl-3 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600 dark:bg-input/30 ' +
+                    (value ? '' : 'text-muted-foreground')
+                }
+            >
+                {placeholder !== undefined && (
+                    <option value="" disabled>
+                        {placeholder}
+                    </option>
+                )}
+                {options.map((o) => (
+                    <option
+                        key={o.value}
+                        value={o.value}
+                        className="text-foreground"
+                    >
+                        {o.label}
+                    </option>
+                ))}
+            </select>
+            <ChevronDown
+                className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+            />
         </div>
     );
 }
