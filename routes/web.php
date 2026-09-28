@@ -39,6 +39,7 @@ use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KartuBebas\DashboardController as KartuBebasDashboardController;
 use App\Http\Controllers\KartuBebas\DatasetController;
+use App\Http\Controllers\KartuBebas\DrivePhotoController;
 use App\Http\Controllers\KartuBebas\FrameController as KartuBebasFrameController;
 use App\Http\Controllers\KartuBebas\GenerateController;
 use App\Http\Controllers\KartuBebas\LayoutController;
@@ -438,6 +439,10 @@ Route::middleware('auth')
 
 Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-admin'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
     Route::get('/', [KartuBebasDashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('drive/jelajah', [DrivePhotoController::class, 'browse'])->name('drive.browse');
+    Route::get('drive/thumb/{fileId}', [DrivePhotoController::class, 'thumbnail'])->name('drive.thumbnail');
+    Route::get('drive/image/{fileId}', [DrivePhotoController::class, 'image'])->name('drive.image');
 
     // Layout Kartu (= CardForm template: dynamic fields + card design)
     Route::get('layouts', [LayoutController::class, 'index'])->name('layouts');

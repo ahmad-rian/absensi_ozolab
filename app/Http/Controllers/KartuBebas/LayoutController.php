@@ -125,7 +125,7 @@ class LayoutController extends Controller
      */
     private function validateForm(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'card_dataset_id' => ['required', 'string', 'exists:card_datasets,id'],
             'orientation' => ['required', Rule::in(['landscape', 'portrait'])],
@@ -133,6 +133,30 @@ class LayoutController extends Controller
             'layout_config' => ['required', 'array'],
             'is_active' => ['boolean'],
         ]);
+
+        $fields = CardDataset::findOrFail($validated['card_dataset_id'])->fields ?? [];
+        $sources = collect($fields)->reject(fn (array $field) => $field['type'] === 'photo')->pluck('key')->all();
+        $rules = [];
+
+        foreach ($validated['layout_config']['elements'] ?? [] as $id => $element) {
+            if (! is_array($element) || ($element['type'] ?? '') !== 'qr') {
+                continue;
+            }
+
+            $prefix = 'layout_config.elements.'.$id;
+            $rules[$prefix.'.enabled'] = ['required', 'boolean'];
+            $rules[$prefix.'.source'] = [empty($element['enabled']) ? 'nullable' : 'required', 'string', Rule::in($sources)];
+            $rules[$prefix.'.x'] = ['required', 'numeric', 'min:0', 'max:85.6'];
+            $rules[$prefix.'.y'] = ['required', 'numeric', 'min:0', 'max:85.6'];
+            $rules[$prefix.'.w'] = ['required', 'numeric', 'min:5', 'max:54'];
+            $rules[$prefix.'.h'] = ['required', 'numeric', 'min:5', 'max:54'];
+        }
+
+        if ($rules !== []) {
+            $request->validate($rules);
+        }
+
+        return $validated;
     }
 
     /**

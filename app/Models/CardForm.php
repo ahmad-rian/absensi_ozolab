@@ -43,6 +43,26 @@ class CardForm extends Model
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function inputFields(): array
+    {
+        $fields = array_values($this->fields ?? []);
+        if (collect($fields)->contains('type', 'photo')) {
+            return $fields;
+        }
+
+        foreach ($this->normalizedConfig()['elements'] as $element) {
+            if (($element['type'] ?? '') === 'photo' && ! empty($element['enabled'])) {
+                $fields[] = ['key' => $element['source'], 'label' => 'Foto', 'type' => 'photo', 'required' => false];
+                break;
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
      * Normalize the stored layout_config for the editor / generator (mirrors
      * SchoolCardLayout: orientation + frame + elements). Elements' `source` keys
      * are the form's dynamic field keys instead of fixed student fields.

@@ -48,12 +48,12 @@ body {
 .el-photo { border-radius: calc(0.4 * var(--mm)); overflow: hidden; background: transparent; }
 .el-photo img { width:100%; height:100%; object-fit:cover; object-position:center; display:block; }
 .el-photo .ph { width:100%; height:100%; display:flex; align-items:center; justify-content:center; color: rgba(0,0,0,0.3); background: rgba(255,255,255,0.35); border: 1.5px dashed rgba(0,0,0,0.3); }
-.el-qr { border-radius: calc(0.4 * var(--mm)); padding: calc(0.3 * var(--mm)); background: transparent; }
+.el-qr { background: white; }
 .el-qr svg { width:100%; height:100%; display:block; }
 </style>
 </head>
 <body>
-    @foreach($elements as $el)
+    @foreach($elements as $id => $el)
         @continue(empty($el['enabled']))
         @php $type = $el['type'] ?? 'field'; @endphp
 
@@ -71,8 +71,8 @@ body {
                     <div class="ph"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
                 @endif
             </div>
-        @elseif($type === 'qr' && !empty($qrSvg))
-            <div class="el el-qr" style="left: calc({{ $el['x'] }} * var(--mm)); top: calc({{ $el['y'] }} * var(--mm)); width: calc({{ $el['w'] ?? $el['size'] ?? 15 }} * var(--mm)); height: calc({{ $el['h'] ?? $el['size'] ?? 15 }} * var(--mm));">{!! $qrSvg !!}</div>
+        @elseif($type === 'qr' && !empty($qrSvgs[$id]))
+            <div class="el el-qr" style="left: calc({{ $el['x'] }} * var(--mm)); top: calc({{ $el['y'] }} * var(--mm)); width: calc({{ $el['w'] ?? $el['size'] ?? 15 }} * var(--mm)); height: calc({{ $el['h'] ?? $el['size'] ?? 15 }} * var(--mm));">{!! $qrSvgs[$id] !!}</div>
         @endif
     @endforeach
     <script>

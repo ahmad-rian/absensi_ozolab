@@ -1,4 +1,4 @@
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -6,6 +6,7 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import OrangtuaLayout from '@/layouts/orangtua-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { syncFavicon } from '@/lib/favicon';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -58,3 +59,8 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+router.on('navigate', ({ detail }) => {
+    const branding = detail.page.props.app as { favicon?: string | null } | undefined;
+    syncFavicon(document, branding?.favicon ?? null);
+});

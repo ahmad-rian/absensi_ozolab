@@ -96,7 +96,7 @@ class GenerateController extends Controller
             'name' => $cardForm->name,
             'orientation' => $cardForm->orientation,
             'frame_url' => $frameUrl,
-            'fields' => array_values($cardForm->fields ?? []),
+            'fields' => $cardForm->inputFields(),
         ];
     }
 
@@ -107,7 +107,7 @@ class GenerateController extends Controller
      */
     private function validateDynamic(Request $request, CardForm $form): array
     {
-        $fields = collect($form->fields ?? []);
+        $fields = collect($form->inputFields());
 
         $rules = [
             'manual_crop' => ['nullable', 'array'],
@@ -161,7 +161,7 @@ class GenerateController extends Controller
     private function nonPhotoData(CardForm $form, array $inputData): array
     {
         $stored = [];
-        foreach (collect($form->fields ?? []) as $field) {
+        foreach (collect($form->inputFields()) as $field) {
             if ($field['type'] === 'photo') {
                 continue;
             }

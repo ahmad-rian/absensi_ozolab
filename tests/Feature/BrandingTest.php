@@ -42,3 +42,22 @@ test('unpublished and inactive schools fall back to global branding', function (
     Setting::setValue('public_branding_school_id', $school->id);
     $this->get('/login')->assertInertia(fn (Assert $page) => $page->where('app.logo', Storage::disk('public')->url('global.webp')));
 });
+
+test('card workspace uses the selected school branding and reflects subsequent uploads', function () {
+    $user = createSuperAdminUser();
+    $school = School::factory()->create(['settings' => [
+        'app_logo' => 'images/branding/haji.webp', 'app_favicon' => 'images/branding/haji-icon.webp',
+    ]]);
+    $this->actingAs($user)->withSession(['current_school_id' => $school->id]);
+
+    foreach (['kartu-bebas.dashboard', 'kartu-bebas.layouts.create'] as $route) {
+        $this->get(route($route))->assertInertia(fn (Assert $page) => $page
+            ->where('app.logo', Storage::disk('public')->url('images/branding/haji.webp'))
+            ->where('app.favicon', Storage::disk('public')->url('images/branding/haji-icon.webp')))
+            ->assertSee('href="'.Storage::disk('public')->url('images/branding/haji-icon.webp').'"', false);
+    }
+
+    $school->setSetting('app_favicon', 'images/branding/new-haji-icon.webp');
+    $this->get(route('kartu-bebas.layouts.create'))
+        ->assertInertia(fn (Assert $page) => $page->where('app.favicon', Storage::disk('public')->url('images/branding/new-haji-icon.webp')));
+});

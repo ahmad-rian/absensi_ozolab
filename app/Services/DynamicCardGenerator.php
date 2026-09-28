@@ -6,6 +6,10 @@ use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Models\SchoolFrame;
 use App\Support\ChromeBinary;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
@@ -22,17 +26,7 @@ class DynamicCardGenerator
     {
         $config = $form->normalizedConfig();
         $isPortrait = ($config['orientation'] ?? 'landscape') === 'portrait';
-        $exportMm = 15.748; // 400 DPI
-
-        $html = View::make('cards.dynamic-card', [
-            'config' => $config,
-            'orientation' => $config['orientation'] ?? 'landscape',
-            'values' => $submission->data ?? [],
-            'photoUrl' => $this->toBase64DataUri($submission->photo_path),
-            'frameUrl' => $this->resolveFrameUrl($config['frame_id'] ?? null),
-            'qrSvg' => null,
-            'exportMm' => $exportMm,
-        ])->render();
+        $html = $this->renderHtml($form, $submission);
 
         $filename = sprintf('card-forms/%s/%s.png', $form->id, $submission->id ?: Str::random(8));
 
@@ -45,6 +39,49 @@ class DynamicCardGenerator
         $this->renderHtmlToImage($html, $fullPath, $isPortrait);
 
         return ['path' => $filename, 'html' => $html];
+    }
+
+    public function renderHtml(CardForm $form, CardFormSubmission $submission): string
+    {
+        $config = $form->normalizedConfig();
+        $exportMm = 15.748; // 400 DPI
+
+        return View::make('cards.dynamic-card', [
+            'config' => $config,
+            'orientation' => $config['orientation'] ?? 'landscape',
+            'values' => $submission->data ?? [],
+            'photoUrl' => $this->toBase64DataUri($submission->photo_path),
+            'frameUrl' => $this->resolveFrameUrl($config['frame_id'] ?? null),
+            'qrSvgs' => $this->qrCodes($config, $submission->data ?? []),
+            'exportMm' => $exportMm,
+        ])->render();
+
+    }
+
+    /**
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $values
+     * @return array<string, string>
+     */
+    private function qrCodes(array $config, array $values): array
+    {
+        $codes = [];
+        $writer = new Writer(new ImageRenderer(new RendererStyle(300, 4), new SvgImageBackEnd));
+
+        foreach ($config['elements'] as $id => $element) {
+            if (($element['type'] ?? '') !== 'qr' || empty($element['enabled'])) {
+                continue;
+            }
+
+            $value = $values[$element['source'] ?? ''] ?? null;
+            if (! is_scalar($value) || trim((string) $value) === '') {
+                continue;
+            }
+
+            $codes[$id] = $writer->writeString((string) $value);
+        }
+
+        return $codes;
     }
 
     private function renderHtmlToImage(string $html, string $outputPath, bool $isPortrait): void

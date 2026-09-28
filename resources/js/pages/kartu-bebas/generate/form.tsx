@@ -3,6 +3,7 @@ import { AlertTriangle, Check, CheckCircle2, Copy, Download, ImageIcon, Loader2,
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CardCropReposition  } from '@/components/shared/card-crop-reposition';
 import type {CropRect} from '@/components/shared/card-crop-reposition';
+import { DrivePhotoPicker } from '@/components/shared/drive-photo-picker';
 import { StepProgress  } from '@/components/shared/step-progress';
 import type {WizardStep} from '@/components/shared/step-progress';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Spinner } from '@/components/ui/spinner';
 import KartuBebasLayout from '@/layouts/kartu-bebas-layout';
 import { cn } from '@/lib/utils';
+import { browse, image, thumbnail } from '@/routes/kartu-bebas/drive';
 
 type FieldType = 'text' | 'date' | 'number' | 'select' | 'photo';
 
@@ -497,6 +499,22 @@ function FieldInput({
 
             {field.type === 'photo' && (
                 <div className="grid gap-3">
+                    <DrivePhotoPicker
+                        browseUrl={browse.url()}
+                        thumbnailUrl={(fileId) => thumbnail.url(fileId)}
+                        onSelect={async (selected) => {
+                            const response = await fetch(image.url(selected.id), { headers: { Accept: 'application/json' } });
+
+                            if (!response.ok) {
+                                const error = await response.json().catch(() => null);
+
+                                throw new Error(error?.message || 'Foto gagal diambil dari Google Drive.');
+                            }
+
+                            const blob = await response.blob();
+                            onPhotoChange(new File([blob], selected.name, { type: blob.type }));
+                        }}
+                    />
                     <input
                         ref={fileRef}
                         type="file"

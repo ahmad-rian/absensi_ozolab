@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Eye, Loader2, RectangleHorizontal, RectangleVertical, Save, User } from 'lucide-react';
-import { type FormEvent, useMemo, useState } from 'react';
+import { Eye, Loader2, RectangleHorizontal, RectangleVertical, Save, QrCode, User } from 'lucide-react';
+import {  useMemo, useState } from 'react';
+import type {FormEvent} from 'react';
 import { Rnd } from 'react-rnd';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -23,8 +24,9 @@ type FormField = {
 };
 
 type FieldElement = { type: 'field'; label: string; source: string; x: number; y: number; width: number; labelWidth: number; fontSize: number; enabled: boolean };
-type PhotoElement = { type: 'photo'; source: string; x: number; y: number; w: number; h: number; enabled: boolean };
-type AnyElement = FieldElement | PhotoElement;
+type PhotoElement = { type: 'photo'; standalone?: boolean; source: string; x: number; y: number; w: number; h: number; enabled: boolean };
+type QrElement = { type: 'qr'; source: string; x: number; y: number; w: number; h: number; enabled: boolean };
+type AnyElement = FieldElement | PhotoElement | QrElement;
 type Elements = Record<string, AnyElement>;
 
 type LayoutConfig = {
@@ -70,11 +72,14 @@ function elementForField(field: FormField, index: number, existing?: AnyElement)
         if (existing && existing.type === 'photo') {
             return { ...existing, source: field.key };
         }
+
         return { type: 'photo', source: field.key, x: 2.5, y: 4, w: 16, h: 21, enabled: true };
     }
+
     if (existing && existing.type === 'field') {
         return { ...existing, label: field.label.toUpperCase(), source: field.key };
     }
+
     return {
         type: 'field',
         label: field.label.toUpperCase(),
@@ -89,18 +94,43 @@ function elementForField(field: FormField, index: number, existing?: AnyElement)
 }
 
 // Sync elements to the current field list — add new, drop removed, keep positions.
-function syncElements(fields: FormField[], prev: Elements): Elements {
-    const next: Elements = {};
+export function syncElements(fields: FormField[], prev: Elements): Elements {
+    const next: Elements = Object.fromEntries(
+        Object.entries(prev).filter(([, el]) => el.type === 'qr' || (el.type === 'photo' && el.standalone)).map(([id, el]) => [id, {
+            ...el,
+            source: el.type === 'photo' ? el.source : fields.some((field) => field.key === el.source && field.type !== 'photo') ? el.source : '',
+        }]),
+    );
     fields.forEach((field, i) => {
         next[field.key] = elementForField(field, i, prev[field.key]);
     });
+
     return next;
+}
+
+export function changeOrientation(config: LayoutConfig, orientation: LayoutConfig['orientation']): LayoutConfig {
+    const width = orientation === 'portrait' ? 54 : 85.6;
+    const height = orientation === 'portrait' ? 85.6 : 54;
+    const elements = Object.fromEntries(Object.entries(config.elements).map(([id, element]) => {
+        if (element.type === 'field') {
+return [id, element];
+}
+
+        const scale = Math.min(1, width / element.w, height / element.h);
+        const w = element.w * scale;
+        const h = element.h * scale;
+
+        return [id, { ...element, w, h, x: Math.max(0, Math.min(element.x, width - w)), y: Math.max(0, Math.min(element.y, height - h)) }];
+    }));
+
+    return { ...config, orientation, elements };
 }
 
 function buildInitialConfig(form: FormData, datasets: Dataset[]): LayoutConfig {
     const cfg = (form?.layout_config ?? {}) as Partial<LayoutConfig>;
     const fields = datasets.find((d) => d.id === form?.card_dataset_id)?.fields ?? [];
     const elements = syncElements(fields, (cfg.elements ?? {}) as Elements);
+
     return {
         ...cfg,
         orientation: cfg.orientation === 'portrait' ? 'portrait' : form?.orientation === 'portrait' ? 'portrait' : 'landscape',
@@ -138,11 +168,16 @@ function CardPreview({
                     : 'linear-gradient(135deg, #e6f4ea, #d4ecdc, #c7e6d1)',
             }}
             onPointerDown={(e) => {
-                if (e.target === e.currentTarget) onSelect(null);
+                if (e.target === e.currentTarget) {
+onSelect(null);
+}
             }}
         >
             {Object.entries(config.elements).map(([id, el]) => {
-                if (!el.enabled) return null;
+                if (!el.enabled) {
+return null;
+}
+
                 const selected = selectedId === id;
                 const pos = { x: mm(el.x), y: mm(el.y) };
 
@@ -177,7 +212,7 @@ function CardPreview({
                     );
                 }
 
-                // photo
+                // Photo or QR code.
                 return (
                     <Rnd
                         key={id}
@@ -195,11 +230,16 @@ function CardPreview({
                         <div
                             onMouseDown={() => onSelect(id)}
                             className={cn(
-                                'flex size-full cursor-move items-center justify-center rounded bg-zinc-400/40 text-white/70',
+                                'flex size-full cursor-move items-center justify-center rounded',
+                                el.type === 'qr' ? 'bg-white text-black' : 'bg-zinc-400/40 text-white/70',
                                 selected ? 'outline outline-1 outline-emerald-500' : 'outline-dashed outline-1 outline-zinc-400/60',
                             )}
                         >
-                            <User style={{ width: mm(el.w) * 0.4, height: mm(el.w) * 0.4 }} />
+                            {el.type === 'qr' ? (
+                                <QrCode aria-label="Pratinjau QR" className="size-full p-2" />
+                            ) : (
+                                <User style={{ width: mm(el.w) * 0.4, height: mm(el.w) * 0.4 }} />
+                            )}
                         </div>
                     </Rnd>
                 );
@@ -230,7 +270,11 @@ export default function KartuBebasLayoutEditor({ form, frames, datasets }: Props
 
     function updateElement(id: string, patch: Partial<AnyElement>) {
         const el = config.elements[id];
-        if (!el) return;
+
+        if (!el) {
+return;
+}
+
         setConfig({ elements: { ...config.elements, [id]: { ...el, ...patch } as AnyElement } });
     }
 
@@ -253,6 +297,7 @@ export default function KartuBebasLayoutEditor({ form, frames, datasets }: Props
             orientation: config.orientation,
             frame_id: config.frame_id,
         }));
+
         if (isEditing) {
             inertiaForm.put(`/kartu-bebas/layouts/${form!.id}`, { preserveScroll: true });
         } else {
@@ -263,6 +308,37 @@ export default function KartuBebasLayoutEditor({ form, frames, datasets }: Props
     const frameOptions = useMemo(() => frames, [frames]);
     const selected = selectedId ? config.elements[selectedId] : null;
     const hasDataset = !!data.card_dataset_id;
+    const qrFields = (datasets.find((dataset) => dataset.id === data.card_dataset_id)?.fields ?? []).filter((field) => field.type !== 'photo');
+    const qrEntry = Object.entries(config.elements).find(([, element]) => element.type === 'qr');
+
+    const photoEntry = Object.entries(config.elements).find(([, element]) => element.type === 'photo');
+
+    function addPhoto() {
+        let id = '__photo';
+
+        while (config.elements[id]) {
+id += '_';
+}
+
+        setConfig({ elements: { ...config.elements, [id]: {
+            type: 'photo', standalone: true, source: id, x: 3, y: 3, w: 24, h: 32, enabled: true,
+        } } });
+        setSelectedId(id);
+    }
+
+    function addQrCode() {
+        let id = '__qr';
+
+        while (config.elements[id]) {
+id += '_';
+}
+
+        setConfig({ elements: { ...config.elements, [id]: {
+            type: 'qr', source: qrFields[0]?.key ?? '', x: config.orientation === 'portrait' ? 36 : 67.6,
+            y: 3, w: 15, h: 15, enabled: true,
+        } } });
+        setSelectedId(id);
+    }
 
     return (
         <>
@@ -323,6 +399,9 @@ export default function KartuBebasLayoutEditor({ form, frames, datasets }: Props
                                             <NumField label="Tinggi (mm)" value={selected.h} onChange={(v) => updateElement(selectedId!, { h: v } as Partial<AnyElement>)} />
                                         </>
                                     )}
+                                    {selected.type === 'qr' && (
+                                        <NumField label="Ukuran QR (mm)" value={selected.w} onChange={(value) => updateElement(selectedId!, { w: Math.max(5, Math.min(54, value)), h: Math.max(5, Math.min(54, value)) })} />
+                                    )}
                                 </CardContent>
                             </Card>
                         )}
@@ -330,6 +409,50 @@ export default function KartuBebasLayoutEditor({ form, frames, datasets }: Props
 
                     {/* RIGHT: settings */}
                     <div className="space-y-4">
+                        <Card>
+                            <CardHeader><CardTitle className="text-base">Foto Peserta</CardTitle></CardHeader>
+                            <CardContent className="space-y-3">
+                                {!photoEntry ? (
+                                    <Button type="button" variant="outline" onClick={addPhoto}><User className="mr-2 size-4" /> Tambah Foto</Button>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center gap-2">
+                                            <Checkbox id="show-photo" checked={photoEntry[1].enabled} onCheckedChange={(checked) => updateElement(photoEntry[0], { enabled: checked === true })} />
+                                            <Label htmlFor="show-photo">Tampilkan foto</Label>
+                                        </div>
+                                        <Button type="button" variant="outline" onClick={() => setSelectedId(photoEntry[0])}>Atur posisi dan ukuran foto</Button>
+                                    </>
+                                )}
+                                <p className="text-muted-foreground text-xs">Pilih foto dari Google Drive atau komputer saat generate kartu.</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader><CardTitle className="text-base">Barcode / QR Code</CardTitle></CardHeader>
+                            <CardContent className="space-y-3">
+                                {!qrEntry ? (
+                                    <Button type="button" variant="outline" disabled={!qrFields.length} onClick={addQrCode}>
+                                        <QrCode className="mr-2 size-4" /> Tambah QR Code
+                                    </Button>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center gap-2">
+                                            <Checkbox id="show-qr" checked={qrEntry[1].enabled} onCheckedChange={(checked) => updateElement(qrEntry[0], { enabled: checked === true })} />
+                                            <Label htmlFor="show-qr">Tampilkan QR Code</Label>
+                                        </div>
+                                        <Label htmlFor="qr-source">Isi QR dari kolom</Label>
+                                        <Select value={qrEntry[1].source} onValueChange={(source) => updateElement(qrEntry[0], { source })}>
+                                            <SelectTrigger id="qr-source"><SelectValue placeholder="Pilih kolom data" /></SelectTrigger>
+                                            <SelectContent>
+                                                {qrFields.map((field) => <SelectItem key={field.key} value={field.key}>{field.label}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                        <InputError message={errors[`layout_config.elements.${qrEntry[0]}.source` as keyof typeof errors]} />
+                                        <Button type="button" variant="outline" onClick={() => setSelectedId(qrEntry[0])}>Atur posisi dan ukuran</Button>
+                                    </>
+                                )}
+                                <p className="text-muted-foreground text-xs">QR pada hasil kartu berisi nilai kolom peserta yang dipilih. Kolom kosong tidak mencetak QR.</p>
+                            </CardContent>
+                        </Card>
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-base">Informasi Layout</CardTitle>
@@ -386,8 +509,7 @@ export default function KartuBebasLayoutEditor({ form, frames, datasets }: Props
                                             key={v}
                                             type="button"
                                             onClick={() => {
-                                                setData('orientation', v);
-                                                setConfig({ orientation: v });
+                                                setData((previous) => ({ ...previous, orientation: v, layout_config: changeOrientation(previous.layout_config, v) }));
                                             }}
                                             className={cn(
                                                 'flex flex-col items-center gap-1.5 rounded-lg border p-3 text-xs font-medium transition',

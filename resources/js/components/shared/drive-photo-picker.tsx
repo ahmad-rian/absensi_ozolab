@@ -37,7 +37,15 @@ function ukuran(bytes: number | null): string {
  * pemilik berkas — dipasang langsung di `<img src>` ia hanya menghasilkan
  * gambar rusak.
  */
-export function DrivePhotoPicker({ studentId }: { studentId: string }) {
+type PickerProps = { studentId: string } | {
+    browseUrl: string;
+    thumbnailUrl: (fileId: string) => string;
+    onSelect: (image: Gambar) => Promise<void>;
+};
+
+export function DrivePhotoPicker(props: PickerProps) {
+    const browseUrl = 'studentId' in props ? `/admin/siswa/${props.studentId}/drive/jelajah` : props.browseUrl;
+    const thumbnailUrl = (fileId: string) => 'studentId' in props ? `/admin/siswa/${props.studentId}/drive/thumb/${fileId}` : props.thumbnailUrl(fileId);
     const [open, setOpen] = useState(false);
     const [isi, setIsi] = useState<Isi | null>(null);
     const [memuat, setMemuat] = useState(false);
@@ -53,8 +61,8 @@ export function DrivePhotoPicker({ studentId }: { studentId: string }) {
 
             try {
                 const url = tujuan
-                    ? `/admin/siswa/${studentId}/drive/jelajah?folder=${encodeURIComponent(tujuan)}`
-                    : `/admin/siswa/${studentId}/drive/jelajah`;
+                    ? `${browseUrl}?folder=${encodeURIComponent(tujuan)}`
+                    : browseUrl;
 
                 const res = await fetch(url, { headers: { Accept: 'application/json' } });
 
@@ -76,7 +84,7 @@ export function DrivePhotoPicker({ studentId }: { studentId: string }) {
                 setMemuat(false);
             }
         },
-        [studentId],
+        [browseUrl],
     );
 
     /*
@@ -97,14 +105,28 @@ export function DrivePhotoPicker({ studentId }: { studentId: string }) {
         }
     }
 
-    function pasang() {
+    async function pasang() {
         if (!dipilih) {
             return;
         }
 
         setMemasang(true);
+
+        if ('onSelect' in props) {
+            try {
+                await props.onSelect(dipilih);
+                setOpen(false);
+            } catch (error) {
+                setGalat(error instanceof Error ? error.message : 'Foto gagal diambil.');
+            } finally {
+                setMemasang(false);
+            }
+
+            return;
+        }
+
         router.post(
-            `/admin/siswa/${studentId}/foto/drive`,
+            `/admin/siswa/${props.studentId}/foto/drive`,
             { file_id: dipilih.id },
             {
                 preserveScroll: true,
@@ -126,7 +148,7 @@ export function DrivePhotoPicker({ studentId }: { studentId: string }) {
                     <DialogHeader>
                         <DialogTitle>Ambil Pas Foto dari Google Drive</DialogTitle>
                         <DialogDescription>
-                            {isi?.folder ? `Folder: ${isi.folder.nama}` : 'Membuka folder siswa…'}
+                            {isi?.folder ? `Folder: ${isi.folder.nama}` : 'Membuka folder Google Drive…'}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -198,7 +220,7 @@ export function DrivePhotoPicker({ studentId }: { studentId: string }) {
                                                 <div className="flex h-24 items-center justify-center bg-zinc-100 dark:bg-zinc-800">
                                                     {g.thumb ? (
                                                         <img
-                                                            src={`/admin/siswa/${studentId}/drive/thumb/${g.id}`}
+                                                            src={thumbnailUrl(g.id)}
                                                             alt={g.name}
                                                             loading="lazy"
                                                             className="size-full object-cover"

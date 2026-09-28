@@ -27,7 +27,7 @@ class CardFormController extends Controller
             'form' => [
                 'name' => $form->name,
                 'token' => $form->token,
-                'fields' => array_values($form->fields ?? []),
+                'fields' => array_values($form->inputFields()),
             ],
             'result' => null,
         ]);
@@ -39,7 +39,7 @@ class CardFormController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        $fields = collect($form->fields ?? [])->keyBy('key');
+        $fields = collect($form->inputFields())->keyBy('key');
 
         $rules = [
             'manual_crop' => ['nullable', 'array'],
@@ -129,7 +129,7 @@ class CardFormController extends Controller
             'form' => [
                 'name' => $form->name,
                 'token' => $form->token,
-                'fields' => array_values($form->fields ?? []),
+                'fields' => array_values($form->inputFields()),
             ],
             'result' => [
                 'submission_id' => $submission->id,
