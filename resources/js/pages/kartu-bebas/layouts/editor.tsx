@@ -139,7 +139,28 @@ function buildInitialConfig(form: FormData, datasets: Dataset[]): LayoutConfig {
     };
 }
 
-function CardPreview({
+export function nudgeElement(config: LayoutConfig, selectedId: string | null, key: string, shift = false): { x: number; y: number } | null {
+    const directions: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    const direction = directions[key];
+    const element = selectedId ? config.elements[selectedId] : null;
+
+    if (!direction || !element?.enabled) {
+        return null;
+    }
+
+    const step = shift ? 1 : 0.1;
+    const width = element.type === 'field' ? element.width : element.w;
+    const height = element.type === 'field' ? element.fontSize * 1.4 : element.h;
+    const cardWidth = config.orientation === 'portrait' ? 54 : 85.6;
+    const cardHeight = config.orientation === 'portrait' ? 85.6 : 54;
+
+    return {
+        x: Math.max(0, Math.min(cardWidth - width, Math.round((element.x + direction[0] * step) * 10) / 10)),
+        y: Math.max(0, Math.min(cardHeight - height, Math.round((element.y + direction[1] * step) * 10) / 10)),
+    };
+}
+
+export function CardPreview({
     config,
     frames,
     selectedId,
@@ -159,7 +180,23 @@ function CardPreview({
 
     return (
         <div
-            className="relative overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/10"
+            className="relative overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/10 focus-visible:outline-2 focus-visible:outline-emerald-500"
+            tabIndex={0}
+            role="group"
+            aria-label="Desain kartu. Pilih elemen lalu gunakan tombol panah untuk menggeser 0,1 mm, atau Shift dan panah untuk 1 mm."
+            onKeyDown={(event) => {
+                if (event.target !== event.currentTarget || event.ctrlKey || event.metaKey || event.altKey || event.nativeEvent.isComposing) {
+                    return;
+                }
+
+                const position = nudgeElement(config, selectedId, event.key, event.shiftKey);
+
+                if (position && selectedId) {
+                    event.preventDefault();
+                    onUpdate(selectedId, position);
+                }
+            }}
+            onPointerDownCapture={(event) => event.currentTarget.focus({ preventScroll: true })}
             style={{
                 width: cw,
                 height: ch,
@@ -372,6 +409,7 @@ id += '_';
                                         <CardPreview config={config} frames={frames} selectedId={selectedId} onSelect={setSelectedId} onUpdate={updateElement} />
                                     )}
                                 </div>
+                                {hasDataset && <p className="text-muted-foreground text-center text-xs">Klik elemen, lalu gunakan ← ↑ ↓ → untuk menggeser 0,1 mm. Tahan Shift untuk 1 mm.</p>}
                                 <p className="text-muted-foreground mt-3 text-center text-xs">
                                     {config.orientation === 'portrait' ? '54 × 85.6 mm · Portrait' : '85.6 × 54 mm · Landscape'} · ATM Card Size
                                 </p>

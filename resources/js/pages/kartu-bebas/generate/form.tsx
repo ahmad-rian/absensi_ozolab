@@ -522,6 +522,7 @@ function FieldInput({
                         className="hidden"
                         onChange={(e) => onPhotoChange(e.target.files?.[0] ?? null)}
                     />
+                    <p className="text-muted-foreground text-xs">Unggah foto dari komputer, maksimal 8 MB. Setelah dipilih, atur crop sebelum membuat kartu.</p>
                     {!photoFile && (
                         <button
                             type="button"
@@ -532,7 +533,7 @@ function FieldInput({
                             )}
                         >
                             <ImageIcon className="size-8 text-emerald-400" />
-                            <span className="text-muted-foreground text-sm">Ketuk untuk pilih foto</span>
+                            <span className="text-muted-foreground text-sm">Pilih Foto dari Komputer</span>
                         </button>
                     )}
                     {photoFile && photoPreview && (
@@ -549,7 +550,7 @@ function FieldInput({
                                 className="justify-self-start"
                                 onClick={() => fileRef.current?.click()}
                             >
-                                Ganti Foto
+                                Ganti Foto dari Komputer
                             </Button>
                         </>
                     )}

@@ -85,14 +85,16 @@ test('drive rejects non image content before it reaches the cropper', function (
     $this->getJson(route('kartu-bebas.drive.image', 'fake'))->assertUnprocessable();
 });
 
-test('standalone layout photo is offered during generation and included in card output', function () {
+test('manual photo upload is offered during generation and included in card output', function (bool $standalone) {
     Storage::fake('public');
     Queue::fake([GenerateDynamicCardJob::class]);
     $form = CardForm::create([
         'created_by' => $this->user->id, 'token' => str()->random(10), 'name' => 'Haji', 'is_active' => true,
-        'orientation' => 'portrait', 'fields' => [['key' => 'nama', 'label' => 'Nama', 'type' => 'text']],
+        'orientation' => 'portrait', 'fields' => $standalone
+            ? [['key' => 'nama', 'label' => 'Nama', 'type' => 'text']]
+            : [['key' => 'nama', 'label' => 'Nama', 'type' => 'text'], ['key' => '__photo', 'label' => 'Foto', 'type' => 'photo', 'required' => true]],
         'layout_config' => ['elements' => ['__photo' => [
-            'type' => 'photo', 'source' => '__photo', 'standalone' => true, 'x' => 4, 'y' => 5, 'w' => 24, 'h' => 32, 'enabled' => true,
+            'type' => 'photo', 'source' => '__photo', 'standalone' => $standalone, 'x' => 4, 'y' => 5, 'w' => 24, 'h' => 32, 'enabled' => true,
         ]]],
     ]);
     $this->get(route('kartu-bebas.generate.create', $form))->assertInertia(fn (Assert $page) => $page
@@ -102,13 +104,14 @@ test('standalone layout photo is offered during generation and included in card 
         ->where('form.fields.1.type', 'photo'));
 
     $response = $this->post(route('kartu-bebas.generate.store', $form), [
-        'data' => ['nama' => 'Peserta', '__photo' => UploadedFile::fake()->image('drive-photo.jpg', 60, 80)],
+        'data' => ['nama' => 'Peserta', '__photo' => UploadedFile::fake()->image('foto-komputer.jpg', 60, 80)],
         'manual_crop' => ['sx' => 0, 'sy' => 0, 'sw' => 1, 'sh' => 1],
     ])->assertOk();
     $submission = CardFormSubmission::findOrFail($response->json('submission.id'));
     expect($submission->photo_path)->not->toBeNull();
+    expect($submission->data)->toBe(['nama' => 'Peserta']);
     Storage::disk('public')->assertExists($submission->photo_path);
     Queue::assertPushed(GenerateDynamicCardJob::class, fn ($job) => $job->submissionId === $submission->id);
     expect(app(DynamicCardGenerator::class)->renderHtml($form, $submission))
         ->toContain('src="data:image/png;base64,')->toContain('class="el el-photo"');
-});
+})->with(['foto tambahan' => true, 'kolom foto format data' => false]);
