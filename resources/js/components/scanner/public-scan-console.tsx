@@ -111,6 +111,8 @@ type Props = {
     hint?: string;
     /** Ditampilkan menggantikan konsol saat fitur belum aktif. */
     disabledNotice?: string | null;
+    subjectLabel?: string;
+    groupLabel?: string;
 };
 
 let logId = 0;
@@ -228,7 +230,7 @@ function peramban_dalam_aplikasi(): boolean {
  * Dipakai bersama oleh absensi sekolah dan absen sholat — dua halaman itu
  * hanya berbeda endpoint dan label, jadi implementasinya tidak digandakan.
  */
-export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNotice = null }: Props) {
+export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNotice = null, subjectLabel = 'siswa', groupLabel = 'Kelas' }: Props) {
     const [cameraStatus, setCameraStatus] = useState<'loading' | 'scanning' | 'error'>('loading');
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [cameras, setCameras] = useState<CameraDevice[]>([]);
@@ -896,7 +898,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                         */}
                         {cameraStatus === 'scanning' && !lastResult && (
                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent p-4 text-center">
-                                <p className="text-sm font-medium text-slate-100">Arahkan QR Code siswa ke kamera</p>
+                                <p className="text-sm font-medium text-slate-100">Arahkan QR Code {subjectLabel} ke kamera</p>
                                 <p className="mt-0.5 text-xs text-slate-400">
                                     {hint ?? 'atau tembak QR-nya dengan barcode gun — otomatis terdeteksi'}
                                 </p>
@@ -967,7 +969,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                                         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 border-t border-slate-100 pt-4 text-sm">
                                             <DetailField label="NIS" value={lastResult.student.nis} />
                                             <DetailField label="No. Absen" value={lastResult.student.no_absen} />
-                                            <DetailField label="Kelas" value={lastResult.student.classroom} full />
+                                            <DetailField label={groupLabel} value={lastResult.student.classroom} full />
                                         </dl>
                                     </div>
                                 ) : (
@@ -1015,7 +1017,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                         inputMode="text"
                         autoComplete="off"
                         autoFocus
-                        placeholder="Tembak barcode gun ke QR Code siswa..."
+                        placeholder={`Tembak barcode gun ke QR Code ${subjectLabel}...`}
                         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-center font-mono tracking-wide text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
                     />
                 </form>

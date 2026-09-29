@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CardDataset;
 use App\Models\CardForm;
 use App\Models\SchoolFrame;
+use App\Services\CardAttendanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -136,6 +137,7 @@ class LayoutController extends Controller
 
         $fields = CardDataset::findOrFail($validated['card_dataset_id'])->fields ?? [];
         $sources = collect($fields)->reject(fn (array $field) => $field['type'] === 'photo')->pluck('key')->all();
+        $sources[] = CardAttendanceService::QR_SOURCE;
         $rules = [];
 
         foreach ($validated['layout_config']['elements'] ?? [] as $id => $element) {

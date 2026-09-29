@@ -95,7 +95,7 @@ export default function ParticipantShow({
                         onClick={() => {
                             if (
                                 window.confirm(
-                                    'Hapus peserta beserta foto dan hasil kartunya? Penghapusan tidak dapat dibatalkan.',
+                                    'Hapus peserta beserta foto, kartu, dan riwayat absensinya? Penghapusan tidak dapat dibatalkan.',
                                 )
                             ) {
                                 setBusy(true);

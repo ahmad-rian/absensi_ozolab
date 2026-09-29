@@ -98,7 +98,7 @@ export function syncElements(fields: FormField[], prev: Elements): Elements {
     const next: Elements = Object.fromEntries(
         Object.entries(prev).filter(([, el]) => el.type === 'qr' || (el.type === 'photo' && el.standalone)).map(([id, el]) => [id, {
             ...el,
-            source: el.type === 'photo' ? el.source : fields.some((field) => field.key === el.source && field.type !== 'photo') ? el.source : '',
+            source: el.type === 'photo' || el.source === '__attendance' ? el.source : fields.some((field) => field.key === el.source && field.type !== 'photo') ? el.source : '',
         }]),
     );
     fields.forEach((field, i) => {
@@ -371,7 +371,7 @@ id += '_';
 }
 
         setConfig({ elements: { ...config.elements, [id]: {
-            type: 'qr', source: qrFields[0]?.key ?? '', x: config.orientation === 'portrait' ? 36 : 67.6,
+            type: 'qr', source: '__attendance', x: config.orientation === 'portrait' ? 36 : 67.6,
             y: 3, w: 15, h: 15, enabled: true,
         } } });
         setSelectedId(id);
@@ -468,7 +468,7 @@ id += '_';
                             <CardHeader><CardTitle className="text-base">Barcode / QR Code</CardTitle></CardHeader>
                             <CardContent className="space-y-3">
                                 {!qrEntry ? (
-                                    <Button type="button" variant="outline" disabled={!qrFields.length} onClick={addQrCode}>
+                                    <Button type="button" variant="outline" onClick={addQrCode}>
                                         <QrCode className="mr-2 size-4" /> Tambah QR Code
                                     </Button>
                                 ) : (
@@ -477,10 +477,11 @@ id += '_';
                                             <Checkbox id="show-qr" checked={qrEntry[1].enabled} onCheckedChange={(checked) => updateElement(qrEntry[0], { enabled: checked === true })} />
                                             <Label htmlFor="show-qr">Tampilkan QR Code</Label>
                                         </div>
-                                        <Label htmlFor="qr-source">Isi QR dari kolom</Label>
+                                        <Label htmlFor="qr-source">Isi QR</Label>
                                         <Select value={qrEntry[1].source} onValueChange={(source) => updateElement(qrEntry[0], { source })}>
-                                            <SelectTrigger id="qr-source"><SelectValue placeholder="Pilih kolom data" /></SelectTrigger>
+                                            <SelectTrigger id="qr-source"><SelectValue placeholder="Pilih isi QR" /></SelectTrigger>
                                             <SelectContent>
+                                                <SelectItem value="__attendance">QR absensi peserta</SelectItem>
                                                 {qrFields.map((field) => <SelectItem key={field.key} value={field.key}>{field.label}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
@@ -488,7 +489,7 @@ id += '_';
                                         <Button type="button" variant="outline" onClick={() => setSelectedId(qrEntry[0])}>Atur posisi dan ukuran</Button>
                                     </>
                                 )}
-                                <p className="text-muted-foreground text-xs">QR pada hasil kartu berisi nilai kolom peserta yang dipilih. Kolom kosong tidak mencetak QR.</p>
+                                <p className="text-muted-foreground text-xs">Pilih QR absensi peserta agar kartu bisa digunakan untuk absen. Setelah mengubah QR, simpan layout dan generate ulang kartu peserta.</p>
                             </CardContent>
                         </Card>
                         <Card>

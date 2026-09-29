@@ -37,6 +37,7 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KartuBebas\AttendanceController as CardAttendanceController;
 use App\Http\Controllers\KartuBebas\DashboardController as KartuBebasDashboardController;
 use App\Http\Controllers\KartuBebas\DatasetController;
 use App\Http\Controllers\KartuBebas\DrivePhotoController;
@@ -68,6 +69,9 @@ Route::get('/', fn () => auth()->check() ? to_route(auth()->user()->homeRoute())
 // Berkas yang dibaca mesin. robots.txt tetap berkas statis di public/.
 Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('llms.txt', [SeoController::class, 'llms'])->name('seo.llms');
+Route::get('scan-peserta/{token}', [CardAttendanceController::class, 'scanner'])->name('public.card-scanner');
+Route::post('scan-peserta/{token}/{mode}', [CardAttendanceController::class, 'scan'])->whereIn('mode', ['masuk', 'pulang'])->middleware('throttle:scan-gerbang')->name('public.card-scanner.scan');
+
 Route::get('scan/{school:scanner_token}', [PublicScannerController::class, 'index'])->name('public.scanner');
 
 /*
@@ -467,6 +471,12 @@ Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-a
     Route::get('generate/status/{submission}', [GenerateController::class, 'status'])->middleware('throttle:120,1')->name('generate.status');
 
     // Delete a generated card (from Riwayat)
+    Route::get('absensi', [CardAttendanceController::class, 'index'])->name('absensi.index');
+    Route::post('absensi/{submission}', [CardAttendanceController::class, 'store'])->name('absensi.store');
+    Route::post('layouts/{cardForm}/scanner-token', [CardAttendanceController::class, 'rotate'])->name('absensi.rotate');
+    Route::get('laporan', [CardAttendanceController::class, 'report'])->name('laporan.index');
+    Route::get('laporan/export/{format}', [CardAttendanceController::class, 'export'])->whereIn('format', ['xlsx', 'pdf'])->name('laporan.export');
+
     Route::get('peserta', [ParticipantController::class, 'index'])->name('peserta.index');
     Route::get('peserta/create', [ParticipantController::class, 'create'])->name('peserta.create');
     Route::post('peserta', [ParticipantController::class, 'store'])->name('peserta.store');

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CardFormSubmission extends Model
 {
@@ -30,6 +31,11 @@ class CardFormSubmission extends Model
             'data' => 'array',
             'manual_crop' => 'array',
         ];
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(CardAttendance::class);
     }
 
     public function cardForm(): BelongsTo

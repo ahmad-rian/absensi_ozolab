@@ -110,3 +110,9 @@ test('no selection or a disabled element leaves keyboard navigation untouched', 
     assert.equal(exports.nudgeElement(config, 'missing', 'ArrowRight'), null);
     assert.equal(exports.nudgeElement(config, 'qr', 'ArrowRight'), null);
 });
+
+test('attendance QR remains configured when the participant dataset changes', () => {
+    const attendanceQr = { ...qr, source: '__attendance' };
+    const next = syncElements([{ key: 'nama', label: 'Nama', type: 'text' }], { __qr: attendanceQr });
+    assert.deepEqual(next.__qr, attendanceQr);
+});

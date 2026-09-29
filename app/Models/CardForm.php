@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class CardForm extends Model
 {
     use HasUlids;
+
+    protected $hidden = ['scanner_token'];
 
     protected $fillable = [
         'created_by',
@@ -30,6 +33,13 @@ class CardForm extends Model
             'layout_config' => 'array',
             'is_active' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (CardForm $form): void {
+            $form->scanner_token = $form->scanner_token ?: Str::random(48);
+        });
     }
 
     public function submissions(): HasMany

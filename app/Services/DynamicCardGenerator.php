@@ -57,7 +57,7 @@ class DynamicCardGenerator
             'values' => $submission->data ?? [],
             'photoUrl' => $this->toBase64DataUri($submission->photo_path),
             'frameUrl' => $this->resolveFrameUrl($config['frame_id'] ?? null),
-            'qrSvgs' => $this->qrCodes($config, $submission->data ?? []),
+            'qrSvgs' => $this->qrCodes($config, array_merge($submission->data ?? [], [CardAttendanceService::QR_SOURCE => app(CardAttendanceService::class)->qrToken($submission)])),
             'exportMm' => $exportMm,
         ])->render();
 
