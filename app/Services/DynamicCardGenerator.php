@@ -28,7 +28,7 @@ class DynamicCardGenerator
         $isPortrait = ($config['orientation'] ?? 'landscape') === 'portrait';
         $html = $this->renderHtml($form, $submission);
 
-        $filename = sprintf('card-forms/%s/%s.png', $form->id, $submission->id ?: Str::random(8));
+        $filename = sprintf('card-forms/%s/%s.png', $form->id, $submission->id.'-'.Str::ulid());
 
         $fullPath = Storage::disk('public')->path($filename);
         $dir = dirname($fullPath);
@@ -36,7 +36,12 @@ class DynamicCardGenerator
             mkdir($dir, 0755, true);
         }
 
-        $this->renderHtmlToImage($html, $fullPath, $isPortrait);
+        try {
+            $this->renderHtmlToImage($html, $fullPath, $isPortrait);
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($filename);
+            throw $exception;
+        }
 
         return ['path' => $filename, 'html' => $html];
     }

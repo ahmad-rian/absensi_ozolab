@@ -43,8 +43,7 @@ use App\Http\Controllers\KartuBebas\DrivePhotoController;
 use App\Http\Controllers\KartuBebas\FrameController as KartuBebasFrameController;
 use App\Http\Controllers\KartuBebas\GenerateController;
 use App\Http\Controllers\KartuBebas\LayoutController;
-use App\Http\Controllers\KartuBebas\RecordController;
-use App\Http\Controllers\KartuBebas\RiwayatController;
+use App\Http\Controllers\KartuBebas\ParticipantController;
 use App\Http\Controllers\LibraryScannerController;
 use App\Http\Controllers\OrangTua\PortalController;
 use App\Http\Controllers\ParentTelegramController;
@@ -468,7 +467,18 @@ Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-a
     Route::get('generate/status/{submission}', [GenerateController::class, 'status'])->middleware('throttle:120,1')->name('generate.status');
 
     // Delete a generated card (from Riwayat)
-    Route::delete('data-card/{submission}', [RecordController::class, 'destroy'])->name('card.destroy');
+    Route::get('peserta', [ParticipantController::class, 'index'])->name('peserta.index');
+    Route::get('peserta/create', [ParticipantController::class, 'create'])->name('peserta.create');
+    Route::post('peserta', [ParticipantController::class, 'store'])->name('peserta.store');
+    Route::get('peserta/{submission}', [ParticipantController::class, 'show'])->name('peserta.show');
+    Route::get('peserta/{submission}/edit', [ParticipantController::class, 'edit'])->name('peserta.edit');
+    Route::put('peserta/{submission}', [ParticipantController::class, 'update'])->name('peserta.update');
+    Route::delete('peserta/{submission}', [ParticipantController::class, 'destroy'])->name('peserta.destroy');
+    Route::post('peserta/{submission}/generate', [ParticipantController::class, 'generate'])->middleware('throttle:30,1')->name('peserta.generate');
+    Route::get('peserta/{submission}/preview', [ParticipantController::class, 'preview'])->name('peserta.preview');
+    Route::get('peserta/{submission}/download', [ParticipantController::class, 'download'])->name('peserta.download');
+
+    Route::delete('data-card/{submission}', [ParticipantController::class, 'destroy'])->name('card.destroy');
 
     // Frame & Bingkai (category = kartu_bebas)
     Route::get('frames', [KartuBebasFrameController::class, 'index'])->name('frames');
@@ -477,7 +487,7 @@ Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-a
     Route::delete('frames/{frame}', [KartuBebasFrameController::class, 'destroy'])->name('frames.destroy');
 
     // Riwayat Kartu
-    Route::get('riwayat', [RiwayatController::class, 'index'])->name('riwayat');
+    Route::get('riwayat', [ParticipantController::class, 'index'])->name('riwayat');
 });
 
 require __DIR__.'/settings.php';

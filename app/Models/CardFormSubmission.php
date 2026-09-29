@@ -14,6 +14,10 @@ class CardFormSubmission extends Model
         'card_form_id',
         'data',
         'photo_path',
+        'original_photo_path',
+        'manual_crop',
+        'generation_token',
+        'generation_error',
         'file_path',
         'drive_file_id',
         'drive_url',
@@ -24,6 +28,7 @@ class CardFormSubmission extends Model
     {
         return [
             'data' => 'array',
+            'manual_crop' => 'array',
         ];
     }
 

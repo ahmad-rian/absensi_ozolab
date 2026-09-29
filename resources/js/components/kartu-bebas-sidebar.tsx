@@ -1,14 +1,16 @@
 import { Link } from '@inertiajs/react';
-import { Database, Frame, History, LayoutGrid, LayoutTemplate, Wand2 } from 'lucide-react';
+import { Database, Frame, History, LayoutGrid, LayoutTemplate, Users, Wand2 } from 'lucide-react';
 import BrandLogo from '@/components/brand-logo';
 import { NavGroup } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { index as participants } from '@/routes/kartu-bebas/peserta';
 import type { NavItem } from '@/types';
 
 const mainItems: NavItem[] = [
     { title: 'Dashboard', href: '/kartu-bebas', icon: LayoutGrid },
-    { title: 'Data', href: '/kartu-bebas/data', icon: Database },
+    { title: 'Peserta', href: participants.url(), icon: Users },
+    { title: 'Format Data', href: '/kartu-bebas/data', icon: Database },
     { title: 'Generate', href: '/kartu-bebas/generate', icon: Wand2 },
 ];
 

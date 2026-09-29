@@ -3,16 +3,13 @@
 namespace App\Http\Controllers\KartuBebas;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\GenerateDynamicCardJob;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Models\SchoolFrame;
-use App\Services\PhotoCropService;
+use App\Services\CardParticipantService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -47,23 +44,10 @@ class GenerateController extends Controller
         ]);
     }
 
-    public function store(Request $request, CardForm $cardForm, PhotoCropService $cropService): JsonResponse
+    public function store(Request $request, CardForm $cardForm, CardParticipantService $participants): JsonResponse
     {
-        [$validated, $photoFieldKey] = $this->validateDynamic($request, $cardForm);
-
-        $submission = new CardFormSubmission([
-            'card_form_id' => $cardForm->id,
-            'data' => $this->nonPhotoData($cardForm, $validated['data'] ?? []),
-            'status' => 'processing',
-        ]);
-        $submission->save();
-
-        if ($photoFieldKey && $request->hasFile("data.{$photoFieldKey}")) {
-            $submission->photo_path = $this->storePhoto($request, $cardForm, $submission, $photoFieldKey, $cropService);
-            $submission->save();
-        }
-
-        GenerateDynamicCardJob::dispatch($submission->id);
+        $submission = $participants->save($request, $cardForm);
+        $participants->generate($submission);
 
         return response()->json([
             'success' => true,
@@ -75,8 +59,9 @@ class GenerateController extends Controller
     {
         return response()->json([
             'status' => $submission->status,
-            'card_url' => $submission->drive_url ?? ($submission->file_path ? Storage::disk('public')->url($submission->file_path) : null),
-            'thumb_url' => $submission->file_path ? Storage::disk('public')->url($submission->file_path) : null,
+            'card_url' => $submission->drive_url ?: ($submission->file_path ? Storage::disk('public')->url($submission->file_path) : null),
+            'download_url' => ($submission->file_path || $submission->drive_file_id) ? route('kartu-bebas.peserta.download', $submission) : null,
+            'thumb_url' => ($submission->file_path || $submission->drive_file_id) ? route('kartu-bebas.peserta.preview', $submission) : null,
         ]);
     }
 
@@ -98,91 +83,5 @@ class GenerateController extends Controller
             'frame_url' => $frameUrl,
             'fields' => $cardForm->inputFields(),
         ];
-    }
-
-    /**
-     * Build dynamic validation rules from the layout's fields and validate.
-     *
-     * @return array{0: array<string, mixed>, 1: string|null}
-     */
-    private function validateDynamic(Request $request, CardForm $form): array
-    {
-        $fields = collect($form->inputFields());
-
-        $rules = [
-            'manual_crop' => ['nullable', 'array'],
-            'manual_crop.sx' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
-            'manual_crop.sy' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
-            'manual_crop.sw' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
-            'manual_crop.sh' => ['required_with:manual_crop', 'numeric', 'between:0,1'],
-        ];
-
-        $photoFieldKey = null;
-
-        foreach ($fields as $field) {
-            $key = $field['key'];
-            $required = ! empty($field['required']);
-            $rule = [$required ? 'required' : 'nullable'];
-
-            switch ($field['type']) {
-                case 'number':
-                    $rule[] = 'numeric';
-                    break;
-                case 'date':
-                    $rule[] = 'date';
-                    break;
-                case 'select':
-                    $rule[] = 'string';
-                    if (! empty($field['options']) && is_array($field['options'])) {
-                        $rule[] = Rule::in($field['options']);
-                    }
-                    break;
-                case 'photo':
-                    $photoFieldKey = $key;
-                    $rules["data.{$key}"] = [$required ? 'required' : 'nullable', 'image', 'max:8192'];
-
-                    continue 2;
-                default:
-                    $rule[] = 'string';
-                    $rule[] = 'max:1000';
-                    break;
-            }
-
-            $rules["data.{$key}"] = $rule;
-        }
-
-        return [$request->validate($rules), $photoFieldKey];
-    }
-
-    /**
-     * @param  array<string, mixed>  $inputData
-     * @return array<string, mixed>
-     */
-    private function nonPhotoData(CardForm $form, array $inputData): array
-    {
-        $stored = [];
-        foreach (collect($form->inputFields()) as $field) {
-            if ($field['type'] === 'photo') {
-                continue;
-            }
-            $stored[$field['key']] = $inputData[$field['key']] ?? null;
-        }
-
-        return $stored;
-    }
-
-    private function storePhoto(Request $request, CardForm $form, CardFormSubmission $submission, string $photoFieldKey, PhotoCropService $cropService): string
-    {
-        $manualCrop = $request->input('manual_crop');
-        $storagePath = sprintf('card-forms/%s/photos/%s.png', $form->id, (string) Str::ulid());
-
-        $cropService->cropAndStore(
-            $request->file("data.{$photoFieldKey}")->getRealPath(),
-            $storagePath,
-            9,
-            is_array($manualCrop) ? $manualCrop : null,
-        );
-
-        return $storagePath;
     }
 }

@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { AlertTriangle, Check, CheckCircle2, Copy, Download, ImageIcon, Loader2, Sparkles, Wand2, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CardCropReposition  } from '@/components/shared/card-crop-reposition';
@@ -14,6 +14,7 @@ import { Spinner } from '@/components/ui/spinner';
 import KartuBebasLayout from '@/layouts/kartu-bebas-layout';
 import { cn } from '@/lib/utils';
 import { browse, image, thumbnail } from '@/routes/kartu-bebas/drive';
+import { show as participantShow } from '@/routes/kartu-bebas/peserta';
 
 type FieldType = 'text' | 'date' | 'number' | 'select' | 'photo';
 
@@ -38,6 +39,7 @@ type Props = { layout: Layout };
 type StatusResponse = {
     status: 'processing' | 'completed' | 'failed';
     card_url: string | null;
+    download_url?: string | null;
     thumb_url: string | null;
 };
 
@@ -334,6 +336,7 @@ export default function KartuBebasGenerateForm({ layout }: Props) {
             <>
                 <Head title={`Generate — ${layout.name}`} />
                 <ResultView statusState={statusState} onReset={resetWizard} />
+                <div className="px-6 pb-6 text-center"><Link className="underline" href={participantShow.url(submissionId)}>Lihat peserta, edit foto, atau generate ulang</Link></div>
             </>
         );
     }
@@ -607,7 +610,7 @@ function ResultView({ statusState, onReset }: { statusState: StatusResponse; onR
     }
 
     const imageUrl = statusState.thumb_url ?? statusState.card_url;
-    const downloadUrl = statusState.thumb_url ?? statusState.card_url;
+    const downloadUrl = statusState.download_url ?? statusState.card_url;
 
     return (
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-6">
