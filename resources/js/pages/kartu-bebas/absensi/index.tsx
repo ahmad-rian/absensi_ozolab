@@ -18,7 +18,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import KartuBebasLayout from '@/layouts/kartu-bebas-layout';
-import { index, rotate, store } from '@/routes/kartu-bebas/absensi';
+import { index, regenerate, rotate, store } from '@/routes/kartu-bebas/absensi';
 import { index as report } from '@/routes/kartu-bebas/laporan';
 import { edit } from '@/routes/kartu-bebas/layouts';
 
@@ -297,6 +297,23 @@ export default function CardAttendanceIndex({
                             >
                                 Ganti link scan
                             </Button>
+                            <Button
+                                variant="outline"
+                                disabled={!selected.qr_ready}
+                                onClick={() => {
+                                    if (
+                                        window.confirm(
+                                            'Generate ulang kartu semua peserta layout ini? Kartu yang sudah tercetak perlu dicetak ulang.',
+                                        )
+                                    ) {
+                                        router.post(
+                                            regenerate.url(selected.id),
+                                        );
+                                    }
+                                }}
+                            >
+                                Generate ulang semua kartu
+                            </Button>
                         </div>
                         {!selected.is_active && (
                             <p className="text-destructive">
@@ -314,7 +331,7 @@ export default function CardAttendanceIndex({
                                     Atur QR di editor layout
                                 </Link>
                                 , pilih QR absensi peserta, simpan, lalu
-                                generate ulang kartu.
+                                generate ulang semua kartu.
                             </p>
                         )}
                         <p className="text-sm text-muted-foreground">

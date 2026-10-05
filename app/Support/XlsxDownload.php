@@ -61,6 +61,31 @@ class XlsxDownload
     }
 
     /**
+     * Nama sheet yang pasti diterima `sheets()`: tanpa karakter terlarang
+     * Excel, maksimal 31 karakter, dan tidak kembar dengan `$terpakai`.
+     *
+     * Nama kelas datang dari admin sekolah — "XI IPA/1" atau dua nama panjang
+     * yang baru berbeda di karakter ke-32 adalah hal biasa, dan satu nama
+     * yang ditolak menggagalkan seluruh unduhan.
+     *
+     * @param  array<int, string>  $terpakai
+     */
+    public static function namaSheet(string $nama, array $terpakai): string
+    {
+        $bersih = trim((string) preg_replace('/\s+/u', ' ', strtr($nama, '[]:*?/\\', '       ')));
+        $bersih = $bersih === '' ? 'Sheet' : $bersih;
+        $kecil = array_map(fn (string $n): string => mb_strtolower($n), $terpakai);
+
+        $calon = mb_substr($bersih, 0, 31);
+        for ($ke = 2; in_array(mb_strtolower($calon), $kecil, true); $ke++) {
+            $akhiran = ' ('.$ke.')';
+            $calon = rtrim(mb_substr($bersih, 0, 31 - mb_strlen($akhiran))).$akhiran;
+        }
+
+        return $calon;
+    }
+
+    /**
      * @param  array<int, string>  $header
      * @param  array<int, array<int, mixed>>  $rows
      * @param  array<int, array<int, mixed>>  $preamble  blok identitas/ringkasan sebelum tabel

@@ -112,6 +112,33 @@ function xlsxRows(TestResponse $response): array
 }
 
 /**
+ * Semua sheet sebuah unduhan XLSX, berurutan, sebagai nama => baris.
+ *
+ * @return array<string, array<int, array<int, string>>>
+ */
+function xlsxSheets(TestResponse $response): array
+{
+    $reader = new XlsxReader;
+    $reader->open($response->baseResponse->getFile()->getPathname());
+
+    $sheets = [];
+
+    foreach ($reader->getSheetIterator() as $sheet) {
+        $rows = [];
+
+        foreach ($sheet->getRowIterator() as $row) {
+            $rows[] = array_map(static fn ($value): string => (string) $value, $row->toArray());
+        }
+
+        $sheets[$sheet->getName()] = $rows;
+    }
+
+    $reader->close();
+
+    return $sheets;
+}
+
+/**
  * Isi mentah `xl/worksheets/sheet1.xml` di dalam berkas XLSX.
  *
  * Dipakai untuk membuktikan tidak ada elemen `<f>` — satu-satunya cara pasti

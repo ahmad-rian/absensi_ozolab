@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\GenerateDynamicCardJob;
 use App\Models\CardAttendance;
 use App\Models\CardDataset;
 use App\Models\CardForm;
@@ -10,6 +11,8 @@ use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use OpenSpout\Reader\XLSX\Reader;
@@ -123,6 +126,49 @@ test('non super admin cannot manage attendance or download reports', function ()
     $this->post(route('kartu-bebas.absensi.store', $this->participant))->assertForbidden();
     $this->get(route('kartu-bebas.laporan.export', 'xlsx'))->assertForbidden();
     $this->post(route('kartu-bebas.absensi.rotate', $this->form))->assertForbidden();
+    $this->post(route('kartu-bebas.absensi.regenerate', $this->form))->assertForbidden();
+});
+
+test('barcode gun yang mengubah huruf besar kecil tetap terbaca', function () {
+    $this->postJson(cardScanUrl($this->form), ['token' => strtoupper($this->qr)])->assertOk();
+    $this->postJson(cardScanUrl($this->form, 'pulang'), ['token' => ' '.strtolower($this->qr)."\n"])->assertOk();
+    expect(CardAttendance::sole()->check_out)->not->toBeNull();
+});
+
+test('QR berisi data peserta menyuruh generate ulang dan cetak ulang', function () {
+    $this->postJson(cardScanUrl($this->form), ['token' => '1100621603'])
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'QR di kartu ini berisi data peserta, bukan QR absensi. Generate ulang kartu dari menu Absensi peserta lalu cetak ulang.');
+});
+
+test('generate ulang semua kartu satu layout mengantre semua pesertanya saja', function () {
+    Queue::fake();
+    $this->form->submissions()->create(['data' => ['nama' => 'Budi'], 'status' => 'completed']);
+    $sedangDiproses = $this->form->submissions()->create(['data' => ['nama' => 'Cici'], 'status' => 'processing']);
+    $lain = CardForm::create(['name' => 'Haji B', 'token' => Str::random(40), 'fields' => [['key' => 'nama', 'label' => 'Nama', 'type' => 'text']], 'layout_config' => ['elements' => []], 'orientation' => 'portrait', 'is_active' => true]);
+    $lain->submissions()->create(['data' => ['nama' => 'Dodi'], 'status' => 'completed']);
+
+    $this->actingAs(createSuperAdminUser())
+        ->post(route('kartu-bebas.absensi.regenerate', $this->form))
+        ->assertRedirect()
+        ->assertSessionHas('inertia.flash_data.toast.message', '2 kartu masuk antrean generate ulang. Cetak ulang kartu setelah selesai.');
+
+    Queue::assertPushed(GenerateDynamicCardJob::class, 2);
+    expect($sedangDiproses->fresh()->status)->toBe('processing');
+});
+
+test('migrasi mengarahkan QR lama ke QR absensi', function () {
+    $lama = CardForm::create(['name' => 'Haji Lama', 'token' => Str::random(40), 'fields' => [['key' => 'porsi', 'label' => 'No Porsi', 'type' => 'text']], 'orientation' => 'portrait', 'is_active' => true, 'layout_config' => ['elements' => ['qr' => ['type' => 'qr', 'source' => 'porsi', 'x' => 3, 'y' => 3, 'w' => 15, 'h' => 15, 'enabled' => true], 'nama' => ['type' => 'text', 'source' => 'porsi']]]]);
+    $tanpaQr = CardForm::create(['name' => 'Tanpa QR', 'token' => Str::random(40), 'fields' => [], 'orientation' => 'portrait', 'is_active' => true, 'layout_config' => ['elements' => []]]);
+    $diubahSebelum = DB::table('card_forms')->where('id', $tanpaQr->id)->value('updated_at');
+
+    (require database_path('migrations/2026_10_05_000000_point_card_qr_to_attendance.php'))->up();
+
+    expect($lama->fresh()->layout_config['elements']['qr']['source'])->toBe('__attendance')
+        ->and($lama->fresh()->layout_config['elements']['nama']['source'])->toBe('porsi')
+        ->and($this->form->fresh()->layout_config['elements']['qr']['source'])->toBe('__attendance')
+        ->and($tanpaQr->fresh()->layout_config['elements'])->toBe([])
+        ->and(DB::table('card_forms')->where('id', $tanpaQr->id)->value('updated_at'))->toBe($diubahSebelum);
 });
 
 test('participant QR renders without a user editable data field', function () {

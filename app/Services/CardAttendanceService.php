@@ -37,13 +37,14 @@ class CardAttendanceService
     public function scan(CardForm $form, string $token, string $mode): array
     {
         abort_unless($form->is_active, 403, 'Layout ini sedang dinonaktifkan.');
-        if (! preg_match('/\Akb\.([0-9A-HJKMNP-TV-Z]{26})\.[a-f0-9]{32}\z/i', trim($token), $matches)) {
-            throw ValidationException::withMessages(['token' => 'QR bukan QR absensi peserta. Gunakan kartu yang sudah dibuat dengan QR absensi.']);
+        $token = $this->normalizeToken($token);
+        if ($token === null) {
+            throw ValidationException::withMessages(['token' => 'QR di kartu ini berisi data peserta, bukan QR absensi. Generate ulang kartu dari menu Absensi peserta lalu cetak ulang.']);
         }
 
-        return DB::transaction(function () use ($form, $token, $mode, $matches): array {
-            $participant = CardFormSubmission::where('card_form_id', $form->id)->whereKey($matches[1])->lockForUpdate()->first();
-            if (! $participant || ! hash_equals($this->qrToken($participant), trim($token))) {
+        return DB::transaction(function () use ($form, $token, $mode): array {
+            $participant = CardFormSubmission::where('card_form_id', $form->id)->whereKey(substr($token, 3, 26))->lockForUpdate()->first();
+            if (! $participant || ! hash_equals($this->qrToken($participant), $token)) {
                 throw ValidationException::withMessages(['token' => 'Kartu tidak terdaftar pada layout ini.']);
             }
             $record = CardAttendance::firstOrNew(['card_form_submission_id' => $participant->id, 'attendance_date' => SchoolTime::todayString()]);
@@ -63,5 +64,20 @@ class CardAttendanceService
 
             return ['attendance' => $record, 'participant' => $participant, 'duplicate' => $duplicate];
         }, 3);
+    }
+
+    /**
+     * Bentuk baku token hasil scan, atau null kalau bukan QR absensi.
+     *
+     * Barcode gun dengan Caps Lock atau setelan huruf besar mengirim token
+     * yang sama dengan huruf berbeda. ULID peserta disimpan huruf kecil oleh
+     * `HasUlids` dan tanda tangannya heksadesimal kecil, jadi seluruh token
+     * aman dikecilkan tanpa melemahkan pemeriksaan tanda tangan.
+     */
+    private function normalizeToken(string $token): ?string
+    {
+        $token = strtolower(trim($token));
+
+        return preg_match('/\Akb\.[0-9a-hjkmnp-tv-z]{26}\.[a-f0-9]{32}\z/', $token) ? $token : null;
     }
 }

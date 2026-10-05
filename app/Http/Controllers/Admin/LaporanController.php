@@ -11,6 +11,7 @@ use App\Models\School;
 use App\Models\Setting;
 use App\Models\Student;
 use App\Services\Student\StudentStatsBuilder;
+use App\Support\KelompokKelas;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use App\Support\XlsxDownload;
@@ -71,38 +72,17 @@ class LaporanController extends Controller
         $classroomId = $request->input('classroom_id');
         $schoolId = auth()->user()->school_id;
 
-        if ($kind !== 'absensi') {
+        if ($kind === 'semuanya') {
             return XlsxDownload::sheets('laporan-'.$startDate.'.xlsx', $this->reportSheets($startDate, $endDate, $classroomId, $schoolId, $kind));
         }
 
-        $reportData = $this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind);
+        $kolom = $kind === 'absensi'
+            ? ['NIS', 'Nama Siswa', 'Kelas', 'Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpa', '% Kehadiran']
+            : ['NIS', 'Nama Siswa', 'Kelas', 'Ikut', 'Tidak Ikut', 'Hari Efektif', '% Kehadiran'];
 
-        return XlsxDownload::make(
-            'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d').'.xlsx',
-            [
-                'NIS',
-                'Nama Siswa',
-                'Kelas',
-                'Hadir',
-                'Terlambat',
-                'Izin',
-                'Sakit',
-                'Alpa',
-                '% Kehadiran',
-            ],
-            $reportData->map(fn (array $row): array => [
-                // NIS dikirim sebagai teks: nomor induk berawalan nol akan
-                // kehilangan nol depannya kalau Excel memperlakukannya angka.
-                (string) $row['nis'],
-                $row['full_name'],
-                $row['classroom_name'],
-                (int) $row['hadir'],
-                (int) $row['terlambat'],
-                (int) $row['izin'],
-                (int) $row['sakit'],
-                (int) $row['alpa'],
-                $row['attendance_rate'].'%',
-            ])->all(),
+        return XlsxDownload::sheets(
+            ($kind === 'absensi' ? 'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d') : 'laporan-'.$startDate).'.xlsx',
+            $this->sheetPerKelas($this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind), $kolom, fn (array $row): array => $this->barisSheet($row, $kind)),
         );
     }
 
@@ -128,7 +108,7 @@ class LaporanController extends Controller
         $schoolName = $school?->name ?? Setting::getValue('school_name', 'Sekolah');
 
         $pdf = Pdf::loadView('pdf.laporan', [
-            'reportData' => $reportData,
+            'kelompok' => KelompokKelas::dari($reportData),
             'summary' => $summary,
             'startDate' => $startDate,
             'endDate' => $endDate,
@@ -191,7 +171,7 @@ class LaporanController extends Controller
 
     private function reportSheets(string $start, string $end, ?string $classroom, ?string $school, string $kind): array
     {
-        $rows = $this->dataFor($start, $end, $classroom, $school, 'semuanya');
+        $rows = KelompokKelas::dari($this->dataFor($start, $end, $classroom, $school, 'semuanya'))->flatten(1);
         $sheets = [];
         $kinds = $this->availableKinds();
         if ($kind === 'semuanya') {
@@ -206,5 +186,41 @@ class LaporanController extends Controller
         }
 
         return $sheets;
+    }
+
+    /**
+     * Satu sheet per kelas; berkas kosong tetap punya satu sheet supaya bisa dibuka.
+     *
+     * @param  array<int, string>  $kolom
+     * @param  callable(array<string, mixed>): array<int, mixed>  $baris
+     * @return array<string, array{header: array<int, string>, rows: array<int, array<int, mixed>>}>
+     */
+    private function sheetPerKelas(Collection $rows, array $kolom, callable $baris): array
+    {
+        $sheets = [];
+
+        foreach (KelompokKelas::dari($rows) as $kelas => $siswa) {
+            $sheets[XlsxDownload::namaSheet($kelas, array_keys($sheets))] = ['header' => $kolom, 'rows' => $siswa->map($baris)->all()];
+        }
+
+        return $sheets ?: ['Laporan' => ['header' => ['Belum ada siswa pada filter ini'], 'rows' => []]];
+    }
+
+    /**
+     * NIS dan persentase dikirim sebagai teks: NIS berawalan nol kehilangan
+     * nol depannya kalau Excel memperlakukannya angka.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<int, mixed>
+     */
+    private function barisSheet(array $row, string $kind): array
+    {
+        if ($kind === 'absensi') {
+            return [(string) $row['nis'], $row['full_name'], $row['classroom_name'], (int) $row['hadir'], (int) $row['terlambat'], (int) $row['izin'], (int) $row['sakit'], (int) $row['alpa'], $row['attendance_rate'].'%'];
+        }
+
+        $sholat = $row['prayers'][$kind];
+
+        return [(string) $row['nis'], $row['full_name'], $row['classroom_name'], (int) $sholat['hadir'], (int) $sholat['tidak_hadir'], (int) $sholat['effective_days'], $sholat['rate'].'%'];
     }
 }

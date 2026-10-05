@@ -486,6 +486,11 @@ id += '_';
                                             </SelectContent>
                                         </Select>
                                         <InputError message={errors[`layout_config.elements.${qrEntry[0]}.source` as keyof typeof errors]} />
+                                        {qrEntry[1].source !== '__attendance' && (
+                                            <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+                                                QR ini berisi data peserta dan tidak bisa dipakai absen di halaman scan. Pilih QR absensi peserta untuk kartu absen.
+                                            </p>
+                                        )}
                                         <Button type="button" variant="outline" onClick={() => setSelectedId(qrEntry[0])}>Atur posisi dan ukuran</Button>
                                     </>
                                 )}

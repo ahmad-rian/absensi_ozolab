@@ -7,6 +7,7 @@ use App\Models\CardAttendance;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Services\CardAttendanceService;
+use App\Services\CardParticipantService;
 use App\Support\SchoolTime;
 use App\Support\StudentPhotoStorage;
 use App\Support\XlsxDownload;
@@ -24,6 +25,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AttendanceController extends Controller
 {
@@ -81,6 +83,37 @@ class AttendanceController extends Controller
     public function rotate(CardForm $cardForm): RedirectResponse
     {
         $cardForm->forceFill(['scanner_token' => Str::random(48)])->save();
+
+        return back();
+    }
+
+    /**
+     * Antrekan ulang kartu seluruh peserta satu layout.
+     *
+     * Dipakai setelah QR layout diganti: kartu yang sudah tercetak masih
+     * membawa QR lama dan tidak akan pernah terbaca di halaman scan. Peserta
+     * yang sedang diproses atau datanya belum lengkap dilewati, bukan
+     * menggagalkan semuanya.
+     */
+    public function regenerate(CardForm $cardForm, CardParticipantService $participants): RedirectResponse
+    {
+        $antre = 0;
+        $dilewati = 0;
+
+        $cardForm->submissions()->where('status', '!=', 'processing')->orderBy('id')->each(function (CardFormSubmission $participant) use ($participants, &$antre, &$dilewati): void {
+            try {
+                $participants->generate($participant);
+                $antre++;
+            } catch (ValidationException|HttpException) {
+                $dilewati++;
+            }
+        });
+
+        $pesan = $antre.' kartu masuk antrean generate ulang. Cetak ulang kartu setelah selesai.';
+        Inertia::flash('toast', [
+            'type' => $dilewati > 0 ? 'warning' : 'success',
+            'message' => $dilewati > 0 ? $pesan.' '.$dilewati.' peserta dilewati karena datanya belum lengkap.' : $pesan,
+        ]);
 
         return back();
     }

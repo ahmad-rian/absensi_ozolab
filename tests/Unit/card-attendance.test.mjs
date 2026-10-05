@@ -81,3 +81,18 @@ test('report downloads use applied date layout and status filters', () => {
     find(tree, (node) => node.type === 'form').props.onSubmit({ preventDefault() {} });
     assert.equal(page.requests[0][1].start_date, '2026-09-10');
 });
+
+test('generate ulang semua kartu dikunci sampai layout memakai QR absensi', () => {
+    const layout = { id: 'haji', name: 'Haji', is_active: true, qr_ready: false, scan_url: '/scan-peserta/private' };
+    const props = { filters: { layout: 'haji', date: '2026-10-05', q: '' }, participants: { data: [], total: 0, prev_page_url: null, next_page_url: null } };
+    const tombol = (tree) => find(tree, (node) => node.type === 'Button' && node.props.children === 'Generate ulang semua kartu');
+
+    assert.equal(tombol(harness('kartu-bebas/absensi/index.tsx', { ...props, layouts: [layout] }).render()).props.disabled, true);
+    assert.equal(tombol(harness('kartu-bebas/absensi/index.tsx', { ...props, layouts: [{ ...layout, qr_ready: true }] }).render()).props.disabled, false);
+});
+
+test('editor memperingatkan QR yang berisi data peserta', () => {
+    const editor = readFileSync(new URL('../../resources/js/pages/kartu-bebas/layouts/editor.tsx', import.meta.url), 'utf8');
+    assert.match(editor, /qrEntry\[1\]\.source !== '__attendance' && \(/);
+    assert.match(editor, /tidak bisa dipakai absen di halaman scan/);
+});
