@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
  * di QR-nya. Kartu dari layout itu tidak pernah bisa di-scan: halaman scan
  * hanya menerima token bertanda tangan. Keputusan pemilik (5 Okt 2026): semua
  * QR kartu dipakai untuk absen, kartu lama digenerate dan dicetak ulang.
+ *
+ * Hanya isinya yang diganti. QR yang sengaja disembunyikan admin tetap
+ * tersembunyi — menyalakannya akan mengubah desain kartu tanpa diminta.
  */
 return new class extends Migration
 {
@@ -24,7 +27,7 @@ return new class extends Migration
 
             $elements = array_map(
                 fn ($element) => is_array($element) && ($element['type'] ?? '') === 'qr' && ($element['source'] ?? '') !== CardAttendanceService::QR_SOURCE
-                    ? array_merge($element, ['source' => CardAttendanceService::QR_SOURCE, 'enabled' => true])
+                    ? array_merge($element, ['source' => CardAttendanceService::QR_SOURCE])
                     : $element,
                 $config['elements'],
             );

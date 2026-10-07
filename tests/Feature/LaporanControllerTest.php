@@ -194,14 +194,14 @@ test('laporan export dengan filter kelas hanya berisi satu sheet', function () {
 test('nama kelas yang dilarang excel atau kembar setelah dipotong tetap jadi sheet', function () {
     $user = createAdminUser();
     $panjang = str_repeat('Kelas Unggulan Sains ', 2);
-    foreach (['XI IPA/1', $panjang.'Satu', $panjang.'Dua'] as $nama) {
+    foreach (['XI IPA/1', $panjang.'Satu', $panjang.'Dua', "'7A'"] as $nama) {
         $kelas = Classroom::factory()->create(['school_id' => $user->school_id, 'name' => $nama]);
         Student::factory()->create(['classroom_id' => $kelas->id, 'school_id' => $user->school_id]);
     }
 
     $nama = array_keys(xlsxSheets($this->actingAs($user)->get(route('admin.laporan.export'))->assertOk()));
 
-    expect($nama)->toHaveCount(3)->toContain('XI IPA 1');
+    expect($nama)->toHaveCount(4)->toContain('XI IPA 1', '7A');
     expect(collect($nama)->every(fn ($n) => mb_strlen($n) <= 31))->toBeTrue();
 });
 

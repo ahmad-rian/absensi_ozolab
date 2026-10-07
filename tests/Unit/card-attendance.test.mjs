@@ -96,3 +96,13 @@ test('editor memperingatkan QR yang berisi data peserta', () => {
     assert.match(editor, /qrEntry\[1\]\.source !== '__attendance' && \(/);
     assert.match(editor, /tidak bisa dipakai absen di halaman scan/);
 });
+
+test('unduh semua kartu mengarah ke layout yang dipilih', () => {
+    const page = harness('kartu-bebas/absensi/index.tsx', {
+        layouts: [{ id: 'haji', name: 'Haji', is_active: true, qr_ready: true, scan_url: '/scan-peserta/private' }],
+        filters: { layout: 'haji', date: '2026-10-07', q: '' },
+        participants: { data: [], total: 0, prev_page_url: null, next_page_url: null },
+    });
+    const unduh = find(page.render(), (node) => node.type === 'a' && node.props.children === 'Unduh semua kartu (ZIP)');
+    assert.equal(unduh.props.href, '/downloadCards');
+});

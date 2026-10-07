@@ -475,6 +475,7 @@ Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-a
     Route::post('absensi/{submission}', [CardAttendanceController::class, 'store'])->name('absensi.store');
     Route::post('layouts/{cardForm}/scanner-token', [CardAttendanceController::class, 'rotate'])->name('absensi.rotate');
     Route::post('layouts/{cardForm}/generate-ulang', [CardAttendanceController::class, 'regenerate'])->middleware('throttle:6,1')->name('absensi.regenerate');
+    Route::get('layouts/{cardForm}/unduh-kartu', [CardAttendanceController::class, 'downloadCards'])->middleware('throttle:6,1')->name('absensi.download-cards');
     Route::get('laporan', [CardAttendanceController::class, 'report'])->name('laporan.index');
     Route::get('laporan/export/{format}', [CardAttendanceController::class, 'export'])->whereIn('format', ['xlsx', 'pdf'])->name('laporan.export');
 

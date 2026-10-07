@@ -57,7 +57,10 @@ class DynamicCardGenerator
             'values' => $submission->data ?? [],
             'photoUrl' => $this->toBase64DataUri($submission->photo_path),
             'frameUrl' => $this->resolveFrameUrl($config['frame_id'] ?? null),
-            'qrSvgs' => $this->qrCodes($config, array_merge($submission->data ?? [], [CardAttendanceService::QR_SOURCE => app(CardAttendanceService::class)->qrToken($submission)])),
+            // Token absensi dicetak HURUF BESAR: QR jadi mode alfanumerik (versi 3,
+            // 29×29) alih-alih mode byte (versi 4, 33×33), kotaknya lebih besar
+            // di ukuran cetak yang sama. Scanner menerima kedua bentuk huruf.
+            'qrSvgs' => $this->qrCodes($config, array_merge($submission->data ?? [], [CardAttendanceService::QR_SOURCE => strtoupper(app(CardAttendanceService::class)->qrToken($submission))])),
             'exportMm' => $exportMm,
         ])->render();
 

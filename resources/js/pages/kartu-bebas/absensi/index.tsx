@@ -18,7 +18,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import KartuBebasLayout from '@/layouts/kartu-bebas-layout';
-import { index, regenerate, rotate, store } from '@/routes/kartu-bebas/absensi';
+import {
+    downloadCards,
+    index,
+    regenerate,
+    rotate,
+    store,
+} from '@/routes/kartu-bebas/absensi';
 import { index as report } from '@/routes/kartu-bebas/laporan';
 import { edit } from '@/routes/kartu-bebas/layouts';
 
@@ -314,7 +320,16 @@ export default function CardAttendanceIndex({
                             >
                                 Generate ulang semua kartu
                             </Button>
+                            <Button asChild variant="outline">
+                                <a href={downloadCards.url(selected.id)}>
+                                    Unduh semua kartu (ZIP)
+                                </a>
+                            </Button>
                         </div>
+                        <p className="text-sm text-muted-foreground">
+                            Setelah generate ulang, tunggu sampai semua kartu
+                            selesai dibuat sebelum mengunduh ZIP untuk dicetak.
+                        </p>
                         {!selected.is_active && (
                             <p className="text-destructive">
                                 Layout tidak aktif. Aktifkan layout untuk

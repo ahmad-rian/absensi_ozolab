@@ -19,6 +19,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +27,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use ZipArchive;
 
 class AttendanceController extends Controller
 {
@@ -99,8 +101,12 @@ class AttendanceController extends Controller
     {
         $antre = 0;
         $dilewati = 0;
+        $diproses = $cardForm->submissions()->where('status', 'processing')->count();
 
-        $cardForm->submissions()->where('status', '!=', 'processing')->orderBy('id')->each(function (CardFormSubmission $participant) use ($participants, &$antre, &$dilewati): void {
+        // eachById, BUKAN each(): status tiap peserta berubah jadi
+        // `processing` di dalam loop, jadi potongan berbasis offset bergeser
+        // dan peserta ke-1001 dst. terlewat tanpa jejak.
+        $cardForm->submissions()->where('status', '!=', 'processing')->eachById(function (CardFormSubmission $participant) use ($participants, &$antre, &$dilewati): void {
             try {
                 $participants->generate($participant);
                 $antre++;
@@ -109,13 +115,51 @@ class AttendanceController extends Controller
             }
         });
 
-        $pesan = $antre.' kartu masuk antrean generate ulang. Cetak ulang kartu setelah selesai.';
-        Inertia::flash('toast', [
-            'type' => $dilewati > 0 ? 'warning' : 'success',
-            'message' => $dilewati > 0 ? $pesan.' '.$dilewati.' peserta dilewati karena datanya belum lengkap.' : $pesan,
+        $pesan = array_filter([
+            $antre.' kartu masuk antrean generate ulang. Cetak ulang kartu setelah selesai.',
+            $dilewati > 0 ? $dilewati.' peserta dilewati karena datanya belum lengkap.' : null,
+            $diproses > 0 ? $diproses.' peserta masih diproses, coba lagi nanti.' : null,
         ]);
+        Inertia::flash('toast', ['type' => count($pesan) > 1 ? 'warning' : 'success', 'message' => implode(' ', $pesan)]);
 
         return back();
+    }
+
+    /**
+     * Semua kartu jadi satu layout dalam satu ZIP, untuk cetak ulang massal.
+     *
+     * Hanya berkas lokal yang ikut: `GenerateDynamicCardJob` menyimpannya di
+     * disk `public`, jadi tidak ada unduhan Drive yang bisa membuat permintaan
+     * ini kehabisan waktu. PNG disimpan tanpa kompresi ulang — sudah padat.
+     */
+    public function downloadCards(CardForm $cardForm): BinaryFileResponse|RedirectResponse
+    {
+        $disk = Storage::disk('public');
+        $path = tempnam(sys_get_temp_dir(), 'kartu-zip-');
+        $zip = new ZipArchive;
+        $zip->open($path, ZipArchive::OVERWRITE);
+        $jumlah = 0;
+
+        $cardForm->submissions()->where('status', 'completed')->whereNotNull('file_path')->eachById(function (CardFormSubmission $participant) use ($disk, $zip, &$jumlah): void {
+            if (! $disk->exists($participant->file_path)) {
+                return;
+            }
+            $nama = (Str::slug($this->attendance->participantName($participant)) ?: 'peserta').'-'.substr($participant->id, -6).'.png';
+            $zip->addFile($disk->path($participant->file_path), $nama);
+            $zip->setCompressionName($nama, ZipArchive::CM_STORE);
+            $jumlah++;
+        });
+
+        if ($jumlah === 0) {
+            $zip->close();
+            @unlink($path);
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Belum ada kartu yang selesai dibuat untuk layout ini.']);
+
+            return back();
+        }
+        $zip->close();
+
+        return response()->download($path, 'kartu-'.Str::slug($cardForm->name).'-'.SchoolTime::todayString().'.zip', ['Content-Type' => 'application/zip'])->deleteFileAfterSend();
     }
 
     public function scanner(string $token): Response

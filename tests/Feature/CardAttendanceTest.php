@@ -13,6 +13,7 @@ use BaconQrCode\Writer;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use OpenSpout\Reader\XLSX\Reader;
@@ -127,6 +128,7 @@ test('non super admin cannot manage attendance or download reports', function ()
     $this->get(route('kartu-bebas.laporan.export', 'xlsx'))->assertForbidden();
     $this->post(route('kartu-bebas.absensi.rotate', $this->form))->assertForbidden();
     $this->post(route('kartu-bebas.absensi.regenerate', $this->form))->assertForbidden();
+    $this->get(route('kartu-bebas.absensi.download-cards', $this->form))->assertForbidden();
 });
 
 test('barcode gun yang mengubah huruf besar kecil tetap terbaca', function () {
@@ -151,7 +153,7 @@ test('generate ulang semua kartu satu layout mengantre semua pesertanya saja', f
     $this->actingAs(createSuperAdminUser())
         ->post(route('kartu-bebas.absensi.regenerate', $this->form))
         ->assertRedirect()
-        ->assertSessionHas('inertia.flash_data.toast.message', '2 kartu masuk antrean generate ulang. Cetak ulang kartu setelah selesai.');
+        ->assertSessionHas('inertia.flash_data.toast.message', '2 kartu masuk antrean generate ulang. Cetak ulang kartu setelah selesai. 1 peserta masih diproses, coba lagi nanti.');
 
     Queue::assertPushed(GenerateDynamicCardJob::class, 2);
     expect($sedangDiproses->fresh()->status)->toBe('processing');
@@ -159,6 +161,7 @@ test('generate ulang semua kartu satu layout mengantre semua pesertanya saja', f
 
 test('migrasi mengarahkan QR lama ke QR absensi', function () {
     $lama = CardForm::create(['name' => 'Haji Lama', 'token' => Str::random(40), 'fields' => [['key' => 'porsi', 'label' => 'No Porsi', 'type' => 'text']], 'orientation' => 'portrait', 'is_active' => true, 'layout_config' => ['elements' => ['qr' => ['type' => 'qr', 'source' => 'porsi', 'x' => 3, 'y' => 3, 'w' => 15, 'h' => 15, 'enabled' => true], 'nama' => ['type' => 'text', 'source' => 'porsi']]]]);
+    $mati = CardForm::create(['name' => 'QR Mati', 'token' => Str::random(40), 'fields' => [], 'orientation' => 'portrait', 'is_active' => true, 'layout_config' => ['elements' => ['qr' => ['type' => 'qr', 'source' => 'porsi', 'enabled' => false]]]]);
     $tanpaQr = CardForm::create(['name' => 'Tanpa QR', 'token' => Str::random(40), 'fields' => [], 'orientation' => 'portrait', 'is_active' => true, 'layout_config' => ['elements' => []]]);
     $diubahSebelum = DB::table('card_forms')->where('id', $tanpaQr->id)->value('updated_at');
 
@@ -167,6 +170,7 @@ test('migrasi mengarahkan QR lama ke QR absensi', function () {
     expect($lama->fresh()->layout_config['elements']['qr']['source'])->toBe('__attendance')
         ->and($lama->fresh()->layout_config['elements']['nama']['source'])->toBe('porsi')
         ->and($this->form->fresh()->layout_config['elements']['qr']['source'])->toBe('__attendance')
+        ->and($mati->fresh()->layout_config['elements']['qr'])->toMatchArray(['source' => '__attendance', 'enabled' => false])
         ->and($tanpaQr->fresh()->layout_config['elements'])->toBe([])
         ->and(DB::table('card_forms')->where('id', $tanpaQr->id)->value('updated_at'))->toBe($diubahSebelum);
 });
@@ -175,7 +179,7 @@ test('participant QR renders without a user editable data field', function () {
     $this->participant->update(['data' => ['nama' => 'Ahmad', '__attendance' => 'forged']]);
     $html = app(DynamicCardGenerator::class)->renderHtml($this->form, $this->participant);
     $writer = new Writer(new ImageRenderer(new RendererStyle(300, 4), new SvgImageBackEnd));
-    expect($html)->toContain($writer->writeString($this->qr))->not->toContain($writer->writeString('forged'));
+    expect($html)->toContain($writer->writeString(strtoupper($this->qr)))->not->toContain($writer->writeString('forged'));
     expect(app(CardAttendanceService::class)->qrToken($this->participant))->toBe($this->qr);
 });
 
@@ -194,4 +198,57 @@ test('migration gives existing layouts a separate scanner link without changing 
     $migration->up();
     $this->form->refresh();
     expect($this->form->scanner_token)->toHaveLength(48)->and($this->form->token)->toBe($publicToken);
+});
+
+test('generate ulang tidak melewatkan peserta di atas seribu', function () {
+    Queue::fake();
+    $sekarang = now();
+    DB::table('card_form_submissions')->insert(collect(range(1, 1000))->map(fn (int $ke) => [
+        'id' => strtolower((string) Str::ulid()), 'card_form_id' => $this->form->id, 'data' => json_encode(['nama' => 'Peserta '.$ke]),
+        'status' => 'completed', 'created_at' => $sekarang, 'updated_at' => $sekarang,
+    ])->all());
+
+    $this->actingAs(createSuperAdminUser())->post(route('kartu-bebas.absensi.regenerate', $this->form))->assertRedirect();
+
+    Queue::assertPushed(GenerateDynamicCardJob::class, 1001);
+});
+
+test('peserta yang masih diproses disebut di notifikasi generate ulang', function () {
+    Queue::fake();
+    $this->form->submissions()->create(['data' => ['nama' => 'Cici'], 'status' => 'processing']);
+
+    $this->actingAs(createSuperAdminUser())->post(route('kartu-bebas.absensi.regenerate', $this->form))
+        ->assertSessionHas('inertia.flash_data.toast.type', 'warning')
+        ->assertSessionHas('inertia.flash_data.toast.message', '1 kartu masuk antrean generate ulang. Cetak ulang kartu setelah selesai. 1 peserta masih diproses, coba lagi nanti.');
+});
+
+test('unduh semua kartu mengemas PNG peserta yang sudah selesai saja', function () {
+    Storage::fake('public');
+    Storage::disk('public')->put('kartu/ahmad.png', 'png-ahmad');
+    $this->participant->update(['file_path' => 'kartu/ahmad.png']);
+    $kembar = $this->form->submissions()->create(['data' => ['nama' => 'Ahmad'], 'status' => 'completed', 'file_path' => 'kartu/ahmad-2.png']);
+    Storage::disk('public')->put('kartu/ahmad-2.png', 'png-ahmad-2');
+    $this->form->submissions()->create(['data' => ['nama' => 'Proses'], 'status' => 'processing', 'file_path' => 'kartu/proses.png']);
+    Storage::disk('public')->put('kartu/proses.png', 'png-proses');
+    $this->form->submissions()->create(['data' => ['nama' => 'Hilang'], 'status' => 'completed', 'file_path' => 'kartu/hilang.png']);
+
+    $response = $this->actingAs(createSuperAdminUser())->get(route('kartu-bebas.absensi.download-cards', $this->form))
+        ->assertOk()->assertDownload('kartu-haji-a-2026-09-29.zip');
+
+    $zip = new ZipArchive;
+    $zip->open($response->baseResponse->getFile()->getPathname());
+    $nama = collect(range(0, $zip->numFiles - 1))->map(fn (int $i) => $zip->getNameIndex($i))->sort()->values()->all();
+    $isi = collect($nama)->map(fn (string $n) => $zip->getFromName($n))->sort()->values()->all();
+    $zip->close();
+
+    expect($nama)->toBe(collect(['ahmad-'.substr($this->participant->id, -6).'.png', 'ahmad-'.substr($kembar->id, -6).'.png'])->sort()->values()->all())
+        ->and($isi)->toBe(['png-ahmad', 'png-ahmad-2']);
+});
+
+test('unduh semua kartu tanpa kartu siap kembali dengan pesan', function () {
+    Storage::fake('public');
+
+    $this->actingAs(createSuperAdminUser())->get(route('kartu-bebas.absensi.download-cards', $this->form))
+        ->assertRedirect()
+        ->assertSessionHas('inertia.flash_data.toast.message', 'Belum ada kartu yang selesai dibuat untuk layout ini.');
 });

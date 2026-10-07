@@ -72,14 +72,15 @@ class XlsxDownload
      */
     public static function namaSheet(string $nama, array $terpakai): string
     {
-        $bersih = trim((string) preg_replace('/\s+/u', ' ', strtr($nama, '[]:*?/\\', '       ')));
+        // Excel juga menolak nama yang diawali atau diakhiri tanda petik.
+        $bersih = trim((string) preg_replace('/\s+/u', ' ', strtr($nama, '[]:*?/\\', '       ')), " '");
         $bersih = $bersih === '' ? 'Sheet' : $bersih;
         $kecil = array_map(fn (string $n): string => mb_strtolower($n), $terpakai);
 
-        $calon = mb_substr($bersih, 0, 31);
+        $calon = rtrim(mb_substr($bersih, 0, 31), " '");
         for ($ke = 2; in_array(mb_strtolower($calon), $kecil, true); $ke++) {
             $akhiran = ' ('.$ke.')';
-            $calon = rtrim(mb_substr($bersih, 0, 31 - mb_strlen($akhiran))).$akhiran;
+            $calon = rtrim(mb_substr($bersih, 0, 31 - mb_strlen($akhiran)), " '").$akhiran;
         }
 
         return $calon;
