@@ -81,28 +81,28 @@ return [
 
     'faq' => [
         [
-            'question' => 'Apakah sistem ini gratis?',
-            'answer' => 'Kami menyediakan paket gratis untuk sekolah dengan maksimal 100 siswa, termasuk fitur dasar seperti scan QR dan rekap kehadiran. Untuk fitur lengkap seperti notifikasi WhatsApp dan laporan lanjutan, tersedia paket berbayar dengan harga terjangkau.',
+            'question' => 'Bagaimana cara mendaftarkan siswa?',
+            'answer' => 'Orang tua membuka halaman Daftar, memilih sekolah dan kelas, mengisi data siswa dan nomor WhatsApp, lalu membuat kata sandi Portal Orang Tua. Foto siswa diambil di studio saat sesi foto sekolah.',
         ],
         [
-            'question' => 'Bagaimana cara mendaftarkan sekolah?',
-            'answer' => 'Cukup klik tombol "Daftar Sekarang", isi data sekolah dan admin utama, lalu verifikasi email. Dalam 5 menit sekolah Anda sudah bisa mulai menggunakan sistem absensi digital. Tim kami juga siap membantu proses onboarding.',
+            'question' => 'Kata sandi di formulir pendaftaran itu untuk apa?',
+            'answer' => 'Untuk masuk ke Portal Orang Tua, bukan kata sandi email Anda. Buat kata sandi baru minimal 8 karakter. Kalau sudah punya akun untuk anak yang lain, isi dengan kata sandi akun itu.',
         ],
         [
             'question' => 'Apakah perlu hardware khusus untuk scan QR?',
-            'answer' => 'Tidak perlu. Cukup gunakan smartphone atau tablet dengan kamera untuk memindai QR Code. Sistem kami berbasis web sehingga bisa diakses dari browser mana saja tanpa instalasi aplikasi khusus. Untuk kartu RFID, pembaca kartu USB biasa sudah cukup.',
+            'answer' => 'Tidak. Pemindai dibuka di browser dan bisa memakai kamera HP atau tablet. Barcode reader USB biasa juga bisa dipakai di gerbang tanpa memasang aplikasi.',
         ],
         [
-            'question' => 'Berapa biaya pengiriman notifikasi WhatsApp?',
-            'answer' => 'Biaya notifikasi WhatsApp sudah termasuk dalam paket berlangganan, tanpa biaya tambahan per pesan. Kami menggunakan WhatsApp Business API resmi untuk memastikan pengiriman yang andal dan cepat ke semua nomor orang tua.',
+            'question' => 'Kapan orang tua menerima pesan WhatsApp?',
+            'answer' => 'Saat anak tercatat terlambat atau tidak hadir. Riwayat kehadiran lengkap bisa dilihat kapan saja di Portal Orang Tua, dan kabar juga bisa diterima lewat Telegram.',
         ],
         [
-            'question' => 'Bagaimana keamanan data siswa dijaga?',
-            'answer' => 'Data disimpan dengan enkripsi end-to-end pada server yang berlokasi di Indonesia. Kami mematuhi regulasi perlindungan data pribadi dan hanya pihak sekolah yang berwenang yang dapat mengakses informasi siswa.',
+            'question' => 'Siapa yang bisa melihat data siswa?',
+            'answer' => 'Admin dan guru sekolah sesuai perannya, serta orang tua untuk anaknya sendiri. Setiap sekolah hanya bisa melihat data sekolahnya sendiri.',
         ],
         [
-            'question' => 'Bisakah digunakan offline?',
-            'answer' => 'Fitur scan QR memerlukan koneksi internet untuk mencatat data secara real-time. Namun, data yang sudah tercatat dapat diakses offline melalui fitur ekspor. Kami juga sedang mengembangkan mode offline penuh untuk area dengan koneksi terbatas.',
+            'question' => 'Apakah scan bisa dipakai tanpa internet?',
+            'answer' => 'Belum. Setiap scan langsung dicatat ke server, jadi perangkat di gerbang perlu tersambung internet.',
         ],
     ],
 

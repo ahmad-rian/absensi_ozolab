@@ -1,0 +1,201 @@
+/*
+ * Halaman depan Tyas Photo.
+ *
+ * Dunianya studio foto sekolah: kertas foto, tanda potong di sudut lembar
+ * cetak, kode tepi film. Efek muncul meniru foto yang "dicuci" — dari abu-abu
+ * kabur menjadi tajam berwarna — bukan fade-up generik. Tanpa smooth-scroll:
+ * gulir tetap milik browser, animasi hanya dipicu saat bagian terlihat.
+ *
+ * Diimpor hanya oleh pages/welcome.tsx, jadi tidak ikut terunduh di halaman lain.
+ */
+
+.depan {
+    --kertas: #f2f4f6;
+    --kartu: #ffffff;
+    --tinta: #11161b;
+    --tinta-2: #4b5662;
+    --tinta-3: #7b8692;
+    --garis: #d9dfe5;
+    --biru: #1b8fd2;
+    --biru-tua: #0b5f93;
+    --biru-muda: #e3f1fa;
+    --hijau: #15803d;
+    --hijau-muda: #e3f4e8;
+    --kuning: #b45309;
+    --kuning-muda: #fbf0dc;
+    --ease: cubic-bezier(0.2, 0.75, 0.2, 1);
+    --font-tampil: 'Archivo', 'Open Sans', system-ui, sans-serif;
+    --font-data:
+        'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+    background: var(--kertas);
+    color: var(--tinta);
+    overflow-x: clip;
+}
+
+.dark .depan {
+    --kertas: #0d1115;
+    --kartu: #151b21;
+    --tinta: #e9edf0;
+    --tinta-2: #a9b3bd;
+    --tinta-3: #7d8894;
+    --garis: #263039;
+    --biru: #4fb3ec;
+    --biru-tua: #8fd0f5;
+    --biru-muda: #10283a;
+    --hijau: #4ade80;
+    --hijau-muda: #11291a;
+    --kuning: #f5b54a;
+    --kuning-muda: #2e2410;
+}
+
+.depan .tampil {
+    font-family: var(--font-tampil);
+    font-stretch: 112%;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+}
+
+.depan .data {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+}
+
+/* Label kecil bergaya kode tepi film. */
+.depan .kode-tepi {
+    font-family: var(--font-data);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--tinta-3);
+}
+
+/* Tanda potong di empat sudut, seperti lembar cetak foto. */
+.depan .tanda-potong {
+    position: relative;
+}
+
+.depan .tanda-potong::before,
+.depan .tanda-potong::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-color: var(--tinta-3);
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.depan .tanda-potong::before {
+    top: -8px;
+    left: -8px;
+    border-top: 1px solid;
+    border-left: 1px solid;
+}
+
+.depan .tanda-potong::after {
+    right: -8px;
+    bottom: -8px;
+    border-right: 1px solid;
+    border-bottom: 1px solid;
+}
+
+/* ------------------------------------------------------------ muncul */
+
+.depan .muncul {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+    filter: grayscale(1) blur(6px);
+    transition:
+        opacity 0.7s var(--ease),
+        transform 0.9s var(--ease),
+        filter 1.1s var(--ease);
+    transition-delay: var(--tunda, 0ms);
+}
+
+.depan .muncul[data-tampil] {
+    opacity: 1;
+    transform: none;
+    filter: none;
+}
+
+/*
+ * Gambar/kartu: tersingkap dari atas ke bawah, seperti kertas keluar dari
+ * printer. Clip-path dipasang di ANAK-nya, bukan di elemen yang diamati:
+ * IntersectionObserver menghitung luas setelah clip-path, jadi elemen yang
+ * terpotong 100% tidak akan pernah dianggap terlihat.
+ */
+.depan .muncul-cetak > * {
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 1.1s var(--ease);
+    transition-delay: var(--tunda, 0ms);
+}
+
+.depan .muncul-cetak[data-tampil] > * {
+    clip-path: inset(-40px);
+}
+
+/* Garis bawah judul yang tergores masuk. */
+.depan .goresan {
+    background: linear-gradient(var(--biru), var(--biru)) no-repeat 0 92% / 0%
+        0.14em;
+    transition: background-size 0.9s var(--ease) 0.35s;
+}
+
+.depan [data-tampil] .goresan,
+.depan .goresan[data-tampil] {
+    background-size: 100% 0.14em;
+}
+
+/* Baris log scan yang bergulir pelan di kartu hero. */
+@keyframes depan-log {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(-50%);
+    }
+}
+
+.depan .gulir-log {
+    animation: depan-log 14s linear infinite;
+}
+
+@keyframes depan-titik {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.25;
+    }
+}
+
+.depan .titik-langsung {
+    animation: depan-titik 1.6s ease-in-out infinite;
+}
+
+.depan :focus-visible {
+    outline: 2px solid var(--biru);
+    outline-offset: 3px;
+    border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .depan .muncul,
+    .depan .muncul-cetak > *,
+    .depan .goresan {
+        opacity: 1;
+        transform: none;
+        filter: none;
+        clip-path: none;
+        transition: none;
+        background-size: 100% 0.14em;
+    }
+
+    .depan .gulir-log,
+    .depan .titik-langsung {
+        animation: none;
+    }
+}

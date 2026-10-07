@@ -90,7 +90,7 @@ test('llms.txt menjelaskan situs dalam teks biasa', function () {
         ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
         ->assertSee('Tyas Photo')
         ->assertSee('Kartu RFID')
-        ->assertSee('Apakah sistem ini gratis?');
+        ->assertSee('Kapan orang tua menerima pesan WhatsApp?');
 });
 
 test('robots.txt menutup jalur bertoken dan menunjuk sitemap', function () {

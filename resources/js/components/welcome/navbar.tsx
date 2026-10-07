@@ -7,8 +7,8 @@ import { useAppearance } from '@/hooks/use-appearance';
 import { dashboard } from '@/routes';
 
 const navLinks = [
-    { label: 'Fitur', href: '#features' },
-    { label: 'Cara Kerja', href: '#how-it-works' },
+    { label: 'Alur', href: '#alur' },
+    { label: 'Fitur', href: '#fitur' },
     { label: 'FAQ', href: '#faq' },
 ];
 
@@ -72,11 +72,11 @@ export function Navbar() {
             <nav
                 className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${
                     scrolled
-                        ? 'border-b border-border/60 bg-background/80 backdrop-blur-xl'
+                        ? 'border-b border-[var(--garis)] bg-[var(--kertas)]/85 backdrop-blur-md'
                         : 'bg-transparent'
                 }`}
             >
-                <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
                     <Link
                         href="/"
                         className="flex items-center gap-2.5 font-bold"
@@ -127,7 +127,7 @@ export function Navbar() {
                                 </Button>
                                 <Button
                                     size="sm"
-                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
+                                    className="bg-[var(--tinta)] text-[var(--kertas)] hover:bg-[var(--biru-tua)]"
                                     asChild
                                 >
                                     <Link href="/daftar">Daftarkan Siswa</Link>
@@ -174,8 +174,8 @@ export function Navbar() {
                 <div
                     className={`fixed inset-0 z-[60] flex flex-col transition-all duration-300 ease-out ${
                         mobileVisible
-                            ? 'bg-background/95 backdrop-blur-2xl'
-                            : 'pointer-events-none bg-background/0 backdrop-blur-none'
+                            ? 'bg-[var(--kertas)]'
+                            : 'pointer-events-none bg-transparent'
                     }`}
                 >
                     {/* Header */}
@@ -265,7 +265,7 @@ export function Navbar() {
                         ) : (
                             <div className="flex flex-col gap-3">
                                 <Button
-                                    className="h-12 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-base text-white shadow-lg shadow-blue-500/25"
+                                    className="h-12 w-full rounded-lg bg-[var(--tinta)] text-base text-[var(--kertas)]"
                                     asChild
                                 >
                                     <Link href="/daftar">
