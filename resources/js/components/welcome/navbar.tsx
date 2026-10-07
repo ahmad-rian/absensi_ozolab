@@ -69,29 +69,29 @@ export function Navbar() {
 
     return (
         <>
-            <nav
-                className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${
-                    scrolled
-                        ? 'border-b border-[var(--garis)] bg-[var(--kertas)]/85 backdrop-blur-md'
-                        : 'bg-transparent'
-                }`}
-            >
-                <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+            <nav className="fixed inset-x-0 top-3 z-50 flex justify-center px-3 sm:top-5">
+                <div
+                    className={`flex h-14 w-full max-w-3xl items-center justify-between rounded-full border border-[var(--garis)] bg-[var(--kartu)]/90 pr-2 pl-4 backdrop-blur-md transition-shadow duration-300 ${
+                        scrolled
+                            ? 'shadow-[0_12px_30px_-14px_rgb(29_27_25/0.45)]'
+                            : 'shadow-[0_6px_18px_-12px_rgb(29_27_25/0.35)]'
+                    }`}
+                >
                     <Link
                         href="/"
                         className="flex items-center gap-2.5 font-bold"
                     >
-                        <BrandLogo className="size-8 rounded-lg" />
-                        <span className="text-lg tracking-tight">{name}</span>
+                        <BrandLogo className="size-7 rounded-md" />
+                        <span className="tracking-tight">{name}</span>
                     </Link>
 
                     {/* Desktop */}
-                    <div className="hidden items-center gap-1 lg:flex">
+                    <div className="hidden items-center gap-0.5 text-sm lg:flex">
                         {navLinks.map((link) => (
                             <a
                                 key={link.href}
                                 href={link.href}
-                                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
+                                className="rounded-full px-3 py-2 font-medium text-[var(--tinta-2)] transition hover:text-[var(--tinta)]"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     scrollTo(link.href);
@@ -100,8 +100,13 @@ export function Navbar() {
                                 {link.label}
                             </a>
                         ))}
-                        <div className="mx-3 h-5 w-px bg-border" />
-                        <Button variant="outline" size="sm" asChild>
+                        <div className="mx-2 h-5 w-px bg-[var(--garis)]" />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-full"
+                            asChild
+                        >
                             <Link href="/daftar-telegram">
                                 <Send className="mr-1.5 size-4" />
                                 Telegram
@@ -117,17 +122,26 @@ export function Navbar() {
                             <Moon className="absolute size-4 scale-0 rotate-90 transition-transform dark:scale-100 dark:rotate-0" />
                         </Button>
                         {auth.user ? (
-                            <Button size="sm" className="ml-2" asChild>
+                            <Button
+                                size="sm"
+                                className="ml-1 rounded-full bg-[var(--tinta)] text-[var(--dasar)]"
+                                asChild
+                            >
                                 <Link href={dashboard()}>Dashboard</Link>
                             </Button>
                         ) : (
                             <>
-                                <Button variant="ghost" size="sm" asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="rounded-full"
+                                    asChild
+                                >
                                     <Link href="/login">Masuk</Link>
                                 </Button>
                                 <Button
                                     size="sm"
-                                    className="bg-[var(--tinta)] text-[var(--kertas)] hover:bg-[var(--biru-tua)]"
+                                    className="rounded-full bg-[var(--tinta)] text-[var(--dasar)] hover:opacity-90"
                                     asChild
                                 >
                                     <Link href="/daftar">Daftarkan Siswa</Link>
@@ -174,7 +188,7 @@ export function Navbar() {
                 <div
                     className={`fixed inset-0 z-[60] flex flex-col transition-all duration-300 ease-out ${
                         mobileVisible
-                            ? 'bg-[var(--kertas)]'
+                            ? 'bg-[var(--dasar)]'
                             : 'pointer-events-none bg-transparent'
                     }`}
                 >
@@ -265,7 +279,7 @@ export function Navbar() {
                         ) : (
                             <div className="flex flex-col gap-3">
                                 <Button
-                                    className="h-12 w-full rounded-lg bg-[var(--tinta)] text-base text-[var(--kertas)]"
+                                    className="h-12 w-full rounded-lg bg-[var(--tinta)] text-base text-[var(--dasar)]"
                                     asChild
                                 >
                                     <Link href="/daftar">

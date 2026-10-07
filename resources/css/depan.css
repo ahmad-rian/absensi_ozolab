@@ -1,116 +1,122 @@
 /*
- * Halaman depan Tyas Photo.
+ * Halaman depan Tyas Photo — kolase kertas.
  *
- * Dunianya studio foto sekolah: kertas foto, tanda potong di sudut lembar
- * cetak, kode tepi film. Efek muncul meniru foto yang "dicuci" — dari abu-abu
- * kabur menjadi tajam berwarna — bukan fade-up generik. Tanpa smooth-scroll:
- * gulir tetap milik browser, animasi hanya dipicu saat bagian terlihat.
+ * Studio foto hidup dari potongan: foto digunting, ditempel, ditumpuk.
+ * Halaman ini memakai bahasa yang sama: langit berbintik halftone, kertas
+ * sobek, kertas bergaris, dan judul serif yang miring di kata kuncinya.
+ * Gerak hanya saat bagian masuk layar — gulir tetap milik browser.
  *
- * Diimpor hanya oleh pages/welcome.tsx, jadi tidak ikut terunduh di halaman lain.
+ * Diimpor hanya oleh pages/welcome.tsx.
  */
 
 .depan {
-    --kertas: #f2f4f6;
+    --dasar: #fbfaf8;
     --kartu: #ffffff;
-    --tinta: #11161b;
-    --tinta-2: #4b5662;
-    --tinta-3: #7b8692;
-    --garis: #d9dfe5;
-    --biru: #1b8fd2;
-    --biru-tua: #0b5f93;
-    --biru-muda: #e3f1fa;
-    --hijau: #15803d;
-    --hijau-muda: #e3f4e8;
-    --kuning: #b45309;
-    --kuning-muda: #fbf0dc;
+    --tinta: #1d1b19;
+    --tinta-2: #57524c;
+    --tinta-3: #8c867f;
+    --garis: #e9e5df;
+    --langit-atas: #a9cdee;
+    --langit-bawah: #e4eef8;
+    --ungu: #aab5f2;
+    --mentega: #f6df86;
+    --koral: #ef8f78;
+    --mint: #a3d9b9;
+    --arang: #161514;
+    --putih: #ffffff;
+    --garis-tyas: rgb(255 255 255 / 0.6);
+    --biru: #2f7fd0;
+    --hijau: #237a4b;
+    --hijau-muda: #e2f3e8;
+    --kuning: #9a5b07;
+    --kuning-muda: #fbf0d8;
     --ease: cubic-bezier(0.2, 0.75, 0.2, 1);
-    --font-tampil: 'Archivo', 'Open Sans', system-ui, sans-serif;
-    --font-data:
-        'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    --font-serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+    --font-sans: 'Hanken Grotesk', 'Open Sans', system-ui, sans-serif;
 
-    background: var(--kertas);
+    background: var(--dasar);
     color: var(--tinta);
+    font-family: var(--font-sans);
     overflow-x: clip;
 }
 
 .dark .depan {
-    --kertas: #0d1115;
-    --kartu: #151b21;
-    --tinta: #e9edf0;
-    --tinta-2: #a9b3bd;
-    --tinta-3: #7d8894;
-    --garis: #263039;
-    --biru: #4fb3ec;
-    --biru-tua: #8fd0f5;
-    --biru-muda: #10283a;
-    --hijau: #4ade80;
-    --hijau-muda: #11291a;
-    --kuning: #f5b54a;
-    --kuning-muda: #2e2410;
+    --dasar: #141312;
+    --kartu: #1d1c1a;
+    --tinta: #f1eee9;
+    --tinta-2: #bdb6ad;
+    --tinta-3: #8a837a;
+    --garis: #2e2b28;
+    --langit-atas: #1d3557;
+    --langit-bawah: #2c4766;
+    --ungu: #5d66a8;
+    --mentega: #b89d3f;
+    --koral: #b8644f;
+    --mint: #4f8f6b;
+    --arang: #050505;
+    --putih: #2b2926;
+    --garis-tyas: rgb(255 255 255 / 0.14);
+    --biru: #7db7f0;
+    --hijau: #7fd6a2;
+    --hijau-muda: #173324;
+    --kuning: #f0c36b;
+    --kuning-muda: #3a2e14;
 }
 
-.depan .tampil {
-    font-family: var(--font-tampil);
-    font-stretch: 112%;
-    letter-spacing: -0.02em;
+.depan .serif {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.012em;
     text-wrap: balance;
 }
 
-.depan .data {
-    font-family: var(--font-data);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.04em;
-}
-
-/* Label kecil bergaya kode tepi film. */
-.depan .kode-tepi {
-    font-family: var(--font-data);
+.depan .label {
     font-size: 0.72rem;
-    letter-spacing: 0.14em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--tinta-3);
 }
 
-/* Tanda potong di empat sudut, seperti lembar cetak foto. */
-.depan .tanda-potong {
-    position: relative;
+.depan .angka {
+    font-variant-numeric: tabular-nums;
 }
 
-.depan .tanda-potong::before,
-.depan .tanda-potong::after {
-    content: '';
-    position: absolute;
-    width: 14px;
-    height: 14px;
-    border-color: var(--tinta-3);
-    opacity: 0.55;
-    pointer-events: none;
+/* Bintik halftone, seperti cetakan koran di kolase. */
+.depan .halftone {
+    background-image: radial-gradient(
+        rgb(29 27 25 / 0.16) 0.9px,
+        transparent 1.3px
+    );
+    background-size: 5px 5px;
 }
 
-.depan .tanda-potong::before {
-    top: -8px;
-    left: -8px;
-    border-top: 1px solid;
-    border-left: 1px solid;
+.depan .bergaris {
+    background-color: var(--mentega);
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0 13px,
+        rgb(29 27 25 / 0.12) 13px 14px
+    );
 }
 
-.depan .tanda-potong::after {
-    right: -8px;
-    bottom: -8px;
-    border-right: 1px solid;
-    border-bottom: 1px solid;
+.depan .langit {
+    background: linear-gradient(
+        to bottom,
+        var(--langit-atas),
+        var(--langit-bawah) 70%
+    );
 }
 
 /* ------------------------------------------------------------ muncul */
 
 .depan .muncul {
     opacity: 0;
-    transform: translate3d(0, 22px, 0);
-    filter: grayscale(1) blur(6px);
+    transform: translate3d(0, 26px, 0);
+    filter: blur(8px);
     transition:
-        opacity 0.7s var(--ease),
-        transform 0.9s var(--ease),
-        filter 1.1s var(--ease);
+        opacity 0.8s var(--ease),
+        transform 1s var(--ease),
+        filter 1s var(--ease);
     transition-delay: var(--tunda, 0ms);
 }
 
@@ -121,34 +127,43 @@
 }
 
 /*
- * Gambar/kartu: tersingkap dari atas ke bawah, seperti kertas keluar dari
- * printer. Clip-path dipasang di ANAK-nya, bukan di elemen yang diamati:
- * IntersectionObserver menghitung luas setelah clip-path, jadi elemen yang
- * terpotong 100% tidak akan pernah dianggap terlihat.
+ * Potongan kolase: naik dari bawah dan sedikit berputar, seperti kertas
+ * yang baru ditempel. Gerak dipasang di ANAK elemen yang diamati, karena
+ * elemen yang sedang di luar batas induk overflow:hidden tidak pernah
+ * dianggap terlihat oleh IntersectionObserver.
  */
 .depan .muncul-cetak > * {
-    clip-path: inset(0 0 100% 0);
-    transition: clip-path 1.1s var(--ease);
+    opacity: 0;
+    transform: translate3d(0, 60px, 0) rotate(var(--miring, -2deg));
+    transition:
+        opacity 0.7s var(--ease),
+        transform 1.2s var(--ease);
     transition-delay: var(--tunda, 0ms);
 }
 
 .depan .muncul-cetak[data-tampil] > * {
-    clip-path: inset(-40px);
+    opacity: 1;
+    transform: none;
 }
 
-/* Garis bawah judul yang tergores masuk. */
-.depan .goresan {
-    background: linear-gradient(var(--biru), var(--biru)) no-repeat 0 92% / 0%
-        0.14em;
-    transition: background-size 0.9s var(--ease) 0.35s;
+@keyframes depan-awan {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(28px);
+    }
 }
 
-.depan [data-tampil] .goresan,
-.depan .goresan[data-tampil] {
-    background-size: 100% 0.14em;
+.depan .awan {
+    animation: depan-awan 9s ease-in-out infinite alternate;
 }
 
-/* Baris log scan yang bergulir pelan di kartu hero. */
+/* Awan putih penuh di langit malam terlalu menyala. */
+.dark .depan .awan {
+    opacity: 0.3;
+}
+
 @keyframes depan-log {
     from {
         transform: translateY(0);
@@ -159,43 +174,26 @@
 }
 
 .depan .gulir-log {
-    animation: depan-log 14s linear infinite;
-}
-
-@keyframes depan-titik {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.25;
-    }
-}
-
-.depan .titik-langsung {
-    animation: depan-titik 1.6s ease-in-out infinite;
+    animation: depan-log 16s linear infinite;
 }
 
 .depan :focus-visible {
     outline: 2px solid var(--biru);
     outline-offset: 3px;
-    border-radius: 6px;
+    border-radius: 999px;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .depan .muncul,
-    .depan .muncul-cetak > *,
-    .depan .goresan {
+    .depan .muncul-cetak > * {
         opacity: 1;
         transform: none;
         filter: none;
-        clip-path: none;
         transition: none;
-        background-size: 100% 0.14em;
     }
 
-    .depan .gulir-log,
-    .depan .titik-langsung {
+    .depan .awan,
+    .depan .gulir-log {
         animation: none;
     }
 }

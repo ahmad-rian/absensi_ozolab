@@ -1,10 +1,10 @@
 import { Head } from '@inertiajs/react';
 import '../../css/depan.css';
-import { Alur } from '@/components/depan/alur';
 import { Fitur } from '@/components/depan/fitur';
 import { Hero } from '@/components/depan/hero';
-import { Lembaga } from '@/components/depan/lembaga';
+import { Pengguna } from '@/components/depan/pengguna';
 import { Penutup } from '@/components/depan/penutup';
+import { Ragam } from '@/components/depan/ragam';
 import { TanyaJawab } from '@/components/depan/tanya-jawab';
 import { Navbar } from '@/components/welcome/navbar';
 
@@ -14,16 +14,16 @@ export default function Welcome() {
             <Head title="Studio Foto & Absensi Sekolah">
                 <link
                     rel="stylesheet"
-                    href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600..800&family=JetBrains+Mono:wght@500&display=swap"
+                    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
                 />
             </Head>
             <Navbar />
 
             <main>
                 <Hero />
-                <Alur />
+                <Ragam />
+                <Pengguna />
                 <Fitur />
-                <Lembaga />
                 <TanyaJawab />
             </main>
 

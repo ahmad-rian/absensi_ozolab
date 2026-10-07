@@ -33,9 +33,11 @@ function amati(el: Element): () => void {
 
 type MunculProps = {
     as?: ElementType;
-    /** `cetak` menyingkap dari atas seperti kertas keluar printer. */
+    /** `cetak`: anaknya naik dan berputar sedikit, seperti potongan kertas yang ditempel. */
     gaya?: 'foto' | 'cetak';
     tunda?: number;
+    /** Putaran awal potongan `cetak`, mis. `-8deg`. */
+    miring?: string;
     className?: string;
     children: ReactNode;
 } & Record<string, unknown>;
@@ -44,6 +46,7 @@ export function Muncul({
     as: Tag = 'div',
     gaya = 'foto',
     tunda = 0,
+    miring,
     className = '',
     children,
     ...sisa
@@ -56,7 +59,12 @@ export function Muncul({
         <Tag
             ref={ref}
             className={`${gaya === 'cetak' ? 'muncul-cetak' : 'muncul'} ${className}`}
-            style={{ '--tunda': `${tunda}ms` } as CSSProperties}
+            style={
+                {
+                    '--tunda': `${tunda}ms`,
+                    ...(miring ? { '--miring': miring } : {}),
+                } as CSSProperties
+            }
             {...sisa}
         >
             {children}

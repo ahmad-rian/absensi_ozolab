@@ -1,154 +1,117 @@
 import { Link } from '@inertiajs/react';
-import { ArrowRight } from 'lucide-react';
 import { AnimasiLottie } from '@/components/depan/animasi-lottie';
+import { Awan, KertasSobek } from '@/components/depan/kolase';
 import { Muncul } from '@/components/depan/muncul';
 
-/** Contoh catatan gerbang di kartu hero. Nama fiktif, jam realistis. */
-const LOG = [
-    { jam: '06.41', nama: 'Alya R.', kelas: 'VIII B', status: 'Hadir' },
-    { jam: '06.44', nama: 'Bima S.', kelas: 'VII A', status: 'Hadir' },
-    { jam: '06.52', nama: 'Citra N.', kelas: 'IX C', status: 'Hadir' },
-    { jam: '06.58', nama: 'Dimas P.', kelas: 'VIII A', status: 'Hadir' },
-    { jam: '07.16', nama: 'Eka W.', kelas: 'VII B', status: 'Terlambat' },
-    { jam: '07.02', nama: 'Fajar H.', kelas: 'IX A', status: 'Hadir' },
+/** Contoh kehadiran per kelas di jendela aplikasi. Angka contoh, bukan data nyata. */
+const KELAS = [
+    {
+        nama: 'VII A',
+        hadir: 31,
+        total: 32,
+        warna: 'var(--koral)',
+        telat: ['Eka W. · 07.16'],
+    },
+    { nama: 'VII B', hadir: 30, total: 30, warna: 'var(--tinta)', telat: [] },
+    {
+        nama: 'VIII A',
+        hadir: 28,
+        total: 31,
+        warna: 'var(--mentega)',
+        telat: ['Bima S. · 07.21', 'Dewi K. · 07.24'],
+    },
+    { nama: 'IX C', hadir: 32, total: 32, warna: 'var(--mint)', telat: [] },
 ] as const;
 
-/** Pola QR hiasan yang tetap (tidak acak tiap render, tidak bisa dipindai). */
-const POLA = Array.from({ length: 21 * 21 }, (_, i) => {
-    const x = i % 21;
-    const y = Math.floor(i / 21);
-    const penanda = (a: number, b: number) =>
-        a >= 0 &&
-        a < 7 &&
-        b >= 0 &&
-        b < 7 &&
-        (a % 6 === 0 || b % 6 === 0 || (a > 1 && a < 5 && b > 1 && b < 5));
+const MENU = ['Beranda', 'Siswa', 'Absensi', 'Kartu & foto', 'Laporan'];
 
-    if (penanda(x, y) || penanda(x - 14, y) || penanda(x, y - 14)) {
-        return true;
-    }
-
-    if ((x < 8 && y < 8) || (x > 12 && y < 8) || (x < 8 && y > 12)) {
-        return false;
-    }
-
-    return (x * 7 + y * 13 + x * y) % 5 < 2;
-});
-
-function KartuPelajar() {
+function JendelaAplikasi() {
     return (
-        <div className="tanda-potong w-[min(19rem,78vw)] rounded-[14px] border border-[var(--garis)] bg-[var(--kartu)] p-4 shadow-[0_30px_60px_-30px_rgba(17,22,27,0.35)]">
-            <div className="flex items-center justify-between rounded-lg bg-[var(--biru)] px-3 py-2 text-white">
-                <span className="data text-[0.68rem] font-medium">
-                    KARTU PELAJAR
-                </span>
-                <span className="data text-[0.68rem] opacity-80">
-                    2026/2027
+        <div className="overflow-hidden rounded-t-2xl border border-b-0 border-[var(--garis)] bg-[var(--kartu)] shadow-[0_-20px_60px_-30px_rgb(29_27_25/0.45)]">
+            <div className="flex items-center gap-1.5 border-b border-[var(--garis)] px-4 py-2.5">
+                {['#ef6a5a', '#f4bf4f', '#61c454'].map((c) => (
+                    <span
+                        key={c}
+                        className="size-2.5 rounded-full"
+                        style={{ background: c }}
+                    />
+                ))}
+                <span className="mx-auto rounded-md bg-[var(--dasar)] px-3 py-0.5 text-[0.7rem] text-[var(--tinta-3)]">
+                    tyasphoto.ozolab.id
                 </span>
             </div>
-            <div className="mt-4 flex gap-4">
-                <div className="flex aspect-[3/4] w-24 items-end justify-center overflow-hidden rounded-md bg-[var(--biru-muda)]">
-                    <svg
-                        viewBox="0 0 60 80"
-                        className="w-full text-[var(--biru)]"
-                        aria-hidden="true"
-                    >
-                        <circle
-                            cx="30"
-                            cy="30"
-                            r="13"
-                            fill="currentColor"
-                            opacity="0.55"
-                        />
-                        <path
-                            d="M6 80c2-18 12-27 24-27s22 9 24 27z"
-                            fill="currentColor"
-                            opacity="0.55"
-                        />
-                    </svg>
+            <div className="flex">
+                <aside className="hidden w-40 shrink-0 border-r border-[var(--garis)] p-3 text-[0.78rem] sm:block">
+                    {MENU.map((m) => (
+                        <p
+                            key={m}
+                            className={`rounded-md px-2 py-1.5 ${m === 'Absensi' ? 'bg-[var(--dasar)] font-semibold' : 'text-[var(--tinta-2)]'}`}
+                        >
+                            {m}
+                        </p>
+                    ))}
+                </aside>
+                <div className="min-w-0 flex-1 p-4">
+                    <div className="flex items-baseline justify-between">
+                        <p className="text-sm font-semibold">
+                            Kehadiran hari ini
+                        </p>
+                        <p className="angka text-[0.72rem] text-[var(--tinta-3)]">
+                            Senin, 6 Okt
+                        </p>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2.5 md:grid-cols-4">
+                        {KELAS.map((k) => (
+                            <div
+                                key={k.nama}
+                                className="rounded-xl border-2 bg-[var(--kartu)] p-2.5 text-[0.72rem]"
+                                style={{ borderColor: k.warna }}
+                            >
+                                <p className="font-semibold">Kelas {k.nama}</p>
+                                <p className="angka mt-1 text-[var(--tinta-2)]">
+                                    {k.hadir}/{k.total} hadir
+                                </p>
+                                <div className="mt-2 space-y-1">
+                                    {k.telat.length === 0 ? (
+                                        <p className="rounded bg-[var(--hijau-muda)] px-1.5 py-0.5 text-[var(--hijau)]">
+                                            Lengkap
+                                        </p>
+                                    ) : (
+                                        k.telat.map((t) => (
+                                            <p
+                                                key={t}
+                                                className="angka truncate rounded bg-[var(--kuning-muda)] px-1.5 py-0.5 text-[var(--kuning)]"
+                                            >
+                                                {t}
+                                            </p>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <div className="min-w-0 flex-1 space-y-2 text-sm">
-                    <p className="tampil text-base leading-tight font-bold">
-                        Alya Rahmawati
-                    </p>
-                    <p className="data text-xs text-[var(--tinta-2)]">
-                        NIS 0072318
-                    </p>
-                    <p className="data text-xs text-[var(--tinta-2)]">
-                        KELAS VIII B
-                    </p>
-                </div>
-            </div>
-            <div className="relative mt-4 flex items-center gap-4">
-                <svg
-                    viewBox="0 0 21 21"
-                    className="size-24 shrink-0 rounded bg-white p-1.5"
-                    shapeRendering="crispEdges"
-                    aria-hidden="true"
-                >
-                    {POLA.map((isi, i) =>
-                        isi ? (
-                            <rect
-                                key={i}
-                                x={i % 21}
-                                y={Math.floor(i / 21)}
-                                width="1"
-                                height="1"
-                                fill="#11161b"
-                            />
-                        ) : null,
-                    )}
-                </svg>
-                <AnimasiLottie
-                    nama="scan"
-                    className="pointer-events-none absolute -top-3 -left-3 size-30"
-                />
-                <p className="text-xs leading-relaxed text-[var(--tinta-2)]">
-                    QR pribadi siswa. Tempelkan ke pemindai di gerbang.
-                </p>
             </div>
         </div>
     );
 }
 
-function LogGerbang() {
+/** Kartu pelajar yang "ditempel" miring di atas kolase. Warna tetap: kartu fisik tidak ikut mode gelap. */
+function KartuMiring() {
     return (
-        <div className="w-[min(17rem,78vw)] overflow-hidden rounded-[14px] border border-[var(--garis)] bg-[var(--kartu)]">
-            <div className="flex items-center justify-between border-b border-[var(--garis)] px-4 py-3">
-                <span className="kode-tepi">Gerbang utama</span>
-                <span className="data flex items-center gap-1.5 text-[0.68rem] text-[var(--hijau)]">
-                    <span className="titik-langsung size-1.5 rounded-full bg-current" />
-                    LANGSUNG
-                </span>
+        <div className="w-44 rotate-[-7deg] rounded-xl bg-white p-2.5 text-[#1d1b19] shadow-[0_18px_40px_-18px_rgb(29_27_25/0.55)]">
+            <div className="rounded-md bg-[#2f7fd0] px-2 py-1 text-[0.6rem] font-semibold tracking-wider text-white">
+                KARTU PELAJAR
             </div>
-            <div className="h-48 overflow-hidden">
-                <ul className="gulir-log">
-                    {[...LOG, ...LOG].map((baris, i) => (
-                        <li
-                            key={i}
-                            className="flex items-center gap-3 border-b border-[var(--garis)] px-4 py-2.5 text-sm last:border-0"
-                        >
-                            <span className="data text-xs text-[var(--tinta-3)]">
-                                {baris.jam}
-                            </span>
-                            <span className="min-w-0 flex-1 truncate">
-                                {baris.nama}{' '}
-                                <span className="text-[var(--tinta-3)]">
-                                    · {baris.kelas}
-                                </span>
-                            </span>
-                            <span
-                                className={`data rounded px-1.5 py-0.5 text-[0.65rem] ${
-                                    baris.status === 'Hadir'
-                                        ? 'bg-[var(--hijau-muda)] text-[var(--hijau)]'
-                                        : 'bg-[var(--kuning-muda)] text-[var(--kuning)]'
-                                }`}
-                            >
-                                {baris.status.toUpperCase()}
-                            </span>
-                        </li>
-                    ))}
-                </ul>
+            <div className="mt-2 flex gap-2">
+                <div className="halftone aspect-[3/4] w-12 rounded bg-[#aab5f2]" />
+                <div className="text-[0.62rem] leading-snug">
+                    <p className="font-semibold">Alya Rahmawati</p>
+                    <p className="text-[#8c867f]">VIII B</p>
+                </div>
+            </div>
+            <div className="mt-1 flex justify-center">
+                <AnimasiLottie nama="scan" className="size-20" />
             </div>
         </div>
     );
@@ -156,60 +119,93 @@ function LogGerbang() {
 
 export function Hero() {
     return (
-        <section className="mx-auto grid max-w-6xl items-center gap-14 px-4 pt-28 pb-12 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:pt-36 lg:pb-28">
-            <div>
-                <Muncul as="p" className="kode-tepi" tunda={0}>
-                    Tyas Photo · Studio foto &amp; absensi sekolah
-                </Muncul>
-                <Muncul
-                    as="h1"
-                    tunda={120}
-                    className="tampil mt-5 text-[clamp(2.3rem,5.4vw,4.1rem)] leading-[1.02] font-extrabold"
+        <section className="px-2 pt-2 sm:px-3 sm:pt-3">
+            <div className="langit relative isolate overflow-hidden rounded-[28px] pt-32 sm:pt-36">
+                <div className="halftone absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_70%)] opacity-60" />
+                <Awan className="top-24 -left-10 -z-10 h-24 w-64 opacity-90 max-sm:top-20 max-sm:h-16 max-sm:w-40" />
+                <Awan className="top-14 -right-12 -z-10 h-28 w-72 max-sm:hidden" />
+                <p
+                    aria-hidden="true"
+                    className="serif pointer-events-none absolute inset-x-0 top-[46%] -z-10 text-center text-[26vw] leading-none text-transparent select-none [-webkit-text-stroke:1.5px_var(--garis-tyas)]"
                 >
-                    Difoto di studio, dicetak jadi kartu,{' '}
-                    <span className="goresan">dipakai absen</span> setiap pagi.
-                </Muncul>
-                <Muncul
-                    as="p"
-                    tunda={260}
-                    className="mt-6 max-w-[34rem] text-lg leading-relaxed text-[var(--tinta-2)]"
-                >
-                    Orang tua mendaftarkan siswa secara online, siswa difoto di
-                    studio Tyas Photo, lalu kartu ber-QR dipindai di gerbang.
-                    Orang tua mendapat kabar saat anaknya terlambat atau tidak
-                    hadir.
-                </Muncul>
-                <Muncul tunda={380} className="mt-9 flex flex-wrap gap-3">
-                    <Link
-                        href="/daftar"
-                        className="group inline-flex h-12 items-center gap-2 rounded-lg bg-[var(--tinta)] px-6 font-semibold text-[var(--kertas)] transition hover:bg-[var(--biru-tua)]"
-                    >
-                        Daftarkan Siswa
-                        <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
-                    </Link>
-                    <Link
-                        href="/login"
-                        className="inline-flex h-12 items-center rounded-lg border border-[var(--garis)] bg-[var(--kartu)] px-6 font-semibold transition hover:border-[var(--tinta-3)]"
-                    >
-                        Masuk
-                    </Link>
-                </Muncul>
-            </div>
+                    Tyas
+                </p>
 
-            <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-end sm:justify-center lg:block lg:h-[33rem]">
-                <Muncul
-                    gaya="cetak"
-                    tunda={300}
-                    className="lg:absolute lg:top-0 lg:left-0"
-                >
-                    <KartuPelajar />
-                </Muncul>
-                <Muncul
-                    tunda={700}
-                    className="lg:absolute lg:top-[19.5rem] lg:right-0"
-                >
-                    <LogGerbang />
-                </Muncul>
+                <div className="mx-auto max-w-3xl px-5 text-center">
+                    <Muncul
+                        as="h1"
+                        className="serif text-[clamp(2.6rem,6.4vw,5rem)] leading-[1.02]"
+                    >
+                        Foto sekolah, kartu pelajar, dan absensi{' '}
+                        <em>dalam satu alur</em>
+                    </Muncul>
+                    <Muncul
+                        as="p"
+                        tunda={150}
+                        className="mx-auto mt-5 max-w-xl text-[1.05rem] leading-relaxed text-[var(--tinta-2)]"
+                    >
+                        Orang tua mendaftar online, siswa difoto di studio,
+                        kartu ber-QR dipindai di gerbang, dan orang tua langsung
+                        tahu saat anaknya terlambat.
+                    </Muncul>
+                    <Muncul
+                        tunda={280}
+                        className="mt-8 flex items-center justify-center gap-5"
+                    >
+                        <Link
+                            href="/daftar"
+                            className="rounded-full bg-[var(--kartu)] px-6 py-3 font-semibold shadow-[0_8px_24px_-10px_rgb(29_27_25/0.5)] transition hover:-translate-y-0.5"
+                        >
+                            Daftarkan Siswa
+                        </Link>
+                        <Link
+                            href="/login"
+                            className="font-semibold underline decoration-1 underline-offset-4"
+                        >
+                            Masuk
+                        </Link>
+                    </Muncul>
+                </div>
+
+                <div className="relative mt-16 h-[21rem] sm:h-[25rem]">
+                    <KertasSobek
+                        benih={3}
+                        kasar={18}
+                        className="halftone bottom-0 left-0 h-40 w-[45%] bg-[var(--ungu)]"
+                    />
+                    <KertasSobek
+                        benih={11}
+                        kasar={10}
+                        className="bottom-0 left-[8%] h-56 w-[55%] bg-[var(--putih)]"
+                    />
+                    <KertasSobek
+                        benih={7}
+                        kasar={22}
+                        className="right-0 bottom-0 h-64 w-[30%] bg-[var(--arang)]"
+                    />
+                    <KertasSobek
+                        benih={19}
+                        kasar={8}
+                        className="bergaris right-0 bottom-0 h-48 w-[26%]"
+                    />
+
+                    <Muncul
+                        gaya="cetak"
+                        tunda={350}
+                        miring="0deg"
+                        className="absolute inset-x-3 bottom-0 mx-auto max-w-4xl sm:inset-x-10"
+                    >
+                        <JendelaAplikasi />
+                    </Muncul>
+                    <Muncul
+                        gaya="cetak"
+                        tunda={650}
+                        miring="-14deg"
+                        className="absolute bottom-10 left-[3%] hidden xl:block"
+                    >
+                        <KartuMiring />
+                    </Muncul>
+                </div>
             </div>
         </section>
     );
