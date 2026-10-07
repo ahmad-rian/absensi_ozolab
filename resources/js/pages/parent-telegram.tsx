@@ -1,12 +1,21 @@
-import { Head, usePage } from '@inertiajs/react';
-import { ArrowLeft, BadgeCheck, CheckCircle2, Loader2, Phone, School as SchoolIcon, Search, Send, Sparkles, User } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
+import {
+    ArrowLeft,
+    Check,
+    ChevronDown,
+    Loader2,
+    Search,
+    Send,
+    User,
+} from 'lucide-react';
+import type { FormEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import '../../css/depan.css';
+import BrandLogo from '@/components/brand-logo';
+import { FontDepan } from '@/components/depan/font-depan';
+import { Awan, KertasSobek } from '@/components/depan/kolase';
+import { Muncul } from '@/components/depan/muncul';
 import { SimpleCaptcha } from '@/components/simple-captcha';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 
 type School = { id: string; name: string; city: string | null };
@@ -19,6 +28,57 @@ type StudentResult = {
     school: { name: string } | null;
     parent_profile: { telegram_chat_id: string | null } | null;
 };
+
+const LANGKAH = [
+    'Pilih sekolah dan cari nama anak',
+    'Verifikasi nomor WhatsApp terdaftar',
+    'Tempel Chat ID Telegram',
+];
+
+const KOTAK =
+    'h-12 w-full rounded-xl border border-[var(--garis)] bg-[var(--dasar)] px-4 text-[0.95rem] text-[var(--tinta)] outline-none transition placeholder:text-[var(--tinta-3)] focus:border-[var(--biru)] focus:ring-2 focus:ring-[var(--biru)]/20 disabled:opacity-50';
+
+function Kolom({
+    label,
+    catatan,
+    children,
+}: {
+    label: string;
+    catatan?: string;
+    children: ReactNode;
+}) {
+    return (
+        <label className="grid gap-2">
+            <span className="text-sm font-semibold">{label}</span>
+            {children}
+            {catatan && (
+                <span className="text-xs text-[var(--tinta-3)]">{catatan}</span>
+            )}
+        </label>
+    );
+}
+
+/** Catatan cara mendapatkan Chat ID, sebagai kertas bergaris yang ditempel. */
+function CatatanChatId({ className = '' }: { className?: string }) {
+    return (
+        <div
+            className={`bergaris rounded-md p-5 text-sm leading-relaxed text-[#1d1b19] shadow-[0_18px_36px_-20px_rgb(29_27_25/0.6)] ${className}`}
+        >
+            <p className="serif text-xl">Cara mendapatkan Chat ID</p>
+            <ol className="mt-2 list-inside list-decimal space-y-1">
+                <li>
+                    Buka bot Telegram sekolah, tekan <b>Start</b>.
+                </li>
+                <li>
+                    Buka chat <b>@userinfobot</b>.
+                </li>
+                <li>
+                    Salin angka <b>Id</b>, tempel di formulir.
+                </li>
+            </ol>
+        </div>
+    );
+}
 
 export default function ParentTelegram({ schools }: { schools: School[] }) {
     const [schoolId, setSchoolId] = useState('');
@@ -34,40 +94,44 @@ export default function ParentTelegram({ schools }: { schools: School[] }) {
 
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState<{ name: string; classroom: string | null } | null>(null);
+    const [success, setSuccess] = useState<{
+        name: string;
+        classroom: string | null;
+    } | null>(null);
 
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const boxRef = useRef<HTMLDivElement>(null);
 
-    const csrfToken = typeof document !== 'undefined'
-        ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || ''
-        : '';
+    const csrfToken =
+        typeof document !== 'undefined'
+            ? document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+                  ?.content || ''
+            : '';
 
-    // Debounced student search via public API, scoped to the chosen school.
+    // Pencarian siswa lewat API publik, dibatasi sekolah yang dipilih.
+    // Hasil lama dibersihkan di handler input, bukan di sini: effect ini
+    // hanya menjadwalkan pencarian.
     useEffect(() => {
-        if (!schoolId) {
-            setResults([]);
-            setShowDropdown(false);
-            return;
-        }
-        if (selected && query === selected.full_name) {
-            return;
-        }
-        if (query.trim().length < 2) {
-            setResults([]);
-            setShowDropdown(false);
+        if (
+            !schoolId ||
+            query.trim().length < 2 ||
+            (selected && query === selected.full_name)
+        ) {
             return;
         }
 
         if (debounceRef.current) {
             clearTimeout(debounceRef.current);
         }
+
         debounceRef.current = setTimeout(async () => {
             setSearching(true);
+
             try {
-                const res = await fetch(`/api/students?school_id=${encodeURIComponent(schoolId)}&search=${encodeURIComponent(query.trim())}&per_page=8`, {
-                    headers: { Accept: 'application/json' },
-                });
+                const res = await fetch(
+                    `/api/students?school_id=${encodeURIComponent(schoolId)}&search=${encodeURIComponent(query.trim())}&per_page=8`,
+                    { headers: { Accept: 'application/json' } },
+                );
                 const json = await res.json();
                 setResults(json.data ?? []);
                 setShowDropdown(true);
@@ -85,14 +149,15 @@ export default function ParentTelegram({ schools }: { schools: School[] }) {
         };
     }, [query, selected, schoolId]);
 
-    // Close dropdown on outside click.
     useEffect(() => {
         function onClick(e: MouseEvent) {
             if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
                 setShowDropdown(false);
             }
         }
+
         document.addEventListener('mousedown', onClick);
+
         return () => document.removeEventListener('mousedown', onClick);
     }, []);
 
@@ -103,45 +168,54 @@ export default function ParentTelegram({ schools }: { schools: School[] }) {
         setError('');
     }
 
-    const handleSubmit = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selected) {
-            setError('Pilih nama siswa terlebih dahulu.');
-            return;
-        }
-        setSubmitting(true);
-        setError('');
+    const handleSubmit = useCallback(
+        async (e: FormEvent) => {
+            e.preventDefault();
 
-        try {
-            const res = await fetch('/daftar-telegram', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    Accept: 'application/json',
-                },
-                body: JSON.stringify({
-                    school_id: schoolId,
-                    student_id: selected.id,
-                    whatsapp_number: whatsappNumber,
-                    telegram_chat_id: chatId,
-                }),
-            });
-            const json = await res.json();
+            if (!selected) {
+                setError('Pilih nama siswa terlebih dahulu.');
 
-            if (res.ok && json.success) {
-                setSuccess({ name: json.student?.full_name ?? selected.full_name, classroom: json.student?.classroom ?? null });
-            } else if (res.status === 422 && json.errors) {
-                setError(Object.values(json.errors).flat()[0] as string);
-            } else {
-                setError(json.message || 'Gagal menyimpan. Coba lagi.');
+                return;
             }
-        } catch {
-            setError('Gagal menghubungi server.');
-        } finally {
-            setSubmitting(false);
-        }
-    }, [selected, whatsappNumber, chatId, csrfToken, schoolId]);
+
+            setSubmitting(true);
+            setError('');
+
+            try {
+                const res = await fetch('/daftar-telegram', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        Accept: 'application/json',
+                    },
+                    body: JSON.stringify({
+                        school_id: schoolId,
+                        student_id: selected.id,
+                        whatsapp_number: whatsappNumber,
+                        telegram_chat_id: chatId,
+                    }),
+                });
+                const json = await res.json();
+
+                if (res.ok && json.success) {
+                    setSuccess({
+                        name: json.student?.full_name ?? selected.full_name,
+                        classroom: json.student?.classroom ?? null,
+                    });
+                } else if (res.status === 422 && json.errors) {
+                    setError(Object.values(json.errors).flat()[0] as string);
+                } else {
+                    setError(json.message || 'Gagal menyimpan. Coba lagi.');
+                }
+            } catch {
+                setError('Gagal menghubungi server.');
+            } finally {
+                setSubmitting(false);
+            }
+        },
+        [selected, whatsappNumber, chatId, csrfToken, schoolId],
+    );
 
     function resetForm() {
         setSuccess(null);
@@ -154,256 +228,330 @@ export default function ParentTelegram({ schools }: { schools: School[] }) {
     }
 
     return (
-        <Shell>
-            <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-white/60 bg-white/80 shadow-2xl shadow-sky-900/10 backdrop-blur-xl lg:grid-cols-[1fr_1.1fr] dark:border-white/10 dark:bg-zinc-900/70">
-                {/* Brand / info panel */}
-                <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 p-10 text-white lg:flex">
-                    <div className="pointer-events-none absolute -top-16 -right-16 size-56 rounded-full bg-white/10 blur-2xl" />
-                    <div className="pointer-events-none absolute -bottom-20 -left-10 size-64 rounded-full bg-white/10 blur-3xl" />
+        <Kerangka>
+            <div className="relative mx-auto -mt-40 max-w-5xl px-3 sm:-mt-48 sm:px-6">
+                <CatatanChatId className="absolute top-24 -left-6 hidden w-64 -rotate-3 xl:block" />
 
-                    <div className="relative">
-                        <div className="flex size-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/30 backdrop-blur">
-                            <Send className="size-6" />
-                        </div>
-                        <h2 className="mt-6 text-3xl font-bold leading-tight">Notifikasi Kehadiran via Telegram</h2>
-                        <p className="mt-3 text-sm text-white/80">
-                            Pantau kehadiran putra/putri Anda secara real-time. Setiap kali mereka absen masuk atau pulang, pesan langsung dikirim ke Telegram Anda.
-                        </p>
-                    </div>
-
-                    <ul className="relative mt-8 space-y-4 text-sm">
-                        {[
-                            'Pilih sekolah & cari nama anak',
-                            'Verifikasi dengan nomor WhatsApp terdaftar',
-                            'Tempel Chat ID Telegram Anda',
-                        ].map((step, i) => (
-                            <li key={i} className="flex items-center gap-3">
-                                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold ring-1 ring-white/30">
-                                    {i + 1}
-                                </span>
-                                <span className="text-white/90">{step}</span>
-                            </li>
-                        ))}
-                    </ul>
-
-                    <div className="relative mt-8 flex items-center gap-2 text-xs text-white/70">
-                        <BadgeCheck className="size-4" />
-                        Aman — terverifikasi nomor WhatsApp orang tua.
-                    </div>
-                </aside>
-
-                {/* Form panel */}
-                <main className="p-6 sm:p-10">
-                    {success ? (
-                        <div className="flex h-full flex-col items-center justify-center py-8 text-center">
-                            <div className="flex size-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40">
-                                <CheckCircle2 className="size-11 text-green-600 dark:text-green-400" />
-                            </div>
-                            <h2 className="mt-6 text-2xl font-bold">Berhasil Terhubung!</h2>
-                            <p className="text-muted-foreground mt-2 max-w-sm text-sm">
-                                Telegram untuk <b className="text-foreground">{success.name}</b>
-                                {success.classroom && ` (${success.classroom})`} sudah aktif. Notifikasi kehadiran akan dikirim ke Telegram Anda.
-                            </p>
-                            <Button className="mt-8 w-full max-w-xs" variant="outline" onClick={resetForm}>
-                                Daftarkan Siswa Lain
-                            </Button>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="mb-7">
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
-                                    <Sparkles className="size-3" /> Gratis untuk orang tua
-                                </span>
-                                <h1 className="mt-3 text-2xl font-bold sm:text-3xl">Hubungkan Telegram</h1>
-                                <p className="text-muted-foreground mt-1.5 text-sm">
-                                    Cari nama putra/putri Anda, lalu masukkan Chat ID Telegram untuk menerima notifikasi kehadiran.
-                                </p>
-                            </div>
-
-                            {schools.length === 0 ? (
-                                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                                    Belum ada sekolah yang mengaktifkan notifikasi Telegram. Hubungi admin sekolah Anda.
+                <Muncul
+                    gaya="cetak"
+                    miring="0deg"
+                    className="relative mx-auto max-w-xl"
+                >
+                    <div className="rounded-[24px] border border-[var(--garis)] bg-[var(--kartu)] p-6 shadow-[0_30px_70px_-40px_rgb(29_27_25/0.55)] sm:p-9">
+                        {success ? (
+                            <div className="py-6 text-center">
+                                <div className="mx-auto grid size-16 place-items-center rounded-full bg-[var(--hijau-muda)] text-[var(--hijau)]">
+                                    <Check
+                                        className="size-8"
+                                        strokeWidth={2.2}
+                                    />
                                 </div>
-                            ) : (
-                                <form onSubmit={handleSubmit} className="space-y-5">
-                                    {/* School select */}
-                                    <div className="grid gap-2">
-                                        <Label className="flex items-center gap-1.5"><SchoolIcon className="size-3.5" /> Sekolah</Label>
-                                        <Select
+                                <h2 className="serif mt-5 text-4xl">
+                                    Telegram terhubung
+                                </h2>
+                                <p className="mx-auto mt-3 max-w-sm text-[var(--tinta-2)]">
+                                    Kabar kehadiran{' '}
+                                    <b className="text-[var(--tinta)]">
+                                        {success.name}
+                                    </b>
+                                    {success.classroom &&
+                                        ` (${success.classroom})`}{' '}
+                                    sekarang dikirim ke Telegram Anda.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={resetForm}
+                                    className="mt-8 rounded-full border border-[var(--garis)] px-6 py-3 font-semibold transition hover:border-[var(--tinta-3)]"
+                                >
+                                    Hubungkan anak lain
+                                </button>
+                            </div>
+                        ) : schools.length === 0 ? (
+                            <p className="rounded-2xl bg-[var(--kuning-muda)] p-6 text-center text-sm text-[var(--kuning)]">
+                                Belum ada sekolah yang mengaktifkan notifikasi
+                                Telegram. Hubungi admin sekolah Anda.
+                            </p>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <Kolom label="Sekolah">
+                                    <div className="relative">
+                                        <select
                                             value={schoolId}
-                                            onValueChange={(v) => {
-                                                setSchoolId(v);
+                                            onChange={(e) => {
+                                                setSchoolId(e.target.value);
                                                 setSelected(null);
                                                 setQuery('');
                                                 setResults([]);
                                             }}
+                                            className={`${KOTAK} appearance-none pr-10 ${schoolId ? '' : 'text-[var(--tinta-3)]'}`}
                                         >
-                                            <SelectTrigger className="h-11">
-                                                <SelectValue placeholder="Pilih sekolah..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {schools.map((s) => (
-                                                    <SelectItem key={s.id} value={s.id}>
-                                                        {s.name}{s.city ? ` — ${s.city}` : ''}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            <option value="" disabled>
+                                                Pilih sekolah
+                                            </option>
+                                            {schools.map((s) => (
+                                                <option
+                                                    key={s.id}
+                                                    value={s.id}
+                                                    className="text-[var(--tinta)]"
+                                                >
+                                                    {s.name}
+                                                    {s.city
+                                                        ? ` — ${s.city}`
+                                                        : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="pointer-events-none absolute top-1/2 right-4 size-4 -translate-y-1/2 text-[var(--tinta-3)]" />
                                     </div>
+                                </Kolom>
 
-                                    {/* Student search */}
-                                    <div className="grid gap-2" ref={boxRef}>
-                                        <Label className="flex items-center gap-1.5"><User className="size-3.5" /> Nama Siswa</Label>
-                                        <div className="relative">
-                                            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                                            <Input
-                                                value={query}
-                                                onChange={(e) => {
-                                                    setQuery(e.target.value);
-                                                    setSelected(null);
-                                                }}
-                                                onFocus={() => results.length > 0 && setShowDropdown(true)}
-                                                placeholder={schoolId ? 'Ketik nama siswa...' : 'Pilih sekolah dulu'}
-                                                className="h-11 pl-9"
-                                                autoComplete="off"
-                                                disabled={!schoolId}
-                                            />
-                                            {searching && <Loader2 className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin" />}
+                                <div className="grid gap-2" ref={boxRef}>
+                                    <span className="text-sm font-semibold">
+                                        Nama siswa
+                                    </span>
+                                    <div className="relative">
+                                        <Search className="absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--tinta-3)]" />
+                                        <input
+                                            aria-label="Nama siswa"
+                                            value={query}
+                                            onChange={(e) => {
+                                                setQuery(e.target.value);
+                                                setSelected(null);
 
-                                            {showDropdown && results.length > 0 && (
-                                                <div className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
-                                                    {results.map((s) => (
-                                                        <button
-                                                            key={s.id}
-                                                            type="button"
-                                                            onClick={() => pickStudent(s)}
-                                                            className="flex w-full items-start gap-3 border-b border-zinc-100 px-4 py-3 text-left transition last:border-0 hover:bg-sky-50 dark:border-zinc-700/50 dark:hover:bg-zinc-700/50"
-                                                        >
-                                                            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-300">
-                                                                <User className="size-4" />
+                                                if (
+                                                    e.target.value.trim()
+                                                        .length < 2
+                                                ) {
+                                                    setResults([]);
+                                                    setShowDropdown(false);
+                                                }
+                                            }}
+                                            onFocus={() =>
+                                                results.length > 0 &&
+                                                setShowDropdown(true)
+                                            }
+                                            placeholder={
+                                                schoolId
+                                                    ? 'Ketik nama siswa'
+                                                    : 'Pilih sekolah dulu'
+                                            }
+                                            className={`${KOTAK} pl-11`}
+                                            autoComplete="off"
+                                            disabled={!schoolId}
+                                        />
+                                        {searching && (
+                                            <Loader2 className="absolute top-1/2 right-4 size-4 -translate-y-1/2 animate-spin text-[var(--tinta-3)]" />
+                                        )}
+
+                                        {showDropdown && results.length > 0 && (
+                                            <div className="absolute z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-2xl border border-[var(--garis)] bg-[var(--kartu)] p-1.5 shadow-[0_24px_50px_-24px_rgb(29_27_25/0.5)]">
+                                                {results.map((s) => (
+                                                    <button
+                                                        key={s.id}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            pickStudent(s)
+                                                        }
+                                                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-[var(--dasar)]"
+                                                    >
+                                                        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--mint)] text-[#1d1b19]">
+                                                            <User className="size-4" />
+                                                        </span>
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="block truncate font-medium">
+                                                                {s.full_name}
                                                             </span>
-                                                            <div className="min-w-0">
-                                                                <p className="truncate font-medium">{s.full_name}</p>
-                                                                <p className="text-muted-foreground flex items-center gap-1 truncate text-xs">
-                                                                    <SchoolIcon className="size-3" />
-                                                                    {s.school?.name ?? '—'}
-                                                                    {s.classroom && ` · ${s.classroom.name}`}
-                                                                </p>
-                                                            </div>
-                                                            {s.parent_profile?.telegram_chat_id && (
-                                                                <span className="ml-auto shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900 dark:text-green-300">
-                                                                    sudah aktif
-                                                                </span>
-                                                            )}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {showDropdown && !searching && query.trim().length >= 2 && results.length === 0 && (
-                                                <div className="text-muted-foreground absolute z-20 mt-1 w-full rounded-xl border border-zinc-200 bg-white p-4 text-center text-sm shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
+                                                            <span className="block truncate text-xs text-[var(--tinta-3)]">
+                                                                {s.school
+                                                                    ?.name ??
+                                                                    '—'}
+                                                                {s.classroom &&
+                                                                    ` · ${s.classroom.name}`}
+                                                            </span>
+                                                        </span>
+                                                        {s.parent_profile
+                                                            ?.telegram_chat_id && (
+                                                            <span className="shrink-0 rounded-full bg-[var(--hijau-muda)] px-2 py-0.5 text-[0.65rem] font-semibold text-[var(--hijau)]">
+                                                                sudah aktif
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {showDropdown &&
+                                            !searching &&
+                                            query.trim().length >= 2 &&
+                                            results.length === 0 && (
+                                                <div className="absolute z-20 mt-2 w-full rounded-2xl border border-[var(--garis)] bg-[var(--kartu)] p-4 text-center text-sm text-[var(--tinta-3)]">
                                                     Siswa tidak ditemukan.
                                                 </div>
                                             )}
-                                        </div>
-                                        {selected && (
-                                            <p className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                                <CheckCircle2 className="size-3.5" /> Dipilih: <b>{selected.full_name}</b>
-                                                {selected.school && ` — ${selected.school.name}`}
-                                            </p>
-                                        )}
                                     </div>
-
-                                    {/* WhatsApp verification */}
-                                    <div className="grid gap-2">
-                                        <Label className="flex items-center gap-1.5"><Phone className="size-3.5" /> Nomor WhatsApp Orang Tua</Label>
-                                        <Input
-                                            value={whatsappNumber}
-                                            onChange={(e) => setWhatsappNumber(e.target.value)}
-                                            placeholder="08xxxxxxxxxx"
-                                            inputMode="tel"
-                                            className="h-11"
-                                        />
-                                        <p className="text-muted-foreground text-xs">
-                                            Untuk verifikasi. Harus sama dengan nomor yang terdaftar di sekolah.
+                                    {selected && (
+                                        <p className="flex items-center gap-1.5 text-xs text-[var(--hijau)]">
+                                            <Check className="size-3.5" />{' '}
+                                            {selected.full_name}
+                                            {selected.classroom &&
+                                                ` · ${selected.classroom.name}`}
                                         </p>
-                                    </div>
-
-                                    {/* Telegram chat id */}
-                                    <div className="grid gap-2">
-                                        <Label className="flex items-center gap-1.5"><Send className="size-3.5" /> Telegram Chat ID</Label>
-                                        <Input
-                                            value={chatId}
-                                            onChange={(e) => setChatId(e.target.value)}
-                                            placeholder="mis. 123456789"
-                                            inputMode="numeric"
-                                            className="h-11"
-                                        />
-                                        <div className="rounded-xl border border-sky-100 bg-sky-50 p-3 text-xs text-sky-800 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-200">
-                                            <p className="mb-1 font-semibold">Cara mendapatkan Chat ID:</p>
-                                            <ol className="list-inside list-decimal space-y-0.5">
-                                                <li>Cari & buka bot Telegram sekolah, tekan <b>Start</b>.</li>
-                                                <li>Buka chat <b>@userinfobot</b> di Telegram.</li>
-                                                <li>Salin angka <b>Id</b> yang muncul, tempel di sini.</li>
-                                            </ol>
-                                        </div>
-                                    </div>
-
-                                    {/* Captcha */}
-                                    <SimpleCaptcha onVerified={(token) => setCaptchaVerified(!!token)} />
-
-                                    {error && (
-                                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-                                            {error}
-                                        </div>
                                     )}
+                                </div>
 
-                                    <Button
-                                        type="submit"
-                                        disabled={submitting || !captchaVerified || !selected}
-                                        className="h-12 w-full bg-gradient-to-r from-sky-500 to-blue-600 text-base font-semibold text-white shadow-lg shadow-blue-500/25 hover:from-sky-600 hover:to-blue-700 disabled:opacity-50"
+                                <Kolom
+                                    label="Nomor WhatsApp orang tua"
+                                    catatan="Untuk verifikasi. Harus sama dengan nomor yang terdaftar di sekolah."
+                                >
+                                    <input
+                                        value={whatsappNumber}
+                                        onChange={(e) =>
+                                            setWhatsappNumber(e.target.value)
+                                        }
+                                        placeholder="08xxxxxxxxxx"
+                                        inputMode="tel"
+                                        className={KOTAK}
+                                    />
+                                </Kolom>
+
+                                <Kolom label="Chat ID Telegram">
+                                    <input
+                                        value={chatId}
+                                        onChange={(e) =>
+                                            setChatId(e.target.value)
+                                        }
+                                        placeholder="mis. 123456789"
+                                        inputMode="numeric"
+                                        className={KOTAK}
+                                    />
+                                </Kolom>
+                                <CatatanChatId className="-rotate-1 xl:hidden" />
+
+                                <SimpleCaptcha
+                                    onVerified={(token) =>
+                                        setCaptchaVerified(!!token)
+                                    }
+                                />
+
+                                {error && (
+                                    <p
+                                        role="alert"
+                                        className="rounded-xl bg-[var(--kuning-muda)] p-3 text-sm text-[var(--kuning)]"
                                     >
-                                        {submitting ? <Spinner /> : (<><Send className="mr-2 size-4" /> Hubungkan Telegram</>)}
-                                    </Button>
-                                </form>
-                            )}
-                        </>
-                    )}
-                </main>
+                                        {error}
+                                    </p>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={
+                                        submitting ||
+                                        !captchaVerified ||
+                                        !selected
+                                    }
+                                    className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--tinta)] font-semibold text-[var(--dasar)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    {submitting ? (
+                                        <Spinner />
+                                    ) : (
+                                        <>
+                                            <Send className="size-4" />{' '}
+                                            Hubungkan Telegram
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                </Muncul>
             </div>
-        </Shell>
+        </Kerangka>
     );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Kerangka({ children }: { children: ReactNode }) {
     const { name } = usePage().props as { name: string };
 
     return (
-        <>
-            <Head title="Hubungkan Telegram" />
-            <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-sky-50 via-white to-indigo-50 dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-900">
-                {/* Decorative blobs */}
-                <div className="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-sky-300/30 blur-3xl dark:bg-sky-900/20" />
-                <div className="pointer-events-none absolute -right-24 bottom-0 size-72 rounded-full bg-indigo-300/30 blur-3xl dark:bg-indigo-900/20" />
+        <div className="depan min-h-screen pb-20">
+            <FontDepan judul="Hubungkan Telegram" />
 
-                {/* Top nav */}
-                <header className="relative z-10 mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
+            <header className="fixed inset-x-0 top-3 z-50 flex justify-center px-3 sm:top-5">
+                <div className="flex h-14 w-full max-w-3xl items-center justify-between rounded-full border border-[var(--garis)] bg-[var(--kartu)]/90 pr-2 pl-4 shadow-[0_6px_18px_-12px_rgb(29_27_25/0.35)] backdrop-blur-md">
                     <a href="/" className="flex items-center gap-2.5 font-bold">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 shadow">
-                            <AppLogoIcon className="size-4.5 fill-current text-white" />
-                        </div>
-                        <span className="text-lg tracking-tight">{name}</span>
+                        <BrandLogo className="size-7 rounded-md" />
+                        <span className="tracking-tight">{name}</span>
                     </a>
-                    <Button variant="ghost" size="sm" asChild>
-                        <a href="/">
-                            <ArrowLeft className="mr-1.5 size-4" /> Beranda
-                        </a>
-                    </Button>
-                </header>
-
-                <div className="relative z-10 flex items-center justify-center px-4 pt-2 pb-16 sm:px-6">
-                    {children}
+                    <a
+                        href="/"
+                        className="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition hover:bg-[var(--dasar)]"
+                    >
+                        <ArrowLeft className="size-4" /> Beranda
+                    </a>
                 </div>
-            </div>
-        </>
+            </header>
+
+            <section className="px-2 pt-2 sm:px-3 sm:pt-3">
+                <div className="langit relative isolate overflow-hidden rounded-[28px] px-5 pt-32 pb-60 text-center sm:pt-36 sm:pb-72">
+                    <div className="halftone absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black,transparent_75%)] opacity-60" />
+                    <Awan className="top-24 -left-10 -z-10 h-24 w-64 max-sm:h-16 max-sm:w-40" />
+                    <Awan className="top-16 -right-12 -z-10 h-28 w-72 max-sm:hidden" />
+
+                    <Muncul
+                        as="h1"
+                        className="serif mx-auto max-w-2xl text-[clamp(2.4rem,5.6vw,4.4rem)] leading-[1.03]"
+                    >
+                        Kabar kehadiran anak, <em>langsung di Telegram</em>
+                    </Muncul>
+                    <Muncul
+                        as="p"
+                        tunda={150}
+                        className="mx-auto mt-5 max-w-lg leading-relaxed text-[var(--tinta-2)]"
+                    >
+                        Setiap kali anak Anda absen masuk atau pulang, pesannya
+                        dikirim ke Telegram. Gratis untuk orang tua.
+                    </Muncul>
+                    <Muncul
+                        as="ol"
+                        tunda={260}
+                        className="mx-auto mt-8 flex max-w-2xl flex-wrap justify-center gap-2"
+                    >
+                        {LANGKAH.map((l, i) => (
+                            <li
+                                key={l}
+                                className="flex items-center gap-2 rounded-full bg-[var(--kartu)]/80 py-1.5 pr-4 pl-1.5 text-sm backdrop-blur"
+                            >
+                                <span className="grid size-6 place-items-center rounded-full bg-[var(--tinta)] text-xs font-bold text-[var(--dasar)]">
+                                    {i + 1}
+                                </span>
+                                {l}
+                            </li>
+                        ))}
+                    </Muncul>
+
+                    <KertasSobek
+                        benih={83}
+                        kasar={18}
+                        className="halftone bottom-0 left-0 -z-10 h-36 w-[48%] bg-[var(--ungu)]"
+                    />
+                    <KertasSobek
+                        benih={89}
+                        kasar={22}
+                        className="right-0 bottom-0 -z-10 h-44 w-[30%] bg-[var(--arang)]"
+                    />
+                    <KertasSobek
+                        benih={97}
+                        kasar={10}
+                        className="bergaris right-0 bottom-0 -z-10 h-32 w-[26%]"
+                    />
+                    <KertasSobek
+                        benih={101}
+                        kasar={12}
+                        className="bottom-0 left-[20%] -z-10 h-24 w-[58%] bg-[var(--dasar)]"
+                    />
+                </div>
+            </section>
+
+            {children}
+        </div>
     );
 }

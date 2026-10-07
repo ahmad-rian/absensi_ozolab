@@ -24,7 +24,8 @@
     --mint: #a3d9b9;
     --arang: #161514;
     --putih: #ffffff;
-    --garis-tyas: rgb(255 255 255 / 0.6);
+    --garis-tyas: rgb(255 255 255 / 0.95);
+    --isi-tyas: rgb(255 255 255 / 0.28);
     --biru: #2f7fd0;
     --hijau: #237a4b;
     --hijau-muda: #e2f3e8;
@@ -55,7 +56,8 @@
     --mint: #4f8f6b;
     --arang: #050505;
     --putih: #2b2926;
-    --garis-tyas: rgb(255 255 255 / 0.14);
+    --garis-tyas: rgb(255 255 255 / 0.32);
+    --isi-tyas: rgb(255 255 255 / 0.05);
     --biru: #7db7f0;
     --hijau: #7fd6a2;
     --hijau-muda: #173324;

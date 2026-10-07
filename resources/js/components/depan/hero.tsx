@@ -126,7 +126,7 @@ export function Hero() {
                 <Awan className="top-14 -right-12 -z-10 h-28 w-72 max-sm:hidden" />
                 <p
                     aria-hidden="true"
-                    className="serif pointer-events-none absolute inset-x-0 top-[46%] -z-10 text-center text-[26vw] leading-none text-transparent select-none [-webkit-text-stroke:1.5px_var(--garis-tyas)]"
+                    className="serif pointer-events-none absolute inset-x-0 top-[46%] -z-10 text-center text-[26vw] leading-none text-[var(--isi-tyas)] select-none [-webkit-text-stroke:2.5px_var(--garis-tyas)] [text-shadow:0_10px_40px_rgb(47_127_208/0.18)]"
                 >
                     Tyas
                 </p>
