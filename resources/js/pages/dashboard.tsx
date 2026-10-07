@@ -3,6 +3,8 @@ import { AlertTriangle, GraduationCap, Percent, Users } from 'lucide-react';
 import { AttendanceStatusPie } from '@/components/dashboard/attendance-status-pie';
 import { AttendanceTrendChart } from '@/components/dashboard/attendance-trend-chart';
 import { ClassComparisonBar } from '@/components/dashboard/class-comparison-bar';
+import { FastestStudentsCard } from '@/components/dashboard/fastest-students-card';
+import type { KategoriCepat } from '@/components/dashboard/fastest-students-card';
 import { LatestCheckinsTable } from '@/components/dashboard/latest-checkins-table';
 import { LiveActivityFeed } from '@/components/dashboard/live-activity-feed';
 import { StatCard } from '@/components/dashboard/stat-card';
@@ -33,6 +35,7 @@ type DashboardProps = {
     weeklyPattern?: { data: WeeklyItem[]; insight: string };
     latestCheckins?: CheckinItem[];
     activityFeed?: ActivityItem[];
+    siswaTercepat?: KategoriCepat[];
 };
 
 const today = new Intl.DateTimeFormat('id-ID', {
@@ -50,6 +53,7 @@ export default function Dashboard({
     weeklyPattern,
     latestCheckins,
     activityFeed,
+    siswaTercepat,
 }: DashboardProps) {
     const { currentSchool } = usePage().props as { currentSchool?: { name: string } | null };
 
@@ -113,6 +117,9 @@ export default function Dashboard({
                     <ClassComparisonBar data={classComparison} />
                     <WeeklyAreaChart data={weeklyPattern} />
                 </div>
+
+                {/* Peringkat */}
+                <FastestStudentsCard data={siswaTercepat} />
 
                 {/* Activity Section */}
                 <div className="grid gap-6 lg:grid-cols-3">

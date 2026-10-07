@@ -7,7 +7,9 @@ use App\Enums\AttendanceType;
 use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\NotificationLog;
+use App\Models\School;
 use App\Models\Student;
+use App\Services\Dashboard\SiswaTercepat;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -31,6 +33,7 @@ class DashboardController extends Controller
             'latestCheckins' => Inertia::defer(fn () => $this->getLatestCheckins()),
             'activityFeed' => Inertia::defer(fn () => $this->getActivityFeed()),
             'notificationStats' => Inertia::defer(fn () => $this->getNotificationStats($today)),
+            'siswaTercepat' => Inertia::defer(fn () => $this->getSiswaTercepat(), 'peringkat'),
         ]);
     }
 
@@ -313,6 +316,18 @@ class DashboardController extends Controller
             'status' => $a->status->value,
             'initials' => $this->getInitials($a->student->full_name),
         ])->toArray();
+    }
+
+    /**
+     * Akun tanpa sekolah (super admin lintas sekolah) tidak punya peringkat.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function getSiswaTercepat(): array
+    {
+        $school = School::find(auth()->user()->school_id);
+
+        return $school ? app(SiswaTercepat::class)->untuk($school) : [];
     }
 
     /**

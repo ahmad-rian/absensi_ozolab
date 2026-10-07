@@ -5,6 +5,7 @@ import { Hero } from '@/components/depan/hero';
 import { Pengguna } from '@/components/depan/pengguna';
 import { Penutup } from '@/components/depan/penutup';
 import { Ragam } from '@/components/depan/ragam';
+import { SatuKartu } from '@/components/depan/satu-kartu';
 import { TanyaJawab } from '@/components/depan/tanya-jawab';
 import { Navbar } from '@/components/welcome/navbar';
 
@@ -17,6 +18,7 @@ export default function Welcome() {
             <main>
                 <Hero />
                 <Ragam />
+                <SatuKartu />
                 <Pengguna />
                 <Fitur />
                 <TanyaJawab />
