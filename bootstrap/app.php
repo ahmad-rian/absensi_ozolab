@@ -146,4 +146,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // PDF lembar pas foto hanya alat cetak — dibuang setelah seminggu supaya
         // tidak menumpuk di disk.
         $schedule->command('photo-sheets:prune')->dailyAt('02:30');
+
+        // Halaman dan ZIP album sekali unduh; dibuat ulang tiap kali diminta.
+        $schedule->command('albums:prune')->dailyAt('02:40');
     })->create();

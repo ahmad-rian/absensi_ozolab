@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Student;
 use App\Support\ChromeBinary;
+use App\Support\GambarCetak;
 use App\Support\StudentDriveNaming;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
@@ -75,7 +76,7 @@ class PhotoSheetGeneratorService
         // Awalannya dari StudentDriveNaming — lihat catatan di
         // CardGeneratorService soal `??` versus `?:`.
         $filename = sprintf(
-            'sheets/%s/%s%s.png',
+            'sheets/%s/%s%s.'.GambarCetak::EKSTENSI,
             $student->school_id,
             StudentDriveNaming::prefix($student),
             $template,
@@ -108,7 +109,7 @@ class PhotoSheetGeneratorService
 
         ChromeBinary::applyTo($browsershot);
 
-        $browsershot->save($outputPath);
+        GambarCetak::simpan($browsershot, $outputPath);
     }
 
     private function toBase64DataUri(?string $storagePath): ?string

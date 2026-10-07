@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
 use App\Services\PhotoSheetGeneratorService;
+use App\Support\GambarCetak;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -72,8 +73,8 @@ class GeneratePhotoSheetJob implements ShouldQueue
                     ?: $driveConfig->root_folder_id;
 
                 $driveFile = $folderSiswa
-                    ? $drive->replaceStudentOutput(Storage::disk('public')->path($path), $student, $folderId, basename($path), $log->drive_file_id, 'image/png')
-                    : $drive->uploadFile(Storage::disk('public')->path($path), basename($path), $folderId, 'image/png');
+                    ? $drive->replaceStudentOutput(Storage::disk('public')->path($path), $student, $folderId, basename($path), $log->drive_file_id, GambarCetak::mime($path))
+                    : $drive->uploadFile(Storage::disk('public')->path($path), basename($path), $folderId, GambarCetak::mime($path));
 
                 $driveUrl = $drive->makePublic($driveFile->getId());
 

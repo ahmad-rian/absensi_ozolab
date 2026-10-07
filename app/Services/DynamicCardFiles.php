@@ -7,6 +7,7 @@ use App\Models\CardFormSubmission;
 use App\Models\School;
 use App\Models\User;
 use App\Services\Student\StudentDrivePhotoLocator;
+use App\Support\GambarCetak;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -38,7 +39,7 @@ class DynamicCardFiles
                 $drive->ensureSubfolders();
                 $creator = User::find($participant->cardForm->created_by);
                 $config = School::with('driveConfig')->find($creator->school_id)->driveConfig;
-                $file = $drive->uploadFile(Storage::disk('public')->path($path), Str::slug($participant->cardForm->name).'-'.basename($path), $config->cards_folder_id ?: $config->root_folder_id, 'image/png');
+                $file = $drive->uploadFile(Storage::disk('public')->path($path), Str::slug($participant->cardForm->name).'-'.basename($path), $config->cards_folder_id ?: $config->root_folder_id, GambarCetak::mime($path));
                 $id = $file->getId();
 
                 return ['drive_file_id' => $id, 'drive_url' => $drive->makePublic($id)];
@@ -84,8 +85,10 @@ class DynamicCardFiles
             }
             $temporary = true;
         }
-        $headers = ['Content-Type' => 'image/png', 'Cache-Control' => 'private, no-store'];
-        $response = $download ? response()->download($path, 'kartu-'.$participant->id.'.png', $headers) : response()->file($path, $headers);
+        // Ekstensi dari kolom, bukan dari berkas: berkas sementara unduhan Drive tidak berekstensi.
+        $jenis = $participant->file_path ?: 'kartu.png';
+        $headers = ['Content-Type' => GambarCetak::mime($jenis), 'Cache-Control' => 'private, no-store'];
+        $response = $download ? response()->download($path, 'kartu-'.$participant->id.'.'.pathinfo($jenis, PATHINFO_EXTENSION), $headers) : response()->file($path, $headers);
 
         return $response->deleteFileAfterSend($temporary);
     }

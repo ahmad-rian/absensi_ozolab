@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Services\CardGeneratorService;
 use App\Services\GoogleDriveService;
 use App\Services\PhotoSheetGeneratorService;
+use App\Support\GambarCetak;
 use App\Support\StudentOutputCleanup;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -106,7 +107,7 @@ class GenerateRegistrationCardJob implements ShouldQueue
                 $folderId,
                 basename($storagePath),
                 $this->lastDriveFileId($log),
-                'image/png',
+                GambarCetak::mime($storagePath),
             );
 
             return ['id' => $driveFile->getId(), 'url' => $service->makePublic($driveFile->getId())];

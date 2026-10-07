@@ -6,6 +6,7 @@ use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Models\SchoolFrame;
 use App\Support\ChromeBinary;
+use App\Support\GambarCetak;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -28,7 +29,7 @@ class DynamicCardGenerator
         $isPortrait = ($config['orientation'] ?? 'landscape') === 'portrait';
         $html = $this->renderHtml($form, $submission);
 
-        $filename = sprintf('card-forms/%s/%s.png', $form->id, $submission->id.'-'.Str::ulid());
+        $filename = sprintf('card-forms/%s/%s.%s', $form->id, $submission->id.'-'.Str::ulid(), GambarCetak::EKSTENSI);
 
         $fullPath = Storage::disk('public')->path($filename);
         $dir = dirname($fullPath);
@@ -109,7 +110,7 @@ class DynamicCardGenerator
 
         ChromeBinary::applyTo($browsershot);
 
-        $browsershot->save($outputPath);
+        GambarCetak::simpan($browsershot, $outputPath);
     }
 
     private function toBase64DataUri(?string $storagePath): ?string

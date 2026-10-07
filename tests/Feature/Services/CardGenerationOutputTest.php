@@ -123,3 +123,38 @@ test('lembar 4R diunggah ke folder Drive siswa', function () {
     expect($result)->status->toBe('completed')
         ->drive_file_id->toBe('sheet-file')->drive_url->toBe('https://example.test/sheet');
 });
+
+test('lembar 4R JPEG diunggah sebagai image/jpeg dan menggantikan PNG lama di disk', function () {
+    SchoolDriveConfig::create([
+        'school_id' => $this->school->id,
+        'is_active' => true,
+        'cards_folder_id' => 'cards-folder',
+        'service_account_json' => '{}',
+    ]);
+    Storage::disk('public')->put('sheets/lama.png', 'png');
+    Storage::disk('public')->put('sheets/baru.jpg', 'jpg');
+    CardGenerationLog::create([
+        'school_id' => $this->school->id,
+        'student_id' => $this->student->id,
+        'type' => 'photo_sheet',
+        'status' => 'completed',
+        'file_path' => 'sheets/lama.png',
+        'generated_by' => 'admin',
+    ]);
+    $this->mock(PhotoSheetGeneratorService::class)
+        ->shouldReceive('generate')->once()->andReturn(['path' => 'sheets/baru.jpg']);
+
+    $drive = Mockery::mock(GoogleDriveService::class);
+    $this->app->bind(GoogleDriveService::class, fn () => $drive);
+    $drive->shouldReceive('ensureSubfolders')->once();
+    $drive->shouldReceive('resolveStudentFolder')->once()->andReturn('student-folder');
+    $drive->shouldReceive('replaceStudentOutput')->once()
+        ->withArgs(fn (string $path, Student $student, string $folder, string $name, ?string $id, string $mime) => $name === 'baru.jpg' && $mime === 'image/jpeg')
+        ->andReturn(new DriveFile(['id' => 'sheet-file']));
+    $drive->shouldReceive('makePublic')->once()->andReturn('https://example.test/sheet');
+
+    $result = app(CardGeneratorService::class)->runLog($this->sheetLog);
+
+    expect($result)->status->toBe('completed')->file_path->toBe('sheets/baru.jpg');
+    Storage::disk('public')->assertMissing('sheets/lama.png');
+});

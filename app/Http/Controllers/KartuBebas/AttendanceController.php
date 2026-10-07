@@ -144,7 +144,7 @@ class AttendanceController extends Controller
             if (! $disk->exists($participant->file_path)) {
                 return;
             }
-            $nama = (Str::slug($this->attendance->participantName($participant)) ?: 'peserta').'-'.substr($participant->id, -6).'.png';
+            $nama = (Str::slug($this->attendance->participantName($participant)) ?: 'peserta').'-'.substr($participant->id, -6).'.'.pathinfo($participant->file_path, PATHINFO_EXTENSION);
             $zip->addFile($disk->path($participant->file_path), $nama);
             $zip->setCompressionName($nama, ZipArchive::CM_STORE);
             $jumlah++;

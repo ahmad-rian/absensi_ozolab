@@ -898,7 +898,9 @@ class GoogleDriveService
 
         $mimeType = $mimeType ?: mime_content_type($localPath) ?: 'application/octet-stream';
 
-        $updated = $this->drive->files->update($sasaran['id'], new DriveFile, [
+        // mimeType ikut di metadata: kartu lama PNG yang ditimpa JPEG harus
+        // berganti jenis juga, bukan JPEG yang mengaku PNG.
+        $updated = $this->drive->files->update($sasaran['id'], new DriveFile(['mimeType' => $mimeType]), [
             'data' => file_get_contents($localPath),
             'mimeType' => $mimeType,
             'uploadType' => 'media',

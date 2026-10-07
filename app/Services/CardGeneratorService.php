@@ -8,6 +8,7 @@ use App\Models\SchoolCardLayout;
 use App\Models\SchoolFrame;
 use App\Models\Student;
 use App\Support\ChromeBinary;
+use App\Support\GambarCetak;
 use App\Support\StudentDriveNaming;
 use App\Support\StudentOutputCleanup;
 use Illuminate\Support\Facades\Log;
@@ -57,7 +58,7 @@ class CardGeneratorService
         // bernilai string kosong menghasilkan `{slug}--osis.png` di sebelah
         // `{slug}-{ulid}-foto.png` dan tidak ada jalur baca yang menduganya.
         $filename = sprintf(
-            'cards/%s/%s%s.png',
+            'cards/%s/%s%s.'.GambarCetak::EKSTENSI,
             $school->id,
             StudentDriveNaming::prefix($student),
             $layout->type,
@@ -156,7 +157,7 @@ class CardGeneratorService
 
         ChromeBinary::applyTo($browsershot);
 
-        $browsershot->save($outputPath);
+        GambarCetak::simpan($browsershot, $outputPath);
     }
 
     /**
@@ -195,8 +196,8 @@ class CardGeneratorService
             // dan tidak punya konsep "satu berkas per jenis per siswa", jadi di
             // sana penimpaan tetap berdasarkan nama.
             $driveFile = $log->student && $folderId !== $driveConfig->cards_folder_id
-                ? $service->replaceStudentOutput($fullPath, $log->student, $folderId, $fileName, $log->drive_file_id, 'image/png')
-                : $service->uploadFile($fullPath, $fileName, $folderId, 'image/png');
+                ? $service->replaceStudentOutput($fullPath, $log->student, $folderId, $fileName, $log->drive_file_id, GambarCetak::mime($filePath))
+                : $service->uploadFile($fullPath, $fileName, $folderId, GambarCetak::mime($filePath));
 
             $driveUrl = $service->makePublic($driveFile->getId());
 
