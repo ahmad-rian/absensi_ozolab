@@ -124,7 +124,7 @@ test('lembar 4R diunggah ke folder Drive siswa', function () {
         ->drive_file_id->toBe('sheet-file')->drive_url->toBe('https://example.test/sheet');
 });
 
-test('lembar 4R JPEG diunggah sebagai image/jpeg dan menggantikan PNG lama di disk', function () {
+test('lembar 4R JPEG diunggah sebagai image/jpeg, lalu salinan lokalnya dibuang', function () {
     SchoolDriveConfig::create([
         'school_id' => $this->school->id,
         'is_active' => true,
@@ -152,9 +152,12 @@ test('lembar 4R JPEG diunggah sebagai image/jpeg dan menggantikan PNG lama di di
         ->withArgs(fn (string $path, Student $student, string $folder, string $name, ?string $id, string $mime) => $name === 'baru.jpg' && $mime === 'image/jpeg')
         ->andReturn(new DriveFile(['id' => 'sheet-file']));
     $drive->shouldReceive('makePublic')->once()->andReturn('https://example.test/sheet');
+    $drive->shouldReceive('ukuranBerkas')->once()->with('sheet-file')->andReturn(strlen('jpg'));
 
     $result = app(CardGeneratorService::class)->runLog($this->sheetLog);
 
+    // Drive memegang salinan utuh, jadi disk server tidak menyimpan apa pun.
     expect($result)->status->toBe('completed')->file_path->toBe('sheets/baru.jpg');
     Storage::disk('public')->assertMissing('sheets/lama.png');
+    Storage::disk('public')->assertMissing('sheets/baru.jpg');
 });

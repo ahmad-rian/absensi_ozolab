@@ -61,7 +61,15 @@ test('GoogleDriveService memakai awalan yang sama', function () {
     $awalan = StudentDriveNaming::prefix($siswa);
 
     expect(GoogleDriveService::studentFilePrefix($siswa))->toBe($awalan)
-        ->and(GoogleDriveService::studentPhotoFileName($siswa))->toBe($awalan.'foto.png');
+        ->and(GoogleDriveService::studentPhotoFileName($siswa))->toBe($awalan.'foto.jpg');
+});
+
+test('foto lama berformat PNG tetap bernama .png di Drive, dan keduanya dicari', function () {
+    $siswa = Student::factory()->make(['full_name' => 'FULAN BIN FULAN', 'nis' => '17357', 'photo_path' => 'photos/students/s/x.png']);
+    $awalan = StudentDriveNaming::prefix($siswa);
+
+    expect(GoogleDriveService::studentPhotoFileName($siswa))->toBe($awalan.'foto.png')
+        ->and(GoogleDriveService::studentPhotoFileNames($siswa))->toBe([$awalan.'foto.jpg', $awalan.'foto.png']);
 });
 
 /**

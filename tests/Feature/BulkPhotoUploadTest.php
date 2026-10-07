@@ -40,7 +40,7 @@ test('super admin memasang foto siswa sekolah lain dan berhasil', function () {
 
     expect($siswa->photo_path)
         ->toStartWith('photos/students/'.$this->sasaran->id.'/')
-        ->toEndWith('.png')
+        ->toEndWith('.jpg')
         ->and(Storage::disk('public')->exists($siswa->photo_path))->toBeTrue();
 });
 

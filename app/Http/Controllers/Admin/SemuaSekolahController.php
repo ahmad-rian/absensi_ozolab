@@ -12,10 +12,10 @@ use App\Models\ParentProfile;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\Berkas\BerkasKeluaran;
 use App\Support\SchoolTime;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -309,7 +309,7 @@ class SemuaSekolahController extends Controller
                 'type' => $log->type,
                 'status' => $log->status,
                 'drive_url' => $log->drive_url,
-                'file_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
+                'file_url' => app(BerkasKeluaran::class)->url($log),
                 'created_at' => SchoolTime::display($log->created_at),
             ]);
     }

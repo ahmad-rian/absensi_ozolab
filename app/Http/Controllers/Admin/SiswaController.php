@@ -11,6 +11,7 @@ use App\Models\Classroom;
 use App\Models\ParentProfile;
 use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
+use App\Services\Berkas\BerkasKeluaran;
 use App\Services\PhotoSheetGeneratorService;
 use App\Services\Student\StudentDrivePhotoLocator;
 use App\Services\Student\StudentPhotoIntake;
@@ -78,7 +79,7 @@ class SiswaController extends Controller
             ->map(fn (CardGenerationLog $log) => [
                 'id' => $log->id,
                 'status' => $log->status,
-                'file_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
+                'file_url' => app(BerkasKeluaran::class)->url($log),
                 'drive_url' => $log->drive_url,
                 'created_at' => SchoolTime::display($log->created_at),
             ]);
@@ -250,7 +251,7 @@ class SiswaController extends Controller
                 'status' => $terbaru->status,
                 'error_message' => $terbaru->error_message,
                 'drive_url' => $sukses?->drive_url,
-                'file_url' => $sukses?->file_path ? Storage::disk('public')->url($sukses->file_path) : null,
+                'file_url' => app(BerkasKeluaran::class)->url($sukses),
                 'created_at' => $sukses ? SchoolTime::display($sukses->created_at) : null,
                 'updated_at' => SchoolTime::display($terbaru->updated_at),
             ];

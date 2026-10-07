@@ -13,6 +13,9 @@ class PhotoCropService
     // Minimum output dimensions for quality
     private const MIN_WIDTH = 480;
 
+    /** Kualitas foto siswa JPEG: tidak terbedakan dari PNG di kartu, 3–5× lebih kecil. */
+    public const JPEG_QUALITY = 95;
+
     private const MIN_HEIGHT = 630;
 
     // ---- Framing constants (calibrated to reference photo) ----
@@ -37,7 +40,7 @@ class PhotoCropService
     private const FG_CHROMA_THRESHOLD = 18.0;
 
     /**
-     * Process a raw photo: fix orientation, smart crop for ID card, save as PNG.
+     * Process a raw photo: fix orientation, smart crop for ID card, save as JPEG (.jpg path) or PNG.
      *
      * @param  string  $inputPath  Full path to input image
      * @param  string  $storagePath  Relative path for storage
@@ -96,19 +99,23 @@ class PhotoCropService
             $image = $upscaled;
         }
 
-        // Step 4: Save as PNG
+        // Step 4: Save
         $fullPath = Storage::disk('public')->path($storagePath);
         $dir = dirname($fullPath);
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        $written = imagepng($image, $fullPath, $quality);
+        // Jalur .jpg (foto siswa sejak Okt 2026) disimpan JPEG berkualitas
+        // tinggi; jalur .png lama (kartu peserta, studio) tetap PNG.
+        $written = preg_match('/\.jpe?g$/i', $storagePath)
+            ? imagejpeg($image, $fullPath, self::JPEG_QUALITY)
+            : imagepng($image, $fullPath, $quality);
 
         if (! $written || ! file_exists($fullPath)) {
             imagedestroy($image);
 
-            throw new \RuntimeException('Failed to write PNG image to: '.$storagePath);
+            throw new \RuntimeException('Failed to write image to: '.$storagePath);
         }
 
         // Thumbnail ditulis dari gambar yang MASIH di memori, bukan dengan

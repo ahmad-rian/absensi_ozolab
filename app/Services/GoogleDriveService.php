@@ -549,6 +549,17 @@ class GoogleDriveService
     }
 
     /**
+     * Ukuran berkas di Drive dalam byte, atau null kalau tidak diketahui.
+     * Dipakai untuk memastikan unggahan utuh sebelum salinan lokal dibuang.
+     */
+    public function ukuranBerkas(string $fileId): ?int
+    {
+        $berkas = $this->drive->files->get($fileId, ['fields' => 'size', 'supportsAllDrives' => true]);
+
+        return $berkas->getSize() !== null ? (int) $berkas->getSize() : null;
+    }
+
+    /**
      * Download a file from Drive to a local path.
      */
     public function downloadFile(string $fileId, string $outputPath): void
@@ -1357,7 +1368,22 @@ class GoogleDriveService
      */
     public static function studentPhotoFileName(Student $student): string
     {
-        return self::studentFilePrefix($student).'foto.png';
+        // Ekstensi mengikuti foto lokalnya: foto sejak Okt 2026 JPEG, yang lama PNG.
+        $ekstensi = preg_match('/\.png$/i', (string) $student->photo_path) ? 'png' : 'jpg';
+
+        return self::studentFilePrefix($student).'foto.'.$ekstensi;
+    }
+
+    /**
+     * Semua nama yang mungkin dipakai foto siswa di Drive, terbaru dulu.
+     *
+     * @return list<string>
+     */
+    public static function studentPhotoFileNames(Student $student): array
+    {
+        $awalan = self::studentFilePrefix($student);
+
+        return [$awalan.'foto.jpg', $awalan.'foto.png'];
     }
 
     /**

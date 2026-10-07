@@ -337,7 +337,7 @@ class MergeStudentDriveFoldersCommand extends Command
             if (! $dryRun) {
                 $drive->renameFile($berkas['id'], $namaBaru);
 
-                if (str_ends_with($namaBaru, '-foto.png')) {
+                if (preg_match('/-foto\.(png|jpe?g)$/i', $namaBaru)) {
                     $student->forceFill(['photo_drive_file_id' => $berkas['id']])->saveQuietly();
                 }
             }

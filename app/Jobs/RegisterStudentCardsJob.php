@@ -8,6 +8,7 @@ use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
 use App\Services\PhotoCropService;
+use App\Support\GambarCetak;
 use App\Support\StudentPhotoStorage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -338,7 +339,7 @@ class RegisterStudentCardsJob implements ShouldQueue
                 $folderId,
                 $fileName ?: basename($storagePath),
                 $student->photo_drive_file_id,
-                'image/png',
+                GambarCetak::mime($storagePath),
             );
 
             return ['id' => $driveFile->getId(), 'url' => $service->makePublic($driveFile->getId())];

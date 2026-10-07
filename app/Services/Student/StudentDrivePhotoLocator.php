@@ -181,7 +181,7 @@ class StudentDrivePhotoLocator
      */
     private function matchInFolder(GoogleDriveService $drive, string $folderId, Student $student): ?array
     {
-        foreach (array_filter([$student->photo_drive_filename, self::expectedFileName($student)]) as $name) {
+        foreach (array_unique(array_filter([$student->photo_drive_filename, ...GoogleDriveService::studentPhotoFileNames($student)])) as $name) {
             $exact = $drive->findFileByName((string) $name, $folderId);
 
             if ($exact) {

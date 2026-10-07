@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\StudioTokenController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
+use App\Http\Controllers\BerkasKeluaranController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KartuBebas\AttendanceController as CardAttendanceController;
 use App\Http\Controllers\KartuBebas\DashboardController as KartuBebasDashboardController;
@@ -163,6 +164,9 @@ Route::get('quick-regis', [StudentRegistrationController::class, 'quick'])->name
 Route::post('quick-regis', [StudentRegistrationController::class, 'storeQuick'])->middleware('throttle:10,1')->name('student.register.quick.store');
 
 Route::get('daftar-telegram', [ParentTelegramController::class, 'index'])->name('parent.telegram');
+
+// Kartu & lembar pas foto (disk atau Google Drive) lewat URL bertanda tangan.
+Route::get('berkas/{log}', BerkasKeluaranController::class)->middleware(['signed', 'throttle:120,1'])->name('berkas-keluaran');
 Route::post('daftar-telegram', [ParentTelegramController::class, 'store'])->middleware('throttle:10,1')->name('parent.telegram.store');
 
 // Public dynamic card form (encrypted link)

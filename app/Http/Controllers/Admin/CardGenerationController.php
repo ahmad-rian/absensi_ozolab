@@ -7,6 +7,7 @@ use App\Jobs\GenerateStudentCardJob;
 use App\Models\CardGenerationLog;
 use App\Models\SchoolCardLayout;
 use App\Models\Student;
+use App\Services\Berkas\BerkasKeluaran;
 use App\Services\CardGeneratorService;
 use App\Support\SchoolTime;
 use Carbon\CarbonImmutable;
@@ -47,7 +48,7 @@ class CardGenerationController extends Controller
                 'student_nis' => $log->student?->nis ?? '-',
                 'layout_name' => $log->cardLayout?->name ?? '-',
                 'status' => $log->status,
-                'file_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
+                'file_url' => app(BerkasKeluaran::class)->url($log),
                 'drive_url' => $log->drive_url,
                 'generated_by' => $log->generated_by,
                 'error_message' => $log->error_message,

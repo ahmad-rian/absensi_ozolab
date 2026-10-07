@@ -6,6 +6,7 @@ use App\Models\CardGenerationLog;
 use App\Models\School;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
+use App\Support\GambarCetak;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -94,7 +95,7 @@ class SyncStudentPhotoToDriveJob implements ShouldQueue
                 $folderId,
                 GoogleDriveService::studentPhotoFileName($student),
                 $student->photo_drive_file_id,
-                'image/png',
+                GambarCetak::mime($student->photo_path),
             );
 
             $student->forceFill([

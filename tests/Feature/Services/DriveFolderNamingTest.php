@@ -51,7 +51,7 @@ test('foto siswa di Drive memakai pola nama yang sama dengan kartunya', function
         'full_name' => 'Harlan Ferguson',
     ]);
 
-    expect(GoogleDriveService::studentPhotoFileName($student))->toBe('harlan-ferguson-0834314-foto.png');
+    expect(GoogleDriveService::studentPhotoFileName($student))->toBe('harlan-ferguson-0834314-foto.jpg');
 });
 
 test('nama foto di Drive jatuh ke ULID saat siswa belum punya NIS', function () {
@@ -62,7 +62,7 @@ test('nama foto di Drive jatuh ke ULID saat siswa belum punya NIS', function () 
         'full_name' => "Ana O'Brien",
     ]);
 
-    expect(GoogleDriveService::studentPhotoFileName($student))->toBe('ana-obrien-'.$student->id.'-foto.png');
+    expect(GoogleDriveService::studentPhotoFileName($student))->toBe('ana-obrien-'.$student->id.'-foto.jpg');
 });
 
 test('siswa tanpa kelas dan tanpa NIS tetap dapat nama folder yang unik', function () {

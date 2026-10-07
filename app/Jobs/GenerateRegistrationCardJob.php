@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\CardGenerationLog;
 use App\Models\School;
+use App\Services\Berkas\BerkasKeluaran;
 use App\Services\CardGeneratorService;
 use App\Services\GoogleDriveService;
 use App\Services\PhotoSheetGeneratorService;
@@ -83,6 +84,10 @@ class GenerateRegistrationCardJob implements ShouldQueue
             // Nama berkas ikut nama dan NIS siswa, jadi membetulkan salah satunya
             // memindahkan keluaran ke nama baru dan meninggalkan PNG lama yatim.
             StudentOutputCleanup::buangKeluaranLokalLama($log, $path);
+
+            if ($unggah && $school?->driveConfig) {
+                app(BerkasKeluaran::class)->buangLokal($log->fresh(), GoogleDriveService::forSchool($school->driveConfig));
+            }
         } catch (\Throwable $e) {
             $log->update(['status' => 'failed', 'error_message' => Str::limit($e->getMessage(), 500)]);
         }

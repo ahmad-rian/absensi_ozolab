@@ -38,7 +38,9 @@ class StudentPhotoStorage
      */
     public static function path(string $schoolId, Student $student): string
     {
-        return sprintf('photos/students/%s/%s-%s.png', $schoolId, $student->id, Str::random(16));
+        // JPEG sejak Okt 2026: PNG untuk foto 3–5× lebih besar tanpa bedanya
+        // terlihat di kartu. Foto lama tetap .png dan tetap terbaca.
+        return sprintf('photos/students/%s/%s-%s.jpg', $schoolId, $student->id, Str::random(16));
     }
 
     /**
@@ -54,7 +56,7 @@ class StudentPhotoStorage
      */
     public static function thumbPath(string $photoPath): string
     {
-        return preg_replace('/\.png$/i', '', $photoPath).'-kecil.jpg';
+        return preg_replace('/\.(png|jpe?g)$/i', '', $photoPath).'-kecil.jpg';
     }
 
     /**

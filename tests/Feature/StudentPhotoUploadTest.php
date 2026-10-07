@@ -6,6 +6,7 @@ use App\Jobs\SyncStudentPhotoToDriveJob;
 use App\Models\CardGenerationLog;
 use App\Models\SchoolDriveConfig;
 use App\Models\Student;
+use App\Support\StudentPhotoStorage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -36,9 +37,13 @@ test('foto terunggah tersimpan dan tercatat di baris siswa', function () {
     $siswa = $this->siswa->fresh();
 
     expect($siswa->photo_path)->toStartWith('photos/students/'.$this->admin->school_id.'/')
-        ->and($siswa->photo_path)->toEndWith('.png');
+        ->and($siswa->photo_path)->toEndWith('.jpg');
 
     Storage::disk('public')->assertExists($siswa->photo_path);
+    // Isinya benar-benar JPEG, bukan PNG bernama .jpg, dan thumbnail gerbangnya ikut jadi.
+    expect(getimagesize(Storage::disk('public')->path($siswa->photo_path))[2])->toBe(IMAGETYPE_JPEG);
+    Storage::disk('public')->assertExists(StudentPhotoStorage::thumbPath($siswa->photo_path));
+    expect(StudentPhotoStorage::thumbPath($siswa->photo_path))->toEndWith('-kecil.jpg')->not->toContain('.jpg-kecil');
 });
 
 /**

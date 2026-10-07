@@ -7,6 +7,7 @@ use App\Enums\SchoolFeature;
 use App\Http\Controllers\Controller;
 use App\Models\CardGenerationLog;
 use App\Models\Student;
+use App\Services\Berkas\BerkasKeluaran;
 use App\Services\Student\StudentReportBuilder;
 use App\Services\Student\StudentStatsBuilder;
 use App\Support\SchoolFeatures;
@@ -110,7 +111,7 @@ class PortalController extends Controller
             'cards' => $cards->map(fn (CardGenerationLog $card): array => [
                 'id' => $card->id,
                 'name' => $card->cardLayout?->name ?? 'Kartu OSIS',
-                'url' => $card->file_path && Storage::disk('public')->exists($card->file_path)
+                'url' => $card->file_path || $card->drive_file_id
                     ? route('orangtua.download', ['asset' => $card->id, 'anak' => $card->student_id])
                     : null,
                 'drive_url' => $card->drive_url,
@@ -125,14 +126,19 @@ class PortalController extends Controller
 
         // Kartu dicari DI DALAM lingkup siswanya, jadi id kartu milik anak lain
         // tidak bisa ditukar lewat URL.
-        $path = $asset === 'foto'
-            ? $student->photo_path
-            : CardGenerationLog::where('student_id', $student->id)
+        if ($asset !== 'foto') {
+            // Kartu bisa sudah hanya di Drive; BerkasKeluaran membaca disk
+            // atau Drive. Dicari DI DALAM lingkup siswanya, jadi id kartu
+            // milik anak lain tidak bisa ditukar lewat URL.
+            $kartu = CardGenerationLog::where('student_id', $student->id)
                 ->where('status', 'completed')
                 ->where('type', 'card')
-                ->findOrFail($asset)
-                ->file_path;
+                ->findOrFail($asset);
 
+            return app(BerkasKeluaran::class)->respons($kartu, true);
+        }
+
+        $path = $student->photo_path;
         abort_unless($path && Storage::disk('public')->exists($path), 404);
 
         return Storage::disk('public')->download($path);

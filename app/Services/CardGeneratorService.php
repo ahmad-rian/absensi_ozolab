@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Models\SchoolFrame;
 use App\Models\Student;
+use App\Services\Berkas\BerkasKeluaran;
 use App\Support\ChromeBinary;
 use App\Support\GambarCetak;
 use App\Support\StudentDriveNaming;
@@ -205,6 +206,9 @@ class CardGeneratorService
                 'drive_file_id' => $driveFile->getId(),
                 'drive_url' => $driveUrl,
             ]);
+
+            // Drive tempat simpannya; disk server hanya persinggahan.
+            app(BerkasKeluaran::class)->buangLokal($log, $service);
         } catch (\Throwable $e) {
             // Don't fail the whole generation if Drive upload fails
             Log::warning('Drive upload failed for card', [

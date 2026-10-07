@@ -14,6 +14,7 @@ use App\Models\Student;
 use App\Rules\SandiUmum;
 use App\Rules\SchoolFeatureEnabled;
 use App\Services\Attendance\QrTokenGenerator;
+use App\Services\Berkas\BerkasKeluaran;
 use App\Services\GoogleDriveService;
 use App\Services\ParentProfileService;
 use App\Services\PhotoCropService;
@@ -465,8 +466,8 @@ class StudentRegistrationController extends Controller
                 'type' => $log->type,
                 'name' => $log->type === 'card' ? ($log->cardLayout?->name ?? 'Kartu') : ($labels[$log->type] ?? $log->type),
                 'status' => $log->status,
-                'url' => $log->drive_url ?: ($log->file_path ? Storage::disk('public')->url($log->file_path) : null),
-                'thumb_url' => $log->file_path ? Storage::disk('public')->url($log->file_path) : null,
+                'url' => $log->drive_url ?: $this->urlBerkas($log),
+                'thumb_url' => $this->urlBerkas($log),
             ])
             ->values();
 
@@ -629,5 +630,11 @@ class StudentRegistrationController extends Controller
 
             return response()->json(['found' => false, 'message' => 'Foto tidak dapat diambil.']);
         }
+    }
+
+    /** Kartu dan lembar pas foto bisa sudah hanya di Drive; foto tetap di disk. */
+    private function urlBerkas(CardGenerationLog $log): ?string
+    {
+        return app(BerkasKeluaran::class)->url($log);
     }
 }
