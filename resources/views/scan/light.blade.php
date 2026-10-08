@@ -29,12 +29,11 @@
     <link rel="icon" href="data:,">
     @php
         // Dipakai gerbang sekolah ($school) dan scanner peserta haji/umrah
-        // (judul/aktif/petunjuk/mode diisi langsung). Satu halaman, satu perilaku.
+        // (judul/aktif/petunjuk diisi langsung). Satu halaman, satu perilaku.
         $judul = $judul ?? $school->name;
         $aktif = $aktif ?? $school->is_active;
         $pesanMati = $pesanMati ?? 'Halaman absensi sekolah ini sedang tidak aktif.';
         $petunjuk = $petunjuk ?? 'Tempelkan kartu atau tembak QR Code siswa';
-        $mode = $mode ?? null;
     @endphp
     <title>Absensi {{ $judul }}</title>
     <style>
@@ -407,21 +406,6 @@
             sana. Tanpa ambang ini nama sekolah membungkus lalu menabrak jam,
             dan jamnya terpotong di tepi kanan.
         */
-        /* Mode scan peserta. Yang aktif terang di layar gelap, supaya dari
-           seberang lorong pun terlihat sedang mencatat MASUK atau PULANG. */
-        .mode { display: flex; gap: 8px; margin-left: auto; margin-right: 16px; }
-        .mode a {
-            padding: 10px 20px; border-radius: 10px; border: 2px solid #334155;
-            color: #94a3b8; font-weight: 800; letter-spacing: 1px; text-decoration: none;
-        }
-        .mode a.aktif { background: #f8fafc; border-color: #f8fafc; color: #0f172a; }
-
-        @media (max-width: 768px) {
-            .bar { flex-wrap: wrap; }
-            .mode { order: 3; width: 100%; margin: 10px 0 0; }
-            .mode a { flex: 1; text-align: center; }
-        }
-
         @media (max-width: 768px) {
             body { padding: 12px; }
 
@@ -561,14 +545,6 @@
                 <b>{{ $judul }}</b>
                 <span>ABSENSI DIGITAL</span>
             </div>
-            @if ($mode)
-                {{-- Tautan biasa, bukan tombol JS: tiap mode punya alamat sendiri
-                     yang bisa di-bookmark di box TV. --}}
-                <div class="mode">
-                    <a href="{{ $mode['masuk'] }}" class="{{ $mode['aktif'] === 'masuk' ? 'aktif' : '' }}">MASUK</a>
-                    <a href="{{ $mode['pulang'] }}" class="{{ $mode['aktif'] === 'pulang' ? 'aktif' : '' }}">PULANG</a>
-                </div>
-            @endif
             <div class="clock" id="clock">--.--<span class="dtk">.--</span></div>
         </div>
 

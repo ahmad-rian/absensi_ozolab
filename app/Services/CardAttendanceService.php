@@ -6,12 +6,23 @@ use App\Models\CardAttendance;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Support\SchoolTime;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CardAttendanceService
 {
     public const QR_SOURCE = '__attendance';
+
+    /** Mode satu-link: scan pertama masuk, scan berikutnya pulang. */
+    public const MODE_OTOMATIS = 'otomatis';
+
+    /**
+     * Jarak minimal sejak scan masuk sebelum scan berikutnya dianggap pulang.
+     * Tanpa jeda ini, kartu yang tidak sengaja ditembak dua kali di antrean
+     * langsung tercatat pulang.
+     */
+    public const JEDA_PULANG_MENIT = 30;
 
     public function qrToken(CardFormSubmission $participant): string
     {
@@ -33,7 +44,7 @@ class CardAttendanceService
         return $participant->id;
     }
 
-    /** @return array{attendance: CardAttendance, participant: CardFormSubmission, duplicate: bool} */
+    /** @return array{attendance: CardAttendance, participant: CardFormSubmission, duplicate: bool, mode: string} */
     public function scan(CardForm $form, string $token, string $mode): array
     {
         abort_unless($form->is_active, 403, 'Layout ini sedang dinonaktifkan.');
@@ -51,6 +62,9 @@ class CardAttendanceService
             if ($record->exists && $record->status !== 'hadir') {
                 throw ValidationException::withMessages(['token' => 'Status peserta sudah dicatat admin. Minta admin memperbaikinya terlebih dahulu.']);
             }
+            if ($mode === self::MODE_OTOMATIS) {
+                $mode = $this->modeOtomatis($record);
+            }
             $column = $mode === 'pulang' ? 'check_out' : 'check_in';
             if ($mode === 'pulang' && ! $record->check_in) {
                 throw ValidationException::withMessages(['token' => 'Peserta belum scan masuk hari ini. Pilih mode Masuk terlebih dahulu.']);
@@ -62,8 +76,23 @@ class CardAttendanceService
                 $record->save();
             }
 
-            return ['attendance' => $record, 'participant' => $participant, 'duplicate' => $duplicate];
+            return ['attendance' => $record, 'participant' => $participant, 'duplicate' => $duplicate, 'mode' => $mode];
         }, 3);
+    }
+
+    /**
+     * Masuk kalau belum ada scan masuk hari ini; pulang kalau sudah dan
+     * jedanya cukup. Di dalam jeda, scan dianggap pengulangan scan masuk.
+     */
+    private function modeOtomatis(CardAttendance $record): string
+    {
+        if (! $record->check_in || $record->check_out) {
+            return $record->check_out ? 'pulang' : 'masuk';
+        }
+
+        $masuk = Carbon::parse(SchoolTime::todayString().' '.$record->check_in, SchoolTime::now()->getTimezone());
+
+        return $masuk->diffInMinutes(SchoolTime::now()) >= self::JEDA_PULANG_MENIT ? 'pulang' : 'masuk';
     }
 
     /**

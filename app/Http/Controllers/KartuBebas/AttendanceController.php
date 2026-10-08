@@ -180,13 +180,13 @@ class AttendanceController extends Controller
     /**
      * Halaman scan ringan peserta di `/p/{kode}` — Blade polos yang sama
      * dengan gerbang sekolah, untuk box Android TV yang tidak sanggup React.
-     * Mode masuk/pulang lewat `?mode=pulang`, jadi tiap mode bisa di-bookmark.
+     * Satu link untuk datang dan pulang: layanan yang memutuskan modenya
+     * (lihat CardAttendanceService::MODE_OTOMATIS).
      */
-    public function ringan(Request $request, string $kode): View
+    public function ringan(string $kode): View
     {
         $form = PesertaShortLink::resolve($kode);
         abort_if($form === null, 404);
-        $mode = $request->query('mode') === 'pulang' ? 'pulang' : 'masuk';
 
         return view('scan.light', [
             'judul' => $form->name,
@@ -194,14 +194,13 @@ class AttendanceController extends Controller
             'pesanMati' => 'Layout ini sedang dinonaktifkan.',
             'featureEnabled' => true,
             'logoUrl' => null,
-            'petunjuk' => 'Tempelkan kartu atau tembak QR Code peserta',
-            'scanUrl' => route('public.card-scanner.short.scan', ['kode' => $kode, 'mode' => $mode]),
-            'mode' => ['aktif' => $mode, 'masuk' => route('public.card-scanner.short', $kode), 'pulang' => route('public.card-scanner.short', ['kode' => $kode, 'mode' => 'pulang'])],
+            'petunjuk' => 'Tempelkan kartu atau tembak QR Code peserta — scan pertama masuk, berikutnya pulang',
+            'scanUrl' => route('public.card-scanner.short.scan', $kode),
             'jendelaSholat' => [],
         ]);
     }
 
-    public function scanRingan(Request $request, string $kode, string $mode): JsonResponse
+    public function scanRingan(Request $request, string $kode): JsonResponse
     {
         $form = PesertaShortLink::resolve($kode);
 
@@ -209,7 +208,7 @@ class AttendanceController extends Controller
             return response()->json(['success' => false, 'message' => 'Halaman scan peserta tidak dikenali atau sedang nonaktif.', 'student' => null], 404);
         }
 
-        return $this->rekamScan($request, $form, $mode);
+        return $this->rekamScan($request, $form, CardAttendanceService::MODE_OTOMATIS);
     }
 
     private function rekamScan(Request $request, CardForm $form, string $mode): JsonResponse
@@ -222,6 +221,8 @@ class AttendanceController extends Controller
         }
         $participant = $result['participant'];
         $record = $result['attendance'];
+        // Mode yang benar-benar dipakai: link ringan menyerahkannya ke layanan.
+        $mode = $result['mode'];
         $label = $mode === 'pulang' ? 'Pulang' : 'Masuk';
 
         return response()->json([

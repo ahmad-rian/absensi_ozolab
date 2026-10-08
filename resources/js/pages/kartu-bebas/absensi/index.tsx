@@ -348,9 +348,9 @@ export default function CardAttendanceIndex({
                                 {selected.light_url}
                             </a>
                             <p className="mt-1 text-xs text-muted-foreground">
-                                Untuk scan pulang, tambahkan{' '}
-                                <code>?mode=pulang</code> atau tekan PULANG di
-                                halamannya.
+                                Satu link untuk datang dan pulang: scan pertama
+                                hari itu tercatat masuk, scan berikutnya
+                                (minimal 30 menit kemudian) tercatat pulang.
                             </p>
                         </div>
                         {!selected.is_active && (

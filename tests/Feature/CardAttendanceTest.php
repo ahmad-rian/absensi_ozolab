@@ -253,27 +253,39 @@ test('unduh semua kartu tanpa kartu siap kembali dengan pesan', function () {
         ->assertSessionHas('inertia.flash_data.toast.message', 'Belum ada kartu yang selesai dibuat untuk layout ini.');
 });
 
-test('halaman ringan peserta lewat alamat pendek, tanpa token penuh di HTML', function () {
+test('halaman ringan peserta lewat alamat pendek, satu link, tanpa token penuh di HTML', function () {
     $kode = substr($this->form->scanner_token, 0, 8);
 
-    $html = str_replace('\\/', '/', $this->get('/p/'.$kode)->assertOk()->assertSee('Haji A')->assertSee('peserta')->getContent());
+    $html = str_replace('\\/', '/', $this->get('/p/'.$kode)->assertOk()->assertSee('Haji A')->assertSee('scan pertama masuk')->getContent());
     expect($html)->not->toContain($this->form->scanner_token)
-        ->toContain('/p/'.$kode.'/masuk');
-    expect(str_replace('\\/', '/', $this->get('/p/'.$kode.'?mode=pulang')->getContent()))->toContain('/p/'.$kode.'/pulang');
+        ->toContain('/p/'.$kode.'"')
+        ->not->toContain('PULANG</a>');
 
     $this->get('/p/zzzzzzzz')->assertNotFound();
     $this->get('/p/'.substr($kode, 0, 6))->assertNotFound();
 });
 
-test('scan lewat halaman ringan memakai logika yang sama, tanpa CSRF dan session', function () {
+test('satu link ringan: scan pertama masuk, ulangan dalam 30 menit tetap masuk, sesudahnya pulang', function () {
     $kode = substr($this->form->scanner_token, 0, 8);
 
-    $this->postJson('/p/'.$kode.'/masuk', ['token' => $this->qr])->assertOk()->assertJsonPath('student.type', 'CHECK_IN');
-    $this->postJson('/p/'.$kode.'/pulang', ['token' => $this->qr])->assertOk()->assertJsonPath('student.type', 'CHECK_OUT');
-    expect(CardAttendance::sole()->check_out)->not->toBeNull();
+    $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertOk()
+        ->assertJsonPath('student.type', 'CHECK_IN')->assertJsonPath('student.time', '08:00:00');
+
+    Carbon::setTestNow(Carbon::parse('2026-09-29 08:10:00', 'Asia/Jakarta'));
+    $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertOk()
+        ->assertJsonPath('student.type', 'CHECK_IN')->assertJsonPath('message', 'Scan Masuk sudah tercatat hari ini.');
+    expect(CardAttendance::sole()->check_out)->toBeNull();
+
+    Carbon::setTestNow(Carbon::parse('2026-09-29 11:30:00', 'Asia/Jakarta'));
+    $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertOk()
+        ->assertJsonPath('student.type', 'CHECK_OUT')->assertJsonPath('student.time', '11:30:00');
+
+    Carbon::setTestNow(Carbon::parse('2026-09-29 12:00:00', 'Asia/Jakarta'));
+    $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertOk()
+        ->assertJsonPath('message', 'Scan Pulang sudah tercatat hari ini.')->assertJsonPath('student.time', '11:30:00');
 
     $this->form->update(['is_active' => false]);
-    $this->postJson('/p/'.$kode.'/masuk', ['token' => $this->qr])->assertNotFound()->assertJsonPath('success', false);
+    $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertNotFound()->assertJsonPath('success', false);
     $this->get('/p/'.$kode)->assertOk()->assertSee('Layout ini sedang dinonaktifkan.');
 });
 

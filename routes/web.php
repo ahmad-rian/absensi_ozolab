@@ -132,13 +132,13 @@ Route::post('g/{kode}', [PublicScannerController::class, 'shortScan'])
     ->name('public.scanner.short.scan');
 
 // Halaman scan ringan peserta (haji/umrah) — sama dengan /g/ tapi per layout.
+// Satu link: scan pertama hari itu masuk, scan berikutnya pulang.
 Route::get('p/{kode}', [CardAttendanceController::class, 'ringan'])
     ->middleware('throttle:30,1')
     ->withoutMiddleware($tanpaSession)
     ->name('public.card-scanner.short');
 
-Route::post('p/{kode}/{mode}', [CardAttendanceController::class, 'scanRingan'])
-    ->whereIn('mode', ['masuk', 'pulang'])
+Route::post('p/{kode}', [CardAttendanceController::class, 'scanRingan'])
     ->middleware('throttle:scan-gerbang')
     ->withoutMiddleware($tanpaSession)
     ->name('public.card-scanner.short.scan');
