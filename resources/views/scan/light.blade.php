@@ -27,7 +27,16 @@
          peramban tetap meminta /favicon.ico, dan permintaan itu masuk ke
          Laravel lengkap dengan seluruh middleware hanya untuk dijawab 404. --}}
     <link rel="icon" href="data:,">
-    <title>Absensi {{ $school->name }}</title>
+    @php
+        // Dipakai gerbang sekolah ($school) dan scanner peserta haji/umrah
+        // (judul/aktif/petunjuk/mode diisi langsung). Satu halaman, satu perilaku.
+        $judul = $judul ?? $school->name;
+        $aktif = $aktif ?? $school->is_active;
+        $pesanMati = $pesanMati ?? 'Halaman absensi sekolah ini sedang tidak aktif.';
+        $petunjuk = $petunjuk ?? 'Tempelkan kartu atau tembak QR Code siswa';
+        $mode = $mode ?? null;
+    @endphp
+    <title>Absensi {{ $judul }}</title>
     <style>
         /*
             Gelap, sesuai permintaan: layar gerbang menyala sepanjang hari di
@@ -398,6 +407,21 @@
             sana. Tanpa ambang ini nama sekolah membungkus lalu menabrak jam,
             dan jamnya terpotong di tepi kanan.
         */
+        /* Mode scan peserta. Yang aktif terang di layar gelap, supaya dari
+           seberang lorong pun terlihat sedang mencatat MASUK atau PULANG. */
+        .mode { display: flex; gap: 8px; margin-left: auto; margin-right: 16px; }
+        .mode a {
+            padding: 10px 20px; border-radius: 10px; border: 2px solid #334155;
+            color: #94a3b8; font-weight: 800; letter-spacing: 1px; text-decoration: none;
+        }
+        .mode a.aktif { background: #f8fafc; border-color: #f8fafc; color: #0f172a; }
+
+        @media (max-width: 768px) {
+            .bar { flex-wrap: wrap; }
+            .mode { order: 3; width: 100%; margin: 10px 0 0; }
+            .mode a { flex: 1; text-align: center; }
+        }
+
         @media (max-width: 768px) {
             body { padding: 12px; }
 
@@ -516,12 +540,12 @@
 </head>
 <body>
 
-@if (! $school->is_active || ! $featureEnabled)
+@if (! $aktif || ! $featureEnabled)
     <div class="notice">
-        <h1>{{ $school->name }}</h1>
+        <h1>{{ $judul }}</h1>
         <p>
-            @if (! $school->is_active)
-                Halaman absensi sekolah ini sedang tidak aktif.
+            @if (! $aktif)
+                {{ $pesanMati }}
             @else
                 Absensi sekolah sedang dimatikan oleh admin.
             @endif
@@ -534,9 +558,17 @@
                 <img src="{{ $logoUrl }}" alt="">
             @endif
             <div class="brand">
-                <b>{{ $school->name }}</b>
+                <b>{{ $judul }}</b>
                 <span>ABSENSI DIGITAL</span>
             </div>
+            @if ($mode)
+                {{-- Tautan biasa, bukan tombol JS: tiap mode punya alamat sendiri
+                     yang bisa di-bookmark di box TV. --}}
+                <div class="mode">
+                    <a href="{{ $mode['masuk'] }}" class="{{ $mode['aktif'] === 'masuk' ? 'aktif' : '' }}">MASUK</a>
+                    <a href="{{ $mode['pulang'] }}" class="{{ $mode['aktif'] === 'pulang' ? 'aktif' : '' }}">PULANG</a>
+                </div>
+            @endif
             <div class="clock" id="clock">--.--<span class="dtk">.--</span></div>
         </div>
 
@@ -544,7 +576,7 @@
             <div class="kiri">
                 <div class="stage" id="stage">
                     <div class="idle" id="idle">
-                        Tempelkan kartu atau tembak QR Code siswa
+                        {{ $petunjuk }}
                         @if (! empty($jendelaSholat))
                             {{-- Satu gerbang mencatat datang, sholat, dan pulang;
                                  tanpa baris ini operator tidak punya cara tahu

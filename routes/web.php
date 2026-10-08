@@ -131,6 +131,18 @@ Route::post('g/{kode}', [PublicScannerController::class, 'shortScan'])
     ->withoutMiddleware($tanpaSession)
     ->name('public.scanner.short.scan');
 
+// Halaman scan ringan peserta (haji/umrah) — sama dengan /g/ tapi per layout.
+Route::get('p/{kode}', [CardAttendanceController::class, 'ringan'])
+    ->middleware('throttle:30,1')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.card-scanner.short');
+
+Route::post('p/{kode}/{mode}', [CardAttendanceController::class, 'scanRingan'])
+    ->whereIn('mode', ['masuk', 'pulang'])
+    ->middleware('throttle:scan-gerbang')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.card-scanner.short.scan');
+
 // Absen sholat — URL tersendiri untuk sekolah yang memisahkan perangkat mushola
 // dari gerbang. Sejak gerbang utama ikut mencatat sholat (GerbangRecorder), ini
 // bukan lagi satu-satunya jalan, tapi tautannya sudah tersebar dan tetap hidup.

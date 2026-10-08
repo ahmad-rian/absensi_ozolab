@@ -45,6 +45,7 @@ type Layout = {
     name: string;
     is_active: boolean;
     scan_url: string;
+    light_url: string;
     qr_ready: boolean;
 };
 type Props = {
@@ -330,6 +331,28 @@ export default function CardAttendanceIndex({
                             Setelah generate ulang, tunggu sampai semua kartu
                             selesai dibuat sebelum mengunduh ZIP untuk dicetak.
                         </p>
+                        <div className="rounded-md bg-muted/50 p-3 text-sm">
+                            <p className="font-medium">
+                                Link ringan (box TV / HP lama)
+                            </p>
+                            <p className="mt-1 text-muted-foreground">
+                                Tampilan sama dengan gerbang sekolah, lebih
+                                ringan. Ketik alamat ini di box TV:
+                            </p>
+                            <a
+                                href={selected.light_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-1 block font-mono font-semibold break-all underline"
+                            >
+                                {selected.light_url}
+                            </a>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                Untuk scan pulang, tambahkan{' '}
+                                <code>?mode=pulang</code> atau tekan PULANG di
+                                halamannya.
+                            </p>
+                        </div>
                         {!selected.is_active && (
                             <p className="text-destructive">
                                 Layout tidak aktif. Aktifkan layout untuk

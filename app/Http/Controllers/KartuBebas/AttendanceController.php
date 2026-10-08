@@ -8,6 +8,7 @@ use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Services\CardAttendanceService;
 use App\Services\CardParticipantService;
+use App\Support\PesertaShortLink;
 use App\Support\SchoolTime;
 use App\Support\StudentPhotoStorage;
 use App\Support\XlsxDownload;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -52,6 +54,7 @@ class AttendanceController extends Controller
             'layouts' => $layouts->map(fn ($form) => [
                 'id' => $form->id, 'name' => $form->name, 'is_active' => $form->is_active,
                 'scan_url' => route('public.card-scanner', $form->scanner_token),
+                'light_url' => route('public.card-scanner.short', PesertaShortLink::codeFor($form)),
                 'qr_ready' => collect($form->normalizedConfig()['elements'])->contains(fn ($element) => ($element['type'] ?? '') === 'qr' && ! empty($element['enabled']) && ($element['source'] ?? '') === CardAttendanceService::QR_SOURCE),
             ]),
             'filters' => ['layout' => $layout, 'date' => $date, 'q' => $filters['q'] ?? ''],
@@ -171,7 +174,46 @@ class AttendanceController extends Controller
 
     public function scan(Request $request, string $token, string $mode): JsonResponse
     {
-        $form = CardForm::where('scanner_token', $token)->where('is_active', true)->firstOrFail();
+        return $this->rekamScan($request, CardForm::where('scanner_token', $token)->where('is_active', true)->firstOrFail(), $mode);
+    }
+
+    /**
+     * Halaman scan ringan peserta di `/p/{kode}` — Blade polos yang sama
+     * dengan gerbang sekolah, untuk box Android TV yang tidak sanggup React.
+     * Mode masuk/pulang lewat `?mode=pulang`, jadi tiap mode bisa di-bookmark.
+     */
+    public function ringan(Request $request, string $kode): View
+    {
+        $form = PesertaShortLink::resolve($kode);
+        abort_if($form === null, 404);
+        $mode = $request->query('mode') === 'pulang' ? 'pulang' : 'masuk';
+
+        return view('scan.light', [
+            'judul' => $form->name,
+            'aktif' => $form->is_active,
+            'pesanMati' => 'Layout ini sedang dinonaktifkan.',
+            'featureEnabled' => true,
+            'logoUrl' => null,
+            'petunjuk' => 'Tempelkan kartu atau tembak QR Code peserta',
+            'scanUrl' => route('public.card-scanner.short.scan', ['kode' => $kode, 'mode' => $mode]),
+            'mode' => ['aktif' => $mode, 'masuk' => route('public.card-scanner.short', $kode), 'pulang' => route('public.card-scanner.short', ['kode' => $kode, 'mode' => 'pulang'])],
+            'jendelaSholat' => [],
+        ]);
+    }
+
+    public function scanRingan(Request $request, string $kode, string $mode): JsonResponse
+    {
+        $form = PesertaShortLink::resolve($kode);
+
+        if ($form === null || ! $form->is_active) {
+            return response()->json(['success' => false, 'message' => 'Halaman scan peserta tidak dikenali atau sedang nonaktif.', 'student' => null], 404);
+        }
+
+        return $this->rekamScan($request, $form, $mode);
+    }
+
+    private function rekamScan(Request $request, CardForm $form, string $mode): JsonResponse
+    {
         $data = $request->validate(['token' => ['required', 'string', 'max:150']]);
         try {
             $result = $this->attendance->scan($form, $data['token'], $mode);

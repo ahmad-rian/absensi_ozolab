@@ -252,3 +252,34 @@ test('unduh semua kartu tanpa kartu siap kembali dengan pesan', function () {
         ->assertRedirect()
         ->assertSessionHas('inertia.flash_data.toast.message', 'Belum ada kartu yang selesai dibuat untuk layout ini.');
 });
+
+test('halaman ringan peserta lewat alamat pendek, tanpa token penuh di HTML', function () {
+    $kode = substr($this->form->scanner_token, 0, 8);
+
+    $html = str_replace('\\/', '/', $this->get('/p/'.$kode)->assertOk()->assertSee('Haji A')->assertSee('peserta')->getContent());
+    expect($html)->not->toContain($this->form->scanner_token)
+        ->toContain('/p/'.$kode.'/masuk');
+    expect(str_replace('\\/', '/', $this->get('/p/'.$kode.'?mode=pulang')->getContent()))->toContain('/p/'.$kode.'/pulang');
+
+    $this->get('/p/zzzzzzzz')->assertNotFound();
+    $this->get('/p/'.substr($kode, 0, 6))->assertNotFound();
+});
+
+test('scan lewat halaman ringan memakai logika yang sama, tanpa CSRF dan session', function () {
+    $kode = substr($this->form->scanner_token, 0, 8);
+
+    $this->postJson('/p/'.$kode.'/masuk', ['token' => $this->qr])->assertOk()->assertJsonPath('student.type', 'CHECK_IN');
+    $this->postJson('/p/'.$kode.'/pulang', ['token' => $this->qr])->assertOk()->assertJsonPath('student.type', 'CHECK_OUT');
+    expect(CardAttendance::sole()->check_out)->not->toBeNull();
+
+    $this->form->update(['is_active' => false]);
+    $this->postJson('/p/'.$kode.'/masuk', ['token' => $this->qr])->assertNotFound()->assertJsonPath('success', false);
+    $this->get('/p/'.$kode)->assertOk()->assertSee('Layout ini sedang dinonaktifkan.');
+});
+
+test('halaman absensi admin menampilkan link ringan peserta', function () {
+    $this->actingAs(createSuperAdminUser());
+
+    $this->get(route('kartu-bebas.absensi.index', ['layout' => $this->form->id]))
+        ->assertInertia(fn (Assert $page) => $page->where('layouts.0.light_url', url('/p/'.substr($this->form->scanner_token, 0, 8))));
+});
