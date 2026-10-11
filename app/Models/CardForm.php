@@ -30,6 +30,7 @@ class CardForm extends Model
     {
         return [
             'fields' => 'array',
+            'accept_legacy_qr' => 'boolean',
             'layout_config' => 'array',
             'is_active' => 'boolean',
         ];

@@ -21,6 +21,7 @@ import KartuBebasLayout from '@/layouts/kartu-bebas-layout';
 import {
     downloadCards,
     index,
+    legacy,
     regenerate,
     rotate,
     store,
@@ -46,6 +47,7 @@ type Layout = {
     is_active: boolean;
     scan_url: string;
     light_url: string;
+    accept_legacy_qr: boolean;
     qr_ready: boolean;
 };
 type Props = {
@@ -361,15 +363,41 @@ export default function CardAttendanceIndex({
                                 membuka scanner.
                             </p>
                         )}
+                        <label className="flex items-start gap-3 rounded-md border p-3 text-sm">
+                            <input
+                                type="checkbox"
+                                className="mt-0.5 size-4"
+                                checked={selected.accept_legacy_qr}
+                                onChange={(event) =>
+                                    router.post(
+                                        legacy.url(selected.id),
+                                        { terima: event.target.checked },
+                                        { preserveScroll: true },
+                                    )
+                                }
+                            />
+                            <span>
+                                <span className="font-medium">
+                                    Terima kartu lama (QR berisi No Porsi)
+                                </span>
+                                <span className="mt-0.5 block text-muted-foreground">
+                                    Untuk kartu yang sudah terlanjur dicetak
+                                    sebelum QR absensi. Kartu baru tetap
+                                    terbaca. Catatan: siapa pun yang tahu No
+                                    Porsi bisa mengetiknya di kotak scan.
+                                </span>
+                            </span>
+                        </label>
                         {kartu_lama.length > 0 && (
                             <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
                                 <p className="font-medium">
-                                    Kartu lama terdeteksi hari ini:{' '}
+                                    Kartu lama di-scan hari ini:{' '}
                                     {kartu_lama.length} peserta
                                 </p>
                                 <p className="mt-1">
-                                    Kartu ini masih berisi QR lama dan tidak
-                                    bisa dipakai absen. Cetak ulang kartu:{' '}
+                                    {selected.accept_legacy_qr
+                                        ? 'Diterima untuk absen: '
+                                        : 'Ditolak karena QR lama. Nyalakan "Terima kartu lama" atau cetak ulang kartu: '}
                                     {kartu_lama.join(', ')}.
                                 </p>
                             </div>

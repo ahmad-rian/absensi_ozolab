@@ -55,6 +55,7 @@ class AttendanceController extends Controller
                 'id' => $form->id, 'name' => $form->name, 'is_active' => $form->is_active,
                 'scan_url' => route('public.card-scanner', $form->scanner_token),
                 'light_url' => route('public.card-scanner.short', PesertaShortLink::codeFor($form)),
+                'accept_legacy_qr' => $form->accept_legacy_qr,
                 'qr_ready' => collect($form->normalizedConfig()['elements'])->contains(fn ($element) => ($element['type'] ?? '') === 'qr' && ! empty($element['enabled']) && ($element['source'] ?? '') === CardAttendanceService::QR_SOURCE),
             ]),
             'filters' => ['layout' => $layout, 'date' => $date, 'q' => $filters['q'] ?? ''],
@@ -82,6 +83,16 @@ class AttendanceController extends Controller
                 'note' => $data['note'] ?? null, 'recorded_by' => $request->user()->id,
             ]);
         }, 3);
+
+        return back();
+    }
+
+    /** Saklar "terima kartu lama" untuk layout yang kartunya sudah terlanjur dicetak. */
+    public function terimaKartuLama(Request $request, CardForm $cardForm): RedirectResponse
+    {
+        $terima = $request->validate(['terima' => ['required', 'boolean']])['terima'];
+        $cardForm->forceFill(['accept_legacy_qr' => (bool) $terima])->save();
+        Inertia::flash('toast', ['type' => 'success', 'message' => $terima ? 'Kartu lama (QR No Porsi) diterima untuk absen.' : 'Kartu lama tidak lagi diterima.']);
 
         return back();
     }

@@ -490,6 +490,7 @@ Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-a
     Route::get('absensi', [CardAttendanceController::class, 'index'])->name('absensi.index');
     Route::post('absensi/{submission}', [CardAttendanceController::class, 'store'])->name('absensi.store');
     Route::post('layouts/{cardForm}/scanner-token', [CardAttendanceController::class, 'rotate'])->name('absensi.rotate');
+    Route::post('layouts/{cardForm}/kartu-lama', [CardAttendanceController::class, 'terimaKartuLama'])->name('absensi.legacy');
     Route::post('layouts/{cardForm}/generate-ulang', [CardAttendanceController::class, 'regenerate'])->middleware('throttle:6,1')->name('absensi.regenerate');
     Route::get('layouts/{cardForm}/unduh-kartu', [CardAttendanceController::class, 'downloadCards'])->middleware('throttle:6,1')->name('absensi.download-cards');
     Route::get('laporan', [CardAttendanceController::class, 'report'])->name('laporan.index');

@@ -328,3 +328,34 @@ test('QR absensi tidak berubah saat kartu digenerate ulang', function () {
 
     expect(app(CardAttendanceService::class)->qrToken($this->participant->fresh()))->toBe($sebelum);
 });
+
+test('saklar terima kartu lama: QR No Porsi dicatat hadir untuk pemilik tunggalnya', function () {
+    $this->participant->update(['data' => ['nama' => 'Siti Mutmainah', 'porsi' => '1100621603']]);
+    $kode = substr($this->form->scanner_token, 0, 8);
+
+    $this->postJson('/p/'.$kode, ['token' => '1100621603'])->assertUnprocessable();
+    expect(CardAttendance::count())->toBe(0);
+
+    $this->actingAs(createSuperAdminUser())->post(route('kartu-bebas.absensi.legacy', $this->form), ['terima' => true])->assertRedirect();
+    expect($this->form->fresh()->accept_legacy_qr)->toBeTrue();
+
+    $this->postJson('/p/'.$kode, ['token' => '1100621603'])->assertOk()
+        ->assertJsonPath('student.full_name', 'Siti Mutmainah')->assertJsonPath('student.type', 'CHECK_IN');
+    // Kartu baru tetap terbaca, dan tercatat ke baris yang sama.
+    $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertOk();
+    expect(CardAttendance::count())->toBe(1);
+});
+
+test('kartu lama tetap ditolak bila No Porsi-nya ambigu meski saklar menyala', function () {
+    $this->form->forceFill(['accept_legacy_qr' => true])->save();
+    $this->participant->update(['data' => ['nama' => 'Ahmad', 'porsi' => '777']]);
+    $this->form->submissions()->create(['data' => ['nama' => 'Budi', 'porsi' => '777'], 'status' => 'completed']);
+
+    $this->postJson(cardScanUrl($this->form), ['token' => '777'])->assertUnprocessable();
+    expect(CardAttendance::count())->toBe(0);
+});
+
+test('hanya super admin yang bisa menyalakan saklar kartu lama', function () {
+    $this->actingAs(createAdminUser())->post(route('kartu-bebas.absensi.legacy', $this->form), ['terima' => true])->assertForbidden();
+    expect($this->form->fresh()->accept_legacy_qr)->toBeFalse();
+});

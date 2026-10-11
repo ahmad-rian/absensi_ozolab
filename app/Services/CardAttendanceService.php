@@ -51,17 +51,23 @@ class CardAttendanceService
         abort_unless($form->is_active, 403, 'Layout ini sedang dinonaktifkan.');
         $mentah = $token;
         $token = $this->normalizeToken($token);
+        $kartuLama = null;
         if ($token === null) {
-            $pemilik = $this->pemilikKartuLama($form, $mentah);
+            $kartuLama = $this->pemilikKartuLama($form, $mentah);
 
-            throw ValidationException::withMessages(['token' => $pemilik
-                ? 'Kartu lama milik '.$this->participantName($pemilik).' — belum dicetak ulang. Ambil kartu baru dari panitia.'
-                : 'QR di kartu ini berisi data peserta, bukan QR absensi. Generate ulang kartu dari menu Absensi peserta lalu cetak ulang.']);
+            // Layout yang kartunya terlanjur dicetak massal boleh menerima
+            // kartu lama (QR berisi No Porsi), asalkan pemiliknya tepat satu.
+            if (! $kartuLama || ! $form->accept_legacy_qr) {
+                throw ValidationException::withMessages(['token' => $kartuLama
+                    ? 'Kartu lama milik '.$this->participantName($kartuLama).' — belum dicetak ulang. Ambil kartu baru dari panitia.'
+                    : 'QR di kartu ini berisi data peserta, bukan QR absensi. Generate ulang kartu dari menu Absensi peserta lalu cetak ulang.']);
+            }
         }
 
-        return DB::transaction(function () use ($form, $token, $mode): array {
-            $participant = CardFormSubmission::where('card_form_id', $form->id)->whereKey(substr($token, 3, 26))->lockForUpdate()->first();
-            if (! $participant || ! hash_equals($this->qrToken($participant), $token)) {
+        return DB::transaction(function () use ($form, $token, $mode, $kartuLama): array {
+            $participant = CardFormSubmission::where('card_form_id', $form->id)
+                ->whereKey($kartuLama?->id ?? substr((string) $token, 3, 26))->lockForUpdate()->first();
+            if (! $participant || (! $kartuLama && ! hash_equals($this->qrToken($participant), $token))) {
                 throw ValidationException::withMessages(['token' => 'Kartu tidak terdaftar pada layout ini.']);
             }
             $record = CardAttendance::firstOrNew(['card_form_submission_id' => $participant->id, 'attendance_date' => SchoolTime::todayString()]);
