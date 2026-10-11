@@ -173,3 +173,13 @@ test('a student who has never been photographed is not a finding', function () {
         ->expectsOutputToContain('belum pernah difoto, dilewati')
         ->assertExitCode(0);
 });
+
+test('sekolah tanpa siswa tidak menghentikan audit di tengah jalan', function () {
+    // Bar progres bertotal 0 tidak bisa menghitung sisa waktu dan dulu
+    // melempar LogicException — seluruh audit berhenti di sekolah kosong pertama.
+    auditLocator(mock(GoogleDriveService::class));
+
+    $this->artisan('drive:audit-siswa')
+        ->expectsOutputToContain('tidak ada siswa')
+        ->assertExitCode(0);
+});

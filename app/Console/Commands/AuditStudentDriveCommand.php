@@ -100,7 +100,17 @@ class AuditStudentDriveCommand extends Command
 
             // Tiap siswa bisa memanggil Drive beberapa kali; tanpa bar ini
             // perintahnya diam bermenit-menit dan tampak macet.
-            $bar = $this->output->createProgressBar((clone $query)->count());
+            $total = (clone $query)->count();
+
+            // Bar bertotal 0 tidak bisa menghitung sisa waktu dan melempar
+            // LogicException — dulu menghentikan seluruh audit di sekolah kosong.
+            if ($total === 0) {
+                $this->line(" {$school->name}: tidak ada siswa, dilewati.");
+
+                continue;
+            }
+
+            $bar = $this->output->createProgressBar($total);
             $bar->setFormat(" {$school->name}: %current%/%max% [%bar%] %percent:3s%% · sisa ~%remaining:6s%");
             $bar->start();
 
