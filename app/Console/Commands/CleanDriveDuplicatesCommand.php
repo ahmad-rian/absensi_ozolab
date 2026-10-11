@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Console\Commands\Concerns\TampilanPerawatanDrive;
+use App\Models\CardGenerationLog;
 use App\Models\School;
+use App\Models\Student;
 use App\Services\GoogleDriveService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -26,6 +28,8 @@ use Throwable;
 class CleanDriveDuplicatesCommand extends Command
 {
     use TampilanPerawatanDrive;
+
+    private int $rujukanDialihkan = 0;
 
     protected $signature = 'drive:bersihkan-duplikat
                             {--dry-run : Laporkan saja, tidak menyentuh Drive}
@@ -113,7 +117,7 @@ class CleanDriveDuplicatesCommand extends Command
         }
 
         $this->newLine();
-        $this->info("{$prefix}Folder diperiksa: {$diperiksa}, berkas dibuang: {$dibuang}.");
+        $this->info("{$prefix}Folder diperiksa: {$diperiksa}, berkas dibuang: {$dibuang}, rujukan database dialihkan ke berkas yang disisakan: {$this->rujukanDialihkan}.");
 
         if ($dryRun) {
             $this->line('Tidak ada berkas yang disentuh. Jalankan tanpa --dry-run untuk menerapkan.');
@@ -147,6 +151,11 @@ class CleanDriveDuplicatesCommand extends Command
             $sisa = count($kembar) - 1;
             $this->catat($schoolName, $folder['name'], 'Buang kembar ke sampah', "{$nama} × ".count($kembar).", buang {$sisa}", "{$prefix}{$schoolName} / {$folder['name']}: {$nama} × ".count($kembar)." → buang {$sisa}");
 
+            // Rujukan database dipindah DULU, sebelum berkasnya ke sampah: kalau
+            // pembuangan gagal di tengah, rujukan sudah menunjuk penyintas yang
+            // pasti tetap hidup.
+            $this->rujukanDialihkan += self::alihkanRujukan(array_column(array_slice($kembar, 1), 'id'), $kembar[0]['id'], $dryRun);
+
             foreach (array_slice($kembar, 1) as $berkas) {
                 if (! $dryRun) {
                     $drive->trashFile($berkas['id']);
@@ -157,6 +166,34 @@ class CleanDriveDuplicatesCommand extends Command
         }
 
         return $dibuang;
+    }
+
+    /**
+     * Alihkan rujukan database dari berkas kembar yang dibuang ke penyintasnya.
+     *
+     * Kartu yang salinan lokalnya sudah dibuang dibaca lewat `drive_file_id`;
+     * tanpa pengalihan ini, begitu sampah Drive dikosongkan 30 hari kemudian
+     * kartu itu hilang dari web dan portal orang tua.
+     *
+     * @param  array<int, string>  $dibuang
+     * @return int jumlah baris yang menunjuk berkas yang dibuang
+     */
+    public static function alihkanRujukan(array $dibuang, string $penyintas, bool $dryRun): int
+    {
+        if ($dibuang === []) {
+            return 0;
+        }
+
+        $kartu = CardGenerationLog::withoutGlobalScopes()->whereIn('drive_file_id', $dibuang);
+        $foto = Student::withoutGlobalScopes()->whereIn('photo_drive_file_id', $dibuang);
+        $jumlah = (clone $kartu)->count() + (clone $foto)->count();
+
+        if (! $dryRun && $jumlah > 0) {
+            $kartu->update(['drive_file_id' => $penyintas, 'drive_url' => 'https://drive.google.com/file/d/'.$penyintas.'/view?usp=drivesdk']);
+            $foto->update(['photo_drive_file_id' => $penyintas]);
+        }
+
+        return $jumlah;
     }
 
     /**

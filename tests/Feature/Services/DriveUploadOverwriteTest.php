@@ -1,6 +1,8 @@
 <?php
 
 use App\Console\Commands\CleanDriveDuplicatesCommand;
+use App\Models\CardGenerationLog;
+use App\Models\School;
 use App\Models\SchoolDriveConfig;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
@@ -209,4 +211,27 @@ test('tanpa id tersimpan, letaknya tetap diturunkan dari nama seperti dulu', fun
 
     expect(driveServiceDenganKlien($files, 'root-sekolah')->resolveStudentFolder($siswa))
         ->toBe('folder-dari-nama');
+});
+
+/**
+ * Berkas yang dibuang ke sampah bisa jadi justru yang dicatat database. Kartu
+ * yang salinan lokalnya sudah dibuang (BerkasKeluaran) dibaca lewat
+ * drive_file_id — begitu sampahnya dikosongkan 30 hari kemudian, kartu itu
+ * hilang dari web dan portal orang tua. Rujukannya harus pindah ke penyintas.
+ */
+test('rujukan database ke berkas kembar yang dibuang dialihkan ke penyintasnya', function () {
+    $siswa = Student::factory()->create(['school_id' => School::factory()->create()->id, 'photo_drive_file_id' => 'foto-lama']);
+    $kartu = CardGenerationLog::create([
+        'school_id' => $siswa->school_id, 'student_id' => $siswa->id, 'type' => 'card',
+        'status' => 'completed', 'drive_file_id' => 'kartu-lama', 'drive_url' => 'https://lama', 'generated_by' => 'admin',
+    ]);
+
+    expect(CleanDriveDuplicatesCommand::alihkanRujukan(['kartu-lama'], 'kartu-baru', true))->toBe(1)
+        ->and($kartu->fresh()->drive_file_id)->toBe('kartu-lama');
+
+    expect(CleanDriveDuplicatesCommand::alihkanRujukan(['kartu-lama'], 'kartu-baru', false))->toBe(1)
+        ->and(CleanDriveDuplicatesCommand::alihkanRujukan(['foto-lama'], 'foto-baru', false))->toBe(1);
+
+    expect($kartu->fresh())->drive_file_id->toBe('kartu-baru')->drive_url->toContain('kartu-baru')
+        ->and($siswa->fresh()->photo_drive_file_id)->toBe('foto-baru');
 });
