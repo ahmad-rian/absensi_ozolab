@@ -96,18 +96,26 @@ class AuditStudentDriveCommand extends Command
                 continue;
             }
 
-            $students = Student::withoutGlobalScope('school')
-                ->where('school_id', $school->id)
-                ->with('classroom')
-                ->orderBy('nis')
-                ->cursor();
+            $query = Student::withoutGlobalScope('school')->where('school_id', $school->id);
+
+            // Tiap siswa bisa memanggil Drive beberapa kali; tanpa bar ini
+            // perintahnya diam bermenit-menit dan tampak macet.
+            $bar = $this->output->createProgressBar((clone $query)->count());
+            $bar->setFormat(" {$school->name}: %current%/%max% [%bar%] %percent:3s%% · sisa ~%remaining:6s%");
+            $bar->start();
+
+            $students = $query->with('classroom')->orderBy('nis')->cursor();
 
             foreach ($students as $student) {
                 if ($limit > 0 && $seen >= $limit) {
+                    $bar->finish();
+                    $this->newLine();
+
                     break 2;
                 }
 
                 $seen++;
+                $bar->advance();
                 $finding = $this->inspect($drive, $student, $fix, $locator);
 
                 if ($finding['kind'] === 'skip') {
@@ -140,6 +148,9 @@ class AuditStudentDriveCommand extends Command
                     $finding['text'],
                 ];
             }
+
+            $bar->finish();
+            $this->newLine();
         }
 
         return $this->report($seen, $skipped, $tally, $missingClasses, $rows, $fix);
