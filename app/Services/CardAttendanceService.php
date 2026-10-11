@@ -7,6 +7,7 @@ use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -48,9 +49,14 @@ class CardAttendanceService
     public function scan(CardForm $form, string $token, string $mode): array
     {
         abort_unless($form->is_active, 403, 'Layout ini sedang dinonaktifkan.');
+        $mentah = $token;
         $token = $this->normalizeToken($token);
         if ($token === null) {
-            throw ValidationException::withMessages(['token' => 'QR di kartu ini berisi data peserta, bukan QR absensi. Generate ulang kartu dari menu Absensi peserta lalu cetak ulang.']);
+            $pemilik = $this->pemilikKartuLama($form, $mentah);
+
+            throw ValidationException::withMessages(['token' => $pemilik
+                ? 'Kartu lama milik '.$this->participantName($pemilik).' — belum dicetak ulang. Ambil kartu baru dari panitia.'
+                : 'QR di kartu ini berisi data peserta, bukan QR absensi. Generate ulang kartu dari menu Absensi peserta lalu cetak ulang.']);
         }
 
         return DB::transaction(function () use ($form, $token, $mode): array {
@@ -78,6 +84,51 @@ class CardAttendanceService
 
             return ['attendance' => $record, 'participant' => $participant, 'duplicate' => $duplicate, 'mode' => $mode];
         }, 3);
+    }
+
+    /**
+     * Nama peserta yang kartu LAMA-nya baru saja di-scan, untuk daftar cetak ulang.
+     *
+     * Kartu sebelum Okt 2026 menaruh kolom data (No Porsi) di QR-nya. Kartu itu
+     * tetap tidak dicatat hadir — QR absensi harus bertanda tangan — tapi
+     * operator perlu tahu kartu siapa yang masih lama.
+     *
+     * @return list<string>
+     */
+    public function kartuLamaHariIni(CardForm $form): array
+    {
+        $id = Cache::get(self::kunciKartuLama($form), []);
+
+        return CardFormSubmission::where('card_form_id', $form->id)->whereKey($id)->get()
+            ->map(fn (CardFormSubmission $p): string => $this->participantName($p))->sort()->values()->all();
+    }
+
+    /** Pemilik tunggal kartu lama di layout ini, atau null kalau tidak ada / ambigu. */
+    private function pemilikKartuLama(CardForm $form, string $isi): ?CardFormSubmission
+    {
+        $isi = mb_strtolower(trim($isi));
+        if ($isi === '' || mb_strlen($isi) > 64) {
+            return null;
+        }
+
+        $cocok = CardFormSubmission::where('card_form_id', $form->id)->get(['id', 'card_form_id', 'data'])
+            ->filter(fn (CardFormSubmission $p): bool => collect($p->data ?? [])
+                ->contains(fn ($nilai): bool => is_scalar($nilai) && mb_strtolower(trim((string) $nilai)) === $isi));
+
+        if ($cocok->count() !== 1) {
+            return null;
+        }
+
+        $pemilik = $cocok->first();
+        $kunci = self::kunciKartuLama($form);
+        Cache::put($kunci, array_values(array_unique([...Cache::get($kunci, []), $pemilik->id])), now()->addDays(2));
+
+        return $pemilik;
+    }
+
+    private static function kunciKartuLama(CardForm $form): string
+    {
+        return 'kartu-lama:'.$form->id.':'.SchoolTime::todayString();
     }
 
     /**

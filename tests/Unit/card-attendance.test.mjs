@@ -106,3 +106,15 @@ test('unduh semua kartu mengarah ke layout yang dipilih', () => {
     const unduh = find(page.render(), (node) => node.type === 'a' && node.props.children === 'Unduh semua kartu (ZIP)');
     assert.equal(unduh.props.href, '/downloadCards');
 });
+
+test('daftar kartu lama muncul supaya panitia tahu siapa yang perlu cetak ulang', () => {
+    const page = harness('kartu-bebas/absensi/index.tsx', {
+        layouts: [{ id: 'haji', name: 'Haji', is_active: true, qr_ready: true, scan_url: '/scan-peserta/private', light_url: '/p/abc' }],
+        filters: { layout: 'haji', date: '2026-10-11', q: '' },
+        participants: { data: [], total: 0, prev_page_url: null, next_page_url: null },
+        kartu_lama: ['Siti Mutmainah'],
+    });
+    const teks = JSON.stringify(page.render());
+    assert.match(teks, /Kartu lama terdeteksi hari ini/);
+    assert.match(teks, /Siti Mutmainah/);
+});

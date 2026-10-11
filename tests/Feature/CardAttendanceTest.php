@@ -5,6 +5,7 @@ use App\Models\CardAttendance;
 use App\Models\CardDataset;
 use App\Models\CardForm;
 use App\Services\CardAttendanceService;
+use App\Services\CardParticipantService;
 use App\Services\DynamicCardGenerator;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -294,4 +295,36 @@ test('halaman absensi admin menampilkan link ringan peserta', function () {
 
     $this->get(route('kartu-bebas.absensi.index', ['layout' => $this->form->id]))
         ->assertInertia(fn (Assert $page) => $page->where('layouts.0.light_url', url('/p/'.substr($this->form->scanner_token, 0, 8))));
+});
+
+test('kartu lama berisi No Porsi menyebut pemiliknya tanpa mencatat kehadiran', function () {
+    $this->participant->update(['data' => ['nama' => 'Siti Mutmainah', 'porsi' => '1100621603']]);
+
+    $this->postJson(cardScanUrl($this->form), ['token' => ' 1100621603 '])
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'Kartu lama milik Siti Mutmainah — belum dicetak ulang. Ambil kartu baru dari panitia.');
+
+    expect(CardAttendance::count())->toBe(0);
+    $this->actingAs(createSuperAdminUser())->get(route('kartu-bebas.absensi.index', ['layout' => $this->form->id]))
+        ->assertInertia(fn (Assert $page) => $page->where('kartu_lama', ['Siti Mutmainah']));
+});
+
+test('kartu lama tidak disebut namanya bila ambigu atau milik layout lain', function () {
+    $this->participant->update(['data' => ['nama' => 'Ahmad', 'porsi' => '777']]);
+    $this->form->submissions()->create(['data' => ['nama' => 'Budi', 'porsi' => '777'], 'status' => 'completed']);
+    $lain = CardForm::create(['name' => 'Haji B', 'token' => Str::random(40), 'fields' => [], 'layout_config' => ['elements' => []], 'orientation' => 'portrait', 'is_active' => true]);
+    $lain->submissions()->create(['data' => ['nama' => 'Cici', 'porsi' => '888'], 'status' => 'completed']);
+    $umum = 'QR di kartu ini berisi data peserta, bukan QR absensi. Generate ulang kartu dari menu Absensi peserta lalu cetak ulang.';
+
+    $this->postJson(cardScanUrl($this->form), ['token' => '777'])->assertJsonPath('message', $umum);
+    $this->postJson(cardScanUrl($this->form), ['token' => '888'])->assertJsonPath('message', $umum);
+});
+
+test('QR absensi tidak berubah saat kartu digenerate ulang', function () {
+    Queue::fake();
+    $sebelum = app(CardAttendanceService::class)->qrToken($this->participant);
+
+    app(CardParticipantService::class)->generate($this->participant);
+
+    expect(app(CardAttendanceService::class)->qrToken($this->participant->fresh()))->toBe($sebelum);
 });

@@ -50,6 +50,7 @@ type Layout = {
 };
 type Props = {
     layouts: Layout[];
+    kartu_lama?: string[];
     filters: { layout: string | null; date: string; q: string };
     participants: {
         data: Participant[];
@@ -200,12 +201,13 @@ export default function CardAttendanceIndex({
     layouts,
     filters,
     participants,
+    kartu_lama = [],
 }: Props) {
     const errors = usePage<{ errors: Record<string, string> }>().props.errors;
     const [q, setQ] = useState(filters.q);
     const [copied, setCopied] = useState(false);
     const selected = layouts.find((layout) => layout.id === filters.layout);
-    usePoll(10000, { only: ['participants'] });
+    usePoll(10000, { only: ['participants', 'kartu_lama'] });
 
     return (
         <>
@@ -358,6 +360,19 @@ export default function CardAttendanceIndex({
                                 Layout tidak aktif. Aktifkan layout untuk
                                 membuka scanner.
                             </p>
+                        )}
+                        {kartu_lama.length > 0 && (
+                            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+                                <p className="font-medium">
+                                    Kartu lama terdeteksi hari ini:{' '}
+                                    {kartu_lama.length} peserta
+                                </p>
+                                <p className="mt-1">
+                                    Kartu ini masih berisi QR lama dan tidak
+                                    bisa dipakai absen. Cetak ulang kartu:{' '}
+                                    {kartu_lama.join(', ')}.
+                                </p>
+                            </div>
                         )}
                         {!selected.qr_ready && (
                             <p className="text-amber-700 dark:text-amber-400">

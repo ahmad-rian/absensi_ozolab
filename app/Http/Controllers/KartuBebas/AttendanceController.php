@@ -58,6 +58,7 @@ class AttendanceController extends Controller
                 'qr_ready' => collect($form->normalizedConfig()['elements'])->contains(fn ($element) => ($element['type'] ?? '') === 'qr' && ! empty($element['enabled']) && ($element['source'] ?? '') === CardAttendanceService::QR_SOURCE),
             ]),
             'filters' => ['layout' => $layout, 'date' => $date, 'q' => $filters['q'] ?? ''],
+            'kartu_lama' => ($terpilih = $layouts->firstWhere('id', $layout)) ? $this->attendance->kartuLamaHariIni($terpilih) : [],
             'participants' => $participants,
         ]);
     }
