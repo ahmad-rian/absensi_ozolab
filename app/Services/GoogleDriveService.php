@@ -11,6 +11,7 @@ use Google\Service\Drive as GoogleDrive;
 use Google\Service\Drive\DriveFile;
 use Google\Service\Drive\Permission;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -583,6 +584,27 @@ class GoogleDriveService
             return $this->folderCache[$cacheKey];
         }
 
+        // Folder kelas dibuat bersamaan oleh job siswa sekelas. Kunci + cache
+        // bersama: pemegang kunci berikutnya memakai folder yang baru dibuat,
+        // bahkan sebelum daftar Drive sempat memuatnya.
+        $kunci = 'drive-folder:'.md5($parentId.'|'.mb_strtolower($name));
+
+        return $this->folderCache[$cacheKey] = Cache::lock($kunci, 120)->block(90, function () use ($name, $parentId, $kunci): string {
+            $dikenal = Cache::get($kunci);
+
+            if ($dikenal && $this->folderExists($dikenal)) {
+                return $dikenal;
+            }
+
+            $id = $this->findOrCreateFolderTerkunci($name, $parentId);
+            Cache::put($kunci, $id, now()->addDay());
+
+            return $id;
+        });
+    }
+
+    private function findOrCreateFolderTerkunci(string $name, string $parentId): string
+    {
         // Backslash ikut di-escape, sama seperti findFolder() dan
         // findFileByName(). Sebelumnya hanya apostrof yang ditangani di sini,
         // sehingga nama berisi backslash menghasilkan query berbeda antara
@@ -600,14 +622,14 @@ class GoogleDriveService
         $files = $result->getFiles();
 
         if (count($files) > 0) {
-            return $this->folderCache[$cacheKey] = $files[0]->getId();
+            return $files[0]->getId();
         }
 
         if ($existing = $this->findFolderIgnoringCase($name, $parentId)) {
-            return $this->folderCache[$cacheKey] = $existing;
+            return $existing;
         }
 
-        return $this->folderCache[$cacheKey] = $this->createFolder($name, $parentId);
+        return $this->createFolder($name, $parentId);
     }
 
     /**
@@ -851,6 +873,27 @@ class GoogleDriveService
     {
         if ($student->drive_folder_id && $this->folderExists($student->drive_folder_id)) {
             return $student->drive_folder_id;
+        }
+
+        // Dikunci per siswa: generate massal menjalankan job kartu depan,
+        // kartu belakang, dan foto siswa yang sama bersamaan di beberapa
+        // worker. Tanpa kunci, masing-masing melihat "belum ada folder" dan
+        // membuat folder sendiri — dua folder bernama sama, isi terbelah.
+        return Cache::lock('drive-folder-siswa:'.$student->id, 120)->block(90, fn (): ?string => $this->resolveStudentFolderTerkunci($student));
+    }
+
+    private function resolveStudentFolderTerkunci(Student $student): ?string
+    {
+        // Baca ulang dari database: job lain mungkin baru saja membuat dan
+        // menyimpan foldernya selagi job ini menunggu kunci.
+        $tersimpan = $student->exists
+            ? Student::withoutGlobalScopes()->whereKey($student->id)->value('drive_folder_id')
+            : null;
+
+        if ($tersimpan && $tersimpan !== $student->drive_folder_id && $this->folderExists($tersimpan)) {
+            $student->setAttribute('drive_folder_id', $tersimpan);
+
+            return $tersimpan;
         }
 
         $folderId = $this->studentFolderId($student);
