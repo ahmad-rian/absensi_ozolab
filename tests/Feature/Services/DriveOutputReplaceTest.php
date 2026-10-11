@@ -208,3 +208,28 @@ test('id tercatat yang menggantung jatuh ke langkah berikutnya', function () {
         'id-sudah-mati',
     )->getId())->toBe('osis-hidup');
 });
+
+/**
+ * `photo_drive_file_id` bisa menunjuk foto ASLI dari fotografer (dipilih lewat
+ * pemilih Drive atau ditemukan locator). Menimpanya dengan pas foto olahan
+ * aplikasi berarti foto asli hilang untuk selamanya. Id tercatat hanya dipakai
+ * bila berkasnya berjenis sama dengan yang diunggah.
+ */
+test('id tercatat yang menunjuk foto asli fotografer tidak pernah ditimpa', function () {
+    $files = Mockery::mock(DriveFiles::class);
+
+    $files->shouldReceive('listFiles')->twice()->andReturn(
+        isiFolder([['id' => 'asli-fotografer', 'name' => 'IMG_1234.JPG']]),
+        isiFolder([]),
+    );
+    $files->shouldNotReceive('update');
+    $files->shouldReceive('create')->once()->andReturn(new DriveFile(['id' => 'pas-foto-baru']));
+
+    expect(driveUntukPenggantian($files)->replaceStudentOutput(
+        berkasLokal(),
+        $this->siswa,
+        'folder-siswa',
+        'r-wastu-yuga-wibowo-17357-foto.jpg',
+        'asli-fotografer',
+    )->getId())->toBe('pas-foto-baru');
+});

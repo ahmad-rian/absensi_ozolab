@@ -978,10 +978,15 @@ class GoogleDriveService
     private function pickReplaceable(array $isi, Student $student, string $fileName, ?string $knownFileId): ?array
     {
         $ambil = static fn (array $f): array => ['id' => $f['id'], 'name' => $f['name']];
+        $jenis = StudentDriveNaming::jenisDari($fileName);
 
+        // Id tercatat hanya dipercaya bila berkasnya berjenis sama. Kolom
+        // `photo_drive_file_id` bisa menunjuk foto ASLI fotografer (mis.
+        // `IMG_1234.JPG`, dipilih lewat pemilih Drive); menimpanya dengan pas
+        // foto olahan menghapus foto asli itu untuk selamanya.
         if ($knownFileId !== null) {
             foreach ($isi as $berkas) {
-                if ($berkas['id'] === $knownFileId) {
+                if ($berkas['id'] === $knownFileId && StudentDriveNaming::jenisDari($berkas['name']) === $jenis) {
                     return $ambil($berkas);
                 }
             }
@@ -992,8 +997,6 @@ class GoogleDriveService
                 return $ambil($berkas);
             }
         }
-
-        $jenis = StudentDriveNaming::jenisDari($fileName);
 
         if ($jenis === null) {
             return null;
