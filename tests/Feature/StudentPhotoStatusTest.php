@@ -3,7 +3,11 @@
 use App\Jobs\RegisterStudentCardsJob;
 use App\Models\CardGenerationLog;
 use App\Models\Student;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
+
+// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+beforeEach(fn () => Storage::fake('local'));
 
 /**
  * Halaman siswa tidak punya penanda apa pun untuk pas foto: menekan "Ambil Ulang

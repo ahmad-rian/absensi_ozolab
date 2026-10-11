@@ -23,6 +23,20 @@ class XlsxDownload
     /** @param array<string, array{header: array, rows: array}> $sheets */
     public static function sheets(string $filename, array $sheets): BinaryFileResponse
     {
+        $path = tempnam(sys_get_temp_dir(), 'xlsx');
+        self::tulis($path, $sheets);
+
+        return response()->download($path, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])->deleteFileAfterSend();
+    }
+
+    /**
+     * Tulis beberapa sheet ke berkas XLSX di `$path` — dipakai unduhan dan
+     * laporan perintah konsol yang disimpan di disk.
+     *
+     * @param  array<string, array{header: array, rows: array}>  $sheets
+     */
+    public static function tulis(string $path, array $sheets): void
+    {
         if ($sheets === []) {
             throw new \InvalidArgumentException('Minimal satu sheet diperlukan.');
         }
@@ -37,7 +51,6 @@ class XlsxDownload
             }
             $names[] = mb_strtolower($short);
         }
-        $path = tempnam(sys_get_temp_dir(), 'xlsx');
         $writer = new Writer;
         try {
             $writer->openToFile($path);
@@ -56,8 +69,6 @@ class XlsxDownload
             @unlink($path);
             throw $exception;
         }
-
-        return response()->download($path, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])->deleteFileAfterSend();
     }
 
     /**

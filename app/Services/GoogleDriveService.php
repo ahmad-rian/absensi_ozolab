@@ -1122,7 +1122,7 @@ class GoogleDriveService
      *
      * @return array<int, array{id: string, name: string}>
      */
-    public function studentFolders(): array
+    public function studentFolders(?callable $kemajuan = null): array
     {
         $rootId = $this->findSchoolRoot();
 
@@ -1131,10 +1131,16 @@ class GoogleDriveService
         }
 
         $hasil = [];
+        $semuaKelas = $this->subfolders($rootId);
 
-        foreach ($this->subfolders($rootId) as $kelas) {
+        foreach ($semuaKelas as $urutan => $kelas) {
             foreach ($this->subfolders($kelas['id']) as $siswa) {
                 $hasil[] = $siswa;
+            }
+
+            // (kelas selesai, total kelas) — perintah perawatan memakainya untuk bar progres.
+            if ($kemajuan) {
+                $kemajuan($urutan + 1, count($semuaKelas));
             }
         }
 
@@ -1157,10 +1163,11 @@ class GoogleDriveService
      *
      * @return array<string, array<int, array{id: string, name: string, createdTime: string|null}>>
      */
-    public function filesByParent(): array
+    public function filesByParent(?callable $kemajuan = null): array
     {
         $perInduk = [];
         $pageToken = null;
+        $terbaca = 0;
 
         do {
             $result = $this->drive->files->listFiles([
@@ -1183,6 +1190,13 @@ class GoogleDriveService
             }
 
             $pageToken = $result->getNextPageToken();
+            $terbaca += count($result->getFiles());
+
+            // Total berkas tidak diketahui sebelum sapuan selesai; yang bisa
+            // dilaporkan hanya berapa yang sudah terbaca.
+            if ($kemajuan) {
+                $kemajuan($terbaca);
+            }
         } while ($pageToken);
 
         return $perInduk;

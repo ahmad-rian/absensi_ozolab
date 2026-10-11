@@ -3,6 +3,10 @@
 use App\Console\Commands\MergeStudentDriveFoldersCommand;
 use App\Models\Student;
 use App\Services\PhotoSheetGeneratorService;
+use Illuminate\Support\Facades\Storage;
+
+// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+beforeEach(fn () => Storage::fake('local'));
 
 /**
  * Folder siswa terbelah karena letaknya dulu selalu diturunkan dari nama, dan

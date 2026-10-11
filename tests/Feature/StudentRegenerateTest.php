@@ -5,6 +5,10 @@ use App\Jobs\GenerateRegistrationCardJob;
 use App\Jobs\RegisterStudentCardsJob;
 use App\Models\Student;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
+
+// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+beforeEach(fn () => Storage::fake('local'));
 
 /*
  | Tombol "generate ulang" di halaman siswa, satu per keluaran.

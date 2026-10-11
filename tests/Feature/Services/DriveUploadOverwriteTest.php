@@ -8,6 +8,10 @@ use Google\Service\Drive as GoogleDrive;
 use Google\Service\Drive\DriveFile;
 use Google\Service\Drive\FileList;
 use Google\Service\Drive\Resource\Files as DriveFiles;
+use Illuminate\Support\Facades\Storage;
+
+// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+beforeEach(fn () => Storage::fake('local'));
 
 /**
  * Jalur unggah ke Drive sebelumnya sama sekali tidak punya test — itu sebabnya

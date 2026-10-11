@@ -6,7 +6,12 @@ use App\Models\Student;
 use App\Services\GoogleDriveService;
 use App\Services\Student\StudentDrivePhotoLocator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Mockery\MockInterface;
+use OpenSpout\Reader\XLSX\Reader;
+
+// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+beforeEach(fn () => Storage::fake('local'));
 
 /*
  | `drive:audit-siswa` dibaca manusia, dan itu bagian dari apa yang harus benar.
@@ -182,4 +187,32 @@ test('sekolah tanpa siswa tidak menghentikan audit di tengah jalan', function ()
     $this->artisan('drive:audit-siswa')
         ->expectsOutputToContain('tidak ada siswa')
         ->assertExitCode(0);
+});
+
+test('semua temuan disimpan ke laporan XLSX, bukan hanya yang muat di layar', function () {
+    collect(range(1, 3))->each(fn (int $i) => auditedStudent(['nis' => "800{$i}"]));
+
+    auditLocator(mock(GoogleDriveService::class, function (MockInterface $mock) {
+        $mock->shouldReceive('findSchoolRoot')->andReturn('root-sekolah');
+        $mock->shouldReceive('findFolder')->with('7C', 'root-sekolah')->andReturn('folder-kelas');
+        $mock->shouldReceive('findFolder')->with(Mockery::any(), 'folder-kelas')->andReturnNull();
+    }));
+
+    $this->artisan('drive:audit-siswa')->expectsOutputToContain('Laporan lengkap');
+
+    $berkas = Storage::disk('local')->files('laporan-drive');
+    expect($berkas)->toHaveCount(1);
+
+    $reader = new Reader;
+    $reader->open(Storage::disk('local')->path($berkas[0]));
+    $nis = [];
+    foreach ($reader->getSheetIterator() as $sheet) {
+        foreach ($sheet->getRowIterator() as $row) {
+            $nis[] = $row->toArray()[2] ?? null;
+        }
+        break;
+    }
+    $reader->close();
+
+    expect($nis)->toContain('8001', '8002', '8003');
 });

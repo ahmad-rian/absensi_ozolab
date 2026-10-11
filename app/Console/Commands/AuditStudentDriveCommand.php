@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\TampilanPerawatanDrive;
 use App\Models\School;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
@@ -31,6 +32,8 @@ use Throwable;
  */
 class AuditStudentDriveCommand extends Command
 {
+    use TampilanPerawatanDrive;
+
     protected $signature = 'drive:audit-siswa
                             {--school= : Batasi ke satu school_id}
                             {--fix : Isi kolom yang kosong dari hasil pencarian}
@@ -224,10 +227,24 @@ class AuditStudentDriveCommand extends Command
             // Memotong diam-diam membuat laporan terbaca seolah sudah lengkap.
             if (count($rows) > count($shown)) {
                 $this->line(sprintf(
-                    '… %d temuan lain tidak dicetak. Pakai --school= atau --limit= untuk mempersempit.',
+                    '… %d temuan lain tidak dicetak di sini — semuanya ada di laporan lengkap di bawah.',
                     count($rows) - count($shown),
                 ));
             }
+        }
+
+        if ($rows !== [] || $missingClasses !== []) {
+            $berkas = $this->simpanLaporan('audit-siswa', [
+                'Temuan per siswa' => ['header' => ['Sekolah', 'Kelas', 'NIS', 'Nama', 'Temuan'], 'rows' => array_map(
+                    fn (array $r): array => [$r[0], $r[1], (string) $r[2], $r[3], $r[4]],
+                    $rows,
+                )],
+                'Folder kelas hilang' => ['header' => ['Sekolah', 'Kelas', 'Siswa terdampak'], 'rows' => array_values(array_map(
+                    fn (array $k): array => [$k['sekolah'], $k['kelas'], $k['siswa']],
+                    $missingClasses,
+                ))],
+            ]);
+            $this->line("Laporan lengkap (semua temuan): <info>{$berkas}</info>");
         }
 
         $flagged = array_sum($tally) - $tally['ok'];

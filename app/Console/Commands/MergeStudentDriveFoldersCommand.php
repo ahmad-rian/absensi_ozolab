@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\TampilanPerawatanDrive;
 use App\Models\School;
 use App\Models\Student;
 use App\Services\GoogleDriveService;
@@ -29,6 +30,8 @@ use Throwable;
  */
 class MergeStudentDriveFoldersCommand extends Command
 {
+    use TampilanPerawatanDrive;
+
     protected $signature = 'drive:satukan-folder-siswa
                             {--dry-run : Laporkan saja, tidak menyentuh Drive}
                             {--school= : Batasi ke satu school_id}
@@ -80,8 +83,7 @@ class MergeStudentDriveFoldersCommand extends Command
             try {
                 $drive = GoogleDriveService::forSchool($config);
 
-                $this->line("<comment>{$school->name}</comment>: membaca daftar folder…");
-                $folders = $drive->studentFolders();
+                $folders = $this->bacaFolderSiswa($drive, $school->name);
 
                 if ($folders === []) {
                     continue;
@@ -93,8 +95,7 @@ class MergeStudentDriveFoldersCommand extends Command
                 if ($akunBersama && $sapuanBersama !== null) {
                     $isiPerFolder = &$sapuanBersama;
                 } else {
-                    $this->line("<comment>{$school->name}</comment>: menyapu berkas Drive…");
-                    $sapuan = $drive->filesByParent();
+                    $sapuan = $this->sapuBerkas($drive, $school->name);
 
                     if ($akunBersama) {
                         $sapuanBersama = $sapuan;
@@ -109,13 +110,14 @@ class MergeStudentDriveFoldersCommand extends Command
                 continue;
             }
 
-            $students = Student::withoutGlobalScope('school')
+            $query = Student::withoutGlobalScope('school')
                 ->where('school_id', $school->id)
-                ->when($this->option('nis'), fn ($query, $nis) => $query->where('nis', $nis))
-                ->orderBy('nis')
-                ->cursor();
+                ->when($this->option('nis'), fn ($query, $nis) => $query->where('nis', $nis));
+            $this->mulaiBar($school->name, (clone $query)->count());
+            $students = $query->orderBy('nis')->cursor();
 
             foreach ($students as $student) {
+                $this->majukanBar();
                 $milikDia = self::folderMilik($folders, self::awalan($student));
 
                 if ($milikDia === []) {
@@ -137,6 +139,8 @@ class MergeStudentDriveFoldersCommand extends Command
                 // pencarian walau letaknya sudah benar sejak awal.
                 $diganti += $this->selaraskanNama($drive, $student, $tujuan, $isiPerFolder, $school->name, $dryRun, $prefix);
             }
+
+            $this->selesaikanBar();
         }
 
         $this->newLine();
@@ -151,6 +155,10 @@ class MergeStudentDriveFoldersCommand extends Command
 
         if ($dryRun) {
             $this->line('Tidak ada berkas yang disentuh. Jalankan tanpa --dry-run untuk menerapkan.');
+        }
+
+        if ($berkas = $this->simpanTindakan('satukan-folder-siswa', $dryRun)) {
+            $this->line("Daftar lengkap setiap tindakan: <info>{$berkas}</info>");
         }
 
         return self::SUCCESS;
@@ -204,13 +212,13 @@ class MergeStudentDriveFoldersCommand extends Command
             // harus dengan tangan. Nama yang sama sekali tidak beririsan adalah
             // tanda paling jelas untuk keadaan itu.
             if (! $this->paksa && ! self::namaMirip($folder['name'], $student->full_name)) {
-                $this->warn("  ! {$schoolName} / {$student->full_name}: folder \"{$folder['name']}\" namanya tidak beririsan — dilewati. Periksa manual, atau pakai --paksa.");
+                $this->catat($schoolName, $student->full_name, 'Folder dilewati (nama tidak beririsan)', $folder['name'], "  ! {$schoolName} / {$student->full_name}: folder \"{$folder['name']}\" namanya tidak beririsan — dilewati. Periksa manual, atau pakai --paksa.", 'warn');
 
                 continue;
             }
 
             foreach ($isiPerFolder[$folder['id']] ?? [] as $berkas) {
-                $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} ← {$folder['name']}");
+                $this->catat($schoolName, $student->full_name, 'Pindah ke folder utama', "{$berkas['name']} ← {$folder['name']}", "{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} ← {$folder['name']}");
 
                 if (! $dryRun) {
                     $drive->moveFile($berkas['id'], $tujuan);
@@ -309,7 +317,7 @@ class MergeStudentDriveFoldersCommand extends Command
             // yang satu dengan nama anak yang lain — lebih buruk daripada
             // membiarkannya bernama lama.
             if (! $this->paksa && ! self::namaMirip(self::bagianNama($berkas['name']), $student->full_name)) {
-                $this->warn("  ! {$schoolName} / {$student->full_name}: berkas \"{$berkas['name']}\" namanya tidak beririsan — dilewati. Periksa manual, atau pakai --paksa.");
+                $this->catat($schoolName, $student->full_name, 'Berkas dilewati (nama tidak beririsan)', $berkas['name'], "  ! {$schoolName} / {$student->full_name}: berkas \"{$berkas['name']}\" namanya tidak beririsan — dilewati. Periksa manual, atau pakai --paksa.", 'warn');
 
                 continue;
             }
@@ -321,7 +329,7 @@ class MergeStudentDriveFoldersCommand extends Command
             // dibetulkan. Dibuang ke SAMPAH, bukan dihapus: Drive menyimpannya
             // 30 hari kalau ternyata salah sasaran.
             if (in_array($namaBaru, $namaTerpakai, true)) {
-                $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} sudah tergantikan → sampah");
+                $this->catat($schoolName, $student->full_name, 'Buang ke sampah (sudah tergantikan)', $berkas['name'], "{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} sudah tergantikan → sampah");
 
                 if (! $dryRun) {
                     $drive->trashFile($berkas['id']);
@@ -332,7 +340,7 @@ class MergeStudentDriveFoldersCommand extends Command
                 continue;
             }
 
-            $this->line("{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} → {$namaBaru}");
+            $this->catat($schoolName, $student->full_name, 'Ganti nama', "{$berkas['name']} → {$namaBaru}", "{$prefix}{$schoolName} / {$student->full_name}: {$berkas['name']} → {$namaBaru}");
 
             if (! $dryRun) {
                 $drive->renameFile($berkas['id'], $namaBaru);

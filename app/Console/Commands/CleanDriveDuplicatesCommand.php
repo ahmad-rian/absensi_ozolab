@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\TampilanPerawatanDrive;
 use App\Models\School;
 use App\Services\GoogleDriveService;
 use Illuminate\Console\Command;
@@ -24,6 +25,8 @@ use Throwable;
  */
 class CleanDriveDuplicatesCommand extends Command
 {
+    use TampilanPerawatanDrive;
+
     protected $signature = 'drive:bersihkan-duplikat
                             {--dry-run : Laporkan saja, tidak menyentuh Drive}
                             {--school= : Batasi ke satu school_id}';
@@ -68,8 +71,7 @@ class CleanDriveDuplicatesCommand extends Command
             try {
                 $drive = GoogleDriveService::forSchool($config);
 
-                $this->line("<comment>{$school->name}</comment>: membaca daftar folder…");
-                $folders = $drive->studentFolders();
+                $folders = $this->bacaFolderSiswa($drive, $school->name);
 
                 if ($folders === []) {
                     continue;
@@ -78,8 +80,7 @@ class CleanDriveDuplicatesCommand extends Command
                 if ($akunBersama && $sapuanBersama !== null) {
                     $isiPerFolder = $sapuanBersama;
                 } else {
-                    $this->line("<comment>{$school->name}</comment>: menyapu berkas Drive…");
-                    $isiPerFolder = $drive->filesByParent();
+                    $isiPerFolder = $this->sapuBerkas($drive, $school->name);
 
                     if ($akunBersama) {
                         $sapuanBersama = $isiPerFolder;
@@ -95,15 +96,20 @@ class CleanDriveDuplicatesCommand extends Command
             // berkas bernama sama dalam SATU folder, jadi siswanya tidak perlu
             // diketahui — dan nama foldernya sudah memuat NIS berikut namanya,
             // yang justru lebih jelas untuk ditindaklanjuti.
+            $this->mulaiBar($school->name, count($folders));
+
             foreach ($folders as $folder) {
                 $diperiksa++;
+                $this->majukanBar();
 
                 try {
                     $dibuang += $this->pangkas($drive, $folder, $isiPerFolder, $school->name, $dryRun, $prefix);
                 } catch (Throwable $e) {
-                    $this->error("{$school->name} / {$folder['name']}: gagal diperiksa — {$e->getMessage()}");
+                    $this->cetak("{$school->name} / {$folder['name']}: gagal diperiksa — {$e->getMessage()}", 'error');
                 }
             }
+
+            $this->selesaikanBar();
         }
 
         $this->newLine();
@@ -111,6 +117,10 @@ class CleanDriveDuplicatesCommand extends Command
 
         if ($dryRun) {
             $this->line('Tidak ada berkas yang disentuh. Jalankan tanpa --dry-run untuk menerapkan.');
+        }
+
+        if ($berkas = $this->simpanTindakan('bersihkan-duplikat', $dryRun)) {
+            $this->line("Daftar lengkap setiap tindakan: <info>{$berkas}</info>");
         }
 
         return self::SUCCESS;
@@ -135,7 +145,7 @@ class CleanDriveDuplicatesCommand extends Command
 
         foreach (self::duplikat($isiPerFolder[$folder['id']] ?? []) as $nama => $kembar) {
             $sisa = count($kembar) - 1;
-            $this->line("{$prefix}{$schoolName} / {$folder['name']}: {$nama} × ".count($kembar)." → buang {$sisa}");
+            $this->catat($schoolName, $folder['name'], 'Buang kembar ke sampah', "{$nama} × ".count($kembar).", buang {$sisa}", "{$prefix}{$schoolName} / {$folder['name']}: {$nama} × ".count($kembar)." → buang {$sisa}");
 
             foreach (array_slice($kembar, 1) as $berkas) {
                 if (! $dryRun) {

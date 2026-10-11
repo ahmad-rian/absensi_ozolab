@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\TampilanPerawatanDrive;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Models\Student;
@@ -22,6 +23,8 @@ use Throwable;
  */
 class AuditStudentDriveFilesCommand extends Command
 {
+    use TampilanPerawatanDrive;
+
     protected $signature = 'drive:audit-berkas-siswa
                             {--school= : Batasi ke satu school_id}
                             {--nis= : Batasi ke satu siswa}
@@ -41,6 +44,8 @@ class AuditStudentDriveFilesCommand extends Command
             ->get();
 
         $baris = [];
+        $lengkap = [];
+        $perSekolah = [];
         $rapi = 0;
         $tanpaFolder = 0;
 
@@ -69,8 +74,7 @@ class AuditStudentDriveFilesCommand extends Command
                 if ($akunBersama && $sapuanBersama !== null) {
                     $isiPerFolder = $sapuanBersama;
                 } else {
-                    $this->line("<comment>{$school->name}</comment>: menyapu berkas Drive…");
-                    $isiPerFolder = $drive->filesByParent();
+                    $isiPerFolder = $this->sapuBerkas($drive, $school->name);
 
                     if ($akunBersama) {
                         $sapuanBersama = $isiPerFolder;
@@ -88,11 +92,18 @@ class AuditStudentDriveFilesCommand extends Command
                 ->where('school_id', $school->id)
                 ->where('is_active', true)
                 ->when($this->option('nis'), fn ($q, $nis) => $q->where('nis', $nis))
+                ->with('classroom:id,name')
                 ->get();
 
+            $hitung = ['rapi' => 0, 'bermasalah' => 0, 'tanpa_folder' => 0];
+            $this->mulaiBar($school->name, $siswa->count());
+
             foreach ($siswa as $murid) {
+                $this->majukanBar();
+
                 if (! $murid->drive_folder_id) {
                     $tanpaFolder++;
+                    $hitung['tanpa_folder']++;
 
                     continue;
                 }
@@ -105,9 +116,24 @@ class AuditStudentDriveFilesCommand extends Command
 
                 if ($temuan['bermasalah'] === false) {
                     $rapi++;
+                    $hitung['rapi']++;
 
                     continue;
                 }
+
+                $hitung['bermasalah']++;
+                $lengkap[] = [
+                    $school->name,
+                    $murid->classroom?->name ?? '-',
+                    (string) ($murid->nis ?: '—'),
+                    $murid->full_name,
+                    $temuan['jumlah'],
+                    $temuan['kurang'] === [] ? '—' : implode(', ', $temuan['kurang']),
+                    $temuan['basi'] ?: 0,
+                    $temuan['kembar'] ?: 0,
+                    $temuan['asing'] ?: 0,
+                    'https://drive.google.com/drive/folders/'.$murid->drive_folder_id,
+                ];
 
                 $baris[] = [
                     $school->name,
@@ -121,12 +147,28 @@ class AuditStudentDriveFilesCommand extends Command
                 ];
             }
 
+            $this->selesaikanBar();
+            $perSekolah[] = [$school->name, $siswa->count(), $hitung['rapi'], $hitung['bermasalah'], $hitung['tanpa_folder']];
+
             // Referensi ke sapuan bersama harus diputus, kalau tidak PHP
             // menyalin array puluhan ribu baris pada iterasi berikutnya.
             unset($isiPerFolder);
         }
 
         $this->tampilkan($baris, $limit);
+
+        $kepalaSekolah = ['Sekolah', 'Siswa aktif', 'Rapi', 'Bermasalah', 'Belum punya folder'];
+        if ($perSekolah !== []) {
+            $this->newLine();
+            $this->line('<options=bold>Per sekolah:</>');
+            $this->table($kepalaSekolah, $perSekolah);
+
+            $berkas = $this->simpanLaporan('audit-berkas-siswa', [
+                'Ringkasan' => ['header' => $kepalaSekolah, 'rows' => $perSekolah],
+                'Bermasalah' => ['header' => ['Sekolah', 'Kelas', 'NIS', 'Nama', 'Jumlah berkas', 'Jenis kurang', 'Nama basi', 'Kembar', 'Asing', 'Folder Drive'], 'rows' => $lengkap],
+            ]);
+            $this->line("Laporan lengkap (semua siswa bermasalah): <info>{$berkas}</info>");
+        }
 
         $this->newLine();
         $this->info("Rapi: {$rapi}, bermasalah: ".count($baris).", belum punya folder tersimpan: {$tanpaFolder}.");
