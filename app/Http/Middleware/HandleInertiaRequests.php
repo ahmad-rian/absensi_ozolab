@@ -80,6 +80,9 @@ class HandleInertiaRequests extends Middleware
             // Peta lengkap nyala/mati fitur sekolah aktif. Selalu utuh (semua
             // case hadir), jadi frontend boleh memakai perbandingan ketat dan
             // tidak perlu menebak makna key yang hilang.
+            // Saklar global generate massal; menu dan tombolnya ikut hilang
+            // saat mati, sejalan dengan middleware `generate-massal`.
+            'generateMassal' => (bool) config('cards.generate_massal'),
             'features' => function () {
                 $school = app()->bound('currentSchool') ? app('currentSchool') : null;
 

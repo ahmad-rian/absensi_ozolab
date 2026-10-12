@@ -65,6 +65,8 @@ type GuardedNavItem = BadgedNavItem & {
      * — tanpa penanda ini, admin sekolah melihat menunya lalu ditolak 403.
      */
     superAdmin?: boolean;
+    /** Generate massal; hilang saat saklar global `generateMassal` mati. */
+    massal?: boolean;
 };
 
 type NavSection = { label: string; items: GuardedNavItem[] };
@@ -125,14 +127,14 @@ const sections: NavSection[] = [
     {
         label: 'Kartu Siswa',
         items: [
-            { title: 'Generate Kartu', href: '/admin/generate-kartu', icon: CreditCard, permission: 'generate-kartu.access', feature: 'kartu_album', superAdmin: true },
+            { title: 'Generate Kartu', href: '/admin/generate-kartu', icon: CreditCard, permission: 'generate-kartu.access', feature: 'kartu_album', superAdmin: true, massal: true },
             { title: 'Riwayat Kartu', href: '/admin/card-generation', icon: History, permission: 'generate-kartu.access', feature: 'kartu_album' },
         ],
     },
     {
         label: 'Album & Pas Foto',
         items: [
-            { title: 'Generate Pas Foto', href: '/admin/pas-foto', icon: Images, permission: 'pas-foto.access', feature: 'kartu_album' },
+            { title: 'Generate Pas Foto', href: '/admin/pas-foto', icon: Images, permission: 'pas-foto.access', feature: 'kartu_album', massal: true },
             { title: 'Generate Album', href: '/admin/album-generation', icon: Printer, permission: 'generate-album.access', feature: 'kartu_album' },
         ],
     },
@@ -192,11 +194,12 @@ const sections: NavSection[] = [
 ];
 
 export function AppSidebar() {
-    const { auth, notifications, features, studioUrl } = usePage().props as unknown as {
+    const { auth, notifications, features, studioUrl, generateMassal } = usePage().props as unknown as {
         auth: { user: { roles?: string[]; permissions?: string[] } | null };
         notifications?: { unread: number };
         features?: Partial<SchoolFeatureMap>;
         studioUrl?: string;
+        generateMassal?: boolean;
     };
 
     const isSuperAdmin = (auth?.user?.roles ?? []).includes('SUPER_ADMIN');
@@ -217,6 +220,7 @@ export function AppSidebar() {
                 .filter((item) => (item.permission === '' || isSuperAdmin || granted.includes(item.permission)) && featureOn(item.feature))
                 // Menu yang rutenya memasang middleware `super-admin`.
                 .filter((item) => ! item.superAdmin || isSuperAdmin)
+                .filter((item) => ! item.massal || generateMassal === true)
                 // Tanpa alamat dari server, tautan Studio disembunyikan saja —
                 // href kosong yang bisa diklik lebih membingungkan daripada
                 // menu yang tidak ada.
@@ -228,7 +232,7 @@ export function AppSidebar() {
 
                     return item.href === '/admin/notifikasi' ? { ...item, badge: unread } : item;
                 });
-    }, [isSuperAdmin, granted, unread, features, studioUrl]);
+    }, [isSuperAdmin, granted, unread, features, studioUrl, generateMassal]);
 
     const overview = visible(overviewItems);
 

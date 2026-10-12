@@ -205,7 +205,10 @@ export default function CardAttendanceIndex({
     participants,
     kartu_lama = [],
 }: Props) {
-    const errors = usePage<{ errors: Record<string, string> }>().props.errors;
+    const { errors, generateMassal } = usePage<{
+        errors: Record<string, string>;
+        generateMassal?: boolean;
+    }>().props;
     const [q, setQ] = useState(filters.q);
     const [copied, setCopied] = useState(false);
     const selected = layouts.find((layout) => layout.id === filters.layout);
@@ -308,33 +311,38 @@ export default function CardAttendanceIndex({
                             >
                                 Ganti link scan
                             </Button>
-                            <Button
-                                variant="outline"
-                                disabled={!selected.qr_ready}
-                                onClick={() => {
-                                    if (
-                                        window.confirm(
-                                            'Generate ulang kartu semua peserta layout ini? Kartu yang sudah tercetak perlu dicetak ulang.',
-                                        )
-                                    ) {
-                                        router.post(
-                                            regenerate.url(selected.id),
-                                        );
-                                    }
-                                }}
-                            >
-                                Generate ulang semua kartu
-                            </Button>
+                            {generateMassal === true && (
+                                <Button
+                                    variant="outline"
+                                    disabled={!selected.qr_ready}
+                                    onClick={() => {
+                                        if (
+                                            window.confirm(
+                                                'Generate ulang kartu semua peserta layout ini? Kartu yang sudah tercetak perlu dicetak ulang.',
+                                            )
+                                        ) {
+                                            router.post(
+                                                regenerate.url(selected.id),
+                                            );
+                                        }
+                                    }}
+                                >
+                                    Generate ulang semua kartu
+                                </Button>
+                            )}
                             <Button asChild variant="outline">
                                 <a href={downloadCards.url(selected.id)}>
                                     Unduh semua kartu (ZIP)
                                 </a>
                             </Button>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                            Setelah generate ulang, tunggu sampai semua kartu
-                            selesai dibuat sebelum mengunduh ZIP untuk dicetak.
-                        </p>
+                        {generateMassal === true && (
+                            <p className="text-sm text-muted-foreground">
+                                Setelah generate ulang, tunggu sampai semua
+                                kartu selesai dibuat sebelum mengunduh ZIP untuk
+                                dicetak.
+                            </p>
+                        )}
                         <div className="rounded-md bg-muted/50 p-3 text-sm">
                             <p className="font-medium">
                                 Link ringan (box TV / HP lama)

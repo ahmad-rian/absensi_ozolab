@@ -342,7 +342,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
 
     Route::middleware(['permission:generate-kartu.access', 'feature:kartu_album'])->group(function () {
         Route::get('card-generation', [CardGenerationController::class, 'index'])->name('admin.card-generation');
-        Route::post('card-generation/generate', [CardGenerationController::class, 'generate'])->name('admin.card-generation.generate');
+        Route::post('card-generation/generate', [CardGenerationController::class, 'generate'])->middleware('generate-massal')->name('admin.card-generation.generate');
     });
 
     // Generate massal per sekolah/kelas. `super-admin` wajib ikut: layar ini
@@ -350,8 +350,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // jadi global scope tenant tidak menjaga apa pun di sini — sama alasannya
     // dengan grup Sistem.
     Route::middleware(['permission:generate-kartu.access', 'feature:kartu_album', 'super-admin'])->group(function () {
-        Route::get('generate-kartu', [GenerateKartuMassalController::class, 'index'])->name('admin.generate-kartu');
-        Route::post('generate-kartu', [GenerateKartuMassalController::class, 'generate'])->name('admin.generate-kartu.jalan');
+        Route::get('generate-kartu', [GenerateKartuMassalController::class, 'index'])->middleware('generate-massal')->name('admin.generate-kartu');
+        Route::post('generate-kartu', [GenerateKartuMassalController::class, 'generate'])->middleware('generate-massal')->name('admin.generate-kartu.jalan');
         Route::get('generate-kartu/{batch}/progres', [GenerateKartuMassalController::class, 'progres'])
             ->middleware('throttle:120,1')
             ->name('admin.generate-kartu.progres');
@@ -376,8 +376,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     });
 
     Route::middleware(['permission:pas-foto.access', 'feature:kartu_album'])->group(function () {
-        Route::get('pas-foto', [PhotoSheetBatchController::class, 'index'])->name('admin.photo-sheets');
-        Route::post('pas-foto', [PhotoSheetBatchController::class, 'store'])->name('admin.photo-sheets.store');
+        Route::get('pas-foto', [PhotoSheetBatchController::class, 'index'])->middleware('generate-massal')->name('admin.photo-sheets');
+        Route::post('pas-foto', [PhotoSheetBatchController::class, 'store'])->middleware('generate-massal')->name('admin.photo-sheets.store');
         Route::get('pas-foto/{batch}/berkas', [PhotoSheetBatchController::class, 'download'])->name('admin.photo-sheets.download');
     });
 
@@ -491,7 +491,7 @@ Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-a
     Route::post('absensi/{submission}', [CardAttendanceController::class, 'store'])->name('absensi.store');
     Route::post('layouts/{cardForm}/scanner-token', [CardAttendanceController::class, 'rotate'])->name('absensi.rotate');
     Route::post('layouts/{cardForm}/kartu-lama', [CardAttendanceController::class, 'terimaKartuLama'])->name('absensi.legacy');
-    Route::post('layouts/{cardForm}/generate-ulang', [CardAttendanceController::class, 'regenerate'])->middleware('throttle:6,1')->name('absensi.regenerate');
+    Route::post('layouts/{cardForm}/generate-ulang', [CardAttendanceController::class, 'regenerate'])->middleware(['throttle:6,1', 'generate-massal'])->name('absensi.regenerate');
     Route::get('layouts/{cardForm}/unduh-kartu', [CardAttendanceController::class, 'downloadCards'])->middleware('throttle:6,1')->name('absensi.download-cards');
     Route::get('laporan', [CardAttendanceController::class, 'report'])->name('laporan.index');
     Route::get('laporan/export/{format}', [CardAttendanceController::class, 'export'])->whereIn('format', ['xlsx', 'pdf'])->name('laporan.export');

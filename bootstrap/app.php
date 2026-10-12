@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuthenticateStudioToken;
 use App\Http\Middleware\EnsureFeatureEnabled;
+use App\Http\Middleware\EnsureGenerateMassalAktif;
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\HandleAppearance;
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'super-admin' => EnsureSuperAdmin::class,
             'feature' => EnsureFeatureEnabled::class,
+            'generate-massal' => EnsureGenerateMassalAktif::class,
             'studio-token' => AuthenticateStudioToken::class,
         ]);
 
