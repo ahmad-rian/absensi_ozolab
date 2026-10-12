@@ -33,6 +33,17 @@ class GoogleDriveService
      */
     private GoogleClient $client;
 
+    /**
+     * Klien OAuth global, dibangun sekali per proses.
+     *
+     * Setiap `GoogleClient` membawa tumpukan handler Guzzle dan koneksi curl
+     * sendiri yang tidak dilepas selama proses hidup. Membangun satu per foto
+     * membuat `drive:unggah-foto-siswa --langsung` mati "Too many open files"
+     * setelah ±360 unggahan. Token kedaluwarsa tidak masalah: klien
+     * menyegarkannya sendiri dari `refresh_token` di `authorize()`.
+     */
+    private static ?GoogleClient $oauthClient = null;
+
     /** @var array<string, string> Cache folder per instance supaya batch tidak menembak Drive berulang kali. */
     private array $folderCache = [];
 
@@ -56,6 +67,10 @@ class GoogleDriveService
         $refreshToken = config('services.google.oauth_refresh_token');
 
         if ($clientId && $clientSecret && $refreshToken) {
+            if (self::$oauthClient !== null) {
+                return self::$oauthClient;
+            }
+
             $client = new GoogleClient;
             $client->setClientId($clientId);
             $client->setClientSecret($clientSecret);
@@ -63,7 +78,7 @@ class GoogleDriveService
             $client->setAccessType('offline');
             $client->fetchAccessTokenWithRefreshToken($refreshToken);
 
-            return $client;
+            return self::$oauthClient = $client;
         }
 
         // Fallback: Service Account (can create folders but not upload files on personal accounts)

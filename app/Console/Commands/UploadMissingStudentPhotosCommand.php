@@ -210,12 +210,6 @@ class UploadMissingStudentPhotosCommand extends Command
         if ($this->option('langsung')) {
             SyncStudentPhotoToDriveJob::dispatchSync($student->id, $log->id);
 
-            // Tiap job membangun GoogleClient + koneksi HTTP sendiri, dan klien
-            // dengan pembungkus Drive-nya saling merujuk — PHP baru membuangnya
-            // saat pengumpul siklus berjalan. Tanpa ini socket-nya menumpuk
-            // sampai proses mati "Too many open files" setelah ratusan foto.
-            gc_collect_cycles();
-
             return;
         }
 
