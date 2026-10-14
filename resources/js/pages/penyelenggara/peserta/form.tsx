@@ -255,8 +255,8 @@ export default function PesertaForm({
                                                 e.target.files?.[0];
 
                                             if (!selected) {
-return;
-}
+                                                return;
+                                            }
 
                                             setFile(selected);
                                             setFileUrl(

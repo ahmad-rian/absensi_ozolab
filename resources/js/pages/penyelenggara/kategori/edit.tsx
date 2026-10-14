@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import FieldBuilder from '@/pages/kartu-bebas/data/field-builder';
-import type {FormField} from '@/pages/kartu-bebas/data/field-builder';
+import type { FormField } from '@/pages/kartu-bebas/data/field-builder';
 import { dashboard } from '@/routes/penyelenggara';
 import { arsip, index, update } from '@/routes/penyelenggara/kategori';
 

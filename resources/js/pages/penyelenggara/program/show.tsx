@@ -19,7 +19,13 @@ import {
 } from '@/routes/penyelenggara/kartu';
 import { index as kehadiranIndex } from '@/routes/penyelenggara/kehadiran';
 import { index as pesertaIndex } from '@/routes/penyelenggara/peserta';
-import { arsip, index, salin, update } from '@/routes/penyelenggara/program';
+import {
+    arsip,
+    dashboard as programDashboard,
+    index,
+    salin,
+    update,
+} from '@/routes/penyelenggara/program';
 import { rentangTanggal } from './index';
 
 type Grup = {
@@ -221,6 +227,11 @@ export default function ProgramShow({
                             <Link href={pesertaIndex(program.id)}>
                                 {program.peserta_count}{' '}
                                 {program.istilah_peserta}
+                            </Link>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href={programDashboard(program.id)}>
+                                Dashboard
                             </Link>
                         </Button>
                         <Button variant="outline" asChild>

@@ -84,3 +84,10 @@ test('admin mengubah Alpa menjadi Izin dan riwayat menampilkan keduanya', functi
             ->where('peserta.0.status', 'IZIN')
             ->where('riwayat', fn ($r) => collect($r)->pluck('baru')->filter()->values()->all() === ['IZIN', 'ALPA']));
 });
+
+test('halaman kehadiran menampilkan peserta yang belum hadir', function () {
+    [$admin, $program] = konteksManual();
+
+    $this->actingAs($admin)->get(route('penyelenggara.kehadiran.index', ['program' => $program, 'tanggal' => '2027-06-10']))
+        ->assertInertia(fn ($page) => $page->where('peserta.0.status', 'BELUM')->where('peserta.0.datang', null));
+});

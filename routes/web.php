@@ -56,9 +56,11 @@ use App\Http\Controllers\Penyelenggara\JadwalController as PenyelenggaraJadwalCo
 use App\Http\Controllers\Penyelenggara\KartuController as PenyelenggaraKartuController;
 use App\Http\Controllers\Penyelenggara\KategoriController as PenyelenggaraKategoriController;
 use App\Http\Controllers\Penyelenggara\KehadiranController as PenyelenggaraKehadiranController;
+use App\Http\Controllers\Penyelenggara\LaporanProgramController as PenyelenggaraLaporanController;
 use App\Http\Controllers\Penyelenggara\PesertaController as PenyelenggaraPesertaController;
 use App\Http\Controllers\Penyelenggara\PesertaImporController as PenyelenggaraPesertaImporController;
 use App\Http\Controllers\Penyelenggara\ProgramController as PenyelenggaraProgramController;
+use App\Http\Controllers\Penyelenggara\ProgramDashboardController as PenyelenggaraProgramDashboardController;
 use App\Http\Controllers\Penyelenggara\SwitchController as PenyelenggaraSwitchController;
 use App\Http\Controllers\Penyelenggara\TimController as PenyelenggaraTimController;
 use App\Http\Controllers\PrayerScannerController;
@@ -651,6 +653,10 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
 
             Route::get('program/{program}/kehadiran', [PenyelenggaraKehadiranController::class, 'index'])->name('kehadiran.index');
             Route::put('kehadiran/{sesi}/{peserta}', [PenyelenggaraKehadiranController::class, 'update'])->name('kehadiran.update');
+
+            Route::get('program/{program}/dashboard', [PenyelenggaraProgramDashboardController::class, 'show'])->name('program.dashboard');
+            Route::get('program/{program}/laporan', [PenyelenggaraLaporanController::class, 'index'])->name('laporan.index');
+            Route::get('program/{program}/laporan/unduh', [PenyelenggaraLaporanController::class, 'export'])->middleware('throttle:20,1')->name('laporan.export');
         });
 
         Route::middleware('permission:penyelenggara-kartu.access')->group(function () {

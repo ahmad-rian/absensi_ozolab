@@ -47,16 +47,22 @@ class KehadiranController extends Controller
             }
 
             $kehadiran = Kehadiran::where('sesi_id', $sesi->id)->get()->keyBy('card_form_submission_id');
-            $baris = $query->get()->map(fn (CardFormSubmission $p) => [
-                'id' => $p->id,
-                'nama' => $p->data['nama'] ?? '—',
-                'grups' => $p->grups->pluck('name'),
-                'status' => $kehadiran[$p->id]->status ?? 'BELUM',
-                'datang' => $kehadiran[$p->id]?->datang_at?->format('H:i'),
-                'pulang' => $kehadiran[$p->id]?->pulang_at?->format('H:i'),
-                'sumber' => $kehadiran[$p->id]->sumber ?? null,
-                'catatan' => $kehadiran[$p->id]->catatan ?? null,
-            ])
+            $baris = $query->get()->map(function (CardFormSubmission $p) use ($kehadiran) {
+                // `$koleksi[$id]?->x` tetap memanggil offsetGet dan melempar untuk
+                // peserta yang belum punya kehadiran — ambil lewat get().
+                $k = $kehadiran->get($p->id);
+
+                return [
+                    'id' => $p->id,
+                    'nama' => $p->data['nama'] ?? '—',
+                    'grups' => $p->grups->pluck('name'),
+                    'status' => $k->status ?? 'BELUM',
+                    'datang' => $k?->datang_at?->format('H:i'),
+                    'pulang' => $k?->pulang_at?->format('H:i'),
+                    'sumber' => $k->sumber ?? null,
+                    'catatan' => $k->catatan ?? null,
+                ];
+            })
                 ->when($request->status, fn ($c, $s) => $c->where('status', $s))
                 ->sortBy('nama')->values();
 
