@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Penyelenggara;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Grup;
 use App\Models\Kehadiran;
 use App\Models\Program;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,7 +17,7 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $penyelenggara = app()->bound('currentPenyelenggara') ? app('currentPenyelenggara') : null;
 
@@ -29,7 +32,12 @@ class DashboardController extends Controller
                 'participant_quota' => $penyelenggara->participant_quota,
             ],
             // Ringkasan cepat; angka rinci per sesi ada di dashboard program.
-            'programs' => Program::whereNull('archived_at')->with('kategori:id,name')->orderByDesc('starts_on')->limit(20)->get()
+            'programs' => Program::whereNull('archived_at')
+                ->when(! $request->user()->isSuperAdmin() && $request->user()->hasRole(UserRole::Pendamping->value), fn ($q) => $q->whereIn(
+                    'id',
+                    Grup::whereHas('pendamping', fn ($p) => $p->where('users.id', $request->user()->id))->pluck('program_id'),
+                ))
+                ->with('kategori:id,name')->orderByDesc('starts_on')->limit(20)->get()
                 ->map(function (Program $p) {
                     $hariIni = CarbonImmutable::now($p->timezone)->toDateString();
                     $hadir = Kehadiran::where('program_id', $p->id)

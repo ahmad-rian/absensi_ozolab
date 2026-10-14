@@ -638,17 +638,8 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
 
         Route::middleware('permission:penyelenggara-peserta.access')->group(function () {
             Route::get('program/{program}/peserta', [PenyelenggaraPesertaController::class, 'index'])->name('peserta.index');
-            Route::get('program/{program}/peserta/create', [PenyelenggaraPesertaController::class, 'create'])->name('peserta.create');
-            Route::post('program/{program}/peserta', [PenyelenggaraPesertaController::class, 'store'])->name('peserta.store');
-            Route::post('program/{program}/impor', [PenyelenggaraPesertaImporController::class, 'pratinjau'])->name('impor.pratinjau');
-            Route::post('program/{program}/impor/{kunci}', [PenyelenggaraPesertaImporController::class, 'simpan'])->name('impor.simpan');
 
             Route::get('peserta/{peserta}', [PenyelenggaraPesertaController::class, 'edit'])->name('peserta.edit');
-            Route::post('peserta/{peserta}', [PenyelenggaraPesertaController::class, 'update'])->name('peserta.update');
-            Route::delete('peserta/{peserta}', [PenyelenggaraPesertaController::class, 'destroy'])->name('peserta.destroy');
-            Route::post('peserta/{peserta}/pulihkan', [PenyelenggaraPesertaController::class, 'restore'])->name('peserta.restore');
-            Route::put('peserta/{peserta}/grup', [PenyelenggaraPesertaController::class, 'grup'])->name('peserta.grup');
-            Route::post('peserta/{peserta}/generate', [PenyelenggaraPesertaController::class, 'generate'])->middleware('throttle:30,1')->name('peserta.generate');
             Route::get('peserta/{peserta}/kartu', [PenyelenggaraPesertaController::class, 'kartu'])->name('peserta.kartu');
 
             Route::get('program/{program}/kehadiran', [PenyelenggaraKehadiranController::class, 'index'])->name('kehadiran.index');
@@ -657,6 +648,20 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
             Route::get('program/{program}/dashboard', [PenyelenggaraProgramDashboardController::class, 'show'])->name('program.dashboard');
             Route::get('program/{program}/laporan', [PenyelenggaraLaporanController::class, 'index'])->name('laporan.index');
             Route::get('program/{program}/laporan/unduh', [PenyelenggaraLaporanController::class, 'export'])->middleware('throttle:20,1')->name('laporan.export');
+        });
+
+        // Tambah/impor/arsip/kartu: Admin Penyelenggara saja — pendamping hanya
+        // melihat dan mencatat kehadiran (audit 2026-10-14).
+        Route::middleware('permission:penyelenggara-peserta-kelola.access')->group(function () {
+            Route::get('program/{program}/peserta/create', [PenyelenggaraPesertaController::class, 'create'])->name('peserta.create');
+            Route::post('program/{program}/peserta', [PenyelenggaraPesertaController::class, 'store'])->name('peserta.store');
+            Route::post('program/{program}/impor', [PenyelenggaraPesertaImporController::class, 'pratinjau'])->name('impor.pratinjau');
+            Route::post('program/{program}/impor/{kunci}', [PenyelenggaraPesertaImporController::class, 'simpan'])->name('impor.simpan');
+            Route::post('peserta/{peserta}', [PenyelenggaraPesertaController::class, 'update'])->name('peserta.update');
+            Route::delete('peserta/{peserta}', [PenyelenggaraPesertaController::class, 'destroy'])->name('peserta.destroy');
+            Route::post('peserta/{peserta}/pulihkan', [PenyelenggaraPesertaController::class, 'restore'])->name('peserta.restore');
+            Route::put('peserta/{peserta}/grup', [PenyelenggaraPesertaController::class, 'grup'])->name('peserta.grup');
+            Route::post('peserta/{peserta}/generate', [PenyelenggaraPesertaController::class, 'generate'])->middleware('throttle:30,1')->name('peserta.generate');
         });
 
         Route::middleware('permission:penyelenggara-kartu.access')->group(function () {

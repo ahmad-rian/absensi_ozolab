@@ -4,9 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAksesPenyelenggara } from '@/hooks/use-akses-penyelenggara';
 import { dashboard } from '@/routes/penyelenggara';
 import { exportMethod } from '@/routes/penyelenggara/laporan';
-import { show as programShow } from '@/routes/penyelenggara/program';
+import {
+    dashboard as programDashboard,
+    show as programShow,
+} from '@/routes/penyelenggara/program';
 
 type Props = {
     program: { id: string; name: string; starts_on: string; ends_on: string };
@@ -21,6 +25,7 @@ export default function LaporanProgram({
     sesis,
     peserta,
 }: Props) {
+    const akses = useAksesPenyelenggara();
     const [mode, setMode] = useState<'grup' | 'sesi' | 'peserta'>('grup');
     const [dari, setDari] = useState(program.starts_on);
     const [sampai, setSampai] = useState(program.ends_on);
@@ -51,7 +56,11 @@ export default function LaporanProgram({
                     </h1>
                     <p className="text-sm text-muted-foreground">
                         <Link
-                            href={programShow(program.id)}
+                            href={
+                                akses.program
+                                    ? programShow(program.id)
+                                    : programDashboard(program.id)
+                            }
                             className="underline"
                         >
                             {program.name}

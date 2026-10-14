@@ -5,6 +5,7 @@ namespace App\Services\Penyelenggara;
 use App\Models\CardFormSubmission;
 use App\Models\Grup;
 use App\Models\Kehadiran;
+use App\Models\Libur;
 use App\Models\Program;
 use App\Models\Sesi;
 use App\Models\User;
@@ -73,13 +74,16 @@ class RingkasanKehadiran
      */
     public function matriks(Program $program, string $dari, string $sampai, User $user, ?string $grupId = null): array
     {
+        // Sesi di hari libur tidak dihitung, sama seperti dasbor dan sapuan alpa.
+        $libur = Libur::where('program_id', $program->id)->pluck('tanggal')->all();
         $sesis = Sesi::where('program_id', $program->id)
             ->where('tanggal', '>=', $dari)
             ->where('tanggal', '<=', $sampai)
+            ->when($libur, fn ($q) => $q->whereNotIn('tanggal', $libur))
             ->orderBy('tanggal')->orderBy('datang_mulai')
             ->get();
 
-        $query = CardFormSubmission::where('program_id', $program->id)->whereNull('archived_at')->with('grups:id,name');
+        $query = CardFormSubmission::where('program_id', $program->id)->whereNull('archived_at')->with('grups:id,name,parent_id');
         if ($grupId) {
             $query->whereHas('grups', fn ($q) => $q->whereIn('grups.id', Grup::denganTurunan($program->id, [$grupId])));
         }

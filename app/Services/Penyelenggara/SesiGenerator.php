@@ -2,6 +2,7 @@
 
 namespace App\Services\Penyelenggara;
 
+use App\Models\Grup;
 use App\Models\Kategori;
 use App\Models\Program;
 use App\Models\Sesi;
@@ -68,6 +69,31 @@ class SesiGenerator
             ->each(fn (SesiPola $pola) => $this->sinkronPola($program, $pola, false));
     }
 
+    /**
+     * Saklar `terlambat`/`pulang` kategori berubah: pola dan sesi mendatang semua
+     * program kategori ikut disesuaikan (audit 2026-10-14). Mematikan mengosongkan
+     * jendelanya; menyalakan kembali butuh admin mengisi jendela di jadwal.
+     */
+    public function terapkanFitur(Kategori $kategori): void
+    {
+        $programs = Program::acrossPenyelenggara()->where('kategori_id', $kategori->id)->whereNull('archived_at')->get();
+
+        foreach ($programs as $program) {
+            $polas = SesiPola::acrossPenyelenggara()->where('program_id', $program->id)->get();
+            foreach ($polas as $pola) {
+                if (! $kategori->fitur('terlambat')) {
+                    $pola->batas_terlambat = null;
+                }
+                if (! $kategori->fitur('pulang')) {
+                    $pola->pulang_mulai = null;
+                    $pola->pulang_selesai = null;
+                }
+                $pola->save();
+            }
+            $this->sinkronProgram($program);
+        }
+    }
+
     public function sinkronPola(Program $program, SesiPola $pola, bool $termasukHariIni): void
     {
         $hariIni = CarbonImmutable::now($program->timezone)->toDateString();
@@ -115,11 +141,18 @@ class SesiGenerator
         $mulai = $calon->datang_mulai;
         $akhir = $calon->pulang_selesai ?? $calon->datang_selesai;
 
+        // Hanya tanggal mendatang: sesi lampau tidak pernah diubah, jadi tidak
+        // boleh menghalangi perubahan jadwal ke depan.
+        $hariIni = CarbonImmutable::now($program->timezone)->toDateString();
+        $tanggal = array_values(array_filter($tanggal, fn (string $t) => $t >= $hariIni));
+
         $bentrok = Sesi::acrossPenyelenggara()
             ->where('program_id', $program->id)
             ->whereIn('tanggal', $tanggal)
             ->when($abaikan, fn ($q) => $q->where(fn ($w) => $w->whereNull('sesi_pola_id')->orWhere('sesi_pola_id', '!=', $abaikan->id)))
-            ->when($calon->grup_id, fn ($q) => $q->where(fn ($w) => $w->whereNull('grup_id')->orWhere('grup_id', $calon->grup_id)))
+            // Peserta grup anak juga menerima sesi grup induknya (SesiResolver),
+            // jadi leluhur dan turunan dihitung sebagai target yang sama.
+            ->when($calon->grup_id, fn ($q) => $q->where(fn ($w) => $w->whereNull('grup_id')->orWhereIn('grup_id', $this->grupTerkait($program, $calon->grup_id))))
             ->where('datang_mulai', '<', $akhir)
             ->whereRaw('COALESCE(pulang_selesai, datang_selesai) > ?', [$mulai])
             ->orderBy('tanggal')
@@ -131,6 +164,23 @@ class SesiGenerator
                 'datang_mulai' => "Bertabrakan dengan {$bentrok->name} ({$jam}) pada ".CarbonImmutable::parse($bentrok->tanggal)->locale('id')->translatedFormat('j F Y').'.',
             ]);
         }
+    }
+
+    /**
+     * Grup ini, semua turunannya, dan semua leluhurnya.
+     *
+     * @return array<int, string>
+     */
+    private function grupTerkait(Program $program, string $grupId): array
+    {
+        $induk = Grup::acrossPenyelenggara()->where('program_id', $program->id)->pluck('parent_id', 'id');
+        $hasil = Grup::denganTurunan($program->id, [$grupId]);
+
+        for ($id = $induk[$grupId] ?? null; $id; $id = $induk[$id] ?? null) {
+            $hasil[] = $id;
+        }
+
+        return array_values(array_unique($hasil));
     }
 
     /**

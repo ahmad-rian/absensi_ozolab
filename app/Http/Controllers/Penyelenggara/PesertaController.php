@@ -167,6 +167,7 @@ class PesertaController extends Controller
                 'photo_url' => $peserta->photo_path ? Storage::disk('public')->url($peserta->photo_path) : null,
                 'original_url' => ($peserta->original_photo_path ?: $peserta->photo_path) ? Storage::disk('public')->url($peserta->original_photo_path ?: $peserta->photo_path) : null,
                 'has_card' => (bool) ($peserta->file_path || $peserta->drive_file_id),
+                'archived' => $peserta->archived_at !== null,
                 'riwayat' => DB::table('grup_peserta_riwayats')->where('card_form_submission_id', $peserta->id)->latest()->limit(20)->get(['aksi', 'dari_grup_id', 'ke_grup_id', 'created_at']),
             ] : null,
         ]);

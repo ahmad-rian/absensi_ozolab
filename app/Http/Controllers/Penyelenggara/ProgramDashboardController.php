@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Penyelenggara;
 
 use App\Http\Controllers\Controller;
 use App\Models\Grup;
+use App\Models\Libur;
 use App\Models\Program;
 use App\Models\Sesi;
 use App\Services\Penyelenggara\PesertaService;
@@ -21,7 +22,8 @@ class ProgramDashboardController extends Controller
     public function show(Request $request, Program $program, RingkasanKehadiran $ringkasan, PesertaService $peserta): Response
     {
         $hariIni = CarbonImmutable::now($program->timezone);
-        $sesis = Sesi::where('program_id', $program->id)->where('tanggal', $hariIni->toDateString())->orderBy('datang_mulai')->get();
+        $libur = Libur::where('program_id', $program->id)->where('tanggal', $hariIni->toDateString())->exists();
+        $sesis = $libur ? collect() : Sesi::where('program_id', $program->id)->where('tanggal', $hariIni->toDateString())->orderBy('datang_mulai')->get();
         $grupId = $request->input('grup') ?: null;
         $bulan = in_array((int) $request->input('bulan'), [1, 2, 3], true) ? (int) $request->input('bulan') : 1;
         $berjalan7Hari = $program->starts_on->lte($hariIni->subDays(7));
@@ -31,6 +33,14 @@ class ProgramDashboardController extends Controller
         return Inertia::render('penyelenggara/program/dashboard', [
             'program' => ['id' => $program->id, 'name' => $program->name, 'tanggal' => $hariIni->toDateString()],
             'adaSesiHariIni' => $sesis->isNotEmpty(),
+            'libur' => $libur,
+            // Tautan yang boleh ditampilkan — pendamping tidak punya izin program.
+            'akses' => [
+                'program' => $user->can('penyelenggara-program.access'),
+                'kehadiran' => $user->can('penyelenggara-peserta.access'),
+                'peserta' => $user->can('penyelenggara-peserta.access'),
+                'laporan' => $user->can('penyelenggara-peserta.access'),
+            ],
             'grups' => Grup::where('program_id', $program->id)
                 ->when($grupTerlihat !== null, fn ($q) => $q->whereIn('id', $grupTerlihat ?: ['-']))
                 ->orderBy('urutan')->orderBy('name')->get(['id', 'name']),

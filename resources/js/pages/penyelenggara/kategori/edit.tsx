@@ -30,6 +30,9 @@ export const FITUR_LABEL: Record<string, string> = {
     rfid: 'Kartu RFID',
 };
 
+/** Saklar yang disimpan sekarang tapi fiturnya baru hadir di rilis berikutnya. */
+const FITUR_SEGERA = new Set(['notifikasi_wali', 'portal_wali', 'rfid']);
+
 type Props = { kategori: Kategori; errors: Record<string, string> };
 
 export default function KategoriEdit({ kategori, errors }: Props) {
@@ -121,6 +124,11 @@ export default function KategoriEdit({ kategori, errors }: Props) {
                                         }
                                     />
                                     {FITUR_LABEL[key]}
+                                    {FITUR_SEGERA.has(key) && (
+                                        <span className="text-xs text-muted-foreground">
+                                            (segera hadir)
+                                        </span>
+                                    )}
                                 </label>
                             ))}
                         </div>

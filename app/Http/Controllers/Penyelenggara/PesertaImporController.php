@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 /**
  * Impor peserta dua langkah: pratinjau (tidak menyimpan apa pun) lalu simpan.
@@ -59,10 +60,32 @@ class PesertaImporController extends Controller
 
     public function simpan(Request $request, Program $program, string $kunci, PesertaService $peserta): RedirectResponse
     {
-        $staging = Cache::get(self::CACHE_PREFIX.$kunci);
+        abort_if($program->isArchived(), 403, 'Program sudah diarsip dan hanya bisa dilihat.');
 
-        abort_unless($staging && $staging['program_id'] === $program->id, 410, 'Pratinjau impor sudah kedaluwarsa. Unggah ulang berkasnya.');
+        // pull, bukan get: klik ganda pada "Simpan" tidak boleh mengimpor dua kali.
+        $staging = Cache::pull(self::CACHE_PREFIX.$kunci);
 
+        abort_unless($staging && $staging['program_id'] === $program->id, 410, 'Pratinjau impor sudah kedaluwarsa atau sudah disimpan. Unggah ulang berkasnya.');
+
+        try {
+            $this->impor($request, $program, $staging, $peserta);
+        } catch (Throwable $e) {
+            // Gagal (mis. kuota penuh): staging dikembalikan supaya bisa dicoba lagi.
+            Cache::put(self::CACHE_PREFIX.$kunci, $staging, now()->addMinutes(30));
+
+            throw $e;
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => count($staging['rows']).' peserta diimpor; '.count($staging['errors']).' baris dilewati.']);
+
+        return to_route('penyelenggara.peserta.index', $program);
+    }
+
+    /**
+     * @param  array{rows: array<int, array{data: array<string, mixed>, grup_id: ?string}>, errors: array<int, mixed>, total: int, filename: string}  $staging
+     */
+    private function impor(Request $request, Program $program, array $staging, PesertaService $peserta): void
+    {
         $peserta->pastikanKuota(app('currentPenyelenggara'), count($staging['rows']));
         $formId = $program->card_form_id;
 
@@ -92,11 +115,5 @@ class PesertaImporController extends Controller
                 'oleh' => $request->user()->id,
             ]);
         });
-
-        Cache::forget(self::CACHE_PREFIX.$kunci);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => count($staging['rows']).' peserta diimpor; '.count($staging['errors']).' baris dilewati.']);
-
-        return to_route('penyelenggara.peserta.index', $program);
     }
 }

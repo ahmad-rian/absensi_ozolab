@@ -59,7 +59,9 @@ class KehadiranRecorder
             : ($sesi->pulang_mulai && $jam >= $sesi->pulang_mulai ? self::MODE_PULANG : null);
 
         if ($mode === null) {
-            $this->tolak("Di luar jam scan {$sesi->name}. Jendela pulang mulai ".substr((string) $sesi->pulang_mulai, 0, 5).'.');
+            $this->tolak($sesi->pulang_mulai
+                ? "Di luar jam scan {$sesi->name}. Jendela pulang mulai ".substr($sesi->pulang_mulai, 0, 5).'.'
+                : "Jendela datang {$sesi->name} sudah tutup.");
         }
 
         try {
@@ -120,9 +122,19 @@ class KehadiranRecorder
 
         $wall = $sekarang->format('Y-m-d H:i:s');
 
+        $hadirManual = $kehadiran && $kehadiran->sumber === Kehadiran::SUMBER_MANUAL && in_array($kehadiran->status, ['HADIR', 'TERLAMBAT'], true);
+
         if ($mode === self::MODE_DATANG) {
             if ($kehadiran?->datang_at) {
                 return ['kehadiran' => $kehadiran, 'peserta' => $peserta, 'sesi' => $sesi, 'mode' => $mode, 'duplikat' => true];
+            }
+
+            // Sudah dicatat Hadir/Terlambat oleh petugas: status manual dipertahankan,
+            // hanya jam datangnya yang dilengkapi.
+            if ($hadirManual) {
+                $kehadiran->forceFill(['datang_at' => $wall])->save();
+
+                return ['kehadiran' => $kehadiran, 'peserta' => $peserta, 'sesi' => $sesi, 'mode' => $mode, 'duplikat' => false];
             }
 
             $terlambat = $sesi->batas_terlambat && $sekarang->format('H:i:s') > $sesi->batas_terlambat;
@@ -141,7 +153,7 @@ class KehadiranRecorder
             return ['kehadiran' => $kehadiran, 'peserta' => $peserta, 'sesi' => $sesi, 'mode' => $mode, 'duplikat' => false];
         }
 
-        if (! $kehadiran?->datang_at) {
+        if (! $kehadiran?->datang_at && ! $hadirManual) {
             $this->tolak("Belum tercatat datang di {$sesi->name}, jadi pulang tidak bisa dicatat. Hubungi admin.");
         }
         if ($kehadiran->pulang_at) {

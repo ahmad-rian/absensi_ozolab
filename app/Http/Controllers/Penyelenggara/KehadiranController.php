@@ -6,6 +6,7 @@ use App\Enums\AttendanceStatus;
 use App\Http\Controllers\Controller;
 use App\Models\CardFormSubmission;
 use App\Models\Grup;
+use App\Models\Kategori;
 use App\Models\Kehadiran;
 use App\Models\Program;
 use App\Models\Sesi;
@@ -17,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
@@ -89,8 +91,10 @@ class KehadiranController extends Controller
             'sesi' => $sesi ? ['id' => $sesi->id, 'name' => $sesi->name] : null,
             'peserta' => $baris,
             'riwayat' => $riwayat,
-            'grups' => Grup::where('program_id', $program->id)->orderBy('urutan')->orderBy('name')->get(['id', 'name']),
-            'statusOptions' => collect(AttendanceStatus::cases())->map(fn (AttendanceStatus $s) => ['value' => $s->value, 'label' => $s->label()]),
+            'grups' => Grup::where('program_id', $program->id)
+                ->when(($terlihat = $this->peserta->grupTerlihat($request->user(), $program)) !== null, fn ($q) => $q->whereIn('id', $terlihat ?: ['-']))
+                ->orderBy('urutan')->orderBy('name')->get(['id', 'name']),
+            'statusOptions' => collect($this->statusDiizinkan($program))->map(fn (AttendanceStatus $s) => ['value' => $s->value, 'label' => $s->label()])->values(),
             'linkScan' => $request->user()->can('penyelenggara-program.access') ? [
                 'kamera' => route('public.program-scan', $program->scanner_token),
                 'ringan' => route('public.program-scan.ringan', ProgramShortLink::codeFor($program)),
@@ -109,11 +113,29 @@ class KehadiranController extends Controller
             'catatan' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $recorder->catatManual($sesi, $peserta, AttendanceStatus::from($validated['status']), $validated['catatan'] ?? null, $request->user());
+        $status = AttendanceStatus::from($validated['status']);
+        if (! in_array($status, $this->statusDiizinkan(Program::findOrFail($sesi->program_id)), true)) {
+            throw ValidationException::withMessages(['status' => 'Status Izin/Sakit dimatikan untuk kategori ini. Aktifkan di pengaturan kategori.']);
+        }
+
+        $recorder->catatManual($sesi, $peserta, $status, $validated['catatan'] ?? null, $request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Kehadiran dicatat.']);
 
         return back();
+    }
+
+    /**
+     * @return array<int, AttendanceStatus>
+     */
+    private function statusDiizinkan(Program $program): array
+    {
+        $izinSakit = Kategori::find($program->kategori_id)?->fitur('izin_sakit') ?? true;
+
+        return array_values(array_filter(
+            AttendanceStatus::cases(),
+            fn (AttendanceStatus $s) => $izinSakit || ! in_array($s, [AttendanceStatus::Izin, AttendanceStatus::Sakit], true),
+        ));
     }
 
     public function rotate(Program $program): RedirectResponse

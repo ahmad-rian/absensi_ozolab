@@ -5,10 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useAksesPenyelenggara } from '@/hooks/use-akses-penyelenggara';
 import { dashboard } from '@/routes/penyelenggara';
 import { pratinjau } from '@/routes/penyelenggara/impor';
 import { create, edit, index } from '@/routes/penyelenggara/peserta';
-import { show as programShow } from '@/routes/penyelenggara/program';
+import {
+    dashboard as programDashboard,
+    show as programShow,
+} from '@/routes/penyelenggara/program';
 
 type Row = {
     id: string;
@@ -57,6 +61,8 @@ export default function PesertaIndex({
     kuota,
     filters,
 }: Props) {
+    const akses = useAksesPenyelenggara();
+    const bolehKelola = akses.kelolaPeserta && !program.archived;
     const cari = (patch: Partial<Props['filters']>) =>
         router.get(
             index.url(program.id),
@@ -76,7 +82,11 @@ export default function PesertaIndex({
                         </h1>
                         <p className="text-sm text-muted-foreground">
                             <Link
-                                href={programShow(program.id)}
+                                href={
+                                    akses.program
+                                        ? programShow(program.id)
+                                        : programDashboard(program.id)
+                                }
                                 className="underline"
                             >
                                 {program.name}
@@ -86,7 +96,7 @@ export default function PesertaIndex({
                             {kuota.terpakai}/{kuota.kuota ?? '∞'}
                         </p>
                     </div>
-                    {!program.archived && (
+                    {bolehKelola && (
                         <Button asChild>
                             <Link href={create(program.id)}>
                                 <Plus className="size-4" /> Tambah{' '}
@@ -96,7 +106,7 @@ export default function PesertaIndex({
                     )}
                 </div>
 
-                {!program.archived && (
+                {bolehKelola && (
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base">

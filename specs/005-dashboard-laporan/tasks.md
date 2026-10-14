@@ -7,3 +7,10 @@
 - [X] T005 [US3] Peringkat & tren di dashboard
 - [X] T006 Beranda penyelenggara: daftar program aktif + ringkasan hari ini; tautan dari detail program
 - [X] T007 Pint, build, suite penuh, commit
+
+## Audit 2026-10-14 — P1
+
+Tes: `tests/Feature/Penyelenggara/AuditP1Test.php`, `tests/Unit/akses-penyelenggara.test.mjs`.
+
+- [X] T-A20 Dashboard program: tautan Peserta/Kehadiran/Laporan per izin, sesi hari libur tidak dihitung; Beranda pendamping hanya programnya — `ProgramDashboardController`, `DashboardController`, `program/dashboard.tsx`
+- [X] T-A21 Laporan per grup dikelompokkan per id grup berlabel jalur, peserta muncul di tiap grupnya, ringkasan dari matriks, sesi libur dikecualikan — `LaporanProgramController`, `RingkasanKehadiran::matriks`

@@ -49,3 +49,12 @@
 
 ## Dependencies
 Setup → Foundational (T002–T008) → US1 → US2 → US3 → US4 → US5 → Polish.
+
+## Audit 2026-10-14 — P1
+
+Tes: `tests/Feature/Penyelenggara/AuditP1Test.php`, `tests/Unit/akses-penyelenggara.test.mjs`.
+
+- [X] T-A11 Izin baru `penyelenggara-peserta-kelola` (tambah/impor/arsip/generate = admin saja); `penyelenggara-hak-akses` dibuang dari default — `AppModule`, `routes/web.php`
+- [X] T-A12 Halaman peserta menyembunyikan tombol kelola tanpa izin; Arsipkan/Pulihkan sesuai status + konfirmasi — `use-akses-penyelenggara.ts`, `peserta/{index,form}.tsx`
+- [X] T-A13 Impor: `Cache::pull` (klik ganda tidak menggandakan), tolak program arsip, kolom grup dikenali via istilah grup kategori — `PesertaImporController`, `PesertaImportParser`
+- [X] T-A14 Saklar `terlambat`/`pulang` kategori diubah → pola & sesi mendatang disesuaikan — `SesiGenerator::terapkanFitur`, `KategoriController::update`; RFID/notifikasi/portal diberi label segera hadir

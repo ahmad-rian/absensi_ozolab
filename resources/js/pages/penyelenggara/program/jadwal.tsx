@@ -1,31 +1,19 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import InputError from '@/components/input-error';
+import { NAMA_HARI, PolaForm } from '@/components/penyelenggara/pola-form';
+import type { Pola } from '@/components/penyelenggara/pola-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { dashboard } from '@/routes/penyelenggara';
-import { destroy, store } from '@/routes/penyelenggara/jadwal';
+import { destroy } from '@/routes/penyelenggara/jadwal';
 import {
     destroy as hapusLibur,
     store as tambahLibur,
 } from '@/routes/penyelenggara/libur';
 import { show as programShow } from '@/routes/penyelenggara/program';
-
-type Pola = {
-    id: string;
-    name: string;
-    pengulangan: 'mingguan' | 'rentang' | 'sekali';
-    hari: number[];
-    tanggal: string | null;
-    grup: string | null;
-    datang_mulai: string;
-    datang_selesai: string;
-    batas_terlambat: string | null;
-    pulang_mulai: string | null;
-    pulang_selesai: string | null;
-};
 
 type Props = {
     program: {
@@ -53,8 +41,6 @@ type Props = {
     grups: { id: string; name: string }[];
 };
 
-export const NAMA_HARI = ['', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-
 export function ringkasPola(p: Pola): string {
     if (p.pengulangan === 'sekali') {
         return `Sekali, ${p.tanggal}`;
@@ -66,7 +52,7 @@ export function ringkasPola(p: Pola): string {
             : p.hari.map((h) => NAMA_HARI[h]).join(', ');
 
     return p.pengulangan === 'rentang'
-        ? `Rentang · ${hari || 'setiap hari'}`
+        ? `${p.tanggal_mulai} s/d ${p.tanggal_selesai} · ${hari || 'setiap hari'}`
         : hari;
 }
 
@@ -84,18 +70,7 @@ export default function Jadwal({
     kalender,
     grups,
 }: Props) {
-    const form = useForm({
-        name: '',
-        pengulangan: 'mingguan',
-        hari: [1, 2, 3, 4, 5] as number[],
-        tanggal: '',
-        grup_id: '',
-        datang_mulai: '07:00',
-        datang_selesai: '08:30',
-        batas_terlambat: program.fitur.terlambat ? '07:30' : '',
-        pulang_mulai: program.fitur.pulang ? '15:00' : '',
-        pulang_selesai: program.fitur.pulang ? '17:00' : '',
-    });
+    const [diubah, setDiubah] = useState<string | null>(null);
     const libur = useForm({ tanggal: '', keterangan: '' });
     const tanggalLibur = new Set(liburs.map((l) => l.tanggal));
 
@@ -157,277 +132,57 @@ export default function Jadwal({
                                             </span>
                                         </span>
                                         {!program.archived && (
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() =>
-                                                    router.delete(
-                                                        destroy.url(p.id),
-                                                        {
-                                                            preserveScroll: true,
-                                                        },
-                                                    )
-                                                }
-                                            >
-                                                Hapus
-                                            </Button>
+                                            <span className="flex gap-1">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() =>
+                                                        setDiubah(
+                                                            diubah === p.id
+                                                                ? null
+                                                                : p.id,
+                                                        )
+                                                    }
+                                                >
+                                                    Ubah
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() =>
+                                                        window.confirm(
+                                                            `Hapus sesi "${p.name}"? Sesi mendatang ikut terhapus; sesi yang sudah lewat dan kehadirannya tetap tersimpan.`,
+                                                        ) &&
+                                                        router.delete(
+                                                            destroy.url(p.id),
+                                                            {
+                                                                preserveScroll: true,
+                                                            },
+                                                        )
+                                                    }
+                                                >
+                                                    Hapus
+                                                </Button>
+                                            </span>
+                                        )}
+                                        {diubah === p.id && (
+                                            <div className="w-full">
+                                                <PolaForm
+                                                    program={program}
+                                                    grups={grups}
+                                                    pola={p}
+                                                    onSelesai={() =>
+                                                        setDiubah(null)
+                                                    }
+                                                />
+                                            </div>
                                         )}
                                     </li>
                                 ))}
                             </ul>
 
                             {!program.archived && (
-                                <form
-                                    className="grid gap-3 rounded-md border p-3"
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        form.post(store.url(program.id), {
-                                            preserveScroll: true,
-                                            onSuccess: () => form.reset('name'),
-                                        });
-                                    }}
-                                >
-                                    <div className="grid gap-3 sm:grid-cols-3">
-                                        <div className="grid gap-1 sm:col-span-2">
-                                            <Label htmlFor="nama-sesi">
-                                                Nama sesi
-                                            </Label>
-                                            <Input
-                                                id="nama-sesi"
-                                                value={form.data.name}
-                                                onChange={(e) =>
-                                                    form.setData(
-                                                        'name',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="Manasik Pagi"
-                                            />
-                                            <InputError
-                                                message={form.errors.name}
-                                            />
-                                        </div>
-                                        <div className="grid gap-1">
-                                            <Label htmlFor="pengulangan">
-                                                Pengulangan
-                                            </Label>
-                                            <select
-                                                id="pengulangan"
-                                                className="h-9 rounded-md border bg-background px-2 text-sm"
-                                                value={form.data.pengulangan}
-                                                onChange={(e) =>
-                                                    form.setData(
-                                                        'pengulangan',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            >
-                                                <option value="mingguan">
-                                                    Hari tertentu tiap minggu
-                                                </option>
-                                                <option value="sekali">
-                                                    Sekali
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    {form.data.pengulangan === 'mingguan' ? (
-                                        <div className="flex flex-wrap gap-3 text-sm">
-                                            {[1, 2, 3, 4, 5, 6, 7].map((h) => (
-                                                <label
-                                                    key={h}
-                                                    className="flex items-center gap-1"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={form.data.hari.includes(
-                                                            h,
-                                                        )}
-                                                        onChange={(e) =>
-                                                            form.setData(
-                                                                'hari',
-                                                                e.target.checked
-                                                                    ? [
-                                                                          ...form
-                                                                              .data
-                                                                              .hari,
-                                                                          h,
-                                                                      ]
-                                                                    : form.data.hari.filter(
-                                                                          (x) =>
-                                                                              x !==
-                                                                              h,
-                                                                      ),
-                                                            )
-                                                        }
-                                                    />
-                                                    {NAMA_HARI[h]}
-                                                </label>
-                                            ))}
-                                            <InputError
-                                                message={form.errors.hari}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="grid gap-1 sm:w-48">
-                                            <Input
-                                                type="date"
-                                                min={program.starts_on}
-                                                max={program.ends_on}
-                                                value={form.data.tanggal}
-                                                onChange={(e) =>
-                                                    form.setData(
-                                                        'tanggal',
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                aria-label="Tanggal"
-                                            />
-                                            <InputError
-                                                message={form.errors.tanggal}
-                                            />
-                                        </div>
-                                    )}
-                                    <div className="grid gap-3 sm:grid-cols-3">
-                                        <div className="grid gap-1">
-                                            <Label>Datang</Label>
-                                            <div className="flex gap-1">
-                                                <Input
-                                                    type="time"
-                                                    value={
-                                                        form.data.datang_mulai
-                                                    }
-                                                    onChange={(e) =>
-                                                        form.setData(
-                                                            'datang_mulai',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    aria-label="Mulai datang"
-                                                />
-                                                <Input
-                                                    type="time"
-                                                    value={
-                                                        form.data.datang_selesai
-                                                    }
-                                                    onChange={(e) =>
-                                                        form.setData(
-                                                            'datang_selesai',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    aria-label="Akhir datang"
-                                                />
-                                            </div>
-                                            <InputError
-                                                message={
-                                                    form.errors.datang_mulai ??
-                                                    form.errors.datang_selesai
-                                                }
-                                            />
-                                        </div>
-                                        {program.fitur.terlambat && (
-                                            <div className="grid gap-1">
-                                                <Label htmlFor="terlambat">
-                                                    Terlambat setelah
-                                                </Label>
-                                                <Input
-                                                    id="terlambat"
-                                                    type="time"
-                                                    value={
-                                                        form.data
-                                                            .batas_terlambat
-                                                    }
-                                                    onChange={(e) =>
-                                                        form.setData(
-                                                            'batas_terlambat',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                />
-                                                <InputError
-                                                    message={
-                                                        form.errors
-                                                            .batas_terlambat
-                                                    }
-                                                />
-                                            </div>
-                                        )}
-                                        {program.fitur.pulang && (
-                                            <div className="grid gap-1">
-                                                <Label>Pulang</Label>
-                                                <div className="flex gap-1">
-                                                    <Input
-                                                        type="time"
-                                                        value={
-                                                            form.data
-                                                                .pulang_mulai
-                                                        }
-                                                        onChange={(e) =>
-                                                            form.setData(
-                                                                'pulang_mulai',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        aria-label="Mulai pulang"
-                                                    />
-                                                    <Input
-                                                        type="time"
-                                                        value={
-                                                            form.data
-                                                                .pulang_selesai
-                                                        }
-                                                        onChange={(e) =>
-                                                            form.setData(
-                                                                'pulang_selesai',
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        aria-label="Akhir pulang"
-                                                    />
-                                                </div>
-                                                <InputError
-                                                    message={
-                                                        form.errors
-                                                            .pulang_mulai ??
-                                                        form.errors
-                                                            .pulang_selesai
-                                                    }
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                    {grups.length > 0 && (
-                                        <select
-                                            aria-label={program.istilah_grup}
-                                            className="h-9 rounded-md border bg-background px-2 text-sm sm:w-64"
-                                            value={form.data.grup_id}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'grup_id',
-                                                    e.target.value,
-                                                )
-                                            }
-                                        >
-                                            <option value="">
-                                                Semua{' '}
-                                                {program.istilah_grup.toLowerCase()}
-                                            </option>
-                                            {grups.map((g) => (
-                                                <option key={g.id} value={g.id}>
-                                                    Khusus {g.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
-                                    <Button
-                                        type="submit"
-                                        disabled={form.processing}
-                                        className="justify-self-start"
-                                    >
-                                        Tambah sesi
-                                    </Button>
-                                </form>
+                                <PolaForm program={program} grups={grups} />
                             )}
                         </CardContent>
                     </Card>

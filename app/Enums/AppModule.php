@@ -40,10 +40,10 @@ enum AppModule: string
     case SemuaSekolah = 'semua-sekolah';
     case PenyelenggaraBeranda = 'penyelenggara-beranda';
     case PenyelenggaraTim = 'penyelenggara-tim';
-    case PenyelenggaraHakAkses = 'penyelenggara-hak-akses';
     case PenyelenggaraKategori = 'penyelenggara-kategori';
     case PenyelenggaraProgram = 'penyelenggara-program';
     case PenyelenggaraPeserta = 'penyelenggara-peserta';
+    case PenyelenggaraPesertaKelola = 'penyelenggara-peserta-kelola';
     case PenyelenggaraKartu = 'penyelenggara-kartu';
     case Penyelenggara = 'penyelenggara';
 
@@ -85,10 +85,10 @@ enum AppModule: string
             self::SemuaSekolah => 'Semua Sekolah',
             self::PenyelenggaraBeranda => 'Beranda Penyelenggara',
             self::PenyelenggaraTim => 'Tim Penyelenggara',
-            self::PenyelenggaraHakAkses => 'Hak Akses Penyelenggara',
             self::PenyelenggaraKategori => 'Kategori',
             self::PenyelenggaraProgram => 'Program & Grup',
-            self::PenyelenggaraPeserta => 'Peserta',
+            self::PenyelenggaraPeserta => 'Peserta & Kehadiran (lihat/catat)',
+            self::PenyelenggaraPesertaKelola => 'Kelola Peserta (tambah, impor, arsip, kartu)',
             self::PenyelenggaraKartu => 'Kartu Peserta',
             self::Penyelenggara => 'Kelola Penyelenggara',
         };
@@ -113,8 +113,8 @@ enum AppModule: string
             self::SemuaSekolah, self::Penyelenggara => 'Sistem',
 
             self::PenyelenggaraBeranda, self::PenyelenggaraTim,
-            self::PenyelenggaraHakAkses, self::PenyelenggaraKategori,
-            self::PenyelenggaraProgram, self::PenyelenggaraPeserta,
+            self::PenyelenggaraKategori, self::PenyelenggaraProgram,
+            self::PenyelenggaraPeserta, self::PenyelenggaraPesertaKelola,
             self::PenyelenggaraKartu => 'Penyelenggara',
         };
     }
@@ -154,9 +154,9 @@ enum AppModule: string
             UserRole::OrangTua => [self::PortalOrangTua],
 
             UserRole::AdminPenyelenggara => [
-                self::PenyelenggaraBeranda, self::PenyelenggaraTim, self::PenyelenggaraHakAkses,
+                self::PenyelenggaraBeranda, self::PenyelenggaraTim,
                 self::PenyelenggaraKategori, self::PenyelenggaraProgram, self::PenyelenggaraPeserta,
-                self::PenyelenggaraKartu,
+                self::PenyelenggaraPesertaKelola, self::PenyelenggaraKartu,
             ],
 
             UserRole::Pendamping => [self::PenyelenggaraBeranda, self::PenyelenggaraPeserta],

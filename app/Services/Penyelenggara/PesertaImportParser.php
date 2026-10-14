@@ -23,7 +23,8 @@ class PesertaImportParser
      */
     public function parse(string $path, string $extension, Program $program): array
     {
-        $fields = collect($program->kategori()->first()?->visibleFields() ?? [])
+        $kategori = $program->kategori()->first();
+        $fields = collect($kategori?->visibleFields() ?? [])
             ->reject(fn (array $f) => $f['type'] === 'photo')
             ->values();
 
@@ -51,7 +52,7 @@ class PesertaImportParser
                     $values = $this->rowValues($row);
 
                     if ($map === null) {
-                        $map = $this->petaHeader($values, $byHeader);
+                        $map = $this->petaHeader($values, $byHeader, $kategori?->istilah_grup);
 
                         continue;
                     }
@@ -101,13 +102,15 @@ class PesertaImportParser
      * @param  array<string, array<string, mixed>>  $byHeader
      * @return array{fields: array<int, array<string, mixed>>, grup: ?int}
      */
-    private function petaHeader(array $headers, array $byHeader): array
+    private function petaHeader(array $headers, array $byHeader, ?string $istilahGrup = null): array
     {
         $map = ['fields' => [], 'grup' => null];
 
         foreach ($headers as $i => $header) {
             $norm = $this->normalizeHeader($header);
-            if (in_array($norm, ['grup', 'rombongan', 'kelompok'], true)) {
+            // Istilah grup kategori (mis. "Halaqah", "Bus") juga dikenali.
+            $namaGrup = array_filter(['grup', 'rombongan', 'kelompok', $istilahGrup ? $this->normalizeHeader($istilahGrup) : null]);
+            if (in_array($norm, $namaGrup, true)) {
                 $map['grup'] = $i;
 
                 continue;

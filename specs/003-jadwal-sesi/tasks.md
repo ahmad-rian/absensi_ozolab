@@ -23,3 +23,10 @@
 
 ## Phase 5: Polish
 - [X] T012 Pint, build, suite penuh; commit `feat(003): …`
+
+## Audit 2026-10-14 — P1
+
+Tes: `tests/Feature/Penyelenggara/AuditP1Test.php`, `tests/Unit/akses-penyelenggara.test.mjs`.
+
+- [X] T-A15 Tabrakan sesi memperhitungkan leluhur + turunan grup dan hanya tanggal mendatang — `SesiGenerator::tolakTabrakan`
+- [X] T-A16 UI ubah pola (konfirmasi sesi hari ini → `termasuk_hari_ini`), pengulangan rentang, konfirmasi hapus — `components/penyelenggara/pola-form.tsx`, `program/jadwal.tsx`

@@ -15,6 +15,7 @@ use App\Support\XlsxDownload;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -81,18 +82,21 @@ class LaporanProgramController extends Controller
         $label = fn (Sesi $s) => CarbonImmutable::parse($s->tanggal)->format('d/m').' '.$s->name;
         $cache = [];
 
-        $ringkasanRows = $m['sesis']->map(function (Sesi $s) use ($program, $user, $v) {
-            $r = $this->ringkasan->ringkasSesi($program, $s, $user, $v['grup'] ?? null);
+        // Ringkasan dihitung dari matriks yang sama — tanpa query per sesi.
+        $ringkasanRows = $m['sesis']->map(function (Sesi $s) use ($m, $program, &$cache) {
+            $hitung = array_fill_keys(RingkasanKehadiran::STATUS, 0);
+            $target = 0;
+            foreach ($m['peserta'] as $p) {
+                if ($this->ringkasan->termasukTarget($program, $s, $p, $cache)) {
+                    $target++;
+                    $hitung[($m['status'][$s->id][$p->id] ?? null)?->status ?? 'BELUM']++;
+                }
+            }
 
-            return [$s->name, $s->tanggal, $r['target'], ...array_map(fn ($k) => $r['counts'][$k], RingkasanKehadiran::STATUS)];
+            return [$s->name, $s->tanggal, $target, ...array_values($hitung)];
         })->all();
 
-        $kelompok = [];
-        foreach ($m['peserta'] as $p) {
-            $nama = $p->grups->pluck('name')->sort()->first() ?? 'Tanpa Grup';
-            $kelompok[$nama][] = $p;
-        }
-        ksort($kelompok);
+        $kelompok = $this->kelompokPerGrup($program, $m['peserta'], $v['grup'] ?? null);
 
         if ($v['format'] === 'pdf') {
             $bagian = collect($kelompok)->map(fn ($ps) => collect($ps)->map(function ($p) use ($m, $program, &$cache) {
@@ -192,6 +196,42 @@ class LaporanProgramController extends Controller
         }
 
         return XlsxDownload::sheets($this->namaBerkas($program, Str::slug($nama), 'xlsx'), [XlsxDownload::namaSheet($nama, []) => ['header' => $header, 'rows' => $rows]]);
+    }
+
+    /**
+     * Peserta dikelompokkan per id grup (bukan nama — dua "Regu 1" di rombongan
+     * berbeda tetap terpisah) dengan label jalur "Induk › Anak". Peserta di
+     * beberapa grup muncul di tiap grupnya.
+     *
+     * @param  Collection<int, CardFormSubmission>  $peserta
+     * @return array<string, array<int, CardFormSubmission>>
+     */
+    private function kelompokPerGrup(Program $program, Collection $peserta, ?string $grupFilter): array
+    {
+        $grups = Grup::where('program_id', $program->id)->get(['id', 'name', 'parent_id'])->keyBy('id');
+        $dalamFilter = $grupFilter ? array_flip(Grup::denganTurunan($program->id, [$grupFilter])) : null;
+        $jalur = function (string $id) use ($grups): string {
+            $nama = [];
+            for ($g = $grups->get($id); $g; $g = $g->parent_id ? $grups->get($g->parent_id) : null) {
+                array_unshift($nama, $g->name);
+            }
+
+            return implode(' › ', $nama);
+        };
+
+        $kelompok = [];
+        foreach ($peserta as $p) {
+            $ids = $p->grups->pluck('id')->filter(fn ($id) => $dalamFilter === null || isset($dalamFilter[$id]));
+            if ($ids->isEmpty()) {
+                $kelompok['Tanpa Grup'][] = $p;
+            }
+            foreach ($ids as $id) {
+                $kelompok[$jalur($id)][] = $p;
+            }
+        }
+        ksort($kelompok, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $kelompok;
     }
 
     /**

@@ -4,9 +4,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useAksesPenyelenggara } from '@/hooks/use-akses-penyelenggara';
 import { dashboard } from '@/routes/penyelenggara';
 import { index, rotate, update } from '@/routes/penyelenggara/kehadiran';
-import { show as programShow } from '@/routes/penyelenggara/program';
+import {
+    dashboard as programDashboard,
+    show as programShow,
+} from '@/routes/penyelenggara/program';
 
 type Baris = {
     id: string;
@@ -136,6 +140,7 @@ export default function Kehadiran({
     linkScan,
     filters,
 }: Props) {
+    const akses = useAksesPenyelenggara();
     const buka = (patch: Record<string, string>) =>
         router.get(
             index.url(program.id),
@@ -156,7 +161,11 @@ export default function Kehadiran({
                         </h1>
                         <p className="text-sm text-muted-foreground">
                             <Link
-                                href={programShow(program.id)}
+                                href={
+                                    akses.program
+                                        ? programShow(program.id)
+                                        : programDashboard(program.id)
+                                }
                                 className="underline"
                             >
                                 {program.name}
@@ -204,22 +213,24 @@ export default function Kehadiran({
                                     {linkScan.ringan}
                                 </a>
                             </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="justify-self-start"
-                                onClick={() => {
-                                    if (
-                                        window.confirm(
-                                            'Ganti link scan? Link lama tidak bisa dipakai lagi. Kartu peserta tetap berlaku.',
-                                        )
-                                    ) {
-                                        router.post(rotate.url(program.id));
-                                    }
-                                }}
-                            >
-                                Ganti link scan
-                            </Button>
+                            {akses.program && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="justify-self-start"
+                                    onClick={() => {
+                                        if (
+                                            window.confirm(
+                                                'Ganti link scan? Link lama tidak bisa dipakai lagi. Kartu peserta tetap berlaku.',
+                                            )
+                                        ) {
+                                            router.post(rotate.url(program.id));
+                                        }
+                                    }}
+                                >
+                                    Ganti link scan
+                                </Button>
+                            )}
                         </CardContent>
                     </Card>
                 )}

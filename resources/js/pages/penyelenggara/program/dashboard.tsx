@@ -4,7 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { dashboard as beranda } from '@/routes/penyelenggara';
 import { index as jadwalIndex } from '@/routes/penyelenggara/jadwal';
+import { index as kehadiranIndex } from '@/routes/penyelenggara/kehadiran';
 import { index as laporanIndex } from '@/routes/penyelenggara/laporan';
+import { index as pesertaIndex } from '@/routes/penyelenggara/peserta';
 import { dashboard, show as programShow } from '@/routes/penyelenggara/program';
 import { WARNA_STATUS } from './kehadiran';
 
@@ -18,6 +20,13 @@ type Ringkasan = {
 type Props = {
     program: { id: string; name: string; tanggal: string };
     adaSesiHariIni: boolean;
+    libur: boolean;
+    akses: {
+        program: boolean;
+        kehadiran: boolean;
+        peserta: boolean;
+        laporan: boolean;
+    };
     grups: { id: string; name: string }[];
     filters: { grup: string; bulan: number };
     peringkatTersedia: boolean;
@@ -38,6 +47,8 @@ const LABEL: Record<string, string> = {
 export default function ProgramDashboard({
     program,
     adaSesiHariIni,
+    libur,
+    akses,
     grups,
     filters,
     peringkatTersedia,
@@ -62,12 +73,16 @@ export default function ProgramDashboard({
                             Dashboard
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            <Link
-                                href={programShow(program.id)}
-                                className="underline"
-                            >
-                                {program.name}
-                            </Link>{' '}
+                            {akses.program ? (
+                                <Link
+                                    href={programShow(program.id)}
+                                    className="underline"
+                                >
+                                    {program.name}
+                                </Link>
+                            ) : (
+                                program.name
+                            )}{' '}
                             ·{' '}
                             {new Intl.DateTimeFormat('id-ID', {
                                 dateStyle: 'full',
@@ -88,26 +103,52 @@ export default function ProgramDashboard({
                                 </option>
                             ))}
                         </select>
-                        <Link
-                            href={laporanIndex(program.id)}
-                            className="inline-flex h-9 items-center rounded-md border px-3 text-sm"
-                        >
-                            Laporan
-                        </Link>
+                        {akses.peserta && (
+                            <Link
+                                href={pesertaIndex(program.id)}
+                                className="inline-flex h-9 items-center rounded-md border px-3 text-sm"
+                            >
+                                Peserta
+                            </Link>
+                        )}
+                        {akses.kehadiran && (
+                            <Link
+                                href={kehadiranIndex(program.id)}
+                                className="inline-flex h-9 items-center rounded-md border px-3 text-sm"
+                            >
+                                Kehadiran
+                            </Link>
+                        )}
+                        {akses.laporan && (
+                            <Link
+                                href={laporanIndex(program.id)}
+                                className="inline-flex h-9 items-center rounded-md border px-3 text-sm"
+                            >
+                                Laporan
+                            </Link>
+                        )}
                     </div>
                 </div>
 
                 {!adaSesiHariIni ? (
                     <Card>
                         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                            Tidak ada sesi hari ini. Atur jadwal di{' '}
-                            <Link
-                                href={jadwalIndex(program.id)}
-                                className="underline"
-                            >
-                                halaman Jadwal
-                            </Link>
-                            .
+                            {libur ? (
+                                'Hari ini libur, tidak ada sesi.'
+                            ) : akses.program ? (
+                                <>
+                                    Tidak ada sesi hari ini. Atur jadwal di{' '}
+                                    <Link
+                                        href={jadwalIndex(program.id)}
+                                        className="underline"
+                                    >
+                                        halaman Jadwal
+                                    </Link>
+                                    .
+                                </>
+                            ) : (
+                                'Tidak ada sesi hari ini.'
+                            )}
                         </CardContent>
                     </Card>
                 ) : ringkasan === undefined ? (

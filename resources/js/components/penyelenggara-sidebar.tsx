@@ -130,7 +130,9 @@ export function PenyelenggaraSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                {currentPenyelenggara && (
+                {/* Akun penyelenggara sendiri selalu punya konteks; super admin
+                    baru melihat menu setelah memilih penyelenggara. */}
+                {(currentPenyelenggara || !isSuperAdmin) && (
                     <NavGroup label="Utama" items={items} />
                 )}
             </SidebarContent>

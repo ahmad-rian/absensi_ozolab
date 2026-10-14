@@ -163,3 +163,9 @@ US3 (switch konteks) dan US4 (tim) menyusul dalam commit terpisah bila waktu sem
 
 - Tidak ada perubahan pada tabel `card_*`, `attendances`, `schools` (Konstitusi III & V).
 - Nama index MySQL ≤ 64 karakter; query tanggal kompatibel SQLite.
+
+## Audit 2026-10-14 — P1
+
+Tes: `tests/Feature/Penyelenggara/AuditP1Test.php`, `tests/Unit/akses-penyelenggara.test.mjs`.
+
+- [X] T-A10 Sidebar penyelenggara juga di halaman Settings (`auth.user.penyelenggara_id`) — `app-sidebar-layout.tsx`, `HandleInertiaRequests`

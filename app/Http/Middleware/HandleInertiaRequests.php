@@ -54,6 +54,9 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'avatar' => $user->avatar_path,
+                    // Akun penyelenggara memakai sidebar penyelenggara di semua
+                    // halaman, termasuk Settings yang berada di luar grup /penyelenggara.
+                    'penyelenggara_id' => $user->penyelenggara_id,
                     'roles' => $user->getRoleNames(),
                     'permissions' => $user->getAllPermissions()->pluck('name'),
                 ] : null,

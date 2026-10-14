@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAksesPenyelenggara } from '@/hooks/use-akses-penyelenggara';
 import { dashboard } from '@/routes/penyelenggara';
 import {
     destroy,
@@ -46,6 +47,7 @@ type Props = {
         photo_url: string | null;
         original_url: string | null;
         has_card: boolean;
+        archived: boolean;
     } | null;
 };
 
@@ -56,6 +58,8 @@ export default function PesertaForm({
     istilahPeserta,
     peserta,
 }: Props) {
+    const akses = useAksesPenyelenggara();
+    const bolehKelola = akses.kelolaPeserta && !program.archived;
     const form = useForm<{
         data: Record<string, string | File | null>;
         grup_ids: string[];
@@ -318,20 +322,22 @@ export default function PesertaForm({
                                         {STATUS_KARTU[peserta.status] ??
                                             peserta.status}
                                     </p>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            router.post(
-                                                generate.url(peserta.id),
-                                            )
-                                        }
-                                    >
-                                        {peserta.has_card
-                                            ? 'Generate ulang kartu'
-                                            : 'Generate kartu'}
-                                    </Button>
+                                    {bolehKelola && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                router.post(
+                                                    generate.url(peserta.id),
+                                                )
+                                            }
+                                        >
+                                            {peserta.has_card
+                                                ? 'Generate ulang kartu'
+                                                : 'Generate kartu'}
+                                        </Button>
+                                    )}
                                     {peserta.has_card && (
                                         <a
                                             href={kartu.url(peserta.id, {
@@ -352,34 +358,36 @@ export default function PesertaForm({
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                    <Button
-                        onClick={simpan}
-                        disabled={form.processing || program.archived}
-                    >
-                        Simpan
-                    </Button>
-                    {peserta && (
-                        <>
-                            <Button
-                                variant="outline"
-                                onClick={() =>
-                                    router.delete(destroy.url(peserta.id))
-                                }
-                            >
-                                Arsipkan
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                onClick={() =>
-                                    router.post(restore.url(peserta.id))
-                                }
-                            >
-                                Pulihkan
-                            </Button>
-                        </>
-                    )}
-                </div>
+                {bolehKelola && (
+                    <div className="flex flex-wrap gap-2">
+                        <Button onClick={simpan} disabled={form.processing}>
+                            Simpan
+                        </Button>
+                        {peserta &&
+                            (peserta.archived ? (
+                                <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                        router.post(restore.url(peserta.id))
+                                    }
+                                >
+                                    Pulihkan
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                        window.confirm(
+                                            `Arsipkan ${istilahPeserta.toLowerCase()} ini? Kartunya tidak bisa dipakai scan sampai dipulihkan.`,
+                                        ) &&
+                                        router.delete(destroy.url(peserta.id))
+                                    }
+                                >
+                                    Arsipkan
+                                </Button>
+                            ))}
+                    </div>
+                )}
             </div>
         </>
     );

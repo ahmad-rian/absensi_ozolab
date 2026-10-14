@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Penyelenggara;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kategori;
+use App\Services\Penyelenggara\SesiGenerator;
 use App\Support\KategoriTemplates;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -95,6 +96,8 @@ class KategoriController extends Controller
             'fields.*.options.required_if' => 'Kolom pilihan wajib punya minimal satu opsi.',
         ]);
 
+        $fiturLama = [$kategori->fitur('terlambat'), $kategori->fitur('pulang')];
+
         $kategori->update([
             'name' => $validated['name'],
             'istilah_peserta' => $validated['istilah_peserta'],
@@ -109,6 +112,10 @@ class KategoriController extends Controller
             'required' => (bool) ($f['required'] ?? false),
             'options' => $f['type'] === 'select' ? array_values($f['options'] ?? []) : null,
         ], fn ($v) => $v !== null), $validated['fields']));
+
+        if ($fiturLama !== [$kategori->fitur('terlambat'), $kategori->fitur('pulang')]) {
+            app(SesiGenerator::class)->terapkanFitur($kategori->fresh());
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Kategori disimpan.']);
 

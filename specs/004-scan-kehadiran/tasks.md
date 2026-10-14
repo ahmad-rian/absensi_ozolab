@@ -30,3 +30,11 @@
 - [X] T-A03 Hapus grup yang punya jadwal ditolak (riwayat kehadiran aman)
 - [X] T-A04 FK `grups.parent_id` cascade (migrasi baru)
 - [X] T-A05 Scan bersamaan: transaksi 3 percobaan (deadlock InnoDB)
+
+## Audit 2026-10-14 — P1
+
+Tes: `tests/Feature/Penyelenggara/AuditP1Test.php`, `tests/Unit/akses-penyelenggara.test.mjs`.
+
+- [X] T-A17 Hadir/Terlambat manual dianggap sudah datang: scan pulang jalan, scan datang hanya mengisi jam — `KehadiranRecorder::catat`
+- [X] T-A18 Izin/Sakit disembunyikan & ditolak server bila saklar `izin_sakit` mati; daftar grup kehadiran dibatasi grup pendamping — `KehadiranController`
+- [X] T-A19 Catat manual (`kehadiran.update`) tetap di izin `penyelenggara-peserta` supaya pendamping bisa mencatat
