@@ -57,8 +57,8 @@ export const NAMA_HARI = ['', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
 export function ringkasPola(p: Pola): string {
     if (p.pengulangan === 'sekali') {
-return `Sekali, ${p.tanggal}`;
-}
+        return `Sekali, ${p.tanggal}`;
+    }
 
     const hari =
         p.hari.length === 7

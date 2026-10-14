@@ -28,6 +28,7 @@ createInertiaApp({
             case name === 'student-register-result':
             case name === 'scan/public':
             case name === 'scan/card-participant':
+            case name === 'scan/program':
             case name === 'scan/prayer':
             case name === 'scan/library':
             case name === 'parent-telegram':

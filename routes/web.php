@@ -55,6 +55,7 @@ use App\Http\Controllers\Penyelenggara\GrupController as PenyelenggaraGrupContro
 use App\Http\Controllers\Penyelenggara\JadwalController as PenyelenggaraJadwalController;
 use App\Http\Controllers\Penyelenggara\KartuController as PenyelenggaraKartuController;
 use App\Http\Controllers\Penyelenggara\KategoriController as PenyelenggaraKategoriController;
+use App\Http\Controllers\Penyelenggara\KehadiranController as PenyelenggaraKehadiranController;
 use App\Http\Controllers\Penyelenggara\PesertaController as PenyelenggaraPesertaController;
 use App\Http\Controllers\Penyelenggara\PesertaImporController as PenyelenggaraPesertaImporController;
 use App\Http\Controllers\Penyelenggara\ProgramController as PenyelenggaraProgramController;
@@ -62,6 +63,7 @@ use App\Http\Controllers\Penyelenggara\SwitchController as PenyelenggaraSwitchCo
 use App\Http\Controllers\Penyelenggara\TimController as PenyelenggaraTimController;
 use App\Http\Controllers\PrayerScannerController;
 use App\Http\Controllers\Public\CardFormController;
+use App\Http\Controllers\PublicProgramScanController;
 use App\Http\Controllers\PublicScannerController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StudentRegistrationController;
@@ -154,6 +156,25 @@ Route::post('p/{kode}', [CardAttendanceController::class, 'scanRingan'])
     ->middleware('throttle:scan-gerbang')
     ->withoutMiddleware($tanpaSession)
     ->name('public.card-scanner.short.scan');
+
+// Scan program penyelenggara (spec 004) — terpisah total dari /p dan
+// /scan-peserta milik Kartu Bebas/haji. Kamera bersession (halaman React);
+// endpoint JSON & halaman ringan tanpa session, sama dengan /p.
+Route::get('hadir/{kode}', [PublicProgramScanController::class, 'halaman'])
+    ->middleware('throttle:30,1')
+    ->name('public.program-scan');
+Route::post('hadir/{kode}', [PublicProgramScanController::class, 'scan'])
+    ->middleware('throttle:scan-gerbang')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.program-scan.scan');
+Route::get('h/{kode}', [PublicProgramScanController::class, 'ringan'])
+    ->middleware('throttle:30,1')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.program-scan.ringan');
+Route::post('h/{kode}', [PublicProgramScanController::class, 'scanRingan'])
+    ->middleware('throttle:scan-gerbang')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.program-scan.ringan.scan');
 
 // Absen sholat — URL tersendiri untuk sekolah yang memisahkan perangkat mushola
 // dari gerbang. Sejak gerbang utama ikut mencatat sholat (GerbangRecorder), ini
@@ -598,6 +619,7 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
             Route::put('program/{program}', [PenyelenggaraProgramController::class, 'update'])->name('program.update');
             Route::post('program/{program}/arsip', [PenyelenggaraProgramController::class, 'arsip'])->name('program.arsip');
             Route::post('program/{program}/salin', [PenyelenggaraProgramController::class, 'salin'])->name('program.salin');
+            Route::post('program/{program}/link-scan', [PenyelenggaraKehadiranController::class, 'rotate'])->name('kehadiran.rotate');
 
             Route::post('program/{program}/grup', [PenyelenggaraGrupController::class, 'store'])->name('grup.store');
             Route::put('grup/{grup}', [PenyelenggaraGrupController::class, 'update'])->name('grup.update');
@@ -626,6 +648,9 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
             Route::put('peserta/{peserta}/grup', [PenyelenggaraPesertaController::class, 'grup'])->name('peserta.grup');
             Route::post('peserta/{peserta}/generate', [PenyelenggaraPesertaController::class, 'generate'])->middleware('throttle:30,1')->name('peserta.generate');
             Route::get('peserta/{peserta}/kartu', [PenyelenggaraPesertaController::class, 'kartu'])->name('peserta.kartu');
+
+            Route::get('program/{program}/kehadiran', [PenyelenggaraKehadiranController::class, 'index'])->name('kehadiran.index');
+            Route::put('kehadiran/{sesi}/{peserta}', [PenyelenggaraKehadiranController::class, 'update'])->name('kehadiran.update');
         });
 
         Route::middleware('permission:penyelenggara-kartu.access')->group(function () {

@@ -74,6 +74,17 @@ class CardFormSubmission extends Model
     }
 
     /**
+     * Kehadiran per sesi (modul penyelenggara, spec 004). Peserta Kartu Bebas
+     * lama tidak punya baris di sini; absensinya tetap di card_attendances.
+     *
+     * @return HasMany<Kehadiran, $this>
+     */
+    public function kehadirans(): HasMany
+    {
+        return $this->hasMany(Kehadiran::class, 'card_form_submission_id');
+    }
+
+    /**
      * @return BelongsToMany<Grup, $this>
      */
     public function grups(): BelongsToMany

@@ -23,15 +23,21 @@ class Program extends Model
     /** @use HasFactory<ProgramFactory> */
     use BelongsToPenyelenggara, HasFactory, HasUlids;
 
-    protected $fillable = ['penyelenggara_id', 'kategori_id', 'name', 'starts_on', 'ends_on', 'timezone', 'card_form_id', 'archived_at'];
+    protected $fillable = ['penyelenggara_id', 'kategori_id', 'name', 'starts_on', 'ends_on', 'timezone', 'card_form_id', 'archived_at', 'scanner_token'];
 
     protected function casts(): array
     {
         return ['starts_on' => 'date', 'ends_on' => 'date', 'archived_at' => 'datetime'];
     }
 
+    protected $hidden = ['scanner_token'];
+
     protected static function booted(): void
     {
+        static::creating(function (self $program): void {
+            $program->scanner_token = $program->scanner_token ?: Str::random(48);
+        });
+
         static::created(function (self $program): void {
             if (! $program->card_form_id) {
                 $program->buatLayoutKartu();

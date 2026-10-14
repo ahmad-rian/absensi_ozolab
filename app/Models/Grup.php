@@ -30,7 +30,9 @@ class Grup extends Model
      */
     public static function denganTurunan(string $programId, array $grupIds): array
     {
-        $anak = static::where('program_id', $programId)->get(['id', 'parent_id'])->groupBy('parent_id');
+        // Lintas tenant dengan sengaja: dibatasi program_id yang selalu datang dari
+        // program milik pemanggil — juga dipakai console (sapuan alpa) tanpa konteks.
+        $anak = static::acrossPenyelenggara()->where('program_id', $programId)->get(['id', 'parent_id'])->groupBy('parent_id');
         $hasil = [];
         $antri = $grupIds;
 

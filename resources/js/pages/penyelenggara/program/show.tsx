@@ -17,6 +17,7 @@ import {
     edit as kartuEdit,
     zip as kartuZip,
 } from '@/routes/penyelenggara/kartu';
+import { index as kehadiranIndex } from '@/routes/penyelenggara/kehadiran';
 import { index as pesertaIndex } from '@/routes/penyelenggara/peserta';
 import { arsip, index, salin, update } from '@/routes/penyelenggara/program';
 import { rentangTanggal } from './index';
@@ -224,6 +225,11 @@ export default function ProgramShow({
                         </Button>
                         <Button variant="outline" asChild>
                             <Link href={jadwalIndex(program.id)}>Jadwal</Link>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href={kehadiranIndex(program.id)}>
+                                Kehadiran
+                            </Link>
                         </Button>
                         <Button variant="outline" asChild>
                             <Link href={kartuEdit(program.id)}>
