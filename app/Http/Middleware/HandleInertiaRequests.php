@@ -3,9 +3,11 @@
 namespace App\Http\Middleware;
 
 use App\Models\NotificationLog;
+use App\Models\Penyelenggara;
 use App\Models\School;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\PenyelenggaraFeatures;
 use App\Support\SchoolFeatures;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -105,6 +107,25 @@ class HandleInertiaRequests extends Middleware
                     ->orderBy('name')
                     ->get(['id', 'name', 'slug']);
             } : [],
+            // Konteks tenant penyelenggara (spec 001). Daftar penyelenggara hanya
+            // untuk pemilih konteks super admin, sama alasannya dengan `schools`.
+            'currentPenyelenggara' => function () {
+                $penyelenggara = app()->bound('currentPenyelenggara') ? app('currentPenyelenggara') : null;
+
+                return $penyelenggara ? [
+                    'id' => $penyelenggara->id,
+                    'name' => $penyelenggara->name,
+                    'slug' => $penyelenggara->slug,
+                ] : null;
+            },
+            'penyelenggaras' => $user?->isSuperAdmin() ? function () {
+                return Penyelenggara::orderBy('name')->get(['id', 'name', 'slug', 'is_active']);
+            } : [],
+            'penyelenggaraFeatures' => function () {
+                $penyelenggara = app()->bound('currentPenyelenggara') ? app('currentPenyelenggara') : null;
+
+                return $penyelenggara ? PenyelenggaraFeatures::for($penyelenggara)->toArray() : [];
+            },
             'app' => function () use ($user) {
                 // Branding milik sekolah aktif, dengan fallback ke nilai global
                 // lama supaya tampilan tidak berubah setelah deploy.

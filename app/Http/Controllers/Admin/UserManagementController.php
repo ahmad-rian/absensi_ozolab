@@ -214,7 +214,10 @@ class UserManagementController extends Controller
      */
     private function assignableRoles()
     {
+        // Peran penyelenggara hanya lahir lewat undangan penyelenggara (spec 001):
+        // akun sekolah yang diberi peran itu akan jadi akun dua tenant.
         return Role::query()
+            ->whereNotIn('name', array_map(fn (UserRole $r) => $r->value, UserRole::penyelenggaraRoles()))
             ->when(
                 ! auth()->user()->isSuperAdmin(),
                 fn ($q) => $q->where('name', '!=', UserRole::SuperAdmin->value),

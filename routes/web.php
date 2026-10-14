@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\NotifikasiController;
 use App\Http\Controllers\Admin\OrangTuaController;
 use App\Http\Controllers\Admin\PanduanController;
 use App\Http\Controllers\Admin\PengaturanController;
+use App\Http\Controllers\Admin\PenyelenggaraController;
 use App\Http\Controllers\Admin\PhotoSheetBatchController;
 use App\Http\Controllers\Admin\PhotoSheetController;
 use App\Http\Controllers\Admin\RfidCardController;
@@ -49,11 +50,15 @@ use App\Http\Controllers\KartuBebas\ParticipantController;
 use App\Http\Controllers\LibraryScannerController;
 use App\Http\Controllers\OrangTua\PortalController;
 use App\Http\Controllers\ParentTelegramController;
+use App\Http\Controllers\Penyelenggara\DashboardController as PenyelenggaraDashboardController;
+use App\Http\Controllers\Penyelenggara\SwitchController as PenyelenggaraSwitchController;
+use App\Http\Controllers\Penyelenggara\TimController as PenyelenggaraTimController;
 use App\Http\Controllers\PrayerScannerController;
 use App\Http\Controllers\Public\CardFormController;
 use App\Http\Controllers\PublicScannerController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StudentRegistrationController;
+use App\Http\Controllers\UndanganController;
 use App\Http\Middleware\EnsureAnakSendiri;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -187,7 +192,7 @@ Route::post('f/{token}', [CardFormController::class, 'submit'])->middleware('thr
 Route::get('f/{token}/status/{submission}', [CardFormController::class, 'status'])->middleware('throttle:120,1')->name('public.card-forms.status');
 
 // Berpindah tenant hanya untuk SUPER_ADMIN — role lain terkunci di sekolahnya.
-Route::middleware(['auth'])->post('admin/switch-school', function (Request $request) {
+Route::middleware(['auth', 'bukan-penyelenggara'])->post('admin/switch-school', function (Request $request) {
     $request->validate(['school_id' => ['required', 'exists:schools,id']]);
 
     $user = $request->user();
@@ -213,7 +218,9 @@ Route::middleware(['auth', 'verified', 'super-admin'])
 
 // Admin routes — akses ditentukan per modul lewat permission `<modul>.access`.
 // SUPER_ADMIN lolos semua lewat Gate::before (AppServiceProvider).
-Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
+// `bukan-penyelenggara`: akun penyelenggara (school_id null) akan lolos scope
+// sekolah yang fail-open — ditolak di pintu grup ini (spec 001).
+Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')->group(function () {
     // Panduan sengaja tanpa `permission:` — ia bukan modul, dan setiap pengguna
     // yang bisa masuk berhak tahu cara memakai bagian yang boleh dia buka.
     // Penyaringan isinya terjadi di klien memakai permission dan fitur yang
@@ -538,6 +545,44 @@ Route::middleware('auth')->group(function () {
  | lewat tautan antar menu. EnsureAnakSendiri yang membacanya, menetapkan anak
  | pertama bila tidak disebut, dan tetap menolak anak milik orang lain.
  */
+// ── Absensi Multi-Kategori: tenant penyelenggara (spec 001) ─────────────────
+// Kelola penyelenggara — super admin saja.
+Route::middleware(['auth', 'verified', 'super-admin'])
+    ->prefix('admin/penyelenggara')
+    ->name('admin.penyelenggara.')
+    ->group(function () {
+        Route::get('/', [PenyelenggaraController::class, 'index'])->name('index');
+        Route::post('/', [PenyelenggaraController::class, 'store'])->name('store');
+        Route::get('{penyelenggara}', [PenyelenggaraController::class, 'show'])->name('show');
+        Route::put('{penyelenggara}', [PenyelenggaraController::class, 'update'])->name('update');
+        Route::post('{penyelenggara}/undangan', [PenyelenggaraController::class, 'invite'])
+            ->middleware('throttle:20,1')
+            ->name('invite');
+    });
+
+// Terima undangan — publik; token SHA-256 di DB, throttle melawan tebakan.
+Route::get('undangan/{token}', [UndanganController::class, 'show'])->middleware('throttle:30,1')->name('undangan.show');
+Route::post('undangan/{token}', [UndanganController::class, 'accept'])->middleware('throttle:10,1')->name('undangan.accept');
+
+// Area penyelenggara. `penyelenggara` menolak akun sekolah/orang tua dan
+// memblokir penyelenggara nonaktif; konteks diisi SetCurrentPenyelenggara.
+Route::middleware(['auth', 'verified', 'penyelenggara'])
+    ->prefix('penyelenggara')
+    ->name('penyelenggara.')
+    ->group(function () {
+        Route::get('/', [PenyelenggaraDashboardController::class, 'index'])
+            ->middleware('permission:penyelenggara-beranda.access')
+            ->name('dashboard');
+        Route::post('switch', PenyelenggaraSwitchController::class)->middleware('super-admin')->name('switch');
+
+        Route::middleware('permission:penyelenggara-tim.access')->prefix('tim')->name('tim.')->group(function () {
+            Route::get('/', [PenyelenggaraTimController::class, 'index'])->name('index');
+            Route::post('undangan', [PenyelenggaraTimController::class, 'invite'])->middleware('throttle:20,1')->name('invite');
+            Route::delete('undangan/{invitation}', [PenyelenggaraTimController::class, 'revoke'])->name('revoke');
+            Route::put('{user}/status', [PenyelenggaraTimController::class, 'status'])->name('status');
+        });
+    });
+
 Route::middleware(['auth', 'permission:portal-orang-tua.access', 'password.ganti', EnsureAnakSendiri::class])
     ->prefix('orangtua')->name('orangtua.')->group(function () {
         Route::get('/', [PortalController::class, 'index'])->name('index');

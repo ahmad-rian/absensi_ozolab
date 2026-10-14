@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Penyelenggara;
 use App\Models\School;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -73,6 +74,22 @@ function createSuperAdminUser(array $attributes = []): User
         ...$attributes,
     ]);
     $user->assignRole('SUPER_ADMIN');
+
+    return $user;
+}
+
+/**
+ * Akun penyelenggara (spec 001) beserta penyelenggaranya.
+ */
+function createPenyelenggaraUser(string $role = 'ADMIN_PENYELENGGARA', ?Penyelenggara $penyelenggara = null, array $attributes = []): User
+{
+    $penyelenggara ??= Penyelenggara::factory()->create();
+    $user = User::factory()->create([
+        'school_id' => null,
+        'penyelenggara_id' => $penyelenggara->id,
+        ...$attributes,
+    ]);
+    $user->assignRole($role);
 
     return $user;
 }

@@ -1,13 +1,17 @@
 <?php
 
 use App\Http\Middleware\AuthenticateStudioToken;
+use App\Http\Middleware\EnsureBukanPenyelenggara;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureGenerateMassalAktif;
 use App\Http\Middleware\EnsurePasswordChanged;
+use App\Http\Middleware\EnsurePenyelenggaraFeatureEnabled;
+use App\Http\Middleware\EnsurePenyelenggaraUser;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SetCurrentPenyelenggara;
 use App\Http\Middleware\SetCurrentSchool;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -37,6 +41,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'super-admin' => EnsureSuperAdmin::class,
             'feature' => EnsureFeatureEnabled::class,
             'generate-massal' => EnsureGenerateMassalAktif::class,
+            'penyelenggara' => EnsurePenyelenggaraUser::class,
+            'bukan-penyelenggara' => EnsureBukanPenyelenggara::class,
+            'fitur-penyelenggara' => EnsurePenyelenggaraFeatureEnabled::class,
             'studio-token' => AuthenticateStudioToken::class,
         ]);
 
@@ -48,6 +55,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             SetCurrentSchool::class,
+            SetCurrentPenyelenggara::class,
             EnsurePasswordChanged::class,
         ]);
 
@@ -60,6 +68,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // controller, setelah middleware jalan) tetapi tautan di dalamnya 404
         // (di-bind pada request berikutnya, sebelum middleware jalan).
         $middleware->prependToPriorityList(SubstituteBindings::class, SetCurrentSchool::class);
+        $middleware->prependToPriorityList(SubstituteBindings::class, SetCurrentPenyelenggara::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->respond(function (Response $response, Throwable $exception) {

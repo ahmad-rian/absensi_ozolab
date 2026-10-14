@@ -38,6 +38,10 @@ enum AppModule: string
     case KartuBebas = 'kartu-bebas';
     case Impersonate = 'masuk-sebagai';
     case SemuaSekolah = 'semua-sekolah';
+    case PenyelenggaraBeranda = 'penyelenggara-beranda';
+    case PenyelenggaraTim = 'penyelenggara-tim';
+    case PenyelenggaraHakAkses = 'penyelenggara-hak-akses';
+    case Penyelenggara = 'penyelenggara';
 
     public function permission(): string
     {
@@ -75,6 +79,10 @@ enum AppModule: string
             self::KartuBebas => 'Kartu Bebas',
             self::Impersonate => 'Masuk Sebagai Pengguna',
             self::SemuaSekolah => 'Semua Sekolah',
+            self::PenyelenggaraBeranda => 'Beranda Penyelenggara',
+            self::PenyelenggaraTim => 'Tim Penyelenggara',
+            self::PenyelenggaraHakAkses => 'Hak Akses Penyelenggara',
+            self::Penyelenggara => 'Kelola Penyelenggara',
         };
     }
 
@@ -94,7 +102,10 @@ enum AppModule: string
 
             self::Roles, self::Schools, self::NotificationGateways,
             self::CardForms, self::KartuBebas, self::Impersonate,
-            self::SemuaSekolah => 'Sistem',
+            self::SemuaSekolah, self::Penyelenggara => 'Sistem',
+
+            self::PenyelenggaraBeranda, self::PenyelenggaraTim,
+            self::PenyelenggaraHakAkses => 'Penyelenggara',
         };
     }
 
@@ -131,6 +142,12 @@ enum AppModule: string
             ],
 
             UserRole::OrangTua => [self::PortalOrangTua],
+
+            UserRole::AdminPenyelenggara => [
+                self::PenyelenggaraBeranda, self::PenyelenggaraTim, self::PenyelenggaraHakAkses,
+            ],
+
+            UserRole::Pendamping => [self::PenyelenggaraBeranda],
         };
     }
 }

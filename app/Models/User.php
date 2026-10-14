@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -22,7 +23,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'avatar_path', 'is_active', 'school_id', 'must_change_password'])]
+#[Fillable(['name', 'email', 'password', 'phone', 'avatar_path', 'is_active', 'school_id', 'penyelenggara_id', 'must_change_password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -51,8 +52,46 @@ class User extends Authenticatable implements PasskeyUser
         return false;
     }
 
+    /**
+     * Akun penyelenggara tidak pernah sekaligus akun sekolah. Dijaga di model
+     * supaya jalur pembuatan user mana pun tidak bisa melahirkan akun ganda
+     * tenant — `school_id` yang ikut terisi akan membuat global scope sekolah
+     * menganggapnya warga sekolah itu.
+     */
+    protected static function booted(): void
+    {
+        $lepasSekolah = function (self $user): void {
+            if ($user->penyelenggara_id) {
+                $user->school_id = null;
+            }
+        };
+
+        // `creating` ikut dipasang karena hook `creating` BelongsToSchool
+        // (terdaftar lebih dulu) mengisi school_id dari user yang login,
+        // SETELAH `saving` berjalan.
+        static::saving($lepasSekolah);
+        static::creating($lepasSekolah);
+    }
+
+    /**
+     * @return BelongsTo<Penyelenggara, $this>
+     */
+    public function penyelenggara(): BelongsTo
+    {
+        return $this->belongsTo(Penyelenggara::class);
+    }
+
+    public function isPenyelenggaraUser(): bool
+    {
+        return $this->penyelenggara_id !== null;
+    }
+
     public function homeRoute(): string
     {
+        if ($this->isPenyelenggaraUser()) {
+            return 'penyelenggara.dashboard';
+        }
+
         return $this->hasRole(UserRole::OrangTua) ? 'orangtua.index' : 'dashboard';
     }
 
@@ -82,7 +121,7 @@ class User extends Authenticatable implements PasskeyUser
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'email', 'is_active'])
+            ->logOnly(['name', 'email', 'is_active', 'penyelenggara_id'])
             ->logOnlyDirty();
     }
 }

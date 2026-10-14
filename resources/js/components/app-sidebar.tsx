@@ -166,6 +166,9 @@ const sections: NavSection[] = [
             { title: 'Sekolah', href: '/admin/schools', icon: Building2, permission: 'sekolah.access' },
             { title: 'Semua Sekolah', href: '/admin/semua-sekolah', icon: Globe, permission: 'semua-sekolah.access' },
             { title: 'Kartu Bebas / Haji', href: '/kartu-bebas', icon: FileText, newTab: true, permission: 'kartu-bebas.access' },
+            // Tenant absensi multi-kategori (spec 001). Rutenya `super-admin`, jadi
+            // menu ikut ditandai superAdmin supaya admin sekolah tidak melihatnya.
+            { title: 'Penyelenggara', href: '/admin/penyelenggara', icon: Building2, permission: 'penyelenggara.access', superAdmin: true },
             // Aplikasi lain di subdomain lain. Alamatnya datang dari server
             // (shared prop `studioUrl`), jadi href-nya baru diisi saat render —
             // lihat STUDIO_PLACEHOLDER.

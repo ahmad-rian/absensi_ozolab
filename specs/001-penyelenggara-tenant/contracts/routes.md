@@ -9,6 +9,7 @@ Semua halaman Inertia; nama rute dipakai lewat Wayfinder.
 | POST | /admin/penyelenggara | admin.penyelenggara.store | buat → redirect detail |
 | GET | /admin/penyelenggara/{penyelenggara} | admin.penyelenggara.show | detail, tim, undangan |
 | PUT | /admin/penyelenggara/{penyelenggara} | admin.penyelenggara.update | ubah atribut/status |
+| POST | /admin/penyelenggara/{penyelenggara}/undangan | admin.penyelenggara.invite | undang Admin Penyelenggara |
 | POST | /penyelenggara/switch | penyelenggara.switch | set session konteks → redirect dashboard |
 
 ## Area penyelenggara (middleware: auth, verified, penyelenggara, SetCurrentPenyelenggara, aktif)

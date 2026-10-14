@@ -6,6 +6,9 @@ import React from 'react';
 import ts from 'typescript';
 
 const require = createRequire(import.meta.url);
+// Shared prop saklar generate massal (CARDS_GENERATE_MASSAL); tes yang butuh
+// tombol generate ulang semua kartu menyalakannya sendiri.
+const halaman = { generateMassal: false };
 function harness(file, props) {
     const states = [];
     const requests = [];
@@ -20,7 +23,7 @@ function harness(file, props) {
             if (!(key in states)) states[key] = initial;
             return [states[key], (next) => { states[key] = next; }];
         } };
-        if (name === '@inertiajs/react') return { Head: 'head', Link: 'a', usePoll() {}, usePage: () => ({ props: { app: { logo: '/logo.png' }, errors: {} } }), router: { get: (...args) => requests.push(args) } };
+        if (name === '@inertiajs/react') return { Head: 'head', Link: 'a', usePoll() {}, usePage: () => ({ props: { app: { logo: '/logo.png' }, errors: {}, generateMassal: halaman.generateMassal } }), router: { get: (...args) => requests.push(args) } };
         if (name.startsWith('@/routes/')) return new Proxy({}, { get: (_, key) => ({ url: (args, options) => {
             if (key === 'scan') return `/scan/${args.token}/${args.mode}`;
             if (key === 'exportMethod') return `/export/${args}?${new URLSearchParams(options.query)}`;
@@ -87,8 +90,21 @@ test('generate ulang semua kartu dikunci sampai layout memakai QR absensi', () =
     const props = { filters: { layout: 'haji', date: '2026-10-05', q: '' }, participants: { data: [], total: 0, prev_page_url: null, next_page_url: null } };
     const tombol = (tree) => find(tree, (node) => node.type === 'Button' && node.props.children === 'Generate ulang semua kartu');
 
-    assert.equal(tombol(harness('kartu-bebas/absensi/index.tsx', { ...props, layouts: [layout] }).render()).props.disabled, true);
-    assert.equal(tombol(harness('kartu-bebas/absensi/index.tsx', { ...props, layouts: [{ ...layout, qr_ready: true }] }).render()).props.disabled, false);
+    halaman.generateMassal = true;
+    try {
+        assert.equal(tombol(harness('kartu-bebas/absensi/index.tsx', { ...props, layouts: [layout] }).render()).props.disabled, true);
+        assert.equal(tombol(harness('kartu-bebas/absensi/index.tsx', { ...props, layouts: [{ ...layout, qr_ready: true }] }).render()).props.disabled, false);
+    } finally {
+        halaman.generateMassal = false;
+    }
+});
+
+test('generate ulang semua kartu disembunyikan saat saklar generate massal mati', () => {
+    const layout = { id: 'haji', name: 'Haji', is_active: true, qr_ready: true, scan_url: '/scan-peserta/private' };
+    const props = { filters: { layout: 'haji', date: '2026-10-05', q: '' }, participants: { data: [], total: 0, prev_page_url: null, next_page_url: null } };
+    const tombol = find(harness('kartu-bebas/absensi/index.tsx', { ...props, layouts: [layout] }).render(), (node) => node.type === 'Button' && node.props.children === 'Generate ulang semua kartu');
+
+    assert.equal(tombol, null);
 });
 
 test('editor memperingatkan QR yang berisi data peserta', () => {
