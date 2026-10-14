@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\CardTenancy;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,12 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class CardDataset extends Model
 {
-    use HasUlids;
+    use CardTenancy, HasUlids;
 
     protected $fillable = [
         'created_by',
         'name',
         'fields',
+        'penyelenggara_id',
+        'kategori_id',
     ];
 
     protected function casts(): array

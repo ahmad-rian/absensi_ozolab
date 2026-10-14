@@ -33,7 +33,7 @@ test('akun penyelenggara tidak bisa berpindah konteks', function () {
 });
 
 test('saklar fitur penyelenggara tidak ditembus super admin', function () {
-    Route::middleware(['web', 'auth', 'penyelenggara', 'fitur-penyelenggara:'.PenyelenggaraFeature::NotifikasiWali->value])
+    Route::middleware(['web', 'auth', 'penyelenggara', 'konteks-penyelenggara', 'fitur-penyelenggara:'.PenyelenggaraFeature::NotifikasiWali->value])
         ->get('/__uji-fitur-penyelenggara', fn () => 'ok');
 
     $p = Penyelenggara::factory()->create();

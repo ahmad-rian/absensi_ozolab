@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\CardTenancy;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,7 @@ use Illuminate\Support\Str;
 
 class CardForm extends Model
 {
-    use HasUlids;
+    use CardTenancy, HasUlids;
 
     protected $hidden = ['scanner_token'];
 
@@ -24,6 +25,8 @@ class CardForm extends Model
         'frame_id',
         'layout_config',
         'is_active',
+        'penyelenggara_id',
+        'program_id',
     ];
 
     protected function casts(): array

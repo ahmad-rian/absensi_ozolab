@@ -6,7 +6,9 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Penyelenggara;
 use App\Models\PenyelenggaraInvitation;
+use App\Models\Setting;
 use App\Models\User;
+use App\Services\Penyelenggara\KartuDrive;
 use App\Support\PenyelenggaraUndangan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,6 +32,7 @@ class PenyelenggaraController extends Controller
         return Inertia::render('admin/penyelenggara/index', [
             'penyelenggaras' => $penyelenggaras,
             'filters' => ['search' => $request->search ?? ''],
+            'driveRootFolderId' => app(KartuDrive::class)->rootFolderId(),
         ]);
     }
 
@@ -88,6 +91,32 @@ class PenyelenggaraController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => "Undangan dikirim ke {$validated['email']}."]);
 
         return to_route('admin.penyelenggara.show', $penyelenggara);
+    }
+
+    /**
+     * Folder root Drive untuk kartu semua penyelenggara ("Tyas General Apps").
+     * Menerima tautan folder Drive utuh atau ID-nya saja.
+     */
+    public function drive(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'folder' => ['nullable', 'string', 'max:300'],
+        ]);
+
+        $nilai = trim($validated['folder'] ?? '');
+        if (preg_match('~/folders/([A-Za-z0-9_-]{10,})~', $nilai, $m)) {
+            $nilai = $m[1];
+        }
+
+        if ($nilai !== '' && ! preg_match('/^[A-Za-z0-9_-]{10,}$/', $nilai)) {
+            return back()->withErrors(['folder' => 'Bukan tautan atau ID folder Google Drive yang valid.']);
+        }
+
+        Setting::setValue(KartuDrive::SETTING_ROOT, $nilai !== '' ? $nilai : null);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $nilai !== '' ? 'Folder Drive penyelenggara disimpan.' : 'Folder Drive penyelenggara dikosongkan.']);
+
+        return to_route('admin.penyelenggara.index');
     }
 
     /**

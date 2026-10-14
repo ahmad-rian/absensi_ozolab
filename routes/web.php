@@ -51,6 +51,12 @@ use App\Http\Controllers\LibraryScannerController;
 use App\Http\Controllers\OrangTua\PortalController;
 use App\Http\Controllers\ParentTelegramController;
 use App\Http\Controllers\Penyelenggara\DashboardController as PenyelenggaraDashboardController;
+use App\Http\Controllers\Penyelenggara\GrupController as PenyelenggaraGrupController;
+use App\Http\Controllers\Penyelenggara\KartuController as PenyelenggaraKartuController;
+use App\Http\Controllers\Penyelenggara\KategoriController as PenyelenggaraKategoriController;
+use App\Http\Controllers\Penyelenggara\PesertaController as PenyelenggaraPesertaController;
+use App\Http\Controllers\Penyelenggara\PesertaImporController as PenyelenggaraPesertaImporController;
+use App\Http\Controllers\Penyelenggara\ProgramController as PenyelenggaraProgramController;
 use App\Http\Controllers\Penyelenggara\SwitchController as PenyelenggaraSwitchController;
 use App\Http\Controllers\Penyelenggara\TimController as PenyelenggaraTimController;
 use App\Http\Controllers\PrayerScannerController;
@@ -447,7 +453,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
     });
 
     // Kartu Bebas / Haji — dynamic card form builder
-    Route::middleware(['permission:form-kartu.access', 'super-admin'])->group(function () {
+    Route::middleware(['permission:form-kartu.access', 'super-admin', 'kartu-bebas-legacy'])->group(function () {
         Route::get('card-forms', [AdminCardFormController::class, 'index'])->name('admin.card-forms');
         Route::get('card-forms/create', [AdminCardFormController::class, 'create'])->name('admin.card-forms.create');
         Route::post('card-forms', [AdminCardFormController::class, 'store'])->name('admin.card-forms.store');
@@ -463,7 +469,7 @@ Route::middleware('auth')
     ->post('admin/stop-impersonate', [ImpersonationController::class, 'destroy'])
     ->name('admin.stop-impersonate');
 
-Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-admin'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
+Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-admin', 'kartu-bebas-legacy'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
     Route::get('/', [KartuBebasDashboardController::class, 'index'])->name('dashboard');
 
     Route::get('drive/jelajah', [DrivePhotoController::class, 'browse'])->name('drive.browse');
@@ -553,6 +559,7 @@ Route::middleware(['auth', 'verified', 'super-admin'])
     ->group(function () {
         Route::get('/', [PenyelenggaraController::class, 'index'])->name('index');
         Route::post('/', [PenyelenggaraController::class, 'store'])->name('store');
+        Route::put('pengaturan/drive', [PenyelenggaraController::class, 'drive'])->name('drive');
         Route::get('{penyelenggara}', [PenyelenggaraController::class, 'show'])->name('show');
         Route::put('{penyelenggara}', [PenyelenggaraController::class, 'update'])->name('update');
         Route::post('{penyelenggara}/undangan', [PenyelenggaraController::class, 'invite'])
@@ -566,7 +573,7 @@ Route::post('undangan/{token}', [UndanganController::class, 'accept'])->middlewa
 
 // Area penyelenggara. `penyelenggara` menolak akun sekolah/orang tua dan
 // memblokir penyelenggara nonaktif; konteks diisi SetCurrentPenyelenggara.
-Route::middleware(['auth', 'verified', 'penyelenggara'])
+Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara'])
     ->prefix('penyelenggara')
     ->name('penyelenggara.')
     ->group(function () {
@@ -574,6 +581,50 @@ Route::middleware(['auth', 'verified', 'penyelenggara'])
             ->middleware('permission:penyelenggara-beranda.access')
             ->name('dashboard');
         Route::post('switch', PenyelenggaraSwitchController::class)->middleware('super-admin')->name('switch');
+
+        Route::middleware('permission:penyelenggara-kategori.access')->prefix('kategori')->name('kategori.')->group(function () {
+            Route::get('/', [PenyelenggaraKategoriController::class, 'index'])->name('index');
+            Route::post('/', [PenyelenggaraKategoriController::class, 'store'])->name('store');
+            Route::get('{kategori}', [PenyelenggaraKategoriController::class, 'edit'])->name('edit');
+            Route::put('{kategori}', [PenyelenggaraKategoriController::class, 'update'])->name('update');
+            Route::post('{kategori}/arsip', [PenyelenggaraKategoriController::class, 'arsip'])->name('arsip');
+        });
+
+        Route::middleware('permission:penyelenggara-program.access')->group(function () {
+            Route::get('program', [PenyelenggaraProgramController::class, 'index'])->name('program.index');
+            Route::post('program', [PenyelenggaraProgramController::class, 'store'])->name('program.store');
+            Route::get('program/{program}', [PenyelenggaraProgramController::class, 'show'])->name('program.show');
+            Route::put('program/{program}', [PenyelenggaraProgramController::class, 'update'])->name('program.update');
+            Route::post('program/{program}/arsip', [PenyelenggaraProgramController::class, 'arsip'])->name('program.arsip');
+            Route::post('program/{program}/salin', [PenyelenggaraProgramController::class, 'salin'])->name('program.salin');
+
+            Route::post('program/{program}/grup', [PenyelenggaraGrupController::class, 'store'])->name('grup.store');
+            Route::put('grup/{grup}', [PenyelenggaraGrupController::class, 'update'])->name('grup.update');
+            Route::delete('grup/{grup}', [PenyelenggaraGrupController::class, 'destroy'])->name('grup.destroy');
+            Route::put('grup/{grup}/pendamping', [PenyelenggaraGrupController::class, 'pendamping'])->name('grup.pendamping');
+        });
+
+        Route::middleware('permission:penyelenggara-peserta.access')->group(function () {
+            Route::get('program/{program}/peserta', [PenyelenggaraPesertaController::class, 'index'])->name('peserta.index');
+            Route::get('program/{program}/peserta/create', [PenyelenggaraPesertaController::class, 'create'])->name('peserta.create');
+            Route::post('program/{program}/peserta', [PenyelenggaraPesertaController::class, 'store'])->name('peserta.store');
+            Route::post('program/{program}/impor', [PenyelenggaraPesertaImporController::class, 'pratinjau'])->name('impor.pratinjau');
+            Route::post('program/{program}/impor/{kunci}', [PenyelenggaraPesertaImporController::class, 'simpan'])->name('impor.simpan');
+
+            Route::get('peserta/{peserta}', [PenyelenggaraPesertaController::class, 'edit'])->name('peserta.edit');
+            Route::post('peserta/{peserta}', [PenyelenggaraPesertaController::class, 'update'])->name('peserta.update');
+            Route::delete('peserta/{peserta}', [PenyelenggaraPesertaController::class, 'destroy'])->name('peserta.destroy');
+            Route::post('peserta/{peserta}/pulihkan', [PenyelenggaraPesertaController::class, 'restore'])->name('peserta.restore');
+            Route::put('peserta/{peserta}/grup', [PenyelenggaraPesertaController::class, 'grup'])->name('peserta.grup');
+            Route::post('peserta/{peserta}/generate', [PenyelenggaraPesertaController::class, 'generate'])->middleware('throttle:30,1')->name('peserta.generate');
+            Route::get('peserta/{peserta}/kartu', [PenyelenggaraPesertaController::class, 'kartu'])->name('peserta.kartu');
+        });
+
+        Route::middleware('permission:penyelenggara-kartu.access')->group(function () {
+            Route::get('program/{program}/layout', [PenyelenggaraKartuController::class, 'edit'])->name('kartu.edit');
+            Route::put('program/{program}/layout', [PenyelenggaraKartuController::class, 'update'])->name('kartu.update');
+            Route::get('program/{program}/kartu.zip', [PenyelenggaraKartuController::class, 'zip'])->name('kartu.zip');
+        });
 
         Route::middleware('permission:penyelenggara-tim.access')->prefix('tim')->name('tim.')->group(function () {
             Route::get('/', [PenyelenggaraTimController::class, 'index'])->name('index');

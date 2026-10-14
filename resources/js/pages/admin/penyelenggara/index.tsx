@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { dashboard } from '@/routes';
-import { index, show, store } from '@/routes/admin/penyelenggara';
+import { drive, index, show, store } from '@/routes/admin/penyelenggara';
 
 type Row = {
     id: string;
@@ -25,9 +25,14 @@ type Props = {
         links: { url: string | null; label: string; active: boolean }[];
     };
     filters: { search: string };
+    driveRootFolderId: string | null;
 };
 
-export default function PenyelenggaraIndex({ penyelenggaras, filters }: Props) {
+export default function PenyelenggaraIndex({
+    penyelenggaras,
+    filters,
+    driveRootFolderId,
+}: Props) {
     return (
         <>
             <Head title="Penyelenggara" />
@@ -103,6 +108,54 @@ export default function PenyelenggaraIndex({ penyelenggaras, filters }: Props) {
                                 </>
                             )}
                         </Form>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">
+                            Folder Google Drive kartu peserta
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-2 text-sm">
+                        <p className="text-muted-foreground">
+                            Tempel tautan folder "Tyas General Apps" (atau
+                            ID-nya). Kartu tiap penyelenggara disimpan di
+                            subfolder penyelenggara → program.
+                        </p>
+                        <Form
+                            {...drive.form()}
+                            className="flex flex-col gap-2 sm:flex-row sm:items-start"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    <div className="grid flex-1 gap-1">
+                                        <Input
+                                            name="folder"
+                                            defaultValue={
+                                                driveRootFolderId ?? ''
+                                            }
+                                            placeholder="https://drive.google.com/drive/folders/…"
+                                            aria-label="Folder Drive"
+                                        />
+                                        <InputError message={errors.folder} />
+                                    </div>
+                                    <Button
+                                        type="submit"
+                                        variant="outline"
+                                        disabled={processing}
+                                    >
+                                        Simpan folder
+                                    </Button>
+                                </>
+                            )}
+                        </Form>
+                        {!driveRootFolderId && (
+                            <p className="text-xs text-amber-600">
+                                Belum diatur — kartu tetap dibuat dan bisa
+                                diunduh dari server.
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 

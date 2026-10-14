@@ -10,6 +10,7 @@ use App\Http\Middleware\EnsurePenyelenggaraUser;
 use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\MarkKartuBebasLegacy;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCurrentPenyelenggara;
 use App\Http\Middleware\SetCurrentSchool;
@@ -44,6 +45,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'penyelenggara' => EnsurePenyelenggaraUser::class,
             'bukan-penyelenggara' => EnsureBukanPenyelenggara::class,
             'fitur-penyelenggara' => EnsurePenyelenggaraFeatureEnabled::class,
+            'konteks-penyelenggara' => SetCurrentPenyelenggara::class,
+            'kartu-bebas-legacy' => MarkKartuBebasLegacy::class,
             'studio-token' => AuthenticateStudioToken::class,
         ]);
 
@@ -55,7 +58,6 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             SetCurrentSchool::class,
-            SetCurrentPenyelenggara::class,
             EnsurePasswordChanged::class,
         ]);
 

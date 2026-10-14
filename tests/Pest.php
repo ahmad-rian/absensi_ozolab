@@ -95,6 +95,16 @@ function createPenyelenggaraUser(string $role = 'ADMIN_PENYELENGGARA', ?Penyelen
 }
 
 /**
+ * Ikat (atau lepas) konteks penyelenggara untuk tes yang memanggil model langsung.
+ */
+function konteksPenyelenggara(?Penyelenggara $penyelenggara): void
+{
+    $penyelenggara
+        ? app()->instance('currentPenyelenggara', $penyelenggara)
+        : app()->forgetInstance('currentPenyelenggara');
+}
+
+/**
  * Baris-baris XLSX dari sebuah respons unduhan.
  *
  * Ekspor memakai `BinaryFileResponse`, jadi `streamedContent()` tidak berlaku —

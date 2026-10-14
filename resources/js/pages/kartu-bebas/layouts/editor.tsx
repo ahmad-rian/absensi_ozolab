@@ -51,7 +51,7 @@ type FormData = {
     public_url?: string;
 } | null;
 
-type Props = { form: FormData; frames: FrameItem[]; datasets: Dataset[] };
+type Props = { form: FormData; frames: FrameItem[]; datasets: Dataset[]; saveUrl?: string };
 
 type EditorFormData = {
     name: string;
@@ -285,7 +285,7 @@ return null;
     );
 }
 
-export default function KartuBebasLayoutEditor({ form, frames, datasets }: Props) {
+export default function KartuBebasLayoutEditor({ form, frames, datasets, saveUrl }: Props) {
     const isEditing = !!form?.id;
     const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -336,7 +336,8 @@ return;
         }));
 
         if (isEditing) {
-            inertiaForm.put(`/kartu-bebas/layouts/${form!.id}`, { preserveScroll: true });
+            // Modul penyelenggara memakai editor yang sama dengan alamat simpannya sendiri.
+            inertiaForm.put(saveUrl ?? `/kartu-bebas/layouts/${form!.id}`, { preserveScroll: true });
         } else {
             inertiaForm.post('/kartu-bebas/layouts', { preserveScroll: true });
         }

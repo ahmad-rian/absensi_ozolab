@@ -37,6 +37,12 @@ test('admin penyelenggara dengan izin tim melihat menu Tim', () => {
     assert.deepEqual(items.map((i) => i.title), ['Beranda', 'Tim']);
 });
 
+test('admin dengan izin kategori dan program melihat menunya', () => {
+    const items = visiblePenyelenggaraItems(penyelenggaraItems, ['ADMIN_PENYELENGGARA'], ['penyelenggara-beranda.access', 'penyelenggara-kategori.access', 'penyelenggara-program.access']);
+
+    assert.deepEqual(items.map((i) => i.title), ['Beranda', 'Kategori', 'Program']);
+});
+
 test('super admin melewati izin', () => {
     const items = visiblePenyelenggaraItems(penyelenggaraItems, ['SUPER_ADMIN'], []);
 

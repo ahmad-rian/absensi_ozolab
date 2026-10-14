@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\CardTenancy;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CardFormSubmission extends Model
 {
-    use HasUlids;
+    use CardTenancy, HasUlids;
 
     protected $fillable = [
         'card_form_id',
@@ -23,6 +25,9 @@ class CardFormSubmission extends Model
         'drive_file_id',
         'drive_url',
         'status',
+        'penyelenggara_id',
+        'program_id',
+        'archived_at',
     ];
 
     protected function casts(): array
@@ -41,5 +46,38 @@ class CardFormSubmission extends Model
     public function cardForm(): BelongsTo
     {
         return $this->belongsTo(CardForm::class);
+    }
+
+    /**
+     * Peserta modul penyelenggara mewarisi program dari layoutnya. Baris Kartu
+     * Bebas lama: layoutnya tanpa program, jadi tetap NULL.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (self $submission): void {
+            if ($submission->program_id || ! $submission->card_form_id) {
+                return;
+            }
+
+            $form = CardForm::acrossPenyelenggara()->whereKey($submission->card_form_id)->first(['program_id', 'penyelenggara_id']);
+            $submission->program_id = $form?->program_id;
+            $submission->penyelenggara_id ??= $form?->penyelenggara_id;
+        });
+    }
+
+    /**
+     * @return BelongsTo<Program, $this>
+     */
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Program::class);
+    }
+
+    /**
+     * @return BelongsToMany<Grup, $this>
+     */
+    public function grups(): BelongsToMany
+    {
+        return $this->belongsToMany(Grup::class, 'grup_peserta')->withTimestamps();
     }
 }

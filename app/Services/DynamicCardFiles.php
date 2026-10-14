@@ -6,6 +6,7 @@ use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Models\School;
 use App\Models\User;
+use App\Services\Penyelenggara\KartuDrive;
 use App\Services\Student\StudentDrivePhotoLocator;
 use App\Support\GambarCetak;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,12 @@ class DynamicCardFiles
 
     public function drive(CardForm $form): ?GoogleDriveService
     {
+        // Kartu peserta penyelenggara (spec 002) memakai Drive akun Tyas di folder
+        // "Tyas General Apps"; baris Kartu Bebas lama tetap lewat Drive sekolah.
+        if ($form->penyelenggara_id) {
+            return app(KartuDrive::class)->drive();
+        }
+
         $creator = $form->created_by ? User::find($form->created_by) : null;
         $school = $creator?->school_id ? School::with('driveConfig')->find($creator->school_id) : null;
         $config = $school?->driveConfig;
@@ -35,6 +42,13 @@ class DynamicCardFiles
         $id = null;
         try {
             $drive = $this->drive($participant->cardForm);
+            if ($drive && $participant->cardForm->penyelenggara_id) {
+                $folder = app(KartuDrive::class)->folderFor($drive, $participant->cardForm);
+                $file = $drive->uploadFile(Storage::disk('public')->path($path), Str::slug($participant->cardForm->name).'-'.basename($path), $folder, GambarCetak::mime($path));
+                $id = $file->getId();
+
+                return ['drive_file_id' => $id, 'drive_url' => $drive->makePublic($id)];
+            }
             if ($drive) {
                 $drive->ensureSubfolders();
                 $creator = User::find($participant->cardForm->created_by);

@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users } from 'lucide-react';
+import { CalendarRange, LayoutGrid, Shapes, Users } from 'lucide-react';
 import BrandLogo from '@/components/brand-logo';
 import { NavGroup } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -13,6 +13,8 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard, switchMethod } from '@/routes/penyelenggara';
+import { index as kategori } from '@/routes/penyelenggara/kategori';
+import { index as program } from '@/routes/penyelenggara/program';
 import { index as tim } from '@/routes/penyelenggara/tim';
 import type { NavItem } from '@/types';
 
@@ -30,6 +32,18 @@ export const penyelenggaraItems: GuardedItem[] = [
         href: dashboard.url(),
         icon: LayoutGrid,
         permission: 'penyelenggara-beranda.access',
+    },
+    {
+        title: 'Kategori',
+        href: kategori.url(),
+        icon: Shapes,
+        permission: 'penyelenggara-kategori.access',
+    },
+    {
+        title: 'Program',
+        href: program.url(),
+        icon: CalendarRange,
+        permission: 'penyelenggara-program.access',
     },
     {
         title: 'Tim',
