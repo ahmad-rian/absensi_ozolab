@@ -23,3 +23,10 @@
 ## Phase 5: Polish
 - [X] T011 Tautan scan & tombol ganti link di detail program; menu
 - [X] T012 Regresi `CardAttendanceTest` (tanpa perubahan), Pint, build, suite penuh, commit
+
+## Audit 2026-10-14 — P0
+- [X] T-A01 `Sesi::punyaKehadiran()` lintas konteks (sinkron console tidak lagi menghapus sesi berkehadiran)
+- [X] T-A02 Sapuan alpa: `whereDoesntHave` tanpa scope, insert per 1000, program aktif saja, bandingkan waktu daftar dengan tutup jendela, `withoutOverlapping(30)`
+- [X] T-A03 Hapus grup yang punya jadwal ditolak (riwayat kehadiran aman)
+- [X] T-A04 FK `grups.parent_id` cascade (migrasi baru)
+- [X] T-A05 Scan bersamaan: transaksi 3 percobaan (deadlock InnoDB)

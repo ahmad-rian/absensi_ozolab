@@ -63,7 +63,9 @@ class KehadiranRecorder
         }
 
         try {
-            return DB::transaction(fn () => $this->catat($program, $sesi, $peserta, $mode, $sekarang));
+            // 3 percobaan: InnoDB melaporkan dua scan bersamaan atas baris yang
+            // belum ada sebagai deadlock (gap lock), bukan unique violation.
+            return DB::transaction(fn () => $this->catat($program, $sesi, $peserta, $mode, $sekarang), 3);
         } catch (UniqueConstraintViolationException) {
             // Dua scan bersamaan untuk peserta yang sama: yang kalah membaca baris pemenang.
             return DB::transaction(fn () => $this->catat($program, $sesi, $peserta, $mode, $sekarang));

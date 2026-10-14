@@ -142,9 +142,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('temp:clean')->hourly();
 
         // Absensi multi-kategori (spec 003): sesi mendatang mengikuti polanya.
-        $schedule->command('penyelenggara:sesi-sinkron')->dailyAt('00:30')->withoutOverlapping();
+        $schedule->command('penyelenggara:sesi-sinkron')->dailyAt('00:30')->withoutOverlapping(30);
         // Spec 004: peserta tanpa catatan setelah jendela datang tutup → Alpa.
-        $schedule->command('penyelenggara:tandai-alpa')->hourly()->withoutOverlapping();
+        $schedule->command('penyelenggara:tandai-alpa')->hourly()->withoutOverlapping(30);
 
         // Close attendance rows that checked in but never checked out. Runs
         // hourly because each school sets its own check_out_end.

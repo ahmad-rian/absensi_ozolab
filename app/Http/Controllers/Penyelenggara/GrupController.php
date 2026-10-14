@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Penyelenggara;
 use App\Http\Controllers\Controller;
 use App\Models\Grup;
 use App\Models\Program;
+use App\Models\Sesi;
+use App\Models\SesiPola;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -51,6 +53,12 @@ class GrupController extends Controller
 
         if ($grup->children()->exists() || $grup->peserta()->exists()) {
             return back()->withErrors(['grup' => 'Grup masih punya sub-grup atau peserta. Kosongkan dulu sebelum menghapus.']);
+        }
+
+        // Sesi khusus grup ikut terhapus (FK cascade) beserta kehadirannya —
+        // riwayat laporan tidak boleh hilang diam-diam.
+        if (SesiPola::where('grup_id', $grup->id)->exists() || Sesi::where('grup_id', $grup->id)->exists()) {
+            return back()->withErrors(['grup' => 'Grup ini punya jadwal sesi sendiri. Hapus atau pindahkan jadwalnya dulu supaya riwayat kehadiran tidak ikut terhapus.']);
         }
 
         $programId = $grup->program_id;

@@ -42,9 +42,14 @@ class Sesi extends Model
         return $this->pulang_selesai ?? $this->datang_selesai;
     }
 
+    /**
+     * Lintas konteks dengan sengaja: dipanggil juga dari console (sinkron
+     * harian) yang tidak punya konteks penyelenggara — lewat relasi, scope
+     * fail-closed membuatnya selalu false dan sesi berkehadiran ikut terhapus.
+     */
     public function punyaKehadiran(): bool
     {
-        return $this->kehadirans()->exists();
+        return Kehadiran::acrossPenyelenggara()->where('sesi_id', $this->id)->exists();
     }
 
     /**

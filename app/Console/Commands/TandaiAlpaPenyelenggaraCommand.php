@@ -33,6 +33,7 @@ class TandaiAlpaPenyelenggaraCommand extends Command
 
         $programs = Program::acrossPenyelenggara()
             ->whereNull('archived_at')
+            ->whereDate('ends_on', '>=', now()->subDays(3)->toDateString())
             ->when($this->option('program'), fn ($q, $id) => $q->whereKey($id))
             ->get();
 
@@ -63,14 +64,24 @@ class TandaiAlpaPenyelenggaraCommand extends Command
         $query = CardFormSubmission::acrossPenyelenggara()
             ->where('program_id', $program->id)
             ->whereNull('archived_at')
-            ->whereDoesntHave('kehadirans', fn ($q) => $q->where('sesi_id', $sesi->id));
+            // withoutGlobalScope: console tanpa konteks — scope fail-closed di dalam
+            // whereDoesntHave membuat SEMUA peserta terpilih.
+            ->whereDoesntHave('kehadirans', fn ($q) => $q->withoutGlobalScope('penyelenggara')->where('sesi_id', $sesi->id));
 
         if ($sesi->grup_id) {
             $query->whereHas('grups', fn ($q) => $q->withoutGlobalScope('penyelenggara')->whereIn('grups.id', Grup::denganTurunan($program->id, [$sesi->grup_id])));
         }
 
+        // Peserta yang terdaftar setelah jendela datang tutup tidak pernah punya
+        // kesempatan absen di sesi itu.
+        // Dibandingkan sebagai string mentah di zona aplikasi (cara Laravel
+        // menulis created_at), bukan objek Carbon yang zona bacanya bisa berbeda.
+        $tutup = CarbonImmutable::parse($sesi->tanggal.' '.$sesi->datang_selesai, $program->timezone)
+            ->setTimezone(config('app.timezone'))
+            ->format('Y-m-d H:i:s');
+
         $baris = $query->get(['id', 'created_at'])
-            ->filter(fn (CardFormSubmission $p) => $p->created_at->setTimezone($program->timezone)->toDateString() <= $sesi->tanggal)
+            ->filter(fn (CardFormSubmission $p) => $p->getRawOriginal('created_at') <= $tutup)
             ->map(fn (CardFormSubmission $p) => [
                 'id' => (string) Str::ulid(),
                 'penyelenggara_id' => $program->penyelenggara_id,
@@ -83,8 +94,11 @@ class TandaiAlpaPenyelenggaraCommand extends Command
                 'updated_at' => now(),
             ])->values()->all();
 
-        if (! $simulasi && $baris) {
-            Kehadiran::acrossPenyelenggara()->insertOrIgnore($baris);
+        if (! $simulasi) {
+            // Per 1000 baris: batas placeholder MySQL 65.535.
+            foreach (array_chunk($baris, 1000) as $potongan) {
+                Kehadiran::acrossPenyelenggara()->insertOrIgnore($potongan);
+            }
         }
 
         return count($baris);
