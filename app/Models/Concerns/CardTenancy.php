@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
  * 2. Di area Kartu Bebas (penanda `kartuBebasLegacy`) → hanya baris lama
  *    (`penyelenggara_id` NULL), jadi super admin tidak pernah melihat data
  *    penyelenggara di sana.
+ * 2b. Di area penyelenggara tanpa konteks (penanda `areaPenyelenggara`) →
+ *    nol baris.
  * 3. Selain itu (job generate, console, rute token publik) → tanpa filter,
  *    persis perilaku sebelum modul ini ada. Akun penyelenggara tidak pernah
  *    mencapai keadaan ini karena terkunci di areanya sendiri.
@@ -36,6 +38,10 @@ trait CardTenancy
 
             if (app()->bound('currentPenyelenggara')) {
                 $query->where($column, app('currentPenyelenggara')->id);
+            } elseif (app()->bound('areaPenyelenggara')) {
+                // Area penyelenggara tanpa konteks (super admin belum memilih):
+                // fail-closed, bukan keadaan 3.
+                $query->whereRaw('1 = 0');
             } elseif (app()->bound('kartuBebasLegacy')) {
                 $query->whereNull($column);
             }

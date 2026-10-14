@@ -91,3 +91,10 @@ test('halaman kehadiran menampilkan peserta yang belum hadir', function () {
     $this->actingAs($admin)->get(route('penyelenggara.kehadiran.index', ['program' => $program, 'tanggal' => '2027-06-10']))
         ->assertInertia(fn ($page) => $page->where('peserta.0.status', 'BELUM')->where('peserta.0.datang', null));
 });
+
+test('kehadiran program yang diarsip tidak bisa diubah', function () {
+    [$admin, $program, $sesi, , $siti] = konteksManual();
+    $program->update(['archived_at' => now()]);
+
+    $this->actingAs($admin)->put(route('penyelenggara.kehadiran.update', [$sesi, $siti]), ['status' => 'IZIN'])->assertForbidden();
+});

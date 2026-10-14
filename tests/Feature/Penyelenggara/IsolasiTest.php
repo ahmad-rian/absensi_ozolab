@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\CardFormSubmission;
 use App\Models\Penyelenggara;
 use App\Models\PenyelenggaraInvitation;
+use App\Models\Program;
 use App\Models\Student;
 
 test('undangan milik penyelenggara lain tidak bisa disentuh — 404 identik dengan id acak', function () {
@@ -54,4 +56,27 @@ test('admin sekolah tidak bisa memberi peran penyelenggara lewat kelola pengguna
 
     $this->actingAs($admin)->get(route('admin.users.create'))
         ->assertInertia(fn ($page) => $page->where('roles', fn ($roles) => collect($roles)->pluck('name')->intersect(['ADMIN_PENYELENGGARA', 'PENDAMPING'])->isEmpty()));
+});
+
+test('super admin tanpa konteks penyelenggara tidak bisa menyentuh peserta mana pun', function () {
+    $program = Program::factory()->create();
+    $peserta = CardFormSubmission::acrossPenyelenggara()->create(['card_form_id' => $program->card_form_id, 'data' => ['nama' => 'X'], 'status' => 'completed']);
+    $super = createSuperAdminUser();
+
+    $this->actingAs($super)->delete(route('penyelenggara.peserta.destroy', $peserta))->assertNotFound();
+    $this->actingAs($super)->get(route('penyelenggara.peserta.kartu', $peserta))->assertNotFound();
+    $this->actingAs($super)->post(route('penyelenggara.peserta.generate', $peserta))->assertNotFound();
+    $this->actingAs($super)->post(route('penyelenggara.peserta.restore', $peserta))->assertNotFound();
+
+    expect($peserta->fresh()->archived_at)->toBeNull();
+});
+
+test('super admin di konteks A tidak bisa menyentuh peserta penyelenggara B', function () {
+    $a = Penyelenggara::factory()->create();
+    $programB = Program::factory()->create();
+    $pesertaB = CardFormSubmission::acrossPenyelenggara()->create(['card_form_id' => $programB->card_form_id, 'data' => ['nama' => 'B'], 'status' => 'completed']);
+    $super = createSuperAdminUser();
+    $this->actingAs($super)->post(route('penyelenggara.switch'), ['penyelenggara_id' => $a->id]);
+
+    $this->actingAs($super)->delete(route('penyelenggara.peserta.destroy', $pesertaB))->assertNotFound();
 });

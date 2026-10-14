@@ -102,6 +102,7 @@ class KehadiranController extends Controller
     public function update(Request $request, Sesi $sesi, CardFormSubmission $peserta, KehadiranRecorder $recorder): RedirectResponse
     {
         abort_if($peserta->program_id !== $sesi->program_id || ! $this->peserta->bolehLihat($request->user(), $peserta), 404);
+        abort_if(Program::findOrFail($sesi->program_id)->isArchived(), 403, 'Program sudah diarsip dan hanya bisa dilihat.');
 
         $validated = $request->validate([
             'status' => ['required', Rule::enum(AttendanceStatus::class)],

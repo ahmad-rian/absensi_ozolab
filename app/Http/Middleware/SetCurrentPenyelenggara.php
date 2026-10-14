@@ -24,6 +24,10 @@ class SetCurrentPenyelenggara
             return $next($request);
         }
 
+        // Penanda area: tabel kartu bersama (CardTenancy) menjadi fail-closed
+        // di sini walau konteks belum dipilih.
+        app()->instance('areaPenyelenggara', true);
+
         // Rute scan publik sengaja berjalan tanpa session (dan tanpa CSRF);
         // di sana super admin memang tidak punya konteks penyelenggara.
         $session = $request->hasSession() ? $request->session() : null;

@@ -1,8 +1,11 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Models\CardForm;
+use App\Models\CardFormSubmission;
 use App\Models\Penyelenggara;
 use App\Models\PenyelenggaraInvitation;
+use App\Models\Program;
 use App\Models\User;
 
 test('tanpa konteks penyelenggara, data penyelenggara kosong (fail-closed)', function () {
@@ -51,4 +54,17 @@ test('slug penyelenggara unik walau nama sama', function () {
     $b = Penyelenggara::factory()->create(['name' => 'Al Hijrah Travel']);
 
     expect($a->slug)->toBe('al-hijrah-travel')->and($b->slug)->toBe('al-hijrah-travel-2');
+});
+
+test('tabel kartu bersama fail-closed di area penyelenggara tanpa konteks', function () {
+    $program = Program::factory()->create();
+    CardFormSubmission::acrossPenyelenggara()->create(['card_form_id' => $program->card_form_id, 'data' => ['nama' => 'X'], 'status' => 'draft']);
+
+    app()->instance('areaPenyelenggara', true);
+    konteksPenyelenggara(null);
+
+    expect(CardFormSubmission::count())->toBe(0)
+        ->and(CardForm::count())->toBe(0);
+
+    app()->forgetInstance('areaPenyelenggara');
 });
