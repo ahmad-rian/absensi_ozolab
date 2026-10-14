@@ -8,6 +8,7 @@ use App\Models\Program;
 use App\Models\Setting;
 use App\Services\CardAttendanceService;
 use App\Services\DynamicCardFiles;
+use App\Services\GoogleDriveService;
 use App\Services\Penyelenggara\KartuDrive;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -100,4 +101,26 @@ test('super admin menyimpan folder root dari tautan Drive', function () {
     $this->actingAs(createSuperAdminUser())
         ->put(route('admin.penyelenggara.drive'), ['folder' => 'bukan folder!'])
         ->assertSessionHasErrors('folder');
+});
+
+test('kartu peserta disimpan di folder kategori, lalu penyelenggara, lalu program', function () {
+    Setting::setValue(KartuDrive::SETTING_ROOT, 'root-general');
+    $admin = createPenyelenggaraUser('ADMIN_PENYELENGGARA', null, []);
+    $admin->penyelenggara->update(['name' => 'Biro Al-Hijrah']);
+    $kategori = Kategori::factory()->create(['penyelenggara_id' => $admin->penyelenggara_id, 'name' => 'Haji Umroh']);
+    $program = Program::factory()->create(['kategori_id' => $kategori->id, 'penyelenggara_id' => $admin->penyelenggara_id, 'name' => 'Haji 2027']);
+    $form = CardForm::acrossPenyelenggara()->find($program->card_form_id);
+
+    $dibuat = [];
+    $drive = Mockery::mock(GoogleDriveService::class);
+    $drive->shouldReceive('findOrCreateFolder')->andReturnUsing(function (string $nama, string $induk) use (&$dibuat) {
+        $dibuat[] = "{$induk}/{$nama}";
+
+        return "id:{$nama}";
+    });
+
+    $folder = app(KartuDrive::class)->folderFor($drive, $form);
+
+    expect($folder)->toBe('id:Haji 2027')
+        ->and($dibuat)->toBe(['root-general/Haji Umroh', 'id:Haji Umroh/Biro Al-Hijrah', 'id:Biro Al-Hijrah/Haji 2027']);
 });

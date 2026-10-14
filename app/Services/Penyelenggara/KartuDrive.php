@@ -3,6 +3,7 @@
 namespace App\Services\Penyelenggara;
 
 use App\Models\CardForm;
+use App\Models\Kategori;
 use App\Models\Penyelenggara;
 use App\Models\Program;
 use App\Models\SchoolDriveConfig;
@@ -11,7 +12,9 @@ use App\Services\GoogleDriveService;
 
 /**
  * Drive untuk kartu peserta penyelenggara: akun OAuth Tyas, root folder
- * "Tyas General Apps" (Setting global), lalu subfolder penyelenggara → program.
+ * "Tyas General Apps" (Setting global), lalu subfolder kategori → penyelenggara
+ * → program. Kategori di atas supaya rapi per jenis kegiatan; penyelenggara tetap
+ * jadi level sendiri agar biro berbeda dengan nama kategori sama tidak tercampur.
  */
 class KartuDrive
 {
@@ -52,7 +55,13 @@ class KartuDrive
         $penyelenggara = Penyelenggara::withTrashed()->findOrFail($form->penyelenggara_id);
         $program = Program::acrossPenyelenggara()->find($form->program_id);
 
-        $folder = $drive->findOrCreateFolder($penyelenggara->name, $this->rootFolderId());
+        $kategori = $program ? Kategori::acrossPenyelenggara()->find($program->kategori_id) : null;
+
+        $induk = $this->rootFolderId();
+        if ($kategori) {
+            $induk = $drive->findOrCreateFolder($kategori->name, $induk);
+        }
+        $folder = $drive->findOrCreateFolder($penyelenggara->name, $induk);
 
         return $program ? $drive->findOrCreateFolder($program->name, $folder) : $folder;
     }
