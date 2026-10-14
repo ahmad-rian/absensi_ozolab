@@ -52,6 +52,7 @@ use App\Http\Controllers\OrangTua\PortalController;
 use App\Http\Controllers\ParentTelegramController;
 use App\Http\Controllers\Penyelenggara\DashboardController as PenyelenggaraDashboardController;
 use App\Http\Controllers\Penyelenggara\GrupController as PenyelenggaraGrupController;
+use App\Http\Controllers\Penyelenggara\JadwalController as PenyelenggaraJadwalController;
 use App\Http\Controllers\Penyelenggara\KartuController as PenyelenggaraKartuController;
 use App\Http\Controllers\Penyelenggara\KategoriController as PenyelenggaraKategoriController;
 use App\Http\Controllers\Penyelenggara\PesertaController as PenyelenggaraPesertaController;
@@ -602,6 +603,13 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
             Route::put('grup/{grup}', [PenyelenggaraGrupController::class, 'update'])->name('grup.update');
             Route::delete('grup/{grup}', [PenyelenggaraGrupController::class, 'destroy'])->name('grup.destroy');
             Route::put('grup/{grup}/pendamping', [PenyelenggaraGrupController::class, 'pendamping'])->name('grup.pendamping');
+
+            Route::get('program/{program}/jadwal', [PenyelenggaraJadwalController::class, 'index'])->name('jadwal.index');
+            Route::post('program/{program}/jadwal', [PenyelenggaraJadwalController::class, 'store'])->name('jadwal.store');
+            Route::put('jadwal/{pola}', [PenyelenggaraJadwalController::class, 'update'])->name('jadwal.update');
+            Route::delete('jadwal/{pola}', [PenyelenggaraJadwalController::class, 'destroy'])->name('jadwal.destroy');
+            Route::post('program/{program}/libur', [PenyelenggaraJadwalController::class, 'liburStore'])->name('libur.store');
+            Route::delete('libur/{libur}', [PenyelenggaraJadwalController::class, 'liburDestroy'])->name('libur.destroy');
         });
 
         Route::middleware('permission:penyelenggara-peserta.access')->group(function () {

@@ -7,6 +7,7 @@ use App\Models\Grup;
 use App\Models\Kategori;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\Penyelenggara\SesiGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -92,6 +93,7 @@ class ProgramController extends Controller
         abort_if($program->isArchived(), 403, 'Program sudah diarsip dan hanya bisa dilihat.');
 
         $program->update($this->validated($request, $program));
+        app(SesiGenerator::class)->sinkronProgram($program->fresh());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Program diperbarui.']);
 

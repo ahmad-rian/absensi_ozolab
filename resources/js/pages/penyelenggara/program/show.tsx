@@ -12,6 +12,7 @@ import {
     pendamping as simpanPendamping,
     store as tambahGrup,
 } from '@/routes/penyelenggara/grup';
+import { index as jadwalIndex } from '@/routes/penyelenggara/jadwal';
 import {
     edit as kartuEdit,
     zip as kartuZip,
@@ -220,6 +221,9 @@ export default function ProgramShow({
                                 {program.peserta_count}{' '}
                                 {program.istilah_peserta}
                             </Link>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href={jadwalIndex(program.id)}>Jadwal</Link>
                         </Button>
                         <Button variant="outline" asChild>
                             <Link href={kartuEdit(program.id)}>
