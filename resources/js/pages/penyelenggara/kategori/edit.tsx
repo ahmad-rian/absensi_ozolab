@@ -18,6 +18,7 @@ type Kategori = {
     istilah_grup: string;
     features: Record<string, boolean>;
     fields: FormField[];
+    hiddenFields: FormField[];
     archived: boolean;
 };
 
@@ -73,7 +74,13 @@ export default function KategoriEdit({ kategori, errors }: Props) {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.post(arsip.url(kategori.id))}
+                        onClick={() =>
+                            window.confirm(
+                                kategori.archived
+                                    ? 'Aktifkan lagi kategori ini?'
+                                    : 'Arsipkan kategori ini? Program baru tidak bisa memakainya; program yang ada tetap berjalan.',
+                            ) && router.post(arsip.url(kategori.id))
+                        }
                     >
                         {kategori.archived ? 'Aktifkan lagi' : 'Arsipkan'}
                     </Button>
@@ -153,6 +160,46 @@ export default function KategoriEdit({ kategori, errors }: Props) {
                             onName={setName}
                             onFields={setFields}
                         />
+                        {kategori.hiddenFields.some(
+                            (h) => !fields.some((f) => f.key === h.key),
+                        ) && (
+                            <div className="mt-4 grid gap-2 border-t pt-4 text-sm">
+                                <p className="text-muted-foreground">
+                                    Kolom tersembunyi (datanya masih ada):
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {kategori.hiddenFields
+                                        .filter(
+                                            (h) =>
+                                                !fields.some(
+                                                    (f) => f.key === h.key,
+                                                ),
+                                        )
+                                        .map((h) => (
+                                            <Button
+                                                key={h.key}
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setFields([
+                                                        ...fields,
+                                                        {
+                                                            ...h,
+                                                            hidden: undefined,
+                                                        } as FormField,
+                                                    ])
+                                                }
+                                            >
+                                                Munculkan {h.label}
+                                            </Button>
+                                        ))}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Klik Simpan kategori setelah memunculkan.
+                                </p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

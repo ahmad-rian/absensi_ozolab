@@ -675,6 +675,7 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
             Route::post('undangan', [PenyelenggaraTimController::class, 'invite'])->middleware('throttle:20,1')->name('invite');
             Route::delete('undangan/{invitation}', [PenyelenggaraTimController::class, 'revoke'])->name('revoke');
             Route::put('{user}/status', [PenyelenggaraTimController::class, 'status'])->name('status');
+            Route::put('{user}/peran', [PenyelenggaraTimController::class, 'peran'])->name('peran');
         });
     });
 

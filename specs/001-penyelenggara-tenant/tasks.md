@@ -169,3 +169,10 @@ US3 (switch konteks) dan US4 (tim) menyusul dalam commit terpisah bila waktu sem
 Tes: `tests/Feature/Penyelenggara/AuditP1Test.php`, `tests/Unit/akses-penyelenggara.test.mjs`.
 
 - [X] T-A10 Sidebar penyelenggara juga di halaman Settings (`auth.user.penyelenggara_id`) — `app-sidebar-layout.tsx`, `HandleInertiaRequests`
+
+## Audit 2026-10-14 — P2
+
+Tes: `tests/Feature/Penyelenggara/AuditP2Test.php`.
+
+- [X] T-A30 Ubah peran anggota tim (Admin ↔ Pendamping) dengan penjaga minimal satu admin aktif — `TimController::peran`, `tim.tsx`
+- [X] T-A31 Saklar fitur penyelenggara ditunda ke spec 006 (dicatat di spec.md)

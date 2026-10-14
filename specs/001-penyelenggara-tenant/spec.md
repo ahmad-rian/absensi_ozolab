@@ -179,6 +179,8 @@ diizinkan.
   dua penyelenggara memakai dua email.
 - Undangan memakai mekanisme email yang sudah ada di aplikasi; masa berlaku 7 hari.
 - Saklar fitur penyelenggara mengikuti pola saklar fitur sekolah (bawaan menyala untuk modul inti).
+  **Ditunda (audit 2026-10-14):** UI saklar untuk super admin dibangun bersama spec 006 — fitur
+  pertama yang memakainya (notifikasi wali) belum ada; sampai itu, `PenyelenggaraFeatures` memakai bawaan.
 - Penugasan Pendamping ke grup tertentu dikerjakan di spec 002 (grup); di spec ini Pendamping
   melihat semua data penyelenggaranya sesuai izin modul.
 - Kuota peserta dan WA hanya disimpan di spec ini; penegakannya di spec peserta dan notifikasi.

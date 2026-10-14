@@ -68,6 +68,8 @@ class KategoriController extends Controller
                 'istilah_grup' => $kategori->istilah_grup,
                 'features' => array_merge(array_fill_keys(Kategori::FITUR, false), $kategori->features ?? []),
                 'fields' => $kategori->visibleFields(),
+                // Kolom yang pernah dihapus: datanya masih ada, bisa dimunculkan lagi.
+                'hiddenFields' => array_values(array_filter($kategori->fields(), fn (array $f) => ! empty($f['hidden']))),
                 'archived' => $kategori->isArchived(),
             ],
         ]);

@@ -14,3 +14,9 @@ Tes: `tests/Feature/Penyelenggara/AuditP1Test.php`, `tests/Unit/akses-penyelengg
 
 - [X] T-A20 Dashboard program: tautan Peserta/Kehadiran/Laporan per izin, sesi hari libur tidak dihitung; Beranda pendamping hanya programnya — `ProgramDashboardController`, `DashboardController`, `program/dashboard.tsx`
 - [X] T-A21 Laporan per grup dikelompokkan per id grup berlabel jalur, peserta muncul di tiap grupnya, ringkasan dari matriks, sesi libur dikecualikan — `LaporanProgramController`, `RingkasanKehadiran::matriks`
+
+## Audit 2026-10-14 — P2
+
+Tes: `tests/Feature/Penyelenggara/AuditP2Test.php`.
+
+- [X] T-A37 Tautan Laporan di detail program

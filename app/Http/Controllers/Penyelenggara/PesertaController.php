@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CardFormSubmission;
 use App\Models\Grup;
 use App\Models\Program;
+use App\Models\User;
 use App\Services\CardParticipantService;
 use App\Services\DynamicCardFiles;
 use App\Services\Penyelenggara\PesertaService;
@@ -127,8 +128,11 @@ class PesertaController extends Controller
     public function restore(Request $request, CardFormSubmission $peserta): RedirectResponse
     {
         $this->pastikanTerlihat($request, $peserta);
-        $this->peserta->pastikanKuota(app('currentPenyelenggara'), 1);
-        $peserta->forceFill(['archived_at' => null])->save();
+
+        if ($peserta->archived_at !== null) {
+            $this->peserta->pastikanKuota(app('currentPenyelenggara'), 1);
+            $peserta->forceFill(['archived_at' => null])->save();
+        }
 
         return to_route('penyelenggara.peserta.index', $peserta->program_id);
     }
@@ -150,6 +154,30 @@ class PesertaController extends Controller
         return $files->response($peserta, $request->boolean('unduh'));
     }
 
+    /**
+     * Riwayat masuk/keluar/pindah grup dengan nama grup, terbaru dulu (FR-009).
+     *
+     * @return array<int, array{tanggal: string, aksi: string, dari: ?string, ke: ?string, oleh: ?string}>
+     */
+    private function riwayatGrup(CardFormSubmission $peserta): array
+    {
+        $baris = DB::table('grup_peserta_riwayats')
+            ->where('card_form_submission_id', $peserta->id)
+            ->orderByDesc('created_at')->orderByDesc('id')
+            ->limit(50)
+            ->get();
+        $nama = Grup::acrossPenyelenggara()->whereIn('id', $baris->pluck('dari_grup_id')->merge($baris->pluck('ke_grup_id'))->filter())->pluck('name', 'id');
+        $oleh = User::whereIn('id', $baris->pluck('oleh')->filter())->pluck('name', 'id');
+
+        return $baris->map(fn ($r) => [
+            'tanggal' => (string) $r->created_at,
+            'aksi' => $r->aksi,
+            'dari' => $r->dari_grup_id ? ($nama[$r->dari_grup_id] ?? 'Grup terhapus') : null,
+            'ke' => $r->ke_grup_id ? ($nama[$r->ke_grup_id] ?? 'Grup terhapus') : null,
+            'oleh' => $r->oleh ? ($oleh[$r->oleh] ?? null) : null,
+        ])->all();
+    }
+
     private function form(Program $program, ?CardFormSubmission $peserta): Response
     {
         $kategori = $program->kategori()->first();
@@ -168,8 +196,8 @@ class PesertaController extends Controller
                 'original_url' => ($peserta->original_photo_path ?: $peserta->photo_path) ? Storage::disk('public')->url($peserta->original_photo_path ?: $peserta->photo_path) : null,
                 'has_card' => (bool) ($peserta->file_path || $peserta->drive_file_id),
                 'archived' => $peserta->archived_at !== null,
-                'riwayat' => DB::table('grup_peserta_riwayats')->where('card_form_submission_id', $peserta->id)->latest()->limit(20)->get(['aksi', 'dari_grup_id', 'ke_grup_id', 'created_at']),
             ] : null,
+            'riwayat' => $peserta ? $this->riwayatGrup($peserta) : [],
         ]);
     }
 

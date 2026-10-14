@@ -6,7 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ROLE_LABEL, STATUS_UNDANGAN } from '@/pages/admin/penyelenggara/show';
 import { dashboard } from '@/routes/penyelenggara';
-import { index, invite, revoke, status } from '@/routes/penyelenggara/tim';
+import {
+    index,
+    invite,
+    peran,
+    revoke,
+    status,
+} from '@/routes/penyelenggara/tim';
 
 type Props = {
     users: {
@@ -23,9 +29,10 @@ type Props = {
         status: string;
         expires_at: string;
     }[];
+    errors: Record<string, string>;
 };
 
-export default function Tim({ users, invitations }: Props) {
+export default function Tim({ users, invitations, errors }: Props) {
     return (
         <>
             <Head title="Tim" />
@@ -92,6 +99,15 @@ export default function Tim({ users, invitations }: Props) {
                     </CardHeader>
                     <CardContent>
                         <ul className="divide-y text-sm">
+                            {(errors.role || errors.is_active) && (
+                                <li className="py-2">
+                                    <InputError
+                                        message={
+                                            errors.role ?? errors.is_active
+                                        }
+                                    />
+                                </li>
+                            )}
                             {users.map((u) => (
                                 <li
                                     key={u.id}
@@ -106,9 +122,30 @@ export default function Tim({ users, invitations }: Props) {
                                         </span>
                                     </span>
                                     <span className="flex items-center gap-2">
-                                        <Badge variant="outline">
-                                            {ROLE_LABEL[u.role ?? ''] ?? u.role}
-                                        </Badge>
+                                        <select
+                                            aria-label={`Peran ${u.name}`}
+                                            className="h-8 rounded-md border bg-background px-2 text-sm"
+                                            value={u.role ?? ''}
+                                            onChange={(e) =>
+                                                window.confirm(
+                                                    `Ubah peran ${u.name} menjadi ${ROLE_LABEL[e.target.value]}?`,
+                                                ) &&
+                                                router.put(
+                                                    peran.url(u.id),
+                                                    { role: e.target.value },
+                                                    { preserveScroll: true },
+                                                )
+                                            }
+                                        >
+                                            {[
+                                                'ADMIN_PENYELENGGARA',
+                                                'PENDAMPING',
+                                            ].map((r) => (
+                                                <option key={r} value={r}>
+                                                    {ROLE_LABEL[r]}
+                                                </option>
+                                            ))}
+                                        </select>
                                         <Button
                                             size="sm"
                                             variant={
@@ -169,6 +206,9 @@ export default function Tim({ users, invitations }: Props) {
                                                     size="sm"
                                                     variant="ghost"
                                                     onClick={() =>
+                                                        window.confirm(
+                                                            `Batalkan undangan untuk ${i.email}?`,
+                                                        ) &&
                                                         router.delete(
                                                             revoke.url(i.id),
                                                             {

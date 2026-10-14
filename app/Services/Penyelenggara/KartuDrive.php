@@ -25,6 +25,14 @@ class KartuDrive
     }
 
     /**
+     * Root folder dan kredensial Drive sudah diatur (tanpa membangun klien).
+     */
+    public function siap(): bool
+    {
+        return $this->rootFolderId() !== null && GoogleDriveService::hasGlobalCredentials();
+    }
+
+    /**
      * Klien Drive, atau null bila root/kredensial belum diatur — kartu tetap
      * tersimpan di server dan bisa diunduh.
      */

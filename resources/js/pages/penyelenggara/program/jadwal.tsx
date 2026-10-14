@@ -213,6 +213,9 @@ export default function Jadwal({
                                                 size="sm"
                                                 variant="ghost"
                                                 onClick={() =>
+                                                    window.confirm(
+                                                        `Hapus libur ${l.tanggal}? Sesi di tanggal itu kembali dihitung.`,
+                                                    ) &&
                                                     router.delete(
                                                         hapusLibur.url(l.id),
                                                         {

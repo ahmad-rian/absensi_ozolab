@@ -19,9 +19,14 @@ class PesertaService
 {
     public function jumlahAktif(Penyelenggara $penyelenggara): int
     {
+        // Program yang sudah diarsip selesai berjalan; pesertanya tidak lagi memakan kuota.
         return CardFormSubmission::acrossPenyelenggara()
             ->where('penyelenggara_id', $penyelenggara->id)
             ->whereNull('archived_at')
+            ->whereNotIn('program_id', Program::acrossPenyelenggara()
+                ->where('penyelenggara_id', $penyelenggara->id)
+                ->whereNotNull('archived_at')
+                ->select('id'))
             ->count();
     }
 

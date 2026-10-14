@@ -7,6 +7,7 @@ use App\Models\Grup;
 use App\Models\Kategori;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\Penyelenggara\KartuDrive;
 use App\Services\Penyelenggara\SesiGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -81,6 +82,8 @@ class ProgramController extends Controller
                     'peserta_count' => $g->peserta_count,
                     'pendamping' => $g->pendamping->map(fn (User $u) => ['id' => $u->id, 'name' => $u->name]),
                 ]),
+            // Tanpa folder Drive, kartu tetap jadi tapi hanya tersimpan di server.
+            'driveSiap' => app(KartuDrive::class)->siap(),
             'pendampingOptions' => User::where('penyelenggara_id', $program->penyelenggara_id)
                 ->role('PENDAMPING')
                 ->orderBy('name')
@@ -128,13 +131,14 @@ class ProgramController extends Controller
     private function validated(Request $request, ?Program $program = null): array
     {
         return $request->validate([
-            'kategori_id' => [$program ? 'sometimes' : 'required', Rule::exists('kategoris', 'id')->where('penyelenggara_id', app('currentPenyelenggara')->id)],
+            'kategori_id' => [$program ? 'sometimes' : 'required', Rule::exists('kategoris', 'id')->where('penyelenggara_id', app('currentPenyelenggara')->id)->whereNull('archived_at')],
             'name' => ['required', 'string', 'max:150'],
             'starts_on' => ['required', 'date'],
             'ends_on' => ['required', 'date', 'after_or_equal:starts_on'],
             'timezone' => ['nullable', 'timezone:all'],
         ], [
             'kategori_id.required' => 'Pilih kategori.',
+            'kategori_id.exists' => 'Kategori tidak ditemukan atau sudah diarsip. Aktifkan lagi kategorinya atau pilih yang lain.',
             'ends_on.after_or_equal' => 'Tanggal selesai tidak boleh sebelum tanggal mulai.',
         ]) + ($program ? [] : ['timezone' => $request->input('timezone') ?: 'Asia/Jakarta']);
     }

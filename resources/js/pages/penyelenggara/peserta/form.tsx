@@ -49,6 +49,13 @@ type Props = {
         has_card: boolean;
         archived: boolean;
     } | null;
+    riwayat: {
+        tanggal: string;
+        aksi: 'masuk' | 'keluar' | 'pindah';
+        dari: string | null;
+        ke: string | null;
+        oleh: string | null;
+    }[];
 };
 
 export default function PesertaForm({
@@ -57,6 +64,7 @@ export default function PesertaForm({
     grups,
     istilahPeserta,
     peserta,
+    riwayat,
 }: Props) {
     const akses = useAksesPenyelenggara();
     const bolehKelola = akses.kelolaPeserta && !program.archived;
@@ -352,6 +360,38 @@ export default function PesertaForm({
                                         QR di kartu tidak berubah walau kartu
                                         digenerate ulang.
                                     </p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {riwayat.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-base">
+                                        Riwayat {program.istilah_grup}
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ul className="grid gap-1 text-sm">
+                                        {riwayat.map((r, i) => (
+                                            <li key={i}>
+                                                <span className="text-muted-foreground">
+                                                    {r.tanggal.slice(0, 16)}
+                                                </span>{' '}
+                                                {r.aksi === 'pindah'
+                                                    ? `Pindah dari ${r.dari} ke ${r.ke}`
+                                                    : r.aksi === 'masuk'
+                                                      ? `Masuk ${r.ke}`
+                                                      : `Keluar dari ${r.dari}`}
+                                                {r.oleh && (
+                                                    <span className="text-muted-foreground">
+                                                        {' '}
+                                                        · {r.oleh}
+                                                    </span>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </CardContent>
                             </Card>
                         )}

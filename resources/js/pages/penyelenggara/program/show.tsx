@@ -11,6 +11,7 @@ import {
     destroy as hapusGrup,
     pendamping as simpanPendamping,
     store as tambahGrup,
+    update as ubahGrup,
 } from '@/routes/penyelenggara/grup';
 import { index as jadwalIndex } from '@/routes/penyelenggara/jadwal';
 import {
@@ -18,6 +19,7 @@ import {
     zip as kartuZip,
 } from '@/routes/penyelenggara/kartu';
 import { index as kehadiranIndex } from '@/routes/penyelenggara/kehadiran';
+import { index as laporanIndex } from '@/routes/penyelenggara/laporan';
 import { index as pesertaIndex } from '@/routes/penyelenggara/peserta';
 import {
     arsip,
@@ -52,6 +54,7 @@ type Props = {
     };
     grups: Grup[];
     pendampingOptions: { id: string; name: string }[];
+    driveSiap: boolean;
     errors: Record<string, string>;
 };
 
@@ -88,6 +91,9 @@ function BarisGrup({
 }) {
     const [nama, setNama] = useState('');
     const [atur, setAtur] = useState(false);
+    const [ubah, setUbah] = useState(false);
+    const [namaBaru, setNamaBaru] = useState(grup.name);
+    const [urutan, setUrutan] = useState(String(grup.urutan));
     const [pilih, setPilih] = useState(grup.pendamping.map((p) => p.id));
 
     return (
@@ -114,7 +120,17 @@ function BarisGrup({
                         <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => setUbah(!ubah)}
+                        >
+                            Ubah
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() =>
+                                window.confirm(
+                                    `Hapus ${program.istilah_grup.toLowerCase()} "${grup.name}"?`,
+                                ) &&
                                 router.delete(hapusGrup.url(grup.id), {
                                     preserveScroll: true,
                                 })
@@ -125,6 +141,46 @@ function BarisGrup({
                     </span>
                 )}
             </div>
+            {ubah && (
+                <form
+                    className="flex flex-wrap items-end gap-2 rounded-md border p-2 text-sm"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        router.put(
+                            ubahGrup.url(grup.id),
+                            { name: namaBaru, urutan: Number(urutan) || 0 },
+                            {
+                                preserveScroll: true,
+                                onSuccess: () => setUbah(false),
+                            },
+                        );
+                    }}
+                >
+                    <div className="grid gap-1">
+                        <Label htmlFor={`nama-grup-${grup.id}`}>Nama</Label>
+                        <Input
+                            id={`nama-grup-${grup.id}`}
+                            value={namaBaru}
+                            onChange={(e) => setNamaBaru(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="grid gap-1">
+                        <Label htmlFor={`urutan-grup-${grup.id}`}>Urutan</Label>
+                        <Input
+                            id={`urutan-grup-${grup.id}`}
+                            type="number"
+                            min={0}
+                            className="w-24"
+                            value={urutan}
+                            onChange={(e) => setUrutan(e.target.value)}
+                        />
+                    </div>
+                    <Button type="submit" size="sm">
+                        Simpan
+                    </Button>
+                </form>
+            )}
             {atur && (
                 <div className="flex flex-wrap items-center gap-3 rounded-md border p-2 text-sm">
                     {pendampingOptions.length === 0 && (
@@ -200,6 +256,7 @@ export default function ProgramShow({
     program,
     grups,
     pendampingOptions,
+    driveSiap,
     errors,
 }: Props) {
     const pohon = susunPohon(grups);
@@ -243,6 +300,9 @@ export default function ProgramShow({
                             </Link>
                         </Button>
                         <Button variant="outline" asChild>
+                            <Link href={laporanIndex(program.id)}>Laporan</Link>
+                        </Button>
+                        <Button variant="outline" asChild>
                             <Link href={kartuEdit(program.id)}>
                                 Desain kartu
                             </Link>
@@ -254,12 +314,27 @@ export default function ProgramShow({
                         </Button>
                         <Button
                             variant="outline"
-                            onClick={() => router.post(arsip.url(program.id))}
+                            onClick={() =>
+                                window.confirm(
+                                    program.archived
+                                        ? 'Aktifkan lagi program ini?'
+                                        : 'Arsipkan program ini? Program arsip hanya bisa dilihat, tidak bisa scan atau diubah.',
+                                ) && router.post(arsip.url(program.id))
+                            }
                         >
                             {program.archived ? 'Aktifkan lagi' : 'Arsipkan'}
                         </Button>
                     </div>
                 </div>
+
+                {!driveSiap && (
+                    <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                        Folder Google Drive penyelenggara belum diatur. Kartu
+                        tetap bisa dibuat dan diunduh, tetapi belum tersalin ke
+                        Drive. Minta super admin mengaturnya di Admin ›
+                        Penyelenggara.
+                    </p>
+                )}
 
                 <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
                     <Card>

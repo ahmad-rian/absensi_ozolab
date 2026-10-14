@@ -96,6 +96,34 @@ class TimController extends Controller
         return to_route('penyelenggara.tim.index');
     }
 
+    public function peran(Request $request, string $user): RedirectResponse
+    {
+        $penyelenggara = $this->penyelenggara();
+        $anggota = $this->anggota($penyelenggara)->findOrFail($user);
+
+        $validated = $request->validate([
+            'role' => ['required', Rule::in(array_map(fn (UserRole $r) => $r->value, UserRole::penyelenggaraRoles()))],
+        ], ['role.in' => 'Pilih Admin Penyelenggara atau Pendamping.']);
+
+        $turunDariAdmin = $validated['role'] !== UserRole::AdminPenyelenggara->value
+            && $anggota->hasRole(UserRole::AdminPenyelenggara->value);
+        if ($turunDariAdmin && $anggota->is_active && $this->jumlahAdminAktif($penyelenggara) <= 1) {
+            return back()->withErrors(['role' => 'Setiap penyelenggara harus punya minimal satu Admin Penyelenggara aktif.']);
+        }
+
+        $anggota->syncRoles([$validated['role']]);
+
+        activity()
+            ->performedOn($anggota)
+            ->causedBy($request->user())
+            ->withProperties(['role' => $validated['role'], 'penyelenggara_id' => $penyelenggara->id])
+            ->log('peran diubah');
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Peran diubah ke '.UserRole::from($validated['role'])->label().'.']);
+
+        return to_route('penyelenggara.tim.index');
+    }
+
     private function penyelenggara(): Penyelenggara
     {
         abort_unless(app()->bound('currentPenyelenggara'), 404);
