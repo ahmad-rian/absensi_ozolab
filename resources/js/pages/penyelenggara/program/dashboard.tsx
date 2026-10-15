@@ -31,7 +31,12 @@ type Props = {
     filters: { grup: string; bulan: number };
     peringkatTersedia: boolean;
     ringkasan?: Ringkasan[];
-    peringkat?: { nama: string; rata_menit: number; hari: number }[];
+    peringkat?: {
+        nama: string;
+        rata_menit: number;
+        rata_jam: string | null;
+        hari: number;
+    }[];
     tren?: { minggu: string; persen: number; total: number }[];
 };
 
@@ -253,8 +258,12 @@ export default function ProgramDashboard({
                                                     {i + 1}. {p.nama}
                                                 </span>
                                                 <span className="text-muted-foreground tabular-nums">
-                                                    rata-rata {p.rata_menit}{' '}
-                                                    menit · {p.hari}×
+                                                    datang {p.rata_jam ?? '–'} ·{' '}
+                                                    {p.rata_menit > 0
+                                                        ? '+'
+                                                        : ''}
+                                                    {p.rata_menit} menit dari
+                                                    mulai · {p.hari}×
                                                 </span>
                                             </li>
                                         ))}

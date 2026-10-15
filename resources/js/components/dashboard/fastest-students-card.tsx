@@ -76,7 +76,7 @@ function Daftar({ data }: { data: SiswaCepat[] }) {
                             {s.rataRata}
                         </p>
                         <p className="text-[0.7rem] text-muted-foreground">
-                            rata-rata
+                            rata-rata WIB
                         </p>
                     </div>
                 </li>

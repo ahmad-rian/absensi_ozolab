@@ -1,6 +1,11 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
+import { RiwayatKehadiranCard } from '@/components/penyelenggara/riwayat-kehadiran';
+import type {
+    HalamanRiwayat,
+    StatistikKehadiran,
+} from '@/components/penyelenggara/riwayat-kehadiran';
 import { CardCropReposition } from '@/components/shared/card-crop-reposition';
 import type { CropRect } from '@/components/shared/card-crop-reposition';
 import { Button } from '@/components/ui/button';
@@ -56,6 +61,8 @@ type Props = {
         ke: string | null;
         oleh: string | null;
     }[];
+    riwayatKehadiran?: HalamanRiwayat | null;
+    statistikKehadiran?: StatistikKehadiran | null;
 };
 
 export default function PesertaForm({
@@ -65,6 +72,8 @@ export default function PesertaForm({
     istilahPeserta,
     peserta,
     riwayat,
+    riwayatKehadiran,
+    statistikKehadiran,
 }: Props) {
     const akses = useAksesPenyelenggara();
     const bolehKelola = akses.kelolaPeserta && !program.archived;
@@ -397,6 +406,19 @@ export default function PesertaForm({
                         )}
                     </div>
                 </div>
+
+                {peserta && (
+                    <RiwayatKehadiranCard
+                        statistik={statistikKehadiran}
+                        halaman={riwayatKehadiran}
+                        onPage={(page) =>
+                            router.reload({
+                                only: ['riwayatKehadiran'],
+                                data: { riwayat_page: page },
+                            })
+                        }
+                    />
+                )}
 
                 {bolehKelola && (
                     <div className="flex flex-wrap gap-2">

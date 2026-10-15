@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useAksesPenyelenggara } from '@/hooks/use-akses-penyelenggara';
 import { dashboard } from '@/routes/penyelenggara';
 import { pratinjau } from '@/routes/penyelenggara/impor';
-import { create, edit, index } from '@/routes/penyelenggara/peserta';
+import { create, edit, index, tanpaFoto } from '@/routes/penyelenggara/peserta';
 import {
     dashboard as programDashboard,
     show as programShow,
@@ -96,14 +96,21 @@ export default function PesertaIndex({
                             {kuota.terpakai}/{kuota.kuota ?? '∞'}
                         </p>
                     </div>
-                    {bolehKelola && (
-                        <Button asChild>
-                            <Link href={create(program.id)}>
-                                <Plus className="size-4" /> Tambah{' '}
-                                {program.istilah_peserta.toLowerCase()}
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" asChild>
+                            <Link href={tanpaFoto(program.id)}>
+                                Belum ada foto
                             </Link>
                         </Button>
-                    )}
+                        {bolehKelola && (
+                            <Button asChild>
+                                <Link href={create(program.id)}>
+                                    <Plus className="size-4" /> Tambah{' '}
+                                    {program.istilah_peserta.toLowerCase()}
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {bolehKelola && (

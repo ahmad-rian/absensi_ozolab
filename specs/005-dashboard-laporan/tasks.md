@@ -20,3 +20,9 @@ Tes: `tests/Feature/Penyelenggara/AuditP1Test.php`, `tests/Unit/akses-penyelengg
 Tes: `tests/Feature/Penyelenggara/AuditP2Test.php`.
 
 - [X] T-A37 Tautan Laporan di detail program
+
+## Port fitur siswa 2026-10-15
+
+Tes: `tests/Feature/Penyelenggara/FiturSiswaTest.php`.
+
+- [X] T-B03 Peringkat tercepat hanya dari Hadir/Terlambat, jam via `JamDinding`, tampil rata-rata jam datang — `RingkasanKehadiran::peringkat`

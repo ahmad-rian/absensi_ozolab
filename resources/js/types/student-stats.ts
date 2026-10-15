@@ -136,3 +136,41 @@ export type RangeFilters = {
     /** Dirakit server supaya layar, CSV, dan PDF tidak pernah berbeda format. */
     label: string;
 };
+
+/** Potongan paginator Laravel yang dipakai riwayat berhalaman. */
+export type Halaman<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+};
+
+/** Satu hari absensi sekolah: masuk dan pulang digabung dalam satu baris. */
+export type RiwayatSekolahRow = {
+    id: string;
+    tanggal: string;
+    hari: string;
+    /** null bila hari itu hanya punya catatan pulang. */
+    status: string | null;
+    status_label: string;
+    /** null untuk izin/sakit/alpa: jam catatnya bukan jam datang. */
+    jam_masuk: string | null;
+    jam_pulang: string | null;
+    pulang_otomatis: boolean;
+    keterangan: string | null;
+    sumber: string;
+};
+
+export type RiwayatSholatRow = {
+    id: string;
+    tanggal: string;
+    hari: string;
+    jam: string | null;
+    status: string;
+    status_label: string;
+    keterangan: string | null;
+    sumber: string;
+};

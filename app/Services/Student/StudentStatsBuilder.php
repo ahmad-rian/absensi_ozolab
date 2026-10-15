@@ -9,6 +9,7 @@ use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
 use App\Models\PrayerAttendance;
 use App\Models\Student;
+use App\Support\JamDinding;
 use App\Support\PrayerSchedule;
 use App\Support\PrayerSettings;
 use App\Support\SchoolTime;
@@ -363,7 +364,14 @@ class StudentStatsBuilder
      */
     private function punctuality(Student $student, Collection $checkIns): array
     {
-        $stats = $this->timeStats($checkIns->map(fn (Attendance $row) => $row->recorded_at));
+        // Hanya kedatangan sungguhan. Baris izin/sakit/alpa juga bertipe
+        // CHECK_IN, tetapi `recorded_at`-nya jam operator mengisi keterangan
+        // (sering pukul 09-10 pagi), bukan jam siswa tiba. Ikut dirata-rata,
+        // jam datang siswa bergeser satu-dua jam lebih siang.
+        $arrivals = $checkIns->filter(
+            fn (Attendance $row) => in_array($row->status, [AttendanceStatus::Hadir, AttendanceStatus::Terlambat], true),
+        );
+        $stats = $this->timeStats($arrivals->map(fn (Attendance $row) => $row->recorded_at));
 
         $thresholds = $this->lateThresholds($student);
         $lateMinutes = [];
@@ -379,7 +387,7 @@ class StudentStatsBuilder
                 continue;
             }
 
-            $lateMinutes[] = $this->minutesOfDay($row->recorded_at) - $this->clockToMinutes($threshold);
+            $lateMinutes[] = JamDinding::menit($row->recorded_at) - JamDinding::menit($threshold);
         }
 
         return [
@@ -426,18 +434,18 @@ class StudentStatsBuilder
     private function timeStats(Collection $times): array
     {
         // recorded_at menyimpan jam dinding Jakarta di kolom UTC — dibaca apa
-        // adanya. Satu SchoolTime::toLocal() yang tidak sengaja tertambah akan
-        // menggeser seluruh statistik jam sebanyak 7 jam.
-        $minutes = $times->filter()->map(fn (CarbonInterface $time) => $this->minutesOfDay($time))->values();
+        // adanya lewat JamDinding. Satu SchoolTime::toLocal() yang tidak
+        // sengaja tertambah akan menggeser seluruh statistik jam sebanyak 7 jam.
+        $minutes = $times->map(fn (?CarbonInterface $time) => JamDinding::menit($time))->filter(fn (?int $menit) => $menit !== null)->values();
 
         if ($minutes->isEmpty()) {
             return ['avg_check_in' => null, 'earliest' => null, 'latest' => null];
         }
 
         return [
-            'avg_check_in' => $this->minutesToClock((int) round($minutes->avg())),
-            'earliest' => $this->minutesToClock((int) $minutes->min()),
-            'latest' => $this->minutesToClock((int) $minutes->max()),
+            'avg_check_in' => JamDinding::format($minutes->avg()),
+            'earliest' => JamDinding::format($minutes->min()),
+            'latest' => JamDinding::format($minutes->max()),
         ];
     }
 
@@ -741,24 +749,5 @@ class StudentStatsBuilder
             'date' => $date,
             'state' => isset($present[$date]) ? 'hadir' : 'tidak_hadir',
         ], $effectiveDates);
-    }
-
-    // --------------------------------------------------------------- Helper
-
-    private function minutesOfDay(CarbonInterface $time): int
-    {
-        return (int) $time->format('H') * 60 + (int) $time->format('i');
-    }
-
-    private function clockToMinutes(string $clock): int
-    {
-        [$hour, $minute] = array_pad(explode(':', $clock), 2, '0');
-
-        return ((int) $hour) * 60 + (int) $minute;
-    }
-
-    private function minutesToClock(int $minutes): string
-    {
-        return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
     }
 }

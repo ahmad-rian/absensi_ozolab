@@ -1,4 +1,4 @@
-import { type CSSProperties } from 'react';
+import type {CSSProperties} from 'react';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';

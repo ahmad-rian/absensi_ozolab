@@ -8,6 +8,7 @@ use App\Enums\PrayerType;
 use App\Enums\SchoolFeature;
 use App\Models\School;
 use App\Models\Student;
+use App\Support\JamDinding;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
@@ -19,9 +20,10 @@ use Illuminate\Support\Facades\DB;
  * Peringkat siswa yang rata-rata datang paling awal: absen pagi, sholat
  * Dhuha, dan sholat Dzuhur, untuk 1, 2, dan 3 bulan terakhir.
  *
- * Jam diambil dari `recorded_at` apa adanya — kolom itu sudah berisi jam
- * dinding Jakarta, jadi tidak dikonversi zona lagi. Rata-rata dihitung di PHP,
- * bukan SQL: ekstraksi jam berbeda antara MySQL (produksi) dan SQLite (tes).
+ * Jam diambil dari `recorded_at` lewat {@see JamDinding} — kolom itu sudah
+ * berisi jam dinding Jakarta, jadi tidak dikonversi zona lagi. Rata-rata
+ * dihitung di PHP, bukan SQL: ekstraksi jam berbeda antara MySQL (produksi)
+ * dan SQLite (tes). Hasilnya jam "HH:MM", sama dengan jam di bagian lain UI.
  *
  * Siswa harus hadir minimal separuh hari aktif periodenya (dan minimal
  * {@see self::MIN_HARI} hari). Tanpa syarat ini, siswa yang hanya sekali
@@ -133,8 +135,8 @@ class SiswaTercepat
         return $baris->map(fn (object $b): object => (object) [
             'student_id' => (string) $b->student_id,
             'tanggal' => substr((string) $b->tanggal, 0, 10),
-            'menit' => ((int) substr((string) $b->recorded_at, 11, 2)) * 60 + (int) substr((string) $b->recorded_at, 14, 2),
-        ]);
+            'menit' => JamDinding::menit((string) $b->recorded_at),
+        ])->filter(fn (object $b): bool => $b->menit !== null)->values();
     }
 
     /**
@@ -165,7 +167,7 @@ class SiswaTercepat
                 'id' => $r['id'],
                 'nama' => $r['nama'],
                 'kelas' => $siswa[$r['id']]->classroom?->name,
-                'rataRata' => sprintf('%02d.%02d', intdiv((int) round($r['menit']), 60), (int) round($r['menit']) % 60),
+                'rataRata' => JamDinding::format($r['menit']),
                 'hari' => $r['hari'],
                 'inisial' => $this->inisial($r['nama']),
             ])

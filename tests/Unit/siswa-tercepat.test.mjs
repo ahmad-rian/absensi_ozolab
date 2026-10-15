@@ -37,15 +37,15 @@ test('menampilkan peringkat absen pagi periode 1 bulan secara bawaan', () => {
             kunci: 'pagi',
             label: 'Absen pagi',
             periode: {
-                1: [{ peringkat: 1, id: 'a', nama: 'ANI', kelas: 'VIII A', rataRata: '06.15', hari: 18, inisial: 'A' }],
-                3: [{ peringkat: 1, id: 'b', nama: 'BUDI', kelas: null, rataRata: '06.05', hari: 50, inisial: 'B' }],
+                1: [{ peringkat: 1, id: 'a', nama: 'ANI', kelas: 'VIII A', rataRata: '06:15', hari: 18, inisial: 'A' }],
+                3: [{ peringkat: 1, id: 'b', nama: 'BUDI', kelas: null, rataRata: '06:05', hari: 50, inisial: 'B' }],
             },
         },
         { kunci: 'dhuha', label: 'Sholat Dhuha', periode: { 1: [] } },
     ]);
 
     assert.match(html, /ANI/);
-    assert.match(html, /06\.15/);
+    assert.match(html, /06:15/);
     assert.match(html, /18 hari hadir/);
     assert.doesNotMatch(html, /BUDI/);
     assert.match(html, /Sholat Dhuha/);

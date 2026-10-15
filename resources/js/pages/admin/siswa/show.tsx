@@ -40,6 +40,10 @@ import {
 } from '@/components/student/daily-bar-chart';
 import { PrayerMembershipCard } from '@/components/student/prayer-membership-card';
 import { reportExports } from '@/components/student/range-bar';
+import {
+    RiwayatSekolahCard,
+    RiwayatSholatCard,
+} from '@/components/student/riwayat-absensi';
 import { StatsPanel  } from '@/components/student/stats-panel';
 import type {TileSpec} from '@/components/student/stats-panel';
 import {
@@ -80,8 +84,11 @@ import type { SchoolFeatureMap } from '@/types';
 import type { ParentProfile as ParentProfileModel } from '@/types/models';
 import type {
     AttendanceStats,
+    Halaman,
     PrayerStats,
     RangeFilters,
+    RiwayatSekolahRow,
+    RiwayatSholatRow,
 } from '@/types/student-stats';
 
 type Classroom = {
@@ -190,6 +197,11 @@ type PageProps = {
     /** Opsional — hanya diambil saat tab jenisnya benar-benar dibuka. */
     prayerDhuha?: PrayerStats;
     prayerDzuhur?: PrayerStats;
+    /** Ditunda — riwayat absensi sekolah per hari, berhalaman lewat `riwayat_page`. */
+    riwayatAbsensi?: Halaman<RiwayatSekolahRow>;
+    /** Opsional — ikut dimuat saat tab sholatnya dibuka, berhalaman lewat `riwayat_sholat_page`. */
+    riwayatDhuha?: Halaman<RiwayatSholatRow>;
+    riwayatDzuhur?: Halaman<RiwayatSholatRow>;
     /** Opsional — menembak API Drive, jadi baru diminta saat tombolnya ditekan. */
     drivePhoto?: DrivePhoto;
 };
@@ -331,6 +343,9 @@ export default function SiswaShow({
     attendance,
     prayerDhuha,
     prayerDzuhur,
+    riwayatAbsensi,
+    riwayatDhuha,
+    riwayatDzuhur,
     drivePhoto,
 }: PageProps) {
     const { auth, features, studioUrl } = usePage().props as unknown as {
@@ -355,12 +370,14 @@ export default function SiswaShow({
             value: 'dhuha',
             label: 'Sholat Dhuha',
             prop: 'prayerDhuha',
+            riwayatProp: 'riwayatDhuha',
             feature: 'sholat_dhuha' as const,
         },
         {
             value: 'dzuhur',
             label: 'Sholat Dzuhur',
             prop: 'prayerDzuhur',
+            riwayatProp: 'riwayatDzuhur',
             feature: 'sholat_dzuhur' as const,
         },
     ].filter((entry) => features?.[entry.feature] !== false);
@@ -397,6 +414,20 @@ export default function SiswaShow({
         const url = new URL(window.location.href);
         url.searchParams.set('tab', value);
         window.history.replaceState({}, '', url.toString());
+    }
+
+    // Pindah halaman riwayat hanya memuat ulang prop riwayatnya; grafik dan
+    // ringkasan periode tidak dihitung ulang.
+    function gotoRiwayat(prop: string, param: string, page: number) {
+        router.reload({
+            only: [prop],
+            data: {
+                tab,
+                start_date: filters.start,
+                end_date: filters.end,
+                [param]: page,
+            },
+        });
     }
 
     function applyRange() {
@@ -1483,6 +1514,47 @@ export default function SiswaShow({
                             historyTitle="Riwayat Absensi"
                             historyEmpty="Belum ada catatan absensi pada rentang ini."
                             historyShowType
+                            riwayat={
+                                <RiwayatSekolahCard
+                                    halaman={riwayatAbsensi}
+                                    range={filters.label}
+                                    ringkasan={[
+                                        {
+                                            label: 'Hadir tepat waktu',
+                                            value: attendance?.summary.hadir,
+                                        },
+                                        {
+                                            label: 'Terlambat',
+                                            value: attendance?.summary
+                                                .terlambat,
+                                        },
+                                        {
+                                            label: 'Tidak hadir',
+                                            value: attendance
+                                                ? attendance.summary.alpa +
+                                                  attendance.summary.izin +
+                                                  attendance.summary.sakit +
+                                                  attendance.summary
+                                                      .tanpa_keterangan
+                                                : undefined,
+                                        },
+                                        {
+                                            label: 'Rata-rata jam datang',
+                                            value: jamWib(
+                                                attendance?.punctuality
+                                                    .avg_check_in,
+                                            ),
+                                        },
+                                    ]}
+                                    onPage={(page) =>
+                                        gotoRiwayat(
+                                            'riwayatAbsensi',
+                                            'riwayat_page',
+                                            page,
+                                        )
+                                    }
+                                />
+                            }
                         />
                     </TabsContent>
 
@@ -1493,7 +1565,7 @@ export default function SiswaShow({
                                 sekali akan macet di Skeleton setelah tombol Terapkan. */}
                             <WhenVisible
                                 key={`${entry.value}-${filters.start}-${filters.end}`}
-                                data={entry.prop}
+                                data={[entry.prop, entry.riwayatProp]}
                                 fallback={<PanelSkeleton />}
                             >
                                 <PrayerPanel
@@ -1510,6 +1582,18 @@ export default function SiswaShow({
                                     onStartChange={setStartDate}
                                     onEndChange={setEndDate}
                                     onApply={applyRange}
+                                    riwayat={
+                                        entry.value === 'dhuha'
+                                            ? riwayatDhuha
+                                            : riwayatDzuhur
+                                    }
+                                    onRiwayatPage={(page) =>
+                                        gotoRiwayat(
+                                            entry.riwayatProp,
+                                            'riwayat_sholat_page',
+                                            page,
+                                        )
+                                    }
                                 />
                             </WhenVisible>
                         </TabsContent>
@@ -1885,6 +1969,8 @@ function PrayerPanel({
     onStartChange,
     onEndChange,
     onApply,
+    riwayat,
+    onRiwayatPage,
 }: {
     studentId: string;
     jenis: string;
@@ -1895,6 +1981,8 @@ function PrayerPanel({
     onStartChange: (value: string) => void;
     onEndChange: (value: string) => void;
     onApply: () => void;
+    riwayat?: Halaman<RiwayatSholatRow>;
+    onRiwayatPage: (page: number) => void;
 }) {
     const detail = stats?.types[0];
 
@@ -1979,12 +2067,40 @@ function PrayerPanel({
             history={detail?.recent}
             historyTitle="Riwayat Absen Sholat"
             historyEmpty="Belum ada catatan absen sholat pada rentang ini."
+            riwayat={
+                <RiwayatSholatCard
+                    title={`Riwayat ${detail?.label ?? 'Absen Sholat'}`}
+                    halaman={riwayat}
+                    range={filters.label}
+                    ringkasan={[
+                        { label: 'Ikut sholat', value: detail?.summary.hadir },
+                        {
+                            label: 'Tidak ikut',
+                            value: detail?.summary.tidak_hadir,
+                        },
+                        {
+                            label: 'Hari efektif',
+                            value: detail?.summary.effective_days,
+                        },
+                        {
+                            label: 'Rata-rata jam scan',
+                            value: jamWib(detail?.punctuality.avg_check_in),
+                        },
+                    ]}
+                    onPage={onRiwayatPage}
+                />
+            }
         >
             {stats && (
                 <PrayerMembershipCard studentId={studentId} prayer={stats} />
             )}
         </StatsPanel>
     );
+}
+
+/** Jam "HH:MM" dari server, ditandai zona sekolah. */
+function jamWib(jam?: string | null): string | undefined {
+    return jam ? `${jam} WIB` : undefined;
 }
 
 function PanelSkeleton() {

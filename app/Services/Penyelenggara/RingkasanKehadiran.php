@@ -9,6 +9,7 @@ use App\Models\Libur;
 use App\Models\Program;
 use App\Models\Sesi;
 use App\Models\User;
+use App\Support\JamDinding;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -129,6 +130,9 @@ class RingkasanKehadiran
             ->join('sesis', 'sesis.id', '=', 'kehadirans.sesi_id')
             ->where('kehadirans.program_id', $program->id)
             ->whereNotNull('kehadirans.datang_at')
+            // Hanya kedatangan sungguhan: baris Izin/Sakit bisa membawa jam catat
+            // petugas yang bukan jam tiba (pelajaran dari peringkat siswa).
+            ->whereIn('kehadirans.status', ['HADIR', 'TERLAMBAT'])
             ->where('sesis.tanggal', '>=', $sejak)
             ->whereIn('kehadirans.card_form_submission_id', $peserta->keys())
             ->get(['kehadirans.card_form_submission_id', 'kehadirans.datang_at', 'sesis.datang_mulai']);
@@ -136,13 +140,14 @@ class RingkasanKehadiran
         return $baris->groupBy('card_form_submission_id')
             ->filter(fn ($rows) => $rows->count() >= 3)
             ->map(function ($rows, $id) use ($peserta) {
-                $menit = $rows->map(function ($r) {
-                    [$h, $m] = array_map('intval', explode(':', $r->datang_mulai));
+                $menit = $rows->map(fn ($r) => JamDinding::menit($r->datang_at) - JamDinding::menit($r->datang_mulai));
 
-                    return ($r->datang_at->hour * 60 + $r->datang_at->minute) - ($h * 60 + $m);
-                });
-
-                return ['nama' => $peserta[$id]['nama'] ?? '—', 'rata_menit' => round($menit->avg(), 1), 'hari' => $rows->count()];
+                return [
+                    'nama' => $peserta[$id]['nama'] ?? '—',
+                    'rata_menit' => round($menit->avg(), 1),
+                    'rata_jam' => JamDinding::rataRata($rows->pluck('datang_at')),
+                    'hari' => $rows->count(),
+                ];
             })
             ->sortBy('rata_menit')
             ->take($batas)

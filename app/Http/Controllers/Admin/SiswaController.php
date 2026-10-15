@@ -13,6 +13,7 @@ use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
 use App\Services\Berkas\BerkasKeluaran;
 use App\Services\PhotoSheetGeneratorService;
+use App\Services\Student\RiwayatAbsensi;
 use App\Services\Student\StudentDrivePhotoLocator;
 use App\Services\Student\StudentPhotoIntake;
 use App\Services\Student\StudentStatsBuilder;
@@ -60,7 +61,7 @@ class SiswaController extends Controller
         ]);
     }
 
-    public function show(Request $request, Student $siswa, QrTokenGenerator $qrGenerator, StudentStatsBuilder $stats, StudentDrivePhotoLocator $locator): Response
+    public function show(Request $request, Student $siswa, QrTokenGenerator $qrGenerator, StudentStatsBuilder $stats, StudentDrivePhotoLocator $locator, RiwayatAbsensi $riwayat): Response
     {
         $siswa->load(['classroom', 'parentProfile.user']);
 
@@ -125,10 +126,30 @@ class SiswaController extends Controller
             'prayerDzuhur' => Inertia::optional(
                 fn () => $stats->prayerFor($siswa, $range['start'], $range['end'], PrayerType::Dzuhur),
             ),
+            // Riwayat lengkap berhalaman. Grup terpisah dari `attendance`
+            // supaya pindah halaman riwayat tidak menghitung ulang grafik.
+            'riwayatAbsensi' => Inertia::defer(
+                fn () => $riwayat->sekolah($siswa, $range['start'], $range['end'], $this->halaman($request, RiwayatAbsensi::PARAM_SEKOLAH)),
+                'riwayat',
+            ),
+            'riwayatDhuha' => Inertia::optional(
+                fn () => $riwayat->sholat($siswa, $range['start'], $range['end'], PrayerType::Dhuha, $this->halaman($request, RiwayatAbsensi::PARAM_SHOLAT)),
+            ),
+            'riwayatDzuhur' => Inertia::optional(
+                fn () => $riwayat->sholat($siswa, $range['start'], $range['end'], PrayerType::Dzuhur, $this->halaman($request, RiwayatAbsensi::PARAM_SHOLAT)),
+            ),
             // Menembak API Drive dua kali, jadi baru dijalankan ketika operator
             // benar-benar menekan tombolnya — bukan di setiap kunjungan halaman.
             'drivePhoto' => Inertia::optional(fn () => $this->drivePhotoPayload($siswa, $locator)),
         ]);
+    }
+
+    /**
+     * Nomor halaman riwayat dari query string; nilai ngawur jatuh ke 1.
+     */
+    private function halaman(Request $request, string $param): int
+    {
+        return max(1, (int) $request->query($param, 1));
     }
 
     /**

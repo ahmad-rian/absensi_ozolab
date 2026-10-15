@@ -68,3 +68,10 @@ Tes: `tests/Feature/Penyelenggara/AuditP2Test.php`.
 - [X] T-A34 Kolom kategori tersembunyi + tombol Munculkan — `KategoriController::edit` (`hiddenFields`)
 - [X] T-A35 Banner Drive belum diatur — `KartuDrive::siap`, `program/show.tsx`
 - [X] T-A36 Kuota tidak menghitung peserta di program arsip; pulihkan peserta yang tidak diarsip tidak cek kuota; program baru menolak kategori arsip
+
+## Port fitur siswa 2026-10-15
+
+Tes: `tests/Feature/Penyelenggara/FiturSiswaTest.php`.
+
+- [X] T-B01 Halaman peserta belum ada foto + pasang foto langsung (modal antrean bersama siswa) — `PesertaTanpaFotoController`, `peserta/tanpa-foto.tsx`
+- [X] T-B02 Riwayat kehadiran berhalaman + statistik jam datang di detail peserta — `RiwayatPeserta`, `components/penyelenggara/riwayat-kehadiran.tsx`

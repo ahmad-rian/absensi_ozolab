@@ -1,16 +1,23 @@
 import type { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 import { AttendanceHeatmap } from '@/components/student/attendance-heatmap';
-import { DailyBarChart, type DailySeries } from '@/components/student/daily-bar-chart';
+import {
+    DailyBarChart
+    
+} from '@/components/student/daily-bar-chart';
+import type {DailySeries} from '@/components/student/daily-bar-chart';
 import { HistoryTable } from '@/components/student/history-table';
 import { MonthlyTrendChart } from '@/components/student/monthly-trend-chart';
 import { PeerComparisonCard } from '@/components/student/peer-comparison-card';
-import { RangeBar, type ExportLink } from '@/components/student/range-bar';
-import { StatTile, type StatTone } from '@/components/student/stat-tile';
-import { StatusPie, type PieSlice } from '@/components/student/status-pie';
+import { RangeBar  } from '@/components/student/range-bar';
+import type {ExportLink} from '@/components/student/range-bar';
+import { StatTile  } from '@/components/student/stat-tile';
+import type {StatTone} from '@/components/student/stat-tile';
+import { StatusPie  } from '@/components/student/status-pie';
+import type {PieSlice} from '@/components/student/status-pie';
 import { StreakCard } from '@/components/student/streak-card';
 import { WeekdayDistributionChart } from '@/components/student/weekday-distribution-chart';
+import { cn } from '@/lib/utils';
 import type {
     DailyPoint,
     HeatmapDay,
@@ -60,6 +67,7 @@ export function StatsPanel({
     historyTitle,
     historyEmpty,
     historyShowType,
+    riwayat,
     children,
 }: {
     range: string;
@@ -87,6 +95,8 @@ export function StatsPanel({
     historyTitle: string;
     historyEmpty: string;
     historyShowType?: boolean;
+    /** Riwayat berhalaman; bila diisi, tampil tepat di bawah ringkasan dan menggantikan tabel 30 catatan. */
+    riwayat?: ReactNode;
     children?: ReactNode;
 }) {
     return (
@@ -108,9 +118,20 @@ export function StatsPanel({
                 ))}
             </div>
 
+            {riwayat}
+
             <div className="grid gap-6 lg:grid-cols-2">
-                <DailyBarChart data={daily} series={dailySeries} title={dailyTitle} description={range} />
-                <StatusPie slices={slices} title={pieTitle} description={range} />
+                <DailyBarChart
+                    data={daily}
+                    series={dailySeries}
+                    title={dailyTitle}
+                    description={range}
+                />
+                <StatusPie
+                    slices={slices}
+                    title={pieTitle}
+                    description={range}
+                />
             </div>
 
             <div className="grid gap-6 lg:grid-cols-2">
@@ -123,18 +144,25 @@ export function StatsPanel({
                 layar kosong di sebelahnya. */}
             <div className={cn('grid gap-6', comparison && 'lg:grid-cols-2')}>
                 <StreakCard streaks={streaks} />
-                {comparison && <PeerComparisonCard comparison={comparison} studentRate={studentRate} />}
+                {comparison && (
+                    <PeerComparisonCard
+                        comparison={comparison}
+                        studentRate={studentRate}
+                    />
+                )}
             </div>
 
             {monthly && <MonthlyTrendChart data={monthly} />}
 
-            <HistoryTable
-                title={historyTitle}
-                description="30 catatan terakhir pada rentang ini"
-                rows={history}
-                showType={historyShowType}
-                emptyMessage={historyEmpty}
-            />
+            {!riwayat && (
+                <HistoryTable
+                    title={historyTitle}
+                    description="30 catatan terakhir pada rentang ini"
+                    rows={history}
+                    showType={historyShowType}
+                    emptyMessage={historyEmpty}
+                />
+            )}
         </div>
     );
 }

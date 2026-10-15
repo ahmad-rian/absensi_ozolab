@@ -61,8 +61,8 @@ test('peringkat absen pagi diurutkan dari rata-rata jam datang paling awal', fun
     $pagi = kategori(app(SiswaTercepat::class)->hitung($this->sekolah, hariTes()))['pagi'][1];
 
     expect($pagi)->toHaveCount(2)
-        ->and($pagi[0])->toMatchArray(['peringkat' => 1, 'nama' => 'ANI LESTARI', 'kelas' => 'VIII A', 'rataRata' => '06.15', 'hari' => 10, 'inisial' => 'AL'])
-        ->and($pagi[1])->toMatchArray(['peringkat' => 2, 'nama' => 'BUDI SANTOSO', 'rataRata' => '06.40']);
+        ->and($pagi[0])->toMatchArray(['peringkat' => 1, 'nama' => 'ANI LESTARI', 'kelas' => 'VIII A', 'rataRata' => '06:15', 'hari' => 10, 'inisial' => 'AL'])
+        ->and($pagi[1])->toMatchArray(['peringkat' => 2, 'nama' => 'BUDI SANTOSO', 'rataRata' => '06:40']);
 });
 
 test('siswa yang jarang hadir, nonaktif, atau dari sekolah lain tidak ikut peringkat', function () {
@@ -93,7 +93,7 @@ test('izin, sakit, dan alpa bukan kedatangan, terlambat tetap kedatangan', funct
 
     $pagi = kategori(app(SiswaTercepat::class)->hitung($this->sekolah, hariTes()))['pagi'][1];
 
-    expect($pagi[0])->toMatchArray(['rataRata' => '07.20', 'hari' => 4]);
+    expect($pagi[0])->toMatchArray(['rataRata' => '07:20', 'hari' => 4]);
 });
 
 test('periode 1, 2, dan 3 bulan memakai rentang masing-masing', function () {
@@ -124,7 +124,69 @@ test('sholat dhuha dan dzuhur hanya muncul kalau fiturnya aktif', function () {
 
     expect(array_keys($mati))->toBe(['pagi'])
         ->and(array_keys($hidup))->toBe(['pagi', 'dhuha'])
-        ->and($hidup['dhuha'][1][0])->toMatchArray(['nama' => 'DEWI', 'rataRata' => '07.42', 'hari' => 5]);
+        ->and($hidup['dhuha'][1][0])->toMatchArray(['nama' => 'DEWI', 'rataRata' => '07:42', 'hari' => 5]);
+});
+
+test('rata-rata jam datang dihitung di jam dinding Jakarta, termasuk check-in yang di UTC masih tanggal kemarin', function () {
+    $siswa = ($this->siswa)('Eka Putri');
+    // 06:50 WIB = 23:50 UTC hari sebelumnya; 07:20 WIB = 00:20 UTC. Instan
+    // UTC diubah ke jam Jakarta sebelum disimpan, sama seperti AttendanceRecorder.
+    foreach (hariSekolah(6) as $i => $tanggal) {
+        $utc = $i % 2
+            ? Carbon::parse($tanggal.' 00:20:00', 'UTC')
+            : Carbon::parse($tanggal.' 23:50:00', 'UTC')->subDay();
+        $wib = $utc->copy()->setTimezone('Asia/Jakarta');
+
+        Attendance::factory()->create([
+            'student_id' => $siswa->id,
+            'attendance_date' => $wib->toDateString(),
+            'type' => AttendanceType::CheckIn,
+            'status' => AttendanceStatus::Hadir,
+            'recorded_at' => $wib,
+        ]);
+    }
+
+    $pagi = kategori(app(SiswaTercepat::class)->hitung($this->sekolah, hariTes()))['pagi'][1];
+
+    // Rata-rata 06:50 dan 07:20 adalah 07:05 — bukan 12:05 (UTC dianggap
+    // jam lokal lalu ditambah 7 jam) dan bukan "06.85" (jam desimal).
+    expect($pagi)->toHaveCount(1)
+        ->and($pagi[0])->toMatchArray(['nama' => 'EKA PUTRI', 'rataRata' => '07:05', 'hari' => 6]);
+});
+
+test('rata-rata ditampilkan sebagai jam HH:MM dan urutan memakai nilai yang sama', function () {
+    $siswa = [
+        'Lambat' => ['07:40', '07:50'],
+        'Tercepat' => ['06:05', '06:15'],
+        'Tengah' => ['07:00', '07:30'],
+    ];
+    foreach ($siswa as $nama => [$ganjil, $genap]) {
+        $murid = ($this->siswa)($nama);
+        foreach (hariSekolah(10) as $i => $tanggal) {
+            datangPagi($murid, $tanggal, $i % 2 ? $ganjil : $genap);
+        }
+    }
+
+    $pagi = kategori(app(SiswaTercepat::class)->hitung($this->sekolah, hariTes()))['pagi'][1];
+
+    expect(collect($pagi)->pluck('nama')->all())->toBe(['TERCEPAT', 'TENGAH', 'LAMBAT'])
+        ->and(collect($pagi)->pluck('rataRata')->all())->toBe(['06:10', '07:15', '07:45'])
+        ->and(collect($pagi)->pluck('rataRata')->every(fn (string $jam) => preg_match('/^\d{2}:\d{2}$/', $jam) === 1))->toBeTrue();
+});
+
+test('tab sholat dzuhur memakai rata-rata jam dari catatan dzuhur sekolah itu saja', function () {
+    $this->sekolah->update(['settings' => ['prayer_enabled' => true]]);
+    $dewi = ($this->siswa)('Dewi');
+    $lain = Student::factory()->create(['school_id' => School::factory()->create(['settings' => ['prayer_enabled' => true]])->id]);
+    foreach (hariSekolah(4) as $i => $tanggal) {
+        PrayerAttendance::factory()->create(['student_id' => $dewi->id, 'prayer_date' => $tanggal, 'recorded_at' => "{$tanggal} 12:".($i % 2 ? '10' : '20').':00']);
+        PrayerAttendance::factory()->create(['student_id' => $lain->id, 'prayer_date' => $tanggal, 'recorded_at' => "{$tanggal} 11:00:00"]);
+    }
+
+    $dzuhur = kategori(app(SiswaTercepat::class)->hitung($this->sekolah->fresh(), hariTes()))['dzuhur'][1];
+
+    expect($dzuhur)->toHaveCount(1)
+        ->and($dzuhur[0])->toMatchArray(['nama' => 'DEWI', 'rataRata' => '12:15', 'hari' => 4]);
 });
 
 test('dashboard mengirim peringkat siswa tercepat sebagai prop tertunda', function () {

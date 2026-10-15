@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SemuaSekolahController;
 use App\Http\Controllers\Admin\SiswaController;
+use App\Http\Controllers\Admin\SiswaTanpaFotoController;
 use App\Http\Controllers\Admin\StudentDrivePickerController;
 use App\Http\Controllers\Admin\StudentImportController;
 use App\Http\Controllers\Admin\StudentQuickOpenController;
@@ -59,6 +60,7 @@ use App\Http\Controllers\Penyelenggara\KehadiranController as PenyelenggaraKehad
 use App\Http\Controllers\Penyelenggara\LaporanProgramController as PenyelenggaraLaporanController;
 use App\Http\Controllers\Penyelenggara\PesertaController as PenyelenggaraPesertaController;
 use App\Http\Controllers\Penyelenggara\PesertaImporController as PenyelenggaraPesertaImporController;
+use App\Http\Controllers\Penyelenggara\PesertaTanpaFotoController as PenyelenggaraPesertaTanpaFotoController;
 use App\Http\Controllers\Penyelenggara\ProgramController as PenyelenggaraProgramController;
 use App\Http\Controllers\Penyelenggara\ProgramDashboardController as PenyelenggaraProgramDashboardController;
 use App\Http\Controllers\Penyelenggara\SwitchController as PenyelenggaraSwitchController;
@@ -295,6 +297,11 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
         Route::get('siswa/{siswa}/laporan/absensi/pdf', [StudentReportController::class, 'attendancePdf'])->name('admin.siswa.laporan.absensi.pdf');
         Route::get('siswa/{siswa}/laporan/sholat/xlsx', [StudentReportController::class, 'prayerXlsx'])->name('admin.siswa.laporan.sholat.xlsx');
         Route::get('siswa/{siswa}/laporan/sholat/pdf', [StudentReportController::class, 'prayerPdf'])->name('admin.siswa.laporan.sholat.pdf');
+
+        // Siswa aktif yang belum punya pas foto, menggantikan daftar yang dulu
+        // hanya ada di layar Generate Kartu massal (khusus super admin).
+        Route::get('siswa-tanpa-foto', [SiswaTanpaFotoController::class, 'index'])->name('admin.siswa-tanpa-foto');
+        Route::post('siswa-tanpa-foto/{siswa}/foto', [SiswaTanpaFotoController::class, 'foto'])->name('admin.siswa-tanpa-foto.foto');
     });
 
     // Modul grup Sistem: lintas tenant, jadi `super-admin` wajib ikut — permission
@@ -638,6 +645,7 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
 
         Route::middleware('permission:penyelenggara-peserta.access')->group(function () {
             Route::get('program/{program}/peserta', [PenyelenggaraPesertaController::class, 'index'])->name('peserta.index');
+            Route::get('program/{program}/peserta-tanpa-foto', [PenyelenggaraPesertaTanpaFotoController::class, 'index'])->name('peserta.tanpa-foto');
 
             Route::get('peserta/{peserta}', [PenyelenggaraPesertaController::class, 'edit'])->name('peserta.edit');
             Route::get('peserta/{peserta}/kartu', [PenyelenggaraPesertaController::class, 'kartu'])->name('peserta.kartu');
@@ -662,6 +670,7 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
             Route::post('peserta/{peserta}/pulihkan', [PenyelenggaraPesertaController::class, 'restore'])->name('peserta.restore');
             Route::put('peserta/{peserta}/grup', [PenyelenggaraPesertaController::class, 'grup'])->name('peserta.grup');
             Route::post('peserta/{peserta}/generate', [PenyelenggaraPesertaController::class, 'generate'])->middleware('throttle:30,1')->name('peserta.generate');
+            Route::post('peserta/{peserta}/foto', [PenyelenggaraPesertaTanpaFotoController::class, 'foto'])->middleware('throttle:60,1')->name('peserta.foto');
         });
 
         Route::middleware('permission:penyelenggara-kartu.access')->group(function () {

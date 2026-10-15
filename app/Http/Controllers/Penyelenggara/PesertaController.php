@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\CardParticipantService;
 use App\Services\DynamicCardFiles;
 use App\Services\Penyelenggara\PesertaService;
+use App\Services\Penyelenggara\RiwayatPeserta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -198,6 +199,10 @@ class PesertaController extends Controller
                 'archived' => $peserta->archived_at !== null,
             ] : null,
             'riwayat' => $peserta ? $this->riwayatGrup($peserta) : [],
+            // Padanan riwayat absensi di detail siswa; satu grup deferred supaya
+            // pindah halaman riwayat tidak menahan form.
+            'riwayatKehadiran' => $peserta ? Inertia::defer(fn () => app(RiwayatPeserta::class)->riwayat($peserta, max(1, (int) request()->query(RiwayatPeserta::PARAM, 1))), 'kehadiran') : null,
+            'statistikKehadiran' => $peserta ? Inertia::defer(fn () => app(RiwayatPeserta::class)->statistik($peserta), 'kehadiran') : null,
         ]);
     }
 

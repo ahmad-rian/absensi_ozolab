@@ -33,6 +33,8 @@ export function ModalPasFotoAntre({
     urlUnggah,
     schoolId,
     onTutup,
+    muatUlang = ['ringkasan'],
+    istilah = 'siswa',
 }: {
     /** Daftar siswa tanpa foto pada saat modal dibuka. */
     siswa: SiswaAntre[];
@@ -41,6 +43,10 @@ export function ModalPasFotoAntre({
     urlUnggah: (studentId: string) => string;
     schoolId: string;
     onTutup: () => void;
+    /** Prop halaman yang dimuat ulang tiap kali satu foto tersimpan. */
+    muatUlang?: string[];
+    /** Sebutan orangnya di teks modal, mis. "peserta" untuk absensi general. */
+    istilah?: string;
 }) {
     /*
         Salinan diambil sekali lewat inisialisator malas `useState`.
@@ -117,7 +123,7 @@ export function ModalPasFotoAntre({
             // di tengah antrean. `only` menahan agar muat ulang tidak ikut
             // menarik batch yang sedang berjalan.
             preserveState: true,
-            only: ['ringkasan'],
+            only: muatUlang,
             onSuccess: () => {
                 setTerakhirTersimpan(nama);
                 maju(tutup);
@@ -141,7 +147,7 @@ export function ModalPasFotoAntre({
                     </DialogTitle>
                     <DialogDescription>
                         {[sekarang.classroom, sekarang.nis ? `NIS ${sekarang.nis}` : null].filter(Boolean).join(' · ') ||
-                            'Pasang pas foto siswa ini.'}
+                            `Pasang pas foto ${istilah} ini.`}
                     </DialogDescription>
                 </DialogHeader>
 

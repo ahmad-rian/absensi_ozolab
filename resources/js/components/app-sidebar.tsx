@@ -16,6 +16,7 @@ import {
     GraduationCap,
     HardDrive,
     History,
+    ImageOff,
     Images,
     KeyRound,
     LayoutGrid,
@@ -84,7 +85,7 @@ const overviewItems: GuardedNavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid, permission: 'beranda.access' },
 ];
 
-const sections: NavSection[] = [
+export const sections: NavSection[] = [
     {
         label: 'Master Data',
         items: [
@@ -127,6 +128,9 @@ const sections: NavSection[] = [
     {
         label: 'Kartu Siswa',
         items: [
+            // Pengganti daftar "tanpa foto" di Generate Kartu, yang hanya
+            // terlihat super admin dan tersembunyi selama generate massal mati.
+            { title: 'Siswa Belum Ada Foto', href: '/admin/siswa-tanpa-foto', icon: ImageOff, permission: 'siswa.access', feature: 'master_siswa' },
             { title: 'Generate Kartu', href: '/admin/generate-kartu', icon: CreditCard, permission: 'generate-kartu.access', feature: 'kartu_album', superAdmin: true, massal: true },
             { title: 'Riwayat Kartu', href: '/admin/card-generation', icon: History, permission: 'generate-kartu.access', feature: 'kartu_album' },
         ],
