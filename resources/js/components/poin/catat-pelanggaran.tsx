@@ -18,7 +18,7 @@ import { cariSiswa, store } from '@/routes/admin/poin';
 
 export type KategoriPoin = { nama: string; poin: number };
 
-type PilihanSiswa = {
+export type PilihanSiswa = {
     id: string;
     nama: string;
     nis: string;
@@ -33,21 +33,32 @@ const hariIni = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-/** Dialog guru BK: pilih siswa, pilih kategori (poin terisi), tulis alasan. */
+/**
+ * Dialog guru BK: pilih siswa, tulis jenis pelanggaran (bebas, atau pilih dari
+ * daftar sekolah supaya poinnya terisi), tentukan poin, tulis alasan.
+ *
+ * `siswaTetap` dipakai dari detail siswa — siswanya sudah pasti, tanpa cari.
+ * `reloadOnly` membatasi muat ulang setelah simpan ke prop tertentu.
+ */
 export function CatatPelanggaran({
     open,
     onOpenChange,
     kategori,
+    siswaTetap,
+    reloadOnly,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     kategori: KategoriPoin[];
+    siswaTetap?: PilihanSiswa;
+    reloadOnly?: string[];
 }) {
     const [cari, setCari] = useState('');
     const [hasil, setHasil] = useState<PilihanSiswa[]>([]);
-    const [siswa, setSiswa] = useState<PilihanSiswa | null>(null);
-    const [namaKategori, setNamaKategori] = useState(kategori[0]?.nama ?? '');
-    const [poin, setPoin] = useState(String(kategori[0]?.poin ?? 5));
+    const [siswaDipilih, setSiswa] = useState<PilihanSiswa | null>(null);
+    const siswa = siswaTetap ?? siswaDipilih;
+    const [namaKategori, setNamaKategori] = useState('');
+    const [poin, setPoin] = useState('');
 
     useEffect(() => {
         if (siswa || cari.trim().length < 2) {
@@ -71,9 +82,12 @@ export function CatatPelanggaran({
         };
     }, [cari, siswa]);
 
-    const pilihKategori = (nama: string) => {
+    // Nama yang cocok dengan daftar sekolah mengisi poinnya; nama lain bebas.
+    const ubahKategori = (nama: string) => {
         setNamaKategori(nama);
-        const k = kategori.find((x) => x.nama === nama);
+        const k = kategori.find(
+            (x) => x.nama.toLowerCase() === nama.trim().toLowerCase(),
+        );
 
         if (k) {
             setPoin(String(k.poin));
@@ -85,6 +99,8 @@ export function CatatPelanggaran({
         setSiswa(null);
         setCari('');
         setHasil([]);
+        setNamaKategori('');
+        setPoin('');
     };
 
     return (
@@ -102,7 +118,10 @@ export function CatatPelanggaran({
                 </DialogHeader>
                 <Form
                     {...store.form()}
-                    options={{ preserveScroll: true }}
+                    options={{
+                        preserveScroll: true,
+                        ...(reloadOnly ? { only: reloadOnly } : {}),
+                    }}
                     onSuccess={tutup}
                     className="grid gap-4"
                 >
@@ -123,14 +142,16 @@ export function CatatPelanggaran({
                                                     : ''}
                                             </span>
                                         </span>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setSiswa(null)}
-                                        >
-                                            Ganti
-                                        </Button>
+                                        {!siswaTetap && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setSiswa(null)}
+                                            >
+                                                Ganti
+                                            </Button>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="relative">
@@ -188,23 +209,21 @@ export function CatatPelanggaran({
 
                             <div className="grid gap-3 sm:grid-cols-[1fr_7rem]">
                                 <div className="grid gap-1.5">
-                                    <Label htmlFor="kategori">Kategori</Label>
-                                    <select
+                                    <Label htmlFor="kategori">
+                                        Jenis pelanggaran
+                                    </Label>
+                                    <Input
                                         id="kategori"
                                         name="kategori"
-                                        className="h-9 rounded-md border bg-background px-2 text-sm"
+                                        required
+                                        maxLength={100}
+                                        autoComplete="off"
+                                        placeholder="Tulis bebas, mis. Merokok di toilet"
                                         value={namaKategori}
                                         onChange={(e) =>
-                                            pilihKategori(e.target.value)
+                                            ubahKategori(e.target.value)
                                         }
-                                    >
-                                        {kategori.map((k) => (
-                                            <option key={k.nama} value={k.nama}>
-                                                {k.nama} ({k.poin})
-                                            </option>
-                                        ))}
-                                        <option value="Lainnya">Lainnya</option>
-                                    </select>
+                                    />
                                     <InputError message={errors.kategori} />
                                 </div>
                                 <div className="grid gap-1.5">
@@ -212,6 +231,8 @@ export function CatatPelanggaran({
                                     <Input
                                         id="poin"
                                         name="poin"
+                                        required
+                                        placeholder="mis. 10"
                                         type="number"
                                         min={1}
                                         max={1000}
@@ -223,6 +244,24 @@ export function CatatPelanggaran({
                                     <InputError message={errors.poin} />
                                 </div>
                             </div>
+
+                            {kategori.length > 0 && (
+                                <div className="-mt-2 flex flex-wrap gap-1.5">
+                                    <span className="text-xs text-muted-foreground">
+                                        Pilihan cepat:
+                                    </span>
+                                    {kategori.map((k) => (
+                                        <button
+                                            key={k.nama}
+                                            type="button"
+                                            onClick={() => ubahKategori(k.nama)}
+                                            className="rounded-full border px-2 py-0.5 text-xs hover:bg-muted"
+                                        >
+                                            {k.nama} · {k.poin}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
 
                             <div className="grid gap-1.5">
                                 <Label htmlFor="tanggal">

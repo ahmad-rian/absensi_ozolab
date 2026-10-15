@@ -169,10 +169,13 @@ class SiswaController extends Controller
             return null;
         }
 
-        $rekap = app(RekapPoin::class)->untukSiswa($siswa, PoinSettings::for($siswa->school));
+        $setup = PoinSettings::for($siswa->school);
+        $rekap = app(RekapPoin::class)->untukSiswa($siswa, $setup);
 
         return [
             ...Arr::except($rekap, 'riwayat'),
+            // Pilihan cepat di dialog catat; jenis pelanggaran tetap bebas.
+            'kategori' => $setup->kategori,
             'riwayat' => $rekap['riwayat']->map(fn (PoinSiswa $p) => PoinController::baris($p))->values(),
         ];
     }

@@ -9,6 +9,7 @@ use App\Models\AcademicYear;
 use App\Models\School;
 use App\Models\Setting;
 use App\Services\ImageConverter;
+use App\Support\PoinSettings;
 use App\Support\PrayerSchedule;
 use App\Support\PrayerSettings;
 use App\Support\SchoolFeatures;
@@ -196,6 +197,13 @@ class PengaturanController extends Controller
             'features' => SchoolFeatures::for($school)->toArray(),
             'featureCatalog' => $this->featureCatalog(),
             'waSentToday' => $school ? WhatsAppQuota::sentToday($school->id) : 0,
+            // Tab Poin Pelanggaran: hanya bila fiturnya aktif dan pengguna
+            // boleh mengelola poin (simpannya lewat rute admin.poin).
+            'poinSetup' => $school
+                && SchoolFeatures::for($school)->enabled(SchoolFeature::PoinPelanggaran)
+                && (auth()->user()->isSuperAdmin() || auth()->user()->can('poin-kelola.access'))
+                ? PoinSettings::for($school)->toArray()
+                : null,
             'logoUrl' => $logoPath && Storage::disk('public')->exists($logoPath)
                 ? Storage::disk('public')->url($logoPath)
                 : '',

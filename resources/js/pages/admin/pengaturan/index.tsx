@@ -11,6 +11,8 @@ import {
 import { SholatTab } from '@/components/pengaturan/sholat-tab';
 import { TampilanTab } from '@/components/pengaturan/tampilan-tab';
 import { UmumTab, type AcademicYearOption } from '@/components/pengaturan/umum-tab';
+import { FormAturPoin } from '@/components/poin/form-atur-poin';
+import type { SetupPoin } from '@/components/poin/form-atur-poin';
 import { PageHeader } from '@/components/shared/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { dashboard } from '@/routes';
@@ -25,6 +27,8 @@ type Props = {
     logoUrl: string;
     faviconUrl: string;
     waSentToday: number;
+    /** Ada hanya bila fitur poin aktif dan pengguna boleh mengelola poin. */
+    poinSetup: SetupPoin | null;
 };
 
 export default function PengaturanIndex({
@@ -36,6 +40,7 @@ export default function PengaturanIndex({
     logoUrl,
     faviconUrl,
     waSentToday,
+    poinSetup,
 }: Props) {
     const page = usePage();
     const [tab, setTab] = useState<SettingsSection>(() => resolveSettingsTab(page.url));
@@ -83,7 +88,7 @@ export default function PengaturanIndex({
 
                 <Tabs value={tab} onValueChange={changeTab}>
                     <TabsList>
-                        {SETTINGS_TABS.map(({ value, label, icon: Icon }) => (
+                        {SETTINGS_TABS.filter((t) => t.value !== 'poin' || poinSetup).map(({ value, label, icon: Icon }) => (
                             <TabsTrigger key={value} value={value}>
                                 <Icon className="size-4" />
                                 {label}
@@ -126,6 +131,12 @@ export default function PengaturanIndex({
                             onDirtyChange={markDirty('notifikasi')}
                         />
                     </TabsContent>
+
+                    {poinSetup && (
+                        <TabsContent value="poin">
+                            <FormAturPoin setup={poinSetup} tampilJudul={false} onDirtyChange={markDirty('poin')} />
+                        </TabsContent>
+                    )}
                 </Tabs>
             </div>
         </>

@@ -1621,7 +1621,21 @@ export default function SiswaShow({
                     {fiturPoin && (
                         <TabsContent value="poin">
                             <WhenVisible data="poin" fallback={<PanelSkeleton />}>
-                                {poin ? <PanelPoinSiswa poin={poin} bolehHapus={bolehKelolaPoin} /> : <PanelSkeleton />}
+                                {poin ? (
+                                    <PanelPoinSiswa
+                                        poin={poin}
+                                        bolehKelola={bolehKelolaPoin}
+                                        siswa={{
+                                            id: student.id,
+                                            nama: student.full_name,
+                                            nis: student.nis ?? "-",
+                                            kelas:
+                                                student.classroom?.name ?? null,
+                                        }}
+                                    />
+                                ) : (
+                                    <PanelSkeleton />
+                                )}
                             </WhenVisible>
                         </TabsContent>
                     )}

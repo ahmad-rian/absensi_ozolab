@@ -40,14 +40,20 @@ export function TabelRiwayatPoin({
     baris,
     tampilSiswa,
     bolehHapus,
+    reloadOnly,
 }: {
     baris: BarisPoin[];
     tampilSiswa: boolean;
     bolehHapus: boolean;
+    /** Muat ulang hanya prop ini setelah hapus (tab detail siswa). */
+    reloadOnly?: string[];
 }) {
     const hapus = (b: BarisPoin) => {
         if (window.confirm(`Hapus catatan "${b.label}" (${b.poin} poin)?`)) {
-            router.delete(destroy.url(b.id), { preserveScroll: true });
+            router.delete(destroy.url(b.id), {
+                preserveScroll: true,
+                ...(reloadOnly ? { only: reloadOnly } : {}),
+            });
         }
     };
 

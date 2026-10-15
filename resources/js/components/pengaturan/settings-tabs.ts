@@ -1,6 +1,6 @@
-import { Bell, Building2, ImageIcon, MoonStar, ToggleRight, type LucideIcon } from 'lucide-react';
+import { Bell, Building2, ImageIcon, MoonStar, ShieldAlert, ToggleRight, type LucideIcon } from 'lucide-react';
 
-export type SettingsSection = 'umum' | 'tampilan' | 'fitur' | 'sholat' | 'notifikasi';
+export type SettingsSection = 'umum' | 'tampilan' | 'fitur' | 'sholat' | 'notifikasi' | 'poin';
 
 export type SettingsTab = {
     value: SettingsSection;
@@ -21,6 +21,8 @@ export const SETTINGS_TABS: SettingsTab[] = [
     { value: 'fitur', label: 'Fitur', icon: ToggleRight, savable: true },
     { value: 'sholat', label: 'Absen Sholat', icon: MoonStar, savable: true },
     { value: 'notifikasi', label: 'Notifikasi', icon: Bell, savable: true },
+    // Tombol simpannya milik form poin sendiri; hanya tampil bila fitur aktif.
+    { value: 'poin', label: 'Poin Pelanggaran', icon: ShieldAlert, savable: false },
 ];
 
 export const SETTINGS_SECTIONS: SettingsSection[] = SETTINGS_TABS.map((tab) => tab.value);

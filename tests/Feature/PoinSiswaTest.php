@@ -328,3 +328,30 @@ test('portal orang tua hanya menampilkan poin anaknya sendiri', function () {
             ->where('poin.total', 15)->has('poin.riwayat', 1));
     $this->actingAs($ortu)->get(route('orangtua.poin', ['anak' => $orangLain->id]))->assertForbidden();
 });
+
+test('pengaturan sekolah punya tab poin hanya bila fitur aktif dan boleh kelola', function () {
+    $aktif = sekolahPoin(['poin_alpa' => 12]);
+    $mati = sekolahPoin(['feature_poin_pelanggaran' => false]);
+
+    $this->actingAs(adminSekolah($aktif))->get(route('admin.pengaturan', ['tab' => 'poin']))
+        ->assertInertia(fn (Assert $page) => $page->where('poinSetup.alpa', 12));
+    $this->actingAs(adminSekolah($mati))->get(route('admin.pengaturan'))
+        ->assertInertia(fn (Assert $page) => $page->where('poinSetup', null));
+});
+
+test('guru BK mencatat pelanggaran bebas langsung dari detail siswa tanpa setup', function () {
+    $school = School::factory()->create(['is_active' => true, 'settings' => ['feature_poin_pelanggaran' => true]]);
+    $siswa = siswaPoin($school);
+
+    $this->actingAs(adminSekolah($school))->get(route('admin.siswa.show', $siswa))
+        ->assertInertia(fn (Assert $page) => $page->reloadOnly('poin', fn (Assert $reload) => $reload
+            ->where('poin.total', 0)->has('poin.kategori')));
+
+    $this->actingAs(adminSekolah($school))->post(route('admin.poin.store'), [
+        'student_id' => $siswa->id, 'kategori' => 'Merokok di toilet', 'poin' => 40,
+        'tanggal' => '2026-10-15', 'alasan' => 'Tertangkap saat istirahat',
+    ])->assertSessionHasNoErrors();
+
+    expect(poinOtomatis($siswa))->toBe(['2026-10-15 MANUAL 40'])
+        ->and(PoinSiswa::withoutGlobalScopes()->sole()->kategori)->toBe('Merokok di toilet');
+});
