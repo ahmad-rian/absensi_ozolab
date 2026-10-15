@@ -1,5 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
 import { Mail } from 'lucide-react';
+import { MasukPenyelenggara } from '@/components/general/masuk-penyelenggara';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { dashboard } from '@/routes';
-import { index, invite, update } from '@/routes/admin/penyelenggara';
+import { dashboard } from '@/routes/general';
+import { index, invite, update } from '@/routes/general/penyelenggara';
 
 type Penyelenggara = {
     id: string;
@@ -69,6 +70,13 @@ export default function PenyelenggaraShow({
                     >
                         {penyelenggara.is_active ? 'Aktif' : 'Nonaktif'}
                     </Badge>
+                    <div className="ml-auto">
+                        <MasukPenyelenggara
+                            penyelenggaraId={penyelenggara.id}
+                            label="Masuk ke area penyelenggara"
+                            variant="default"
+                        />
+                    </div>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-2">
@@ -302,7 +310,7 @@ export default function PenyelenggaraShow({
 
 PenyelenggaraShow.layout = {
     breadcrumbs: [
-        { title: 'Dashboard', href: dashboard() },
+        { title: 'Absensi General', href: dashboard() },
         { title: 'Penyelenggara', href: index() },
     ],
 };

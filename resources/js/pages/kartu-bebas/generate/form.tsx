@@ -349,7 +349,7 @@ export default function KartuBebasGenerateForm({ layout }: Props) {
             <Head title={`Generate — ${layout.name}`} />
             <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-4 md:p-6">
                 <div>
-                    <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
+                    <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">
                         <Wand2 className="size-6" /> {layout.name}
                     </h1>
                     <p className="text-muted-foreground text-sm">Isi data berikut untuk membuat kartu.</p>
@@ -400,7 +400,7 @@ export default function KartuBebasGenerateForm({ layout }: Props) {
                                     <img
                                         src={photoPreview}
                                         alt="Foto"
-                                        className="h-40 w-auto rounded-lg border border-emerald-200 object-cover shadow dark:border-emerald-900"
+                                        className="h-40 w-auto rounded-lg border border-indigo-200 object-cover shadow dark:border-indigo-900"
                                     />
                                 </div>
                             )}
@@ -424,7 +424,7 @@ export default function KartuBebasGenerateForm({ layout }: Props) {
                         <Button
                             type="button"
                             onClick={goNext}
-                            className="h-11 bg-emerald-600 text-white hover:bg-emerald-700"
+                            className="h-11 bg-indigo-600 text-white hover:bg-indigo-700"
                         >
                             Lanjut
                         </Button>
@@ -433,7 +433,7 @@ export default function KartuBebasGenerateForm({ layout }: Props) {
                             type="button"
                             onClick={handleSubmit}
                             disabled={generating}
-                            className="h-11 gap-2 bg-emerald-600 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                            className="h-11 gap-2 bg-indigo-600 font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
                         >
                             {generating ? <Spinner /> : <Sparkles className="size-4" />}
                             {generating ? 'Membuat…' : 'Generate Kartu'}
@@ -532,10 +532,10 @@ function FieldInput({
                             onClick={() => fileRef.current?.click()}
                             className={cn(
                                 'flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition',
-                                'border-zinc-300 hover:border-emerald-400 hover:bg-emerald-50/30 dark:border-zinc-700',
+                                'border-zinc-300 hover:border-indigo-400 hover:bg-indigo-50/30 dark:border-zinc-700',
                             )}
                         >
-                            <ImageIcon className="size-8 text-emerald-400" />
+                            <ImageIcon className="size-8 text-indigo-400" />
                             <span className="text-muted-foreground text-sm">Pilih Foto dari Komputer</span>
                         </button>
                     )}
@@ -585,9 +585,9 @@ function ResultView({ statusState, onReset }: { statusState: StatusResponse; onR
     if (statusState.status === 'processing') {
         return (
             <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
-                <Loader2 className="size-12 animate-spin text-emerald-500" />
+                <Loader2 className="size-12 animate-spin text-indigo-500" />
                 <div>
-                    <h1 className="text-xl font-bold text-emerald-700 dark:text-emerald-400">Kartu sedang dibuat…</h1>
+                    <h1 className="text-xl font-bold text-indigo-700 dark:text-indigo-400">Kartu sedang dibuat…</h1>
                     <p className="text-muted-foreground mt-1 text-sm">Mohon tunggu sebentar, halaman ini akan diperbarui otomatis.</p>
                 </div>
             </div>
@@ -602,7 +602,7 @@ function ResultView({ statusState, onReset }: { statusState: StatusResponse; onR
                     <h1 className="text-xl font-bold text-rose-700 dark:text-rose-400">Gagal Membuat Kartu</h1>
                     <p className="text-muted-foreground mt-1 text-sm">Terjadi kesalahan saat membuat kartu. Silakan coba lagi.</p>
                 </div>
-                <Button className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700" onClick={onReset}>
+                <Button className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700" onClick={onReset}>
                     <Wand2 className="size-4" /> Generate Lagi
                 </Button>
             </div>
@@ -615,8 +615,8 @@ function ResultView({ statusState, onReset }: { statusState: StatusResponse; onR
     return (
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-6">
             <div className="flex flex-col items-center text-center">
-                <CheckCircle2 className="mb-2 size-12 text-emerald-500" />
-                <h1 className="text-xl font-bold text-emerald-700 dark:text-emerald-400">Kartu Berhasil Dibuat!</h1>
+                <CheckCircle2 className="mb-2 size-12 text-indigo-500" />
+                <h1 className="text-xl font-bold text-indigo-700 dark:text-indigo-400">Kartu Berhasil Dibuat!</h1>
                 <p className="text-muted-foreground mt-1 text-sm">Berikut kartu Anda. Salin tautan atau unduh.</p>
             </div>
 
@@ -628,11 +628,11 @@ function ResultView({ statusState, onReset }: { statusState: StatusResponse; onR
 
             <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 gap-2" onClick={copyLink} disabled={!statusState.card_url}>
-                    {copied ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                    {copied ? <Check className="size-4 text-indigo-600" /> : <Copy className="size-4" />}
                     {copied ? 'Tersalin!' : 'Salin Link'}
                 </Button>
                 <a href={downloadUrl ?? '#'} target="_blank" rel="noopener noreferrer" download className="flex-1">
-                    <Button className="w-full gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                    <Button className="w-full gap-2 bg-indigo-600 text-white hover:bg-indigo-700">
                         <Download className="size-4" /> Unduh
                     </Button>
                 </a>

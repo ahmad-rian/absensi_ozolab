@@ -35,7 +35,7 @@ export default function KartuBebasDataCreate() {
                         <ArrowLeft className="size-5" />
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">Buat Format Data</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">Buat Format Data</h1>
                         <p className="text-muted-foreground text-sm">Tentukan nama format dan daftar field yang akan diisi.</p>
                     </div>
                 </div>
@@ -48,7 +48,7 @@ export default function KartuBebasDataCreate() {
                                 <Button type="button" variant="outline" onClick={() => router.get('/kartu-bebas/data')}>
                                     Batal
                                 </Button>
-                                <Button type="submit" disabled={processing} className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                                <Button type="submit" disabled={processing} className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700">
                                     {processing && <Loader2 className="size-4 animate-spin" />}
                                     Simpan Format
                                 </Button>

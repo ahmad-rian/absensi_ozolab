@@ -40,11 +40,11 @@ const shortcuts = [
 export default function KartuBebasDashboard({ stats, latest }: Props) {
     return (
         <>
-            <Head title="Dashboard Kartu Bebas" />
+            <Head title="Dashboard Haji (kartu lama)" />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4 md:p-6">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Kartu Bebas / Haji</p>
+                        <p className="text-sm font-semibold text-primary">Absensi General · Haji (kartu lama)</p>
                         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
                     </div>
                     <p className="text-muted-foreground text-sm capitalize">{today}</p>
@@ -57,19 +57,19 @@ export default function KartuBebasDashboard({ stats, latest }: Props) {
                 </div>
 
                 <div>
-                    <h2 className="mb-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400">Pintasan</h2>
+                    <h2 className="mb-3 text-sm font-semibold text-indigo-700 dark:text-indigo-400">Pintasan</h2>
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         {shortcuts.map(({ title, description, href, icon: Icon }) => (
                             <Link
                                 key={href}
                                 href={href}
-                                className="group bg-card border-border hover:border-emerald-400 flex items-start gap-3 rounded-2xl border p-5 transition"
+                                className="group bg-card border-border hover:border-indigo-400 flex items-start gap-3 rounded-2xl border p-5 transition"
                             >
-                                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20 dark:text-emerald-400">
+                                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 ring-1 ring-indigo-500/20 dark:text-indigo-400">
                                     <Icon className="size-5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="font-semibold group-hover:text-emerald-700 dark:group-hover:text-emerald-300">{title}</p>
+                                    <p className="font-semibold group-hover:text-indigo-700 dark:group-hover:text-indigo-300">{title}</p>
                                     <p className="text-muted-foreground text-xs">{description}</p>
                                 </div>
                             </Link>
@@ -80,7 +80,7 @@ export default function KartuBebasDashboard({ stats, latest }: Props) {
                 <Card>
                     <CardContent className="p-5">
                         <div className="mb-4 flex items-center gap-2">
-                            <Sparkles className="size-4 text-emerald-600 dark:text-emerald-400" />
+                            <Sparkles className="size-4 text-indigo-600 dark:text-indigo-400" />
                             <h2 className="text-sm font-semibold">Isian Terbaru</h2>
                         </div>
                         {latest.length === 0 ? (
@@ -96,7 +96,7 @@ export default function KartuBebasDashboard({ stats, latest }: Props) {
                                         <span
                                             className={
                                                 item.has_file || item.status === 'completed'
-                                                    ? 'rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                                                    ? 'rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
                                                     : 'text-muted-foreground bg-muted rounded-full px-2 py-0.5 text-xs font-medium'
                                             }
                                         >

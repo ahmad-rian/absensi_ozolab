@@ -19,10 +19,17 @@ class SwitchController extends Controller
 
         $validated = $request->validate([
             'penyelenggara_id' => ['required', 'exists:penyelenggaras,id'],
+            'kembali' => ['nullable', 'string', 'max:300'],
         ]);
 
         $request->session()->put('current_penyelenggara_id', Penyelenggara::findOrFail($validated['penyelenggara_id'])->id);
 
-        return Inertia::location(route('penyelenggara.dashboard'));
+        // Tombol "Buka" di workspace general langsung menuju halaman tertentu.
+        // Hanya jalur relatif di area penyelenggara yang diterima, supaya
+        // parameter ini tidak bisa dipakai sebagai open redirect.
+        $kembali = $validated['kembali'] ?? '';
+        $aman = preg_match('#^/penyelenggara(/[A-Za-z0-9/_-]*)?$#', $kembali) === 1;
+
+        return Inertia::location($aman ? $kembali : route('penyelenggara.dashboard'));
     }
 }

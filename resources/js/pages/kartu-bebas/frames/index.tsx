@@ -77,10 +77,10 @@ export default function KartuBebasFramesIndex({ frames }: Props) {
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">Frame &amp; Bingkai</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">Frame &amp; Bingkai</h1>
                         <p className="text-muted-foreground text-sm">Kelola frame/bingkai untuk kartu bebas.</p>
                     </div>
-                    <Button onClick={() => setShowAdd(true)} className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                    <Button onClick={() => setShowAdd(true)} className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700">
                         <Plus className="size-4" /> Tambah Frame
                     </Button>
                 </div>
@@ -88,7 +88,7 @@ export default function KartuBebasFramesIndex({ frames }: Props) {
                 {frames.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                            <Frame className="mb-4 size-12 text-emerald-500/70" />
+                            <Frame className="mb-4 size-12 text-indigo-500/70" />
                             <p className="text-muted-foreground text-sm">Belum ada frame. Tambahkan frame pertama.</p>
                         </CardContent>
                     </Card>
@@ -99,7 +99,7 @@ export default function KartuBebasFramesIndex({ frames }: Props) {
                                 <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg bg-zinc-100 dark:bg-zinc-800">
                                     <img src={frame.image_url} alt={frame.name} className="size-full object-contain p-2" />
                                     <div className="absolute top-2 right-2 flex gap-1">
-                                        <Badge className="bg-emerald-600 text-white">Kartu Bebas</Badge>
+                                        <Badge className="bg-primary text-primary-foreground">Absensi General</Badge>
                                     </div>
                                 </div>
                                 <CardContent className="p-4">
@@ -150,7 +150,7 @@ export default function KartuBebasFramesIndex({ frames }: Props) {
                             <InputError message={addForm.errors.image} />
                         </div>
                         <DialogFooter>
-                            <Button type="submit" disabled={addForm.processing} className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                            <Button type="submit" disabled={addForm.processing} className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700">
                                 {addForm.processing ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
                                 Upload Frame
                             </Button>
@@ -187,7 +187,7 @@ export default function KartuBebasFramesIndex({ frames }: Props) {
                             <Label htmlFor="edit_is_active">Aktif</Label>
                         </div>
                         <DialogFooter>
-                            <Button type="submit" disabled={editForm.processing} className="bg-emerald-600 text-white hover:bg-emerald-700">
+                            <Button type="submit" disabled={editForm.processing} className="bg-indigo-600 text-white hover:bg-indigo-700">
                                 Simpan
                             </Button>
                         </DialogFooter>

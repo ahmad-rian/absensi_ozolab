@@ -1,13 +1,14 @@
 import { Form, Head, Link, router } from '@inertiajs/react';
 import { Building2, Plus } from 'lucide-react';
+import { MasukPenyelenggara } from '@/components/general/masuk-penyelenggara';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { dashboard } from '@/routes';
-import { drive, index, show, store } from '@/routes/admin/penyelenggara';
+import { dashboard, pengaturan } from '@/routes/general';
+import { index, show, store } from '@/routes/general/penyelenggara';
 
 type Row = {
     id: string;
@@ -25,13 +26,15 @@ type Props = {
         links: { url: string | null; label: string; active: boolean }[];
     };
     filters: { search: string };
-    driveRootFolderId: string | null;
+    driveSiap: boolean;
+    kuotaBawaan: { peserta: number | null; wa: number };
 };
 
 export default function PenyelenggaraIndex({
     penyelenggaras,
     filters,
-    driveRootFolderId,
+    driveSiap,
+    kuotaBawaan,
 }: Props) {
     return (
         <>
@@ -42,8 +45,8 @@ export default function PenyelenggaraIndex({
                         Penyelenggara
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Biro haji, panitia, atau instansi yang memakai absensi
-                        multi-kategori. Data tiap penyelenggara terpisah dari
+                        Biro haji, panitia, kantor, atau instansi yang memakai
+                        Absensi General. Data tiap penyelenggara terpisah dari
                         sekolah dan dari penyelenggara lain.
                     </p>
                 </div>
@@ -82,6 +85,9 @@ export default function PenyelenggaraIndex({
                                             type="number"
                                             min={1}
                                             placeholder="Tanpa batas"
+                                            defaultValue={
+                                                kuotaBawaan.peserta ?? undefined
+                                            }
                                         />
                                         <InputError
                                             message={errors.participant_quota}
@@ -96,7 +102,7 @@ export default function PenyelenggaraIndex({
                                             name="wa_daily_quota"
                                             type="number"
                                             min={0}
-                                            defaultValue={50}
+                                            defaultValue={kuotaBawaan.wa}
                                         />
                                         <InputError
                                             message={errors.wa_daily_quota}
@@ -111,53 +117,18 @@ export default function PenyelenggaraIndex({
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-base">
-                            Folder Google Drive kartu peserta
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-2 text-sm">
-                        <p className="text-muted-foreground">
-                            Tempel tautan folder "Tyas General Apps" (atau
-                            ID-nya). Kartu tiap penyelenggara disimpan di
-                            subfolder penyelenggara → program.
-                        </p>
-                        <Form
-                            {...drive.form()}
-                            className="flex flex-col gap-2 sm:flex-row sm:items-start"
+                {!driveSiap && (
+                    <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                        Folder Google Drive kartu peserta belum diatur. Kartu
+                        tetap dibuat dan bisa diunduh dari server.{' '}
+                        <Link
+                            href={pengaturan()}
+                            className="font-medium underline"
                         >
-                            {({ processing, errors }) => (
-                                <>
-                                    <div className="grid flex-1 gap-1">
-                                        <Input
-                                            name="folder"
-                                            defaultValue={
-                                                driveRootFolderId ?? ''
-                                            }
-                                            placeholder="https://drive.google.com/drive/folders/…"
-                                            aria-label="Folder Drive"
-                                        />
-                                        <InputError message={errors.folder} />
-                                    </div>
-                                    <Button
-                                        type="submit"
-                                        variant="outline"
-                                        disabled={processing}
-                                    >
-                                        Simpan folder
-                                    </Button>
-                                </>
-                            )}
-                        </Form>
-                        {!driveRootFolderId && (
-                            <p className="text-xs text-amber-600">
-                                Belum diatur — kartu tetap dibuat dan bisa
-                                diunduh dari server.
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
+                            Atur di Pengaturan
+                        </Link>
+                    </p>
+                )}
 
                 <div className="flex items-center gap-2">
                     <Input
@@ -200,6 +171,9 @@ export default function PenyelenggaraIndex({
                                     <th className="p-3 text-right font-medium">
                                         Kuota WA/hari
                                     </th>
+                                    <th className="p-3 text-right font-medium">
+                                        Aksi
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -239,6 +213,11 @@ export default function PenyelenggaraIndex({
                                         <td className="p-3 text-right tabular-nums">
                                             {p.wa_daily_quota}
                                         </td>
+                                        <td className="p-3 text-right">
+                                            <MasukPenyelenggara
+                                                penyelenggaraId={p.id}
+                                            />
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -252,7 +231,7 @@ export default function PenyelenggaraIndex({
 
 PenyelenggaraIndex.layout = {
     breadcrumbs: [
-        { title: 'Dashboard', href: dashboard() },
+        { title: 'Absensi General', href: dashboard() },
         { title: 'Penyelenggara', href: index() },
     ],
 };

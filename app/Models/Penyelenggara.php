@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Database\Factories\PenyelenggaraFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -88,6 +89,18 @@ class Penyelenggara extends Model
     /**
      * @return HasMany<User, $this>
      */
+    /**
+     * Admin Penyelenggara yang masih aktif. Setiap penyelenggara wajib punya
+     * minimal satu — dijaga di Tim penyelenggara dan Pengguna general.
+     */
+    public function jumlahAdminAktif(): int
+    {
+        return User::where('penyelenggara_id', $this->id)
+            ->where('is_active', true)
+            ->role(UserRole::AdminPenyelenggara->value)
+            ->count();
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);

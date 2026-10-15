@@ -12,7 +12,7 @@ test('super admin mengundang admin penyelenggara lewat email', function () {
     $p = Penyelenggara::factory()->create();
 
     $this->actingAs(createSuperAdminUser())
-        ->post(route('admin.penyelenggara.invite', $p), ['email' => 'owner@alhijrah.test'])
+        ->post(route('general.penyelenggara.invite', $p), ['email' => 'owner@alhijrah.test'])
         ->assertRedirect();
 
     $invitation = PenyelenggaraInvitation::acrossPenyelenggara()->firstWhere('email', 'owner@alhijrah.test');
@@ -70,7 +70,7 @@ test('email yang sudah dipakai akun lain tidak bisa diundang', function () {
     $existing = createAdminUser(['email' => 'guru@sekolah.test']);
 
     $this->actingAs(createSuperAdminUser())
-        ->post(route('admin.penyelenggara.invite', $p), ['email' => $existing->email])
+        ->post(route('general.penyelenggara.invite', $p), ['email' => $existing->email])
         ->assertSessionHasErrors('email');
 
     Notification::assertNothingSent();

@@ -45,10 +45,10 @@ export default function KartuBebasLayoutsIndex({ forms }: Props) {
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">Layout Kartu</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">Layout Kartu</h1>
                         <p className="text-muted-foreground text-sm">Buat template kartu dengan field isian dinamis dan desain bebas.</p>
                     </div>
-                    <Button asChild className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                    <Button asChild className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700">
                         <Link href="/kartu-bebas/layouts/create">
                             <Plus className="size-4" /> Buat Layout
                         </Link>
@@ -58,7 +58,7 @@ export default function KartuBebasLayoutsIndex({ forms }: Props) {
                 {forms.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                            <LayoutTemplate className="mb-4 size-12 text-emerald-500/70" />
+                            <LayoutTemplate className="mb-4 size-12 text-indigo-500/70" />
                             <p className="text-muted-foreground text-sm">Belum ada layout kartu. Buat layout pertama Anda.</p>
                         </CardContent>
                     </Card>
@@ -69,7 +69,7 @@ export default function KartuBebasLayoutsIndex({ forms }: Props) {
                                 <CardContent className="p-5">
                                     <div className="mb-3 flex items-start justify-between">
                                         <div className="flex items-center gap-2">
-                                            <FileText className="size-5 text-emerald-600" />
+                                            <FileText className="size-5 text-indigo-600" />
                                             <h3 className="font-semibold">{form.name}</h3>
                                         </div>
                                         <div className="flex gap-1">
@@ -86,13 +86,13 @@ export default function KartuBebasLayoutsIndex({ forms }: Props) {
                                     </div>
 
                                     <div className="mb-3 flex items-center gap-2">
-                                        <code className="text-muted-foreground flex-1 truncate rounded-md bg-emerald-50 px-2 py-1.5 text-[11px] dark:bg-emerald-950/40">
+                                        <code className="text-muted-foreground flex-1 truncate rounded-md bg-indigo-50 px-2 py-1.5 text-[11px] dark:bg-indigo-950/40">
                                             {form.public_url}
                                         </code>
                                         <Button
                                             variant="outline"
                                             size="icon"
-                                            className="size-8 shrink-0 border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-300"
+                                            className="size-8 shrink-0 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-300"
                                             onClick={() => copyLink(form)}
                                             title="Salin tautan publik"
                                         >

@@ -180,7 +180,7 @@ export function CardPreview({
 
     return (
         <div
-            className="relative overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/10 focus-visible:outline-2 focus-visible:outline-emerald-500"
+            className="relative overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/10 focus-visible:outline-2 focus-visible:outline-indigo-500"
             tabIndex={0}
             role="group"
             aria-label="Desain kartu. Pilih elemen lalu gunakan tombol panah untuk menggeser 0,1 mm, atau Shift dan panah untuk 1 mm."
@@ -235,7 +235,7 @@ return null;
                                 onMouseDown={() => onSelect(id)}
                                 className={cn(
                                     'flex h-full w-full cursor-move items-baseline whitespace-nowrap rounded-sm',
-                                    selected ? 'outline outline-1 outline-emerald-500' : 'outline-dashed outline-1 outline-transparent hover:outline-emerald-400/50',
+                                    selected ? 'outline outline-1 outline-indigo-500' : 'outline-dashed outline-1 outline-transparent hover:outline-indigo-400/50',
                                 )}
                                 style={{ fontFamily: "'Inter Tight', sans-serif", fontSize: mm(el.fontSize), fontWeight: 800, lineHeight: 1.25, color: '#0c1a12' }}
                             >
@@ -269,7 +269,7 @@ return null;
                             className={cn(
                                 'flex size-full cursor-move items-center justify-center rounded',
                                 el.type === 'qr' ? 'bg-white text-black' : 'bg-zinc-400/40 text-white/70',
-                                selected ? 'outline outline-1 outline-emerald-500' : 'outline-dashed outline-1 outline-zinc-400/60',
+                                selected ? 'outline outline-1 outline-indigo-500' : 'outline-dashed outline-1 outline-zinc-400/60',
                             )}
                         >
                             {el.type === 'qr' ? (
@@ -383,10 +383,10 @@ id += '_';
             <Head title={isEditing ? 'Edit Layout Kartu' : 'Buat Layout Kartu'} />
             <form onSubmit={handleSubmit} className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">
+                    <h1 className="text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">
                         {isEditing ? 'Edit Layout Kartu' : 'Buat Layout Kartu Baru'}
                     </h1>
-                    <Button type="submit" disabled={processing} className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                    <Button type="submit" disabled={processing} className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700">
                         {processing ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                         Simpan Layout
                     </Button>
@@ -395,9 +395,9 @@ id += '_';
                 <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
                     {/* LEFT: card designer */}
                     <div className="space-y-4">
-                        <Card className="border-emerald-200 dark:border-emerald-900">
+                        <Card className="border-indigo-200 dark:border-indigo-900">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base text-emerald-700 dark:text-emerald-400">
+                                <CardTitle className="flex items-center gap-2 text-base text-indigo-700 dark:text-indigo-400">
                                     <Eye className="size-4" /> Desain Kartu
                                     <span className="text-muted-foreground text-xs font-normal">— seret elemen untuk mengatur posisi</span>
                                 </CardTitle>
@@ -418,7 +418,7 @@ id += '_';
                         </Card>
 
                         {selected && (
-                            <Card className="border-emerald-200 dark:border-emerald-900">
+                            <Card className="border-indigo-200 dark:border-indigo-900">
                                 <CardHeader>
                                     <CardTitle className="text-base">Atur Elemen Terpilih</CardTitle>
                                 </CardHeader>
@@ -515,7 +515,7 @@ id += '_';
                                 {form?.public_url && (
                                     <div className="grid gap-1.5">
                                         <Label className="text-muted-foreground text-[11px]">Tautan Publik</Label>
-                                        <code className="truncate rounded-md bg-emerald-50 px-2 py-1.5 text-[11px] dark:bg-emerald-950/40">{form.public_url}</code>
+                                        <code className="truncate rounded-md bg-indigo-50 px-2 py-1.5 text-[11px] dark:bg-indigo-950/40">{form.public_url}</code>
                                     </div>
                                 )}
                             </CardContent>
@@ -559,7 +559,7 @@ id += '_';
                                             className={cn(
                                                 'flex flex-col items-center gap-1.5 rounded-lg border p-3 text-xs font-medium transition',
                                                 config.orientation === v
-                                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
                                                     : 'border-border hover:bg-muted',
                                             )}
                                         >

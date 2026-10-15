@@ -79,7 +79,7 @@ class TimController extends Controller
         $validated = $request->validate(['is_active' => ['required', 'boolean']]);
         $aktif = (bool) $validated['is_active'];
 
-        if (! $aktif && $anggota->hasRole(UserRole::AdminPenyelenggara->value) && $this->jumlahAdminAktif($penyelenggara) <= 1) {
+        if (! $aktif && $anggota->hasRole(UserRole::AdminPenyelenggara->value) && $penyelenggara->jumlahAdminAktif() <= 1) {
             return back()->withErrors(['is_active' => 'Setiap penyelenggara harus punya minimal satu Admin Penyelenggara aktif.']);
         }
 
@@ -107,7 +107,7 @@ class TimController extends Controller
 
         $turunDariAdmin = $validated['role'] !== UserRole::AdminPenyelenggara->value
             && $anggota->hasRole(UserRole::AdminPenyelenggara->value);
-        if ($turunDariAdmin && $anggota->is_active && $this->jumlahAdminAktif($penyelenggara) <= 1) {
+        if ($turunDariAdmin && $anggota->is_active && $penyelenggara->jumlahAdminAktif() <= 1) {
             return back()->withErrors(['role' => 'Setiap penyelenggara harus punya minimal satu Admin Penyelenggara aktif.']);
         }
 
@@ -139,10 +139,5 @@ class TimController extends Controller
     private function anggota(Penyelenggara $penyelenggara)
     {
         return User::where('penyelenggara_id', $penyelenggara->id);
-    }
-
-    private function jumlahAdminAktif(Penyelenggara $penyelenggara): int
-    {
-        return $this->anggota($penyelenggara)->where('is_active', true)->role(UserRole::AdminPenyelenggara->value)->count();
     }
 }

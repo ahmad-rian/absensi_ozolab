@@ -5,7 +5,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 test('super admin membuat penyelenggara dengan slug unik', function () {
     $this->actingAs(createSuperAdminUser())
-        ->post(route('admin.penyelenggara.store'), [
+        ->post(route('general.penyelenggara.store'), [
             'name' => 'Al-Hijrah Travel',
             'participant_quota' => 500,
             'wa_daily_quota' => 50,
@@ -22,7 +22,7 @@ test('super admin membuat penyelenggara dengan slug unik', function () {
 
 test('nama wajib diisi', function () {
     $this->actingAs(createSuperAdminUser())
-        ->post(route('admin.penyelenggara.store'), ['name' => ''])
+        ->post(route('general.penyelenggara.store'), ['name' => ''])
         ->assertSessionHasErrors('name');
 });
 
@@ -30,7 +30,7 @@ test('super admin mengubah dan menonaktifkan penyelenggara', function () {
     $p = Penyelenggara::factory()->create();
 
     $this->actingAs(createSuperAdminUser())
-        ->put(route('admin.penyelenggara.update', $p), [
+        ->put(route('general.penyelenggara.update', $p), [
             'name' => 'Nama Baru',
             'is_active' => false,
             'participant_quota' => null,
@@ -45,16 +45,16 @@ test('daftar dan detail penyelenggara tampil untuk super admin', function () {
     $p = Penyelenggara::factory()->create(['name' => 'Biro Satu']);
 
     $this->actingAs(createSuperAdminUser())
-        ->get(route('admin.penyelenggara.index'))
-        ->assertInertia(fn (Assert $page) => $page->component('admin/penyelenggara/index')->has('penyelenggaras.data', 1));
+        ->get(route('general.penyelenggara.index'))
+        ->assertInertia(fn (Assert $page) => $page->component('general/penyelenggara/index')->has('penyelenggaras.data', 1));
 
     $this->actingAs(createSuperAdminUser())
-        ->get(route('admin.penyelenggara.show', $p))
-        ->assertInertia(fn (Assert $page) => $page->component('admin/penyelenggara/show')->where('penyelenggara.name', 'Biro Satu'));
+        ->get(route('general.penyelenggara.show', $p))
+        ->assertInertia(fn (Assert $page) => $page->component('general/penyelenggara/show')->where('penyelenggara.name', 'Biro Satu'));
 });
 
 test('admin sekolah tidak bisa mengelola penyelenggara', function () {
     $this->actingAs(createAdminUser())
-        ->get(route('admin.penyelenggara.index'))
+        ->get(route('general.penyelenggara.index'))
         ->assertForbidden();
 });

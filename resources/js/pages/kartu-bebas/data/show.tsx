@@ -33,7 +33,7 @@ export default function KartuBebasDataShow({ dataset, layouts }: { dataset: Data
                             <ArrowLeft className="size-5" />
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">{dataset.name}</h1>
+                            <h1 className="text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">{dataset.name}</h1>
                             <p className="text-muted-foreground text-sm">
                                 {dataset.fields.length} field · dipakai {dataset.layouts_count} layout
                             </p>
@@ -64,7 +64,7 @@ export default function KartuBebasDataShow({ dataset, layouts }: { dataset: Data
                                             key: <code>{f.key}</code>
                                         </span>
                                     </div>
-                                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
                                         {FIELD_TYPE_LABELS[f.type]}
                                     </span>
                                 </div>
@@ -79,7 +79,7 @@ export default function KartuBebasDataShow({ dataset, layouts }: { dataset: Data
                         {layouts.length === 0 ? (
                             <p className="text-muted-foreground text-sm">
                                 Belum ada layout. Buat di{' '}
-                                <Link href="/kartu-bebas/layouts/create" className="text-emerald-600 underline">
+                                <Link href="/kartu-bebas/layouts/create" className="text-indigo-600 underline">
                                     Layout Kartu
                                 </Link>
                                 .
@@ -92,7 +92,7 @@ export default function KartuBebasDataShow({ dataset, layouts }: { dataset: Data
                                         href={`/kartu-bebas/layouts/${l.id}/edit`}
                                         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted"
                                     >
-                                        <LayoutTemplate className="size-4 text-emerald-600" /> {l.name}
+                                        <LayoutTemplate className="size-4 text-indigo-600" /> {l.name}
                                     </Link>
                                 ))}
                             </div>

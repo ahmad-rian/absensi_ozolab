@@ -27,12 +27,12 @@ export default function KartuBebasDataIndex({ datasets }: { datasets: Dataset[] 
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">Data / Format Data</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">Data / Format Data</h1>
                         <p className="text-muted-foreground text-sm">
                             Buat format field kartu (bisa macam-macam). Layout nanti tinggal pilih format ini.
                         </p>
                     </div>
-                    <Button asChild className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                    <Button asChild className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700">
                         <Link href="/kartu-bebas/data/create">
                             <Plus className="size-4" /> Buat Format
                         </Link>
@@ -42,18 +42,18 @@ export default function KartuBebasDataIndex({ datasets }: { datasets: Dataset[] 
                 {datasets.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                            <Database className="mb-4 size-12 text-emerald-500/70" />
+                            <Database className="mb-4 size-12 text-indigo-500/70" />
                             <p className="text-muted-foreground text-sm">Belum ada format data. Buat format dulu.</p>
                         </CardContent>
                     </Card>
                 ) : (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {datasets.map((dataset) => (
-                            <Card key={dataset.id} className="transition hover:border-emerald-300">
+                            <Card key={dataset.id} className="transition hover:border-indigo-300">
                                 <CardContent className="p-5">
                                     <Link href={`/kartu-bebas/data/${dataset.id}`} className="block">
                                         <div className="mb-3 flex items-start gap-2">
-                                            <Database className="mt-0.5 size-5 shrink-0 text-emerald-600" />
+                                            <Database className="mt-0.5 size-5 shrink-0 text-indigo-600" />
                                             <h3 className="font-semibold break-words">{dataset.name}</h3>
                                         </div>
                                         <div className="text-muted-foreground mb-4 flex flex-wrap gap-x-3 gap-y-1 text-xs">

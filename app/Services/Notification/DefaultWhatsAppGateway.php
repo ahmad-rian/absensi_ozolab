@@ -38,6 +38,15 @@ class DefaultWhatsAppGateway implements WhatsAppGateway
     }
 
     /**
+     * Kirim lewat Fonnte dengan token yang diberikan langsung — dipakai
+     * workspace Absensi General yang tidak terikat channel sekolah mana pun.
+     */
+    public function sendTextViaFonnte(string $to, string $message, string $token): bool
+    {
+        return $this->sendViaFonnte($to, $message, $token);
+    }
+
+    /**
      * Send via best available WhatsApp gateway: Fonnte (per-school, aktif) → Ozolab (default).
      */
     private function send(string $to, string $message, ?string $schoolId): bool

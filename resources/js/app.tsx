@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
+import GeneralLayout from '@/layouts/general-layout';
 import OrangtuaLayout from '@/layouts/orangtua-layout';
 import PenyelenggaraLayout from '@/layouts/penyelenggara-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -36,6 +37,8 @@ createInertiaApp({
             case name.startsWith('undangan/'):
             case name === 'penyelenggara/nonaktif':
                 return null;
+            case name.startsWith('general/'):
+                return GeneralLayout;
             case name.startsWith('penyelenggara/'):
                 return PenyelenggaraLayout;
             case name.startsWith('orangtua/'):
@@ -68,6 +71,8 @@ createInertiaApp({
 initializeTheme();
 
 router.on('navigate', ({ detail }) => {
-    const branding = detail.page.props.app as { favicon?: string | null } | undefined;
+    const branding = detail.page.props.app as
+        | { favicon?: string | null }
+        | undefined;
     syncFavicon(document, branding?.favicon ?? null);
 });

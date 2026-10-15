@@ -93,13 +93,13 @@ test('tanpa folder root, kartu penyelenggara tidak memakai Drive sekolah mana pu
 
 test('super admin menyimpan folder root dari tautan Drive', function () {
     $this->actingAs(createSuperAdminUser())
-        ->put(route('admin.penyelenggara.drive'), ['folder' => 'https://drive.google.com/drive/folders/184W9zEuz6SY7je-lpH6uSsldDgr0p2_q?hl=ID'])
+        ->put(route('general.pengaturan.drive'), ['folder' => 'https://drive.google.com/drive/folders/184W9zEuz6SY7je-lpH6uSsldDgr0p2_q?hl=ID'])
         ->assertRedirect();
 
     expect(Setting::getValue(KartuDrive::SETTING_ROOT))->toBe('184W9zEuz6SY7je-lpH6uSsldDgr0p2_q');
 
     $this->actingAs(createSuperAdminUser())
-        ->put(route('admin.penyelenggara.drive'), ['folder' => 'bukan folder!'])
+        ->put(route('general.pengaturan.drive'), ['folder' => 'bukan folder!'])
         ->assertSessionHasErrors('folder');
 });
 

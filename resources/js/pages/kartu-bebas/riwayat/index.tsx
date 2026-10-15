@@ -51,7 +51,7 @@ export default function KartuBebasRiwayatIndex({ submissions }: Props) {
             <Head title="Riwayat Kartu" />
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">Riwayat Kartu</h1>
+                    <h1 className="text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">Riwayat Kartu</h1>
                     <p className="text-muted-foreground text-sm">Daftar kartu yang telah berhasil dibuat (100 terbaru).</p>
                     {hasProcessing && (
                         <span className="text-muted-foreground mt-1 inline-flex items-center gap-1 text-xs">
@@ -63,7 +63,7 @@ export default function KartuBebasRiwayatIndex({ submissions }: Props) {
                 {submissions.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                            <History className="mb-4 size-12 text-emerald-500/70" />
+                            <History className="mb-4 size-12 text-indigo-500/70" />
                             <p className="text-muted-foreground text-sm">Belum ada kartu yang dibuat.</p>
                         </CardContent>
                     </Card>
@@ -108,7 +108,7 @@ export default function KartuBebasRiwayatIndex({ submissions }: Props) {
                                                         href={s.card_url}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1 text-emerald-600 hover:underline dark:text-emerald-400"
+                                                        className="inline-flex items-center gap-1 text-indigo-600 hover:underline dark:text-indigo-400"
                                                     >
                                                         Lihat <ExternalLink className="size-3" />
                                                     </a>

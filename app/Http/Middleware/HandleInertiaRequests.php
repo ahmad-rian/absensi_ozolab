@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Controllers\General\SettingsController;
 use App\Models\NotificationLog;
 use App\Models\Penyelenggara;
 use App\Models\School;
@@ -129,9 +130,26 @@ class HandleInertiaRequests extends Middleware
 
                 return $penyelenggara ? PenyelenggaraFeatures::for($penyelenggara)->toArray() : [];
             },
-            'app' => function () use ($user) {
+            'app' => function () use ($user, $request) {
                 // Branding milik sekolah aktif, dengan fallback ke nilai global
                 // lama supaya tampilan tidak berubah setelah deploy.
+                // Workspace Absensi General dan area penyelenggara memakai
+                // branding general sendiri (spec 009), bukan logo sekolah.
+                // Sebelum logo general diunggah, logo lama (sekolah terpilih)
+                // tetap dipakai supaya tampilan tidak mendadak kosong.
+                $areaGeneral = app()->bound('areaPenyelenggara') || $request->is('general', 'general/*', 'kartu-bebas', 'kartu-bebas/*');
+                $namaGeneral = $areaGeneral ? Setting::getValue(SettingsController::NAMA, 'Absensi General') : null;
+                $logoGeneral = $areaGeneral ? Setting::getValue(SettingsController::LOGO) : null;
+
+                if ($logoGeneral) {
+                    return [
+                        'school_name' => $namaGeneral,
+                        'workspace_name' => $namaGeneral,
+                        'logo' => Storage::disk('public')->url($logoGeneral),
+                        'favicon' => Storage::disk('public')->url($logoGeneral),
+                    ];
+                }
+
                 $school = app()->bound('currentSchool') ? app('currentSchool') : null;
 
                 // Sekolah milik akun yang sedang masuk, untuk halaman di luar
@@ -153,6 +171,7 @@ class HandleInertiaRequests extends Middleware
                 $faviconPath = $school?->getSetting('app_favicon') ?: Setting::getValue('app_favicon');
 
                 return [
+                    'workspace_name' => $namaGeneral,
                     'school_name' => $school?->name ?? Setting::getValue('school_name', 'SMP Nusantara'),
                     'logo' => $logoPath ? Storage::disk('public')->url($logoPath) : null,
                     'favicon' => $faviconPath ? Storage::disk('public')->url($faviconPath) : null,

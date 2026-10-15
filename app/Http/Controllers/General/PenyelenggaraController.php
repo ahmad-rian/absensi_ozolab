@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\General;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
@@ -16,7 +16,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Kelola penyelenggara (tenant modul Absensi Multi-Kategori) — super admin saja.
+ * Kelola penyelenggara (tenant modul Absensi General) — super admin saja, di
+ * workspace `/general` yang terpisah dari sekolah (spec 009).
  */
 class PenyelenggaraController extends Controller
 {
@@ -29,25 +30,33 @@ class PenyelenggaraController extends Controller
             ->withQueryString()
             ->through(fn (Penyelenggara $p) => $this->ringkas($p) + ['users_count' => $p->users_count]);
 
-        return Inertia::render('admin/penyelenggara/index', [
+        return Inertia::render('general/penyelenggara/index', [
             'penyelenggaras' => $penyelenggaras,
             'filters' => ['search' => $request->search ?? ''],
-            'driveRootFolderId' => app(KartuDrive::class)->rootFolderId(),
+            'driveSiap' => app(KartuDrive::class)->siap(),
+            'kuotaBawaan' => [
+                'peserta' => Setting::getValue(SettingsController::KUOTA_PESERTA),
+                'wa' => Setting::getValue(SettingsController::KUOTA_WA, 50),
+            ],
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $penyelenggara = Penyelenggara::create($this->validated($request));
+        // Kuota yang tidak dikirim form memakai bawaan dari Pengaturan general.
+        $penyelenggara = Penyelenggara::create($this->validated($request) + array_filter([
+            'participant_quota' => Setting::getValue(SettingsController::KUOTA_PESERTA),
+            'wa_daily_quota' => Setting::getValue(SettingsController::KUOTA_WA),
+        ], fn ($v) => $v !== null && $v !== ''));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Penyelenggara {$penyelenggara->name} dibuat."]);
 
-        return to_route('admin.penyelenggara.show', $penyelenggara);
+        return to_route('general.penyelenggara.show', $penyelenggara);
     }
 
     public function show(Penyelenggara $penyelenggara): Response
     {
-        return Inertia::render('admin/penyelenggara/show', [
+        return Inertia::render('general/penyelenggara/show', [
             'penyelenggara' => $this->ringkas($penyelenggara),
             'users' => User::where('penyelenggara_id', $penyelenggara->id)
                 ->with('roles')
@@ -79,7 +88,7 @@ class PenyelenggaraController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Penyelenggara diperbarui.']);
 
-        return to_route('admin.penyelenggara.show', $penyelenggara);
+        return to_route('general.penyelenggara.show', $penyelenggara);
     }
 
     public function invite(Request $request, Penyelenggara $penyelenggara, PenyelenggaraUndangan $undangan): RedirectResponse
@@ -90,33 +99,7 @@ class PenyelenggaraController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Undangan dikirim ke {$validated['email']}."]);
 
-        return to_route('admin.penyelenggara.show', $penyelenggara);
-    }
-
-    /**
-     * Folder root Drive untuk kartu semua penyelenggara ("Tyas General Apps").
-     * Menerima tautan folder Drive utuh atau ID-nya saja.
-     */
-    public function drive(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'folder' => ['nullable', 'string', 'max:300'],
-        ]);
-
-        $nilai = trim($validated['folder'] ?? '');
-        if (preg_match('~/folders/([A-Za-z0-9_-]{10,})~', $nilai, $m)) {
-            $nilai = $m[1];
-        }
-
-        if ($nilai !== '' && ! preg_match('/^[A-Za-z0-9_-]{10,}$/', $nilai)) {
-            return back()->withErrors(['folder' => 'Bukan tautan atau ID folder Google Drive yang valid.']);
-        }
-
-        Setting::setValue(KartuDrive::SETTING_ROOT, $nilai !== '' ? $nilai : null);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => $nilai !== '' ? 'Folder Drive penyelenggara disimpan.' : 'Folder Drive penyelenggara dikosongkan.']);
-
-        return to_route('admin.penyelenggara.index');
+        return to_route('general.penyelenggara.show', $penyelenggara);
     }
 
     /**

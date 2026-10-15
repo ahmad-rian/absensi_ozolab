@@ -104,7 +104,7 @@ export default function FieldBuilder({ name, fields, errors, onName, onFields }:
             <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
                     <Label>Field</Label>
-                    <Button type="button" size="sm" onClick={addField} className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700">
+                    <Button type="button" size="sm" onClick={addField} className="gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700">
                         <Plus className="size-3.5" /> Tambah Field
                     </Button>
                 </div>

@@ -20,7 +20,6 @@ use App\Http\Controllers\Admin\NotifikasiController;
 use App\Http\Controllers\Admin\OrangTuaController;
 use App\Http\Controllers\Admin\PanduanController;
 use App\Http\Controllers\Admin\PengaturanController;
-use App\Http\Controllers\Admin\PenyelenggaraController;
 use App\Http\Controllers\Admin\PhotoSheetBatchController;
 use App\Http\Controllers\Admin\PhotoSheetController;
 use App\Http\Controllers\Admin\RfidCardController;
@@ -40,6 +39,11 @@ use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
 use App\Http\Controllers\BerkasKeluaranController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\General\DashboardController as GeneralDashboardController;
+use App\Http\Controllers\General\KatalogController as GeneralKatalogController;
+use App\Http\Controllers\General\PenyelenggaraController;
+use App\Http\Controllers\General\SettingsController as GeneralSettingsController;
+use App\Http\Controllers\General\UserController as GeneralUserController;
 use App\Http\Controllers\KartuBebas\AttendanceController as CardAttendanceController;
 use App\Http\Controllers\KartuBebas\DashboardController as KartuBebasDashboardController;
 use App\Http\Controllers\KartuBebas\DatasetController;
@@ -582,21 +586,43 @@ Route::middleware('auth')->group(function () {
  | lewat tautan antar menu. EnsureAnakSendiri yang membacanya, menetapkan anak
  | pertama bila tidak disebut, dan tetap menolak anak milik orang lain.
  */
-// ── Absensi Multi-Kategori: tenant penyelenggara (spec 001) ─────────────────
-// Kelola penyelenggara — super admin saja.
+// ── Workspace Absensi General (spec 009) ────────────────────────────────────
+// Berdiri sendiri, khusus super admin, terpisah dari grup /admin sekolah:
+// tidak ada konteks sekolah yang dipakai dan pengaturannya di `general_*`.
 Route::middleware(['auth', 'verified', 'super-admin'])
-    ->prefix('admin/penyelenggara')
-    ->name('admin.penyelenggara.')
+    ->prefix('general')
+    ->name('general.')
     ->group(function () {
-        Route::get('/', [PenyelenggaraController::class, 'index'])->name('index');
-        Route::post('/', [PenyelenggaraController::class, 'store'])->name('store');
-        Route::put('pengaturan/drive', [PenyelenggaraController::class, 'drive'])->name('drive');
-        Route::get('{penyelenggara}', [PenyelenggaraController::class, 'show'])->name('show');
-        Route::put('{penyelenggara}', [PenyelenggaraController::class, 'update'])->name('update');
-        Route::post('{penyelenggara}/undangan', [PenyelenggaraController::class, 'invite'])
-            ->middleware('throttle:20,1')
-            ->name('invite');
+        Route::get('/', GeneralDashboardController::class)->name('dashboard');
+
+        Route::prefix('penyelenggara')->name('penyelenggara.')->group(function () {
+            Route::get('/', [PenyelenggaraController::class, 'index'])->name('index');
+            Route::post('/', [PenyelenggaraController::class, 'store'])->name('store');
+            Route::get('{penyelenggara}', [PenyelenggaraController::class, 'show'])->name('show');
+            Route::put('{penyelenggara}', [PenyelenggaraController::class, 'update'])->name('update');
+            Route::post('{penyelenggara}/undangan', [PenyelenggaraController::class, 'invite'])
+                ->middleware('throttle:20,1')
+                ->name('invite');
+        });
+
+        Route::get('kategori', [GeneralKatalogController::class, 'kategori'])->name('kategori');
+        Route::get('program', [GeneralKatalogController::class, 'program'])->name('program');
+
+        Route::get('pengguna', [GeneralUserController::class, 'index'])->name('pengguna');
+        Route::put('pengguna/{user}/status', [GeneralUserController::class, 'status'])->name('pengguna.status');
+        Route::put('pengguna/{user}/sandi', [GeneralUserController::class, 'sandi'])->middleware('throttle:20,1')->name('pengguna.sandi');
+
+        Route::get('pengaturan', [GeneralSettingsController::class, 'index'])->name('pengaturan');
+        Route::put('pengaturan/umum', [GeneralSettingsController::class, 'umum'])->name('pengaturan.umum');
+        Route::post('pengaturan/logo', [GeneralSettingsController::class, 'logo'])->name('pengaturan.logo');
+        Route::put('pengaturan/drive', [GeneralSettingsController::class, 'drive'])->name('pengaturan.drive');
+        Route::put('pengaturan/whatsapp', [GeneralSettingsController::class, 'whatsapp'])->name('pengaturan.whatsapp');
+        Route::post('pengaturan/whatsapp/uji', [GeneralSettingsController::class, 'ujiWhatsapp'])->middleware('throttle:10,1')->name('pengaturan.whatsapp.uji');
     });
+
+// Alamat lama kelola penyelenggara (sebelum spec 009) — bookmark tetap jalan.
+Route::middleware(['auth', 'super-admin'])->get('admin/penyelenggara/{rest?}', fn (?string $rest = null) => redirect('/general/penyelenggara'.($rest ? '/'.$rest : ''), 301))
+    ->where('rest', '.*');
 
 // Terima undangan — publik; token SHA-256 di DB, throttle melawan tebakan.
 Route::get('undangan/{token}', [UndanganController::class, 'show'])->middleware('throttle:30,1')->name('undangan.show');

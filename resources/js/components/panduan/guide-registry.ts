@@ -236,7 +236,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
             },
             {
                 id: 'kartu-bebas',
-                title: 'Kartu Bebas / Haji',
+                title: 'Haji (kartu lama) di Absensi General',
                 summary: 'Kartu dengan kolom bebas untuk peserta di luar siswa.',
                 keywords: ['kartu bebas', 'haji', 'form dinamis'],
                 permission: 'kartu-bebas.access',

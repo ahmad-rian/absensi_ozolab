@@ -80,7 +80,7 @@ enum AppModule: string
             self::Schools => 'Sekolah',
             self::NotificationGateways => 'Gateway Notifikasi',
             self::CardForms => 'Form Kartu Dinamis',
-            self::KartuBebas => 'Kartu Bebas',
+            self::KartuBebas => 'Haji (kartu lama)',
             self::Impersonate => 'Masuk Sebagai Pengguna',
             self::SemuaSekolah => 'Semua Sekolah',
             self::PenyelenggaraBeranda => 'Beranda Penyelenggara',

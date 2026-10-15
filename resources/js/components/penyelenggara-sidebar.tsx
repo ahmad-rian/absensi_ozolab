@@ -1,7 +1,13 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { CalendarRange, LayoutGrid, Shapes, Users } from 'lucide-react';
+import {
+    ArrowLeft,
+    CalendarRange,
+    LayoutGrid,
+    Shapes,
+    Users,
+} from 'lucide-react';
 import BrandLogo from '@/components/brand-logo';
-import { NavGroup } from '@/components/nav-main';
+import { NavCollapsibleGroup, NavGroup } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
@@ -25,6 +31,12 @@ type PageProps = {
     currentPenyelenggara: { id: string; name: string } | null;
     penyelenggaras: { id: string; name: string; is_active: boolean }[];
 };
+
+/** Kelompok menu, seperti sidebar sekolah (judul kelompok bisa dilipat). */
+export const kelompokPenyelenggara: { label: string; titles: string[] }[] = [
+    { label: 'Data', titles: ['Kategori', 'Program'] },
+    { label: 'Tim', titles: ['Tim'] },
+];
 
 export const penyelenggaraItems: GuardedItem[] = [
     {
@@ -133,11 +145,40 @@ export function PenyelenggaraSidebar() {
                 {/* Akun penyelenggara sendiri selalu punya konteks; super admin
                     baru melihat menu setelah memilih penyelenggara. */}
                 {(currentPenyelenggara || !isSuperAdmin) && (
-                    <NavGroup label="Utama" items={items} />
+                    <>
+                        <NavGroup
+                            label="Utama"
+                            items={items.filter((i) => i.title === 'Beranda')}
+                        />
+                        {kelompokPenyelenggara.map((k) => (
+                            <NavCollapsibleGroup
+                                key={k.label}
+                                label={k.label}
+                                items={items.filter((i) =>
+                                    k.titles.includes(i.title),
+                                )}
+                            />
+                        ))}
+                    </>
                 )}
             </SidebarContent>
 
             <SidebarFooter>
+                {isSuperAdmin && (
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                asChild
+                                tooltip={{ children: 'Absensi General' }}
+                            >
+                                <a href="/general">
+                                    <ArrowLeft />
+                                    <span>Absensi General</span>
+                                </a>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                )}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

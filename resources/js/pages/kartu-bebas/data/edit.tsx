@@ -45,7 +45,7 @@ export default function KartuBebasDataEdit({ dataset }: { dataset: Dataset }) {
                         <ArrowLeft className="size-5" />
                     </Button>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-emerald-700 dark:text-emerald-400">Edit Format Data</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">Edit Format Data</h1>
                         <p className="text-muted-foreground text-sm">Ubah nama & field. Layout yang memakainya ikut ter-update.</p>
                     </div>
                 </div>
@@ -58,7 +58,7 @@ export default function KartuBebasDataEdit({ dataset }: { dataset: Dataset }) {
                                 <Button type="button" variant="outline" onClick={() => router.get(`/kartu-bebas/data/${dataset.id}`)}>
                                     Batal
                                 </Button>
-                                <Button type="submit" disabled={processing} className="gap-2 bg-emerald-600 text-white hover:bg-emerald-700">
+                                <Button type="submit" disabled={processing} className="gap-2 bg-indigo-600 text-white hover:bg-indigo-700">
                                     {processing && <Loader2 className="size-4 animate-spin" />}
                                     Simpan Perubahan
                                 </Button>

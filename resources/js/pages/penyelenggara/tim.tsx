@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ROLE_LABEL, STATUS_UNDANGAN } from '@/pages/admin/penyelenggara/show';
+import { ROLE_LABEL, STATUS_UNDANGAN } from '@/pages/general/penyelenggara/show';
 import { dashboard } from '@/routes/penyelenggara';
 import {
     index,
