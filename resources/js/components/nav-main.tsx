@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -22,8 +22,49 @@ interface NavGroupProps {
     items: BadgedNavItem[];
 }
 
+/**
+ * Bagian `#...` URL saat ini. Menu yang menunjuk bagian berbeda dari halaman
+ * yang sama (mis. Pengaturan › Google Drive = `#drive`) dibedakan lewat ini;
+ * tanpa itu semua menu ke halaman yang sama menyala bersamaan.
+ */
+function useHashSaatIni(): string {
+    const [hash, setHash] = useState(() => (typeof window === 'undefined' ? '' : window.location.hash));
+
+    useEffect(() => {
+        const baca = () => setHash(window.location.hash);
+        window.addEventListener('hashchange', baca);
+        const lepas = router.on('navigate', baca);
+
+        return () => {
+            window.removeEventListener('hashchange', baca);
+            lepas();
+        };
+    }, []);
+
+    return hash;
+}
+
 function NavLinks({ items }: { items: BadgedNavItem[] }) {
     const { isCurrentUrl } = useCurrentUrl();
+    const hash = useHashSaatIni();
+    const hashDari = (href: BadgedNavItem['href']) => {
+        const teks = typeof href === 'string' ? href : href.url;
+        const i = teks.indexOf('#');
+
+        return i === -1 ? '' : teks.slice(i);
+    };
+    // Hash saat ini milik salah satu menu di grup ini? Kalau ya, menu tanpa
+    // hash ke halaman yang sama tidak ikut menyala.
+    const hashDimiliki = hash !== '' && items.some((i) => hashDari(i.href) === hash);
+    const aktif = (item: BadgedNavItem) => {
+        if (item.newTab || !isCurrentUrl(item.href)) {
+            return false;
+        }
+
+        const h = hashDari(item.href);
+
+        return h ? h === hash : !hashDimiliki;
+    };
 
     return (
         <SidebarMenu>
@@ -31,7 +72,7 @@ function NavLinks({ items }: { items: BadgedNavItem[] }) {
                 <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                         asChild
-                        isActive={!item.newTab && isCurrentUrl(item.href)}
+                        isActive={aktif(item)}
                         tooltip={{ children: item.title }}
                     >
                         {item.newTab ? (
