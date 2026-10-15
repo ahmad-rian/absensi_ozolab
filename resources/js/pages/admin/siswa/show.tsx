@@ -24,6 +24,7 @@ import {
     Printer,
     RefreshCw,
     Search,
+    ShieldAlert,
     Upload,
     User,
     UserCheck,
@@ -34,6 +35,8 @@ import type {FormEvent} from 'react';
 import { refreshDrivePhoto as refreshDrivePhotoRoute } from '@/actions/App/Http/Controllers/Admin/SiswaController';
 import { combinedPdf } from '@/actions/App/Http/Controllers/Admin/StudentReportController';
 import InputError from '@/components/input-error';
+import { PanelPoinSiswa } from '@/components/poin/panel-poin-siswa';
+import type { PoinSiswaPayload } from '@/components/poin/panel-poin-siswa';
 import {
     ATTENDANCE_SERIES,
     PRAYER_SERIES,
@@ -204,6 +207,10 @@ type PageProps = {
     riwayatDzuhur?: Halaman<RiwayatSholatRow>;
     /** Opsional — menembak API Drive, jadi baru diminta saat tombolnya ditekan. */
     drivePhoto?: DrivePhoto;
+    /** Sekolah memakai fitur poin pelanggaran — menentukan ada tidaknya tab Poin. */
+    fiturPoin: boolean;
+    /** Opsional — dimuat saat tab Poin dibuka. */
+    poin?: PoinSiswaPayload | null;
 };
 
 const CARD_TYPES: { value: string; label: string }[] = [
@@ -347,6 +354,8 @@ export default function SiswaShow({
     riwayatDhuha,
     riwayatDzuhur,
     drivePhoto,
+    fiturPoin,
+    poin,
 }: PageProps) {
     const { auth, features, studioUrl } = usePage().props as unknown as {
         auth: { user: { roles?: string[]; permissions?: string[] } | null };
@@ -386,7 +395,11 @@ export default function SiswaShow({
         'profil',
         'absensi',
         ...prayerTabs.map((entry) => entry.value),
+        ...(fiturPoin ? ['poin'] : []),
     ];
+    const bolehKelolaPoin =
+        (auth?.user?.roles ?? []).includes('SUPER_ADMIN') ||
+        (auth?.user?.permissions ?? []).includes('poin-kelola.access');
 
     const [template, setTemplate] = useState(
         photoSheetTemplates[0]?.value ?? '',
@@ -734,6 +747,12 @@ export default function SiswaShow({
                                 {entry.label}
                             </TabsTrigger>
                         ))}
+                        {fiturPoin && (
+                            <TabsTrigger value="poin">
+                                <ShieldAlert className="size-4" />
+                                Poin Pelanggaran
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     <TabsContent value="profil">
@@ -1598,6 +1617,14 @@ export default function SiswaShow({
                             </WhenVisible>
                         </TabsContent>
                     ))}
+
+                    {fiturPoin && (
+                        <TabsContent value="poin">
+                            <WhenVisible data="poin" fallback={<PanelSkeleton />}>
+                                {poin ? <PanelPoinSiswa poin={poin} bolehHapus={bolehKelolaPoin} /> : <PanelSkeleton />}
+                            </WhenVisible>
+                        </TabsContent>
+                    )}
                 </Tabs>
 
                 {/* Ubah orang tua tanpa meninggalkan halaman siswa */}

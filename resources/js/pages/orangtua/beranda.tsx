@@ -14,19 +14,23 @@ import type {
     Filters,
     Panel,
 } from '@/components/orangtua/portal-page';
+import { LevelPill } from '@/components/poin/level-poin';
+import type { LevelPoin } from '@/components/poin/level-poin';
 import { Button } from '@/components/ui/button';
-import { absensi, sholat } from '@/routes/orangtua';
+import { absensi, poin, sholat } from '@/routes/orangtua';
 
 export default function Beranda({
     student,
     panels,
     today,
     filters,
+    poin: ringkasPoin,
 }: {
     student: Anak | null;
     panels: Record<string, Panel>;
     today: Catatan | null;
     filters: Filters | null;
+    poin?: { total: number; level: LevelPoin; semester_mulai: string } | null;
 }) {
     if (!student) {
         return (
@@ -78,6 +82,18 @@ export default function Beranda({
                     </span>
                 )}
             </div>
+
+            {ringkasPoin && (
+                <Link
+                    href={`${poin().url}?anak=${student.id}`}
+                    className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4 transition-colors hover:bg-muted/50"
+                >
+                    <span className="text-sm font-medium">Poin pelanggaran semester ini</span>
+                    <span className="text-lg font-bold tabular-nums">{ringkasPoin.total}</span>
+                    <LevelPill level={ringkasPoin.level} />
+                    <ArrowRight className="ml-auto size-4 text-muted-foreground" />
+                </Link>
+            )}
 
             {absen && (
                 <>

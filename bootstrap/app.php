@@ -155,6 +155,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // per sekolah, jadi satu jam tetap pasti salah untuk sebagian tenant.
         $schedule->command('attendance:notify-absence')->hourly()->withoutOverlapping();
 
+        // Poin pelanggaran otomatis (terlambat / tidak hadir) untuk sekolah
+        // yang menyalakan fiturnya. Jendela waktu sama dengan sapuan di atas.
+        $schedule->command('poin:sapu')->hourly()->withoutOverlapping();
+
         // Peringatan alpa sholat. Hourly, bukan dailyAt(), karena jendela
         // sholat diatur per sekolah — satu jam tetap pasti salah untuk
         // sebagian tenant. Command sendiri yang memutuskan apakah jendela hari

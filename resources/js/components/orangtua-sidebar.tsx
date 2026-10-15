@@ -10,6 +10,7 @@ import {
     Moon,
     Users,
     NotebookPen,
+    ShieldAlert,
 } from 'lucide-react';
 import { NavGroup } from '@/components/nav-main';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ import {
     index,
     izin,
     laporan,
+    poin,
     sholat,
 } from '@/routes/orangtua';
 import { edit as editProfile } from '@/routes/profile';
@@ -69,6 +71,7 @@ export function OrangtuaSidebar() {
         student: Anak | null;
         daftarAnak: Anak[];
         fiturSholat: boolean;
+        fiturPoin: boolean;
     }>();
     const aktif = props.student?.id ?? null;
     const daftar = props.daftarAnak ?? [];
@@ -97,6 +100,15 @@ export function OrangtuaSidebar() {
                       title: 'Absen Sholat',
                       href: withAnak(sholat().url, aktif),
                       icon: Moon,
+                  },
+              ]
+            : []),
+        ...(props.fiturPoin
+            ? [
+                  {
+                      title: 'Poin Pelanggaran',
+                      href: withAnak(poin().url, aktif),
+                      icon: ShieldAlert,
                   },
               ]
             : []),

@@ -3,20 +3,16 @@
 namespace App\Console\Commands;
 
 use App\Enums\AttendanceAlertKind;
-use App\Enums\AttendanceStatus;
-use App\Enums\AttendanceType;
 use App\Enums\SchoolFeature;
 use App\Jobs\SendAttendanceAlert;
-use App\Models\Attendance;
 use App\Models\AttendanceAlert;
-use App\Models\AttendanceSchedule;
 use App\Models\School;
 use App\Models\Student;
+use App\Services\Attendance\DaftarKetidakhadiran;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Kirim kabar terlambat / tidak hadir ke orang tua lewat WhatsApp.
@@ -37,6 +33,11 @@ class NotifyAttendanceAbsenceCommand extends Command
                             {--dry-run : Tampilkan saja, jangan menulis atau mengantrekan}';
 
     protected $description = 'Kirim peringatan WhatsApp untuk siswa yang terlambat atau tidak hadir';
+
+    public function __construct(private readonly DaftarKetidakhadiran $daftar)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -75,7 +76,7 @@ class NotifyAttendanceAbsenceCommand extends Command
             return 0;
         }
 
-        $schedules = $this->schedulesFor($school, $date);
+        $schedules = $this->daftar->jadwal($school, $date);
 
         // Tidak ada jadwal aktif hari ini = bukan hari sekolah. Ini sekaligus
         // penjaga akhir pekan, tanpa perlu tabel hari libur.
@@ -86,8 +87,8 @@ class NotifyAttendanceAbsenceCommand extends Command
         $targets = [];
 
         if ($this->wants($school, AttendanceAlertKind::Terlambat)
-            && $this->windowClosed($schedules, 'late_threshold', $date)) {
-            foreach ($this->lateAttendances($school, $date) as $attendance) {
+            && $this->daftar->jendelaTutup($schedules, 'late_threshold', $date)) {
+            foreach ($this->daftar->terlambat($school, $date) as $attendance) {
                 $targets[] = [
                     'student' => $attendance->student,
                     'kind' => AttendanceAlertKind::Terlambat,
@@ -104,9 +105,9 @@ class NotifyAttendanceAbsenceCommand extends Command
         // Memakai `check_in_end` (bawaannya 08:00) akan menyatakan siswa yang
         // datang pukul 10:00 sebagai tidak hadir, padahal ia masih bisa absen.
         if ($this->wants($school, AttendanceAlertKind::Alpa)
-            && $this->windowClosed($schedules, 'check_out_start', $date)
+            && $this->daftar->jendelaTutup($schedules, 'check_out_start', $date)
             && $this->hasAnyCheckIn($school, $date, $prefix)) {
-            foreach ($this->absentStudents($school, $schedules, $date) as $student) {
+            foreach ($this->daftar->tidakHadir($school, $schedules, $date) as $student) {
                 $targets[] = [
                     'student' => $student,
                     'kind' => AttendanceAlertKind::Alpa,
@@ -120,113 +121,20 @@ class NotifyAttendanceAbsenceCommand extends Command
         return $this->queue($school, $targets, $date, $dryRun, $prefix);
     }
 
-    /**
-     * Jadwal aktif sekolah untuk hari yang dinilai.
-     *
-     * @return Collection<int, AttendanceSchedule>
-     */
-    private function schedulesFor(School $school, Carbon $date): Collection
-    {
-        return AttendanceSchedule::withoutGlobalScope('school')
-            ->where('school_id', $school->id)
-            ->where('day_of_week', $date->dayOfWeekIso)
-            ->where('is_active', true)
-            ->get();
-    }
-
     private function wants(School $school, AttendanceAlertKind $kind): bool
     {
         return (bool) ($school->getSetting($kind->settingKey()) ?? true);
     }
 
-    /**
-     * Jam terakhir dari kolom yang diminta, di seluruh jadwal hari itu, sudah
-     * lewat plus tenggang?
-     *
-     * Dipakai jam TERBESAR supaya kelas yang jendelanya paling panjang tidak
-     * dinilai lebih dulu dari waktunya. Tanggal lampau selalu dianggap tutup.
-     *
-     * @param  Collection<int, AttendanceSchedule>  $schedules
-     */
-    private function windowClosed(Collection $schedules, string $column, Carbon $date): bool
-    {
-        if (! $date->isSameDay(SchoolTime::today())) {
-            return true;
-        }
-
-        $latest = $schedules
-            ->map(fn (AttendanceSchedule $schedule) => $schedule->momentOn($column, $date))
-            ->max();
-
-        $grace = (int) config('attendance.absence_grace_minutes', 30);
-
-        return SchoolTime::now()->greaterThan($latest->copy()->addMinutes($grace));
-    }
-
-    /**
-     * Penjaga hari libur.
-     *
-     * Nol check-in sepanjang hari hampir pasti berarti libur yang tidak
-     * terdaftar di jadwal — bukan seluruh siswa membolos bersamaan. Tanpa
-     * penjaga ini, satu libur nasional mengirimi SETIAP orang tua pesan "anak
-     * Anda tidak hadir".
-     */
     private function hasAnyCheckIn(School $school, Carbon $date, string $prefix): bool
     {
-        $any = Attendance::withoutGlobalScope('school')
-            ->where('school_id', $school->id)
-            ->whereDate('attendance_date', $date->toDateString())
-            ->where('type', AttendanceType::CheckIn->value)
-            ->exists();
+        $any = $this->daftar->adaCheckIn($school, $date);
 
         if (! $any) {
             $this->line("{$prefix}<comment>{$school->name}</comment>: nol check-in hari ini, dianggap libur.");
         }
 
         return $any;
-    }
-
-    /**
-     * @return Collection<int, Attendance>
-     */
-    private function lateAttendances(School $school, Carbon $date): Collection
-    {
-        return Attendance::withoutGlobalScope('school')
-            ->with(['student.parentProfile', 'student.classroom'])
-            ->where('school_id', $school->id)
-            ->whereDate('attendance_date', $date->toDateString())
-            ->where('type', AttendanceType::CheckIn->value)
-            ->where('status', AttendanceStatus::Terlambat->value)
-            ->get();
-    }
-
-    /**
-     * Siswa yang tidak punya absen masuk hari ini.
-     *
-     * `IZIN` dan `SAKIT` adalah ketidakhadiran berizin dan tidak pernah jadi
-     * sasaran. `ALPA` yang diisi admin manual justru ikut, karena itu memang
-     * pernyataan eksplisit bahwa siswanya tidak datang.
-     *
-     * @param  Collection<int, AttendanceSchedule>  $schedules
-     * @return Collection<int, Student>
-     */
-    private function absentStudents(School $school, Collection $schedules, Carbon $date): Collection
-    {
-        $global = $schedules->contains(fn (AttendanceSchedule $s) => $s->classroom_id === null);
-        $classroomIds = $schedules->pluck('classroom_id')->filter()->all();
-
-        return Student::withoutGlobalScope('school')
-            ->with(['parentProfile', 'classroom'])
-            ->where('school_id', $school->id)
-            ->where('is_active', true)
-            // Jadwal khusus kelas hanya menjangkau kelas itu. Kalau ada jadwal
-            // global (classroom_id null), seluruh siswa masuk hitungan.
-            ->when(! $global, fn ($q) => $q->whereIn('classroom_id', $classroomIds))
-            ->whereDoesntHave('attendances', fn ($q) => $q
-                ->whereDate('attendance_date', $date->toDateString())
-                ->where('type', AttendanceType::CheckIn->value)
-                ->where('status', '!=', AttendanceStatus::Alpa->value))
-            ->get();
     }
 
     /**

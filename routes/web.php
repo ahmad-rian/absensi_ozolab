@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\PengaturanController;
 use App\Http\Controllers\Admin\PerizinanController;
 use App\Http\Controllers\Admin\PhotoSheetBatchController;
 use App\Http\Controllers\Admin\PhotoSheetController;
+use App\Http\Controllers\Admin\PoinController;
 use App\Http\Controllers\Admin\RfidCardController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\SchoolController;
@@ -366,6 +367,19 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
         Route::post('{izin}/setujui', [PerizinanController::class, 'setujui'])->name('setujui');
         Route::post('{izin}/tolak', [PerizinanController::class, 'tolak'])->name('tolak');
         Route::get('{izin}/bukti', [PerizinanController::class, 'bukti'])->name('bukti');
+    });
+
+    // Poin pelanggaran siswa: Guru melihat, Admin (guru BK) mencatat & mengatur.
+    Route::middleware(['permission:poin.access', 'feature:poin_pelanggaran'])->prefix('poin')->name('admin.poin.')->group(function () {
+        Route::get('/', [PoinController::class, 'index'])->name('index');
+        Route::get('riwayat', [PoinController::class, 'riwayat'])->name('riwayat');
+    });
+    Route::middleware(['permission:poin-kelola.access', 'feature:poin_pelanggaran'])->prefix('poin')->name('admin.poin.')->group(function () {
+        Route::post('/', [PoinController::class, 'store'])->name('store');
+        Route::get('cari-siswa', [PoinController::class, 'cariSiswa'])->middleware('throttle:60,1')->name('cari-siswa');
+        Route::delete('{poin}', [PoinController::class, 'destroy'])->name('destroy');
+        Route::get('pengaturan', [PoinController::class, 'pengaturan'])->name('pengaturan');
+        Route::put('pengaturan', [PoinController::class, 'simpanPengaturan'])->name('pengaturan.update');
     });
 
     Route::middleware(['permission:laporan.access', 'feature:laporan'])->group(function () {
@@ -744,6 +758,7 @@ Route::middleware(['auth', 'permission:portal-orang-tua.access', 'password.ganti
         Route::get('laporan', [PortalController::class, 'laporan'])->name('laporan');
         Route::get('galeri', [PortalController::class, 'galeri'])->name('galeri');
         Route::get('izin', [PortalController::class, 'izin'])->name('izin');
+        Route::get('poin', [PortalController::class, 'poin'])->name('poin');
         Route::post('izin', [PortalController::class, 'ajukanIzin'])->middleware('throttle:10,1')->name('izin.store');
         Route::get('unduh/{asset}', [PortalController::class, 'download'])->name('download');
 

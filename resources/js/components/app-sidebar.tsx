@@ -27,6 +27,7 @@ import {
     School,
     Settings,
     Shapes,
+    ShieldAlert,
     ShieldCheck,
     UserCog,
     Users,
@@ -102,6 +103,7 @@ export const sections: NavSection[] = [
         items: [
             { title: 'Absensi', href: '/admin/absensi', icon: CalendarCheck, permission: 'absensi.access', feature: 'absensi_sekolah' },
             { title: 'Data Perizinan', href: '/admin/perizinan', icon: FileCheck, permission: 'perizinan.access', feature: 'absensi_sekolah' },
+            { title: 'Poin Siswa', href: '/admin/poin', icon: ShieldAlert, permission: 'poin.access', feature: 'poin_pelanggaran' },
             { title: 'Jadwal Absensi', href: '/admin/jadwal-absensi', icon: Clock, permission: 'jadwal-absensi.access', feature: 'absensi_sekolah' },
             { title: 'Kartu RFID', href: '/admin/rfid-cards', icon: CreditCard, permission: 'kartu-rfid.access', feature: 'absensi_rfid' },
             { title: 'Kunjungan Perpus', href: '/admin/kunjungan-perpus', icon: BookOpen, permission: 'kunjungan-perpus.access', feature: 'kunjungan_perpustakaan' },

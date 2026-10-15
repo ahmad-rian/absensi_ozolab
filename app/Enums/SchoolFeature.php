@@ -28,6 +28,7 @@ enum SchoolFeature: string
     case SholatDzuhur = 'sholat_dzuhur';
     case SholatDhuha = 'sholat_dhuha';
     case Laporan = 'laporan';
+    case PoinPelanggaran = 'poin_pelanggaran';
 
     // --- Notifikasi ---
     case NotifAbsensi = 'notif_absensi';
@@ -90,6 +91,8 @@ enum SchoolFeature: string
             self::AbsensiRfid => false,
             // Butuh perangkat scan sendiri di perpustakaan.
             self::KunjunganPerpustakaan => false,
+            // Fitur baru: sekolah menyalakannya sendiri setelah angka poinnya diatur.
+            self::PoinPelanggaran => false,
             default => true,
         };
     }
@@ -104,6 +107,7 @@ enum SchoolFeature: string
             self::SholatDzuhur => 'Absen Sholat Dzuhur',
             self::SholatDhuha => 'Absen Sholat Dhuha',
             self::Laporan => 'Laporan',
+            self::PoinPelanggaran => 'Poin Pelanggaran Siswa',
             self::NotifAbsensi => 'Notifikasi Absensi',
             self::NotifAlpaSholat => 'Notifikasi Alpa Sholat',
             self::InboxNotifikasi => 'Inbox Notifikasi',
@@ -126,6 +130,7 @@ enum SchoolFeature: string
             self::SholatDzuhur => 'Absen sholat dzuhur di mushola lewat halaman scan sholat.',
             self::SholatDhuha => 'Absen sholat dhuha pagi. Jendela waktunya terpisah dari dzuhur.',
             self::Laporan => 'Menu Laporan beserta export CSV dan PDF.',
+            self::PoinPelanggaran => 'Poin kesalahan siswa: otomatis saat terlambat/tidak hadir, plus catatan guru BK. Angka dan level diatur sekolah.',
             self::NotifAbsensi => 'Kirim notifikasi ke orang tua tiap siswa scan masuk atau pulang.',
             self::NotifAlpaSholat => 'Kirim peringatan ke orang tua bila siswa tidak sholat beberapa hari berturut-turut.',
             self::InboxNotifikasi => 'Menu Notifikasi berisi riwayat pengiriman pesan.',
@@ -143,7 +148,7 @@ enum SchoolFeature: string
         return match ($this) {
             self::MasterSiswa, self::AbsensiSekolah, self::AbsensiRfid,
             self::KunjunganPerpustakaan, self::SholatDzuhur,
-            self::SholatDhuha, self::Laporan => 'Akademik',
+            self::SholatDhuha, self::Laporan, self::PoinPelanggaran => 'Akademik',
 
             self::NotifAbsensi, self::NotifAlpaSholat,
             self::InboxNotifikasi => 'Notifikasi',
@@ -171,6 +176,7 @@ enum SchoolFeature: string
             self::AbsensiRfid => [AppModule::RfidCards],
             self::KunjunganPerpustakaan => [AppModule::KunjunganPerpus],
             self::Laporan => [AppModule::Laporan],
+            self::PoinPelanggaran => [AppModule::Poin, AppModule::PoinKelola],
             self::InboxNotifikasi => [AppModule::Notifikasi],
             self::KartuAlbum => [
                 AppModule::Frames, AppModule::CardLayouts, AppModule::CardGeneration,

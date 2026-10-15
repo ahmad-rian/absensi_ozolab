@@ -7,16 +7,20 @@ use App\Enums\SchoolFeature;
 use App\Http\Controllers\Controller;
 use App\Models\CardGenerationLog;
 use App\Models\PengajuanIzin;
+use App\Models\PoinSiswa;
 use App\Models\Student;
 use App\Services\Berkas\BerkasKeluaran;
 use App\Services\Perizinan\PerizinanService;
+use App\Services\Poin\RekapPoin;
 use App\Services\Student\StudentReportBuilder;
 use App\Services\Student\StudentStatsBuilder;
+use App\Support\PoinSettings;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use App\Support\StudentPhotoStorage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -34,6 +38,7 @@ class PortalController extends Controller
     public function __construct(
         private readonly StudentStatsBuilder $stats,
         private readonly StudentReportBuilder $reports,
+        private readonly RekapPoin $rekap,
     ) {}
 
     public function index(Request $request): Response
@@ -51,6 +56,7 @@ class PortalController extends Controller
             'panels' => $this->panels($student, $start, $end),
             'today' => $hariIni['recent'][0] ?? null,
             'filters' => ['start_date' => $start, 'end_date' => $end],
+            'poin' => $this->poinAktif($student) ? $this->ringkasPoin($student) : null,
         ]));
     }
 
@@ -177,6 +183,43 @@ class PortalController extends Controller
         ]));
     }
 
+    /**
+     * Poin pelanggaran anak di semester berjalan. Hanya baca — sekolah yang
+     * mencatat.
+     */
+    public function poin(Request $request): Response
+    {
+        $student = $this->student($request);
+        abort_unless($this->poinAktif($student), 404);
+
+        $rekap = $this->rekap->untukSiswa($student, PoinSettings::for($student->school));
+
+        return Inertia::render('orangtua/poin', $this->shell($request, [
+            'poin' => [
+                ...Arr::except($rekap, 'riwayat'),
+                'riwayat' => $rekap['riwayat']->map(fn (PoinSiswa $p) => [
+                    'id' => $p->id,
+                    'tanggal' => $p->tanggal,
+                    'sumber' => $p->sumber,
+                    'label' => $p->label(),
+                    'poin' => $p->poin,
+                    'alasan' => $p->alasan,
+                ])->values(),
+            ],
+        ]));
+    }
+
+    /**
+     * @return array{total: int, level: ?string, semester_mulai: string}
+     */
+    private function ringkasPoin(Student $student): array
+    {
+        $setup = PoinSettings::for($student->school);
+        $total = $this->rekap->totalSiswa($student, $setup);
+
+        return ['total' => $total, 'level' => $setup->levelUntuk($total), 'semester_mulai' => $setup->semesterMulai];
+    }
+
     public function ajukanIzin(Request $request, PerizinanService $perizinan): RedirectResponse
     {
         $student = $this->student($request);
@@ -213,8 +256,15 @@ class PortalController extends Controller
                 ? SchoolFeatures::for($student->school)->enabled(SchoolFeature::SholatDhuha)
                     || SchoolFeatures::for($student->school)->enabled(SchoolFeature::SholatDzuhur)
                 : false,
+            'fiturPoin' => $this->poinAktif($student),
             ...$extra,
         ];
+    }
+
+    private function poinAktif(?Student $student): bool
+    {
+        return $student?->school !== null
+            && SchoolFeatures::for($student->school)->enabled(SchoolFeature::PoinPelanggaran);
     }
 
     private function student(Request $request): ?Student

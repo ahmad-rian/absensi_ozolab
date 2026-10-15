@@ -9,20 +9,24 @@ use App\Models\CardGenerationBatch;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
 use App\Models\ParentProfile;
+use App\Models\PoinSiswa;
 use App\Models\Student;
 use App\Services\Attendance\QrTokenGenerator;
 use App\Services\Berkas\BerkasKeluaran;
 use App\Services\PhotoSheetGeneratorService;
+use App\Services\Poin\RekapPoin;
 use App\Services\Student\RiwayatAbsensi;
 use App\Services\Student\StudentDrivePhotoLocator;
 use App\Services\Student\StudentPhotoIntake;
 use App\Services\Student\StudentStatsBuilder;
+use App\Support\PoinSettings;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use App\Support\StudentAssetPurge;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -141,7 +145,36 @@ class SiswaController extends Controller
             // Menembak API Drive dua kali, jadi baru dijalankan ketika operator
             // benar-benar menekan tombolnya — bukan di setiap kunjungan halaman.
             'drivePhoto' => Inertia::optional(fn () => $this->drivePhotoPayload($siswa, $locator)),
+            // Tab Poin hanya ada bila sekolahnya memakai fitur poin; isinya
+            // baru dihitung saat tab dibuka.
+            'fiturPoin' => $this->poinAktif($siswa),
+            'poin' => Inertia::optional(fn () => $this->poinPayload($siswa)),
         ]);
+    }
+
+    private function poinAktif(Student $siswa): bool
+    {
+        $siswa->loadMissing('school');
+
+        return $siswa->school !== null
+            && SchoolFeatures::for($siswa->school)->enabled(SchoolFeature::PoinPelanggaran);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function poinPayload(Student $siswa): ?array
+    {
+        if (! $this->poinAktif($siswa)) {
+            return null;
+        }
+
+        $rekap = app(RekapPoin::class)->untukSiswa($siswa, PoinSettings::for($siswa->school));
+
+        return [
+            ...Arr::except($rekap, 'riwayat'),
+            'riwayat' => $rekap['riwayat']->map(fn (PoinSiswa $p) => PoinController::baris($p))->values(),
+        ];
     }
 
     /**

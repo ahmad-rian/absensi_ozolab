@@ -18,6 +18,8 @@ enum AppModule: string
     case JadwalAbsensi = 'jadwal-absensi';
     case Absensi = 'absensi';
     case Perizinan = 'perizinan';
+    case Poin = 'poin';
+    case PoinKelola = 'poin-kelola';
     case RfidCards = 'kartu-rfid';
     case KunjunganPerpus = 'kunjungan-perpus';
     case Laporan = 'laporan';
@@ -64,6 +66,8 @@ enum AppModule: string
             self::JadwalAbsensi => 'Jadwal Absensi',
             self::Absensi => 'Absensi',
             self::Perizinan => 'Data Perizinan',
+            self::Poin => 'Poin Siswa (lihat)',
+            self::PoinKelola => 'Kelola Poin Siswa (catat, hapus, atur)',
             self::RfidCards => 'Kartu RFID',
             self::KunjunganPerpus => 'Kunjungan Perpus',
             self::Laporan => 'Laporan',
@@ -100,8 +104,8 @@ enum AppModule: string
     {
         return match ($this) {
             self::Dashboard, self::Siswa, self::OrangTua, self::Kelas,
-            self::JadwalAbsensi, self::Absensi, self::Perizinan, self::RfidCards,
-            self::KunjunganPerpus, self::Laporan,
+            self::JadwalAbsensi, self::Absensi, self::Perizinan, self::Poin, self::PoinKelola,
+            self::RfidCards, self::KunjunganPerpus, self::Laporan,
             self::PortalOrangTua, self::Notifikasi => 'Akademik',
 
             self::Frames, self::CardLayouts, self::CardGeneration,
@@ -141,15 +145,15 @@ enum AppModule: string
 
             UserRole::Admin => [
                 self::Dashboard, self::Siswa, self::OrangTua, self::Kelas,
-                self::JadwalAbsensi, self::Absensi, self::Perizinan, self::RfidCards,
-                self::KunjunganPerpus, self::Laporan,
+                self::JadwalAbsensi, self::Absensi, self::Perizinan, self::Poin, self::PoinKelola,
+                self::RfidCards, self::KunjunganPerpus, self::Laporan,
                 self::Notifikasi, self::Frames, self::CardLayouts, self::CardGeneration,
                 self::AlbumLayouts, self::AlbumGeneration, self::PhotoSheets,
                 self::Pengaturan, self::Users, self::DriveConfig, self::WaConfig,
             ],
 
             UserRole::Guru => [
-                self::Dashboard, self::Siswa, self::Absensi, self::Perizinan,
+                self::Dashboard, self::Siswa, self::Absensi, self::Perizinan, self::Poin,
                 self::Laporan, self::Notifikasi,
             ],
 

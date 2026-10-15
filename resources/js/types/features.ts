@@ -13,6 +13,7 @@ export type SchoolFeatureKey =
     | 'sholat_dzuhur'
     | 'sholat_dhuha'
     | 'laporan'
+    | 'poin_pelanggaran'
     | 'notif_absensi'
     | 'notif_alpa_sholat'
     | 'inbox_notifikasi'
