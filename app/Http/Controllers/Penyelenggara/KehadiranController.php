@@ -34,6 +34,14 @@ class KehadiranController extends Controller
     {
         $tanggal = $request->input('tanggal') ?: CarbonImmutable::now($program->timezone)->toDateString();
         $sesis = Sesi::where('program_id', $program->id)->where('tanggal', $tanggal)->orderBy('datang_mulai')->get();
+
+        // Pendamping hanya melihat sesi umum dan sesi yang targetnya menyentuh
+        // grupnya (sesi grup induk ikut berlaku untuk grup anak).
+        $grupTerlihat = $this->peserta->grupTerlihat($request->user(), $program);
+        if ($grupTerlihat !== null) {
+            $sesis = $sesis->filter(fn (Sesi $s) => ! $s->grup_id
+                || array_intersect(Grup::denganTurunan($program->id, [$s->grup_id]), $grupTerlihat) !== [])->values();
+        }
         $sesi = $sesis->firstWhere('id', $request->input('sesi')) ?? $sesis->first();
 
         $baris = collect();
@@ -48,8 +56,13 @@ class KehadiranController extends Controller
                 $query->whereHas('grups', fn ($q) => $q->whereIn('grups.id', Grup::denganTurunan($program->id, [$request->grup])));
             }
 
-            $kehadiran = Kehadiran::where('sesi_id', $sesi->id)->get()->keyBy('card_form_submission_id');
-            $baris = $query->get()->map(function (CardFormSubmission $p) use ($kehadiran) {
+            $peserta = $query->get();
+            // Hanya kehadiran peserta yang boleh dilihat: riwayat perubahan
+            // dibangun dari sini, jadi pendamping tidak melihat grup lain.
+            $kehadiran = Kehadiran::where('sesi_id', $sesi->id)
+                ->whereIn('card_form_submission_id', $peserta->pluck('id'))
+                ->get()->keyBy('card_form_submission_id');
+            $baris = $peserta->map(function (CardFormSubmission $p) use ($kehadiran) {
                 // `$koleksi[$id]?->x` tetap memanggil offsetGet dan melempar untuk
                 // peserta yang belum punya kehadiran — ambil lewat get().
                 $k = $kehadiran->get($p->id);

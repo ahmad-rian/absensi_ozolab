@@ -194,3 +194,24 @@ test('form peserta mengirim status arsip supaya tombol Pulihkan hanya muncul bil
     $this->actingAs($admin)->get(route('penyelenggara.peserta.edit', $p))
         ->assertInertia(fn ($page) => $page->where('peserta.archived', true));
 });
+
+// ── audit 2: kebocoran riwayat ke pendamping ───────────────────────────────
+test('pendamping tidak melihat sesi maupun riwayat perubahan grup lain', function () {
+    [$admin, $program] = konteksP1();
+    $pendamping = createPenyelenggaraUser('PENDAMPING', $admin->penyelenggara);
+    $grupku = Grup::factory()->create(['program_id' => $program->id, 'penyelenggara_id' => $admin->penyelenggara_id]);
+    $lain = Grup::factory()->create(['program_id' => $program->id, 'penyelenggara_id' => $admin->penyelenggara_id]);
+    $grupku->pendamping()->attach($pendamping->id);
+    $milikku = CardFormSubmission::acrossPenyelenggara()->create(['card_form_id' => $program->card_form_id, 'data' => ['nama' => 'A'], 'status' => 'draft']);
+    $milikku->grups()->attach($grupku->id);
+    $orangLain = CardFormSubmission::acrossPenyelenggara()->create(['card_form_id' => $program->card_form_id, 'data' => ['nama' => 'B'], 'status' => 'draft']);
+    $orangLain->grups()->attach($lain->id);
+    $umum = Sesi::acrossPenyelenggara()->create(['penyelenggara_id' => $program->penyelenggara_id, 'program_id' => $program->id, 'name' => 'Umum', 'tanggal' => '2027-06-10', 'datang_mulai' => '07:00:00', 'datang_selesai' => '08:00:00']);
+    Sesi::acrossPenyelenggara()->create(['penyelenggara_id' => $program->penyelenggara_id, 'program_id' => $program->id, 'grup_id' => $lain->id, 'name' => 'Khusus Lain', 'tanggal' => '2027-06-10', 'datang_mulai' => '09:00:00', 'datang_selesai' => '10:00:00']);
+    $this->actingAs($admin)->put(route('penyelenggara.kehadiran.update', [$umum, $orangLain]), ['status' => 'SAKIT']);
+
+    $this->actingAs($pendamping)->get(route('penyelenggara.kehadiran.index', [$program, 'tanggal' => '2027-06-10', 'sesi' => $umum->id]))
+        ->assertInertia(fn ($page) => $page->has('sesis', 1)
+            ->where('sesis.0.name', 'Umum')
+            ->has('riwayat', 0));
+});
