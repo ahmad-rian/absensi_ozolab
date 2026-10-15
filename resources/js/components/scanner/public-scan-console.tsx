@@ -1,4 +1,5 @@
 import type { Html5Qrcode } from 'html5-qrcode';
+import type { Html5QrcodeFullConfig, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import {
     BookOpen,
     Camera,
@@ -16,7 +17,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-sound';
+import { playErrorSound, playReadTick, playSuccessSound } from '@/components/scanner/use-scan-sound';
 
 /*
     `html5-qrcode` diunduh saat dibutuhkan, bukan saat halaman dibuka.
@@ -30,15 +31,20 @@ import { playErrorSound, playSuccessSound } from '@/components/scanner/use-scan-
     Promise-nya disimpan di tingkat modul, jadi satu halaman memuatnya paling
     banyak sekali betapa pun seringnya jalur kamera dicoba ulang.
 */
-type KelasHtml5Qrcode = (new (elementId: string) => Html5Qrcode) & {
+type KelasHtml5Qrcode = (new (elementId: string, config?: Html5QrcodeFullConfig) => Html5Qrcode) & {
     getCameras(): Promise<Array<{ id: string; label: string }>>;
 };
 
-let pustakaKamera: Promise<KelasHtml5Qrcode> | null = null;
+type PustakaKamera = { Kelas: KelasHtml5Qrcode; formatQr: Html5QrcodeSupportedFormats };
 
-function muatPustakaKamera(): Promise<KelasHtml5Qrcode> {
+let pustakaKamera: Promise<PustakaKamera> | null = null;
+
+function muatPustakaKamera(): Promise<PustakaKamera> {
     if (!pustakaKamera) {
-        pustakaKamera = import('html5-qrcode').then((m) => m.Html5Qrcode);
+        pustakaKamera = import('html5-qrcode').then((m) => ({
+            Kelas: m.Html5Qrcode,
+            formatQr: m.Html5QrcodeSupportedFormats.QR_CODE,
+        }));
     }
 
     return pustakaKamera;
@@ -129,6 +135,26 @@ const DATE_FMT: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', 
  * sedetik setelah dia benar-benar berhasil.
  */
 const SAME_CARD_MS = 1500;
+
+/** Frame per detik yang diperiksa. Detektor bawaan sanggup jauh di atas 15. */
+const FPS_PINDAI = 25;
+
+/**
+ * Minta autofokus kontinu bila kamera mendukung. Banyak kamera ponsel
+ * memulai dengan fokus tetap sehingga kartu yang didekatkan kabur dan QR-nya
+ * tidak pernah terbaca — aplikasi QRIS selalu menyalakan ini.
+ */
+async function fokusKontinu(scanner: Html5Qrcode): Promise<void> {
+    try {
+        const kemampuan = scanner.getRunningTrackCapabilities() as MediaTrackCapabilities & { focusMode?: string[] };
+
+        if (kemampuan.focusMode?.includes('continuous')) {
+            await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] });
+        }
+    } catch {
+        /* Tidak semua peramban mengizinkan; kamera tetap jalan dengan fokus bawaannya. */
+    }
+}
 
 /** Umur kartu hasil di layar. Scan baru tetap menggantikannya seketika. */
 const RESULT_MS = 2500;
@@ -236,6 +262,8 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     const [cameras, setCameras] = useState<CameraDevice[]>([]);
     const [selectedCamera, setSelectedCamera] = useState<string>('');
     const [lastResult, setLastResult] = useState<ScanResult | null>(null);
+    /** QR sudah terbaca dan sedang dikirim ke server. */
+    const [memproses, setMemproses] = useState(false);
     const [scanLog, setScanLog] = useState<ScanLogItem[]>([]);
     /**
      * Bentuk bacaan terakhir, ditampilkan hanya saat gagal.
@@ -369,6 +397,10 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             if (recent.has(token)) return;
 
             inFlightRef.current.add(token);
+            // Bunyi dan getar SEKETIKA saat QR terbaca, sebelum server menjawab —
+            // seperti aplikasi QRIS. Jawaban server menyusul lewat suara hasil.
+            playReadTick();
+            setMemproses(true);
             setLastProbe({ len: token.length, awal: token.slice(0, 3), akhir: token.slice(-3) });
 
             try {
@@ -457,6 +489,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 playErrorSound('Gagal menghubungi server');
             } finally {
                 inFlightRef.current.delete(token);
+                if (mountedRef.current && inFlightRef.current.size === 0) setMemproses(false);
             }
 
             if (resultTimeout.current) clearTimeout(resultTimeout.current);
@@ -479,8 +512,10 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
      * terlihat.
      */
     const kotakPindai = useCallback((lebar: number, tinggi: number) => {
+        // 90%: kartu yang tidak pas di tengah tetap terbaca. Dengan detektor
+        // bawaan peramban, area besar tidak membuat pemindaian lebih berat.
         const kecil = Math.min(lebar, tinggi);
-        const sisi = Math.min(kecil, Math.max(120, Math.floor(kecil * 0.75)));
+        const sisi = Math.min(kecil, Math.max(120, Math.floor(kecil * 0.9)));
 
         return { width: sisi, height: sisi };
     }, []);
@@ -539,7 +574,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             }
 
             try {
-                const Pustaka = await muatPustakaKamera();
+                const { Kelas: Pustaka, formatQr } = await muatPustakaKamera();
 
                 /*
                  * Dicoba berurutan sampai ada yang menyala, bukan sekali lalu
@@ -560,11 +595,19 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                     { facingMode: 'user' },
                 ];
 
-                const setelan = {
-                    fps: 15,
-                    qrbox: kotakPindai,
-                    disableFlip: false,
-                    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+                /*
+                 * Kenapa dulu terasa lambat dibanding aplikasi QRIS:
+                 * `useBarCodeDetectorIfSupported` dioper ke `start()`, padahal itu
+                 * opsi KONSTRUKTOR — diabaikan diam-diam, sehingga detektor QR
+                 * bawaan perangkat (cepat, dipakai Chrome Android) tidak pernah
+                 * dipakai dan semua ponsel jatuh ke ZXing JavaScript yang
+                 * mencoba belasan format barcode tiap frame. Kartu hanya
+                 * memakai QR, jadi formatnya dibatasi ke QR saja.
+                 */
+                const konfigurasi: Html5QrcodeFullConfig = {
+                    verbose: false,
+                    formatsToSupport: [formatQr],
+                    useBarCodeDetectorIfSupported: true,
                 };
 
                 let terakhir: unknown = null;
@@ -582,12 +625,26 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                      * gunanya. Terlihat pertama kali di harness CDP, bukan di
                      * lapangan.
                      */
-                    const scanner = new Pustaka(readerId);
+                    const scanner = new Pustaka(readerId, konfigurasi);
                     scannerRef.current = scanner;
 
                     try {
-                        await scanner.start(constraint, setelan, (text) => submitScan(text), () => {});
+                        await scanner.start(
+                            constraint,
+                            {
+                                fps: FPS_PINDAI,
+                                qrbox: kotakPindai,
+                                disableFlip: false,
+                                // Resolusi lebih tinggi supaya QR kecil/jauh tetap
+                                // terbaca. `ideal`, bukan `exact`: kamera yang tidak
+                                // sanggup tetap menyala di resolusi terbaiknya.
+                                videoConstraints: { ...constraint, width: { ideal: 1280 }, height: { ideal: 720 } },
+                            },
+                            (text) => submitScan(text),
+                            () => {},
+                        );
                         nyala = true;
+                        await fokusKontinu(scanner);
                         break;
                     } catch (err) {
                         terakhir = err;
@@ -665,7 +722,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             }
 
             try {
-                const Pustaka = await muatPustakaKamera();
+                const { Kelas: Pustaka } = await muatPustakaKamera();
                 const devices = await Pustaka.getCameras();
                 if (!mountedRef.current) return;
 
@@ -923,6 +980,14 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                                     <RefreshCw className="size-4" /> Coba Lagi
                                 </button>
                                 <p className="mt-1 text-xs text-slate-500">Barcode gun tetap berfungsi tanpa kamera.</p>
+                            </div>
+                        )}
+
+                        {memproses && !lastResult && (
+                            <div className="absolute inset-x-0 top-3 z-10 flex justify-center">
+                                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-semibold text-white shadow-lg">
+                                    <Loader2 className="size-4 animate-spin" /> QR terbaca, memproses…
+                                </span>
                             </div>
                         )}
 

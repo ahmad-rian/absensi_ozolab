@@ -108,6 +108,20 @@ if (typeof window !== 'undefined') {
     window.addEventListener('keydown', bukaKunci, { once: false });
 }
 
+/**
+ * Bunyi "tik" pendek + getar saat QR baru terbaca, sebelum server menjawab.
+ * Sengaja tanpa suara ucapan supaya tidak memotong pengumuman hasil.
+ */
+export function playReadTick() {
+    playTone(1760, 0.06, 'square', 0.15);
+
+    try {
+        navigator.vibrate?.(30);
+    } catch {
+        // Tidak semua perangkat punya getar.
+    }
+}
+
 export function playSuccessSound(studentName?: string) {
     // Cheerful tone first
     playTone(880, 0.12, 'sine', 0.2);
