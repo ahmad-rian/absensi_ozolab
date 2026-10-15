@@ -83,6 +83,27 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute(600)->by('scan-gerbang:'.($kunci ?: $request->ip()));
         });
+
+        /*
+            Form izin publik: dibatasi per IP DAN per sesi. Per IP menahan
+            satu mesin yang membanjiri; per sesi menahan satu peramban yang
+            berganti-ganti IP. Batas per IP sengaja longgar karena orang tua
+            bisa berbagi IP lewat wifi sekolah atau operator seluler (CGNAT).
+        */
+        RateLimiter::for('izin-publik', fn (Request $request) => [
+            Limit::perMinute(60)->by('izin-ip:'.$request->ip()),
+            Limit::perHour(600)->by('izin-ip-jam:'.$request->ip()),
+            Limit::perMinute(30)->by('izin-sesi:'.$request->session()->getId()),
+        ]);
+        RateLimiter::for('izin-verifikasi', fn (Request $request) => [
+            Limit::perMinute(15)->by('izin-verif-ip:'.$request->ip()),
+            Limit::perMinute(6)->by('izin-verif-sesi:'.$request->session()->getId()),
+        ]);
+        RateLimiter::for('izin-kirim', fn (Request $request) => [
+            Limit::perMinute(10)->by('izin-kirim-ip:'.$request->ip()),
+            Limit::perDay(100)->by('izin-kirim-ip-hari:'.$request->ip()),
+            Limit::perMinute(3)->by('izin-kirim-sesi:'.$request->session()->getId()),
+        ]);
     }
 
     /**

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export type FieldType = 'text' | 'date' | 'number' | 'select' | 'photo';
+export type FieldType = 'text' | 'date' | 'number' | 'select' | 'kecamatan' | 'photo';
 
 export type FormField = {
     key: string;
@@ -21,6 +21,7 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
     date: 'Tanggal',
     number: 'Angka',
     select: 'Pilihan',
+    kecamatan: 'Kecamatan (Barlingmascakep)',
     photo: 'Foto',
 };
 

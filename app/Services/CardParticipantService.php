@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\GenerateDynamicCardJob;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
+use App\Support\KecamatanBarlingmascakep;
 use App\Support\StudentPhotoStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -110,6 +111,7 @@ class CardParticipantService
                 'number' => ['numeric'],
                 'date' => ['date'],
                 'select' => ['string', Rule::in($field['options'] ?? [])],
+                'kecamatan' => ['string', Rule::in(KecamatanBarlingmascakep::nilai())],
                 default => ['string', 'max:1000'],
             });
         }

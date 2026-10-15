@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { PemilihKonteks } from '@/components/general/pemilih-konteks';
 import { GeneralSidebar } from '@/components/general-sidebar';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
 import type { AppLayoutProps } from '@/types';
@@ -31,7 +32,10 @@ export default function GeneralLayout({
                 <GeneralSidebar />
                 <AppContent variant="sidebar" className="overflow-x-hidden">
                     <ImpersonationBanner />
-                    <AppSidebarHeader breadcrumbs={breadcrumbs} />
+                    <AppSidebarHeader
+                        breadcrumbs={breadcrumbs}
+                        kanan={<PemilihKonteks />}
+                    />
                     {children}
                 </AppContent>
             </AppShell>

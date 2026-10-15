@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     BookOpen,
+    CalendarClock,
     Building2,
     CalendarRange,
     ClipboardCheck,
@@ -15,12 +16,15 @@ import {
     LifeBuoy,
     MessageSquare,
     Settings,
+    Settings2,
     Shapes,
     UserCog,
     Users,
     Wand2,
 } from 'lucide-react';
 import BrandLogo from '@/components/brand-logo';
+import { useKonteksGeneral } from '@/components/general/pemilih-konteks';
+import type { KonteksAktif } from '@/components/general/pemilih-konteks';
 import { NavCollapsibleGroup, NavGroup } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -44,56 +48,125 @@ export type GeneralSection = { label: string; items: NavItem[] };
 export const generalUtama: NavItem[] = [
     { title: 'Ringkasan', href: '/general', icon: LayoutGrid },
     { title: 'Penyelenggara', href: '/general/penyelenggara', icon: Building2 },
+    { title: 'Semua Kategori', href: '/general/kategori', icon: Shapes },
+    { title: 'Semua Program', href: '/general/program', icon: CalendarRange },
     { title: 'Pengguna', href: '/general/pengguna', icon: UserCog },
 ];
 
+/**
+ * Menu kategori aktif. Sama untuk semua kategori — isinya mengikuti pilihan
+ * di kanan atas. Haji lama memakai halaman `/kartu-bebas/*` yang sudah ada,
+ * kategori baru memakai halaman program di area penyelenggara.
+ */
+export function menuKonteks(aktif: KonteksAktif | null): GeneralSection[] {
+    if (!aktif || aktif.jenis === 'haji') {
+        return [
+            {
+                label: aktif?.label ?? 'Haji (kartu lama)',
+                items: [
+                    {
+                        title: 'Dashboard',
+                        href: '/kartu-bebas',
+                        icon: BookOpen,
+                    },
+                    {
+                        title: 'Peserta',
+                        href: '/kartu-bebas/peserta',
+                        icon: Users,
+                    },
+                    {
+                        title: 'Format Data',
+                        href: '/kartu-bebas/data',
+                        icon: Database,
+                    },
+                    {
+                        title: 'Absensi & Link Scan',
+                        href: '/kartu-bebas/absensi',
+                        icon: ClipboardCheck,
+                    },
+                    {
+                        title: 'Laporan Absensi',
+                        href: '/kartu-bebas/laporan',
+                        icon: FileSpreadsheet,
+                    },
+                    {
+                        title: 'Generate',
+                        href: '/kartu-bebas/generate',
+                        icon: Wand2,
+                    },
+                ],
+            },
+            {
+                label: 'Desain Kartu',
+                items: [
+                    {
+                        title: 'Frame & Bingkai',
+                        href: '/kartu-bebas/frames',
+                        icon: Frame,
+                    },
+                    {
+                        title: 'Layout Kartu',
+                        href: '/kartu-bebas/layouts',
+                        icon: LayoutTemplate,
+                    },
+                    {
+                        title: 'Riwayat Kartu',
+                        href: '/kartu-bebas/riwayat',
+                        icon: History,
+                    },
+                ],
+            },
+        ];
+    }
+
+    const p = `/penyelenggara/program/${aktif.program_id}`;
+
+    return [
+        {
+            label: aktif.kategori
+                ? `${aktif.kategori} · ${aktif.label}`
+                : aktif.label,
+            items: [
+                { title: 'Dashboard', href: `${p}/dashboard`, icon: BookOpen },
+                { title: 'Peserta', href: `${p}/peserta`, icon: Users },
+                {
+                    title: 'Format Data',
+                    href: `/penyelenggara/kategori/${aktif.kategori_id}`,
+                    icon: Database,
+                },
+                {
+                    title: 'Absensi & Link Scan',
+                    href: `${p}/kehadiran`,
+                    icon: ClipboardCheck,
+                },
+                { title: 'Jadwal', href: `${p}/jadwal`, icon: CalendarClock },
+                {
+                    title: 'Laporan Absensi',
+                    href: `${p}/laporan`,
+                    icon: FileSpreadsheet,
+                },
+                { title: 'Grup & Pengaturan', href: p, icon: Settings2 },
+            ],
+        },
+        {
+            label: 'Desain Kartu',
+            items: [
+                {
+                    title: 'Layout Kartu',
+                    href: `${p}/layout`,
+                    icon: LayoutTemplate,
+                },
+                {
+                    title: 'Frame & Bingkai',
+                    href: '/kartu-bebas/frames',
+                    icon: Frame,
+                },
+            ],
+        },
+    ];
+}
+
 export const generalSections: GeneralSection[] = [
-    {
-        label: 'Kategori & Program',
-        items: [
-            { title: 'Kategori', href: '/general/kategori', icon: Shapes },
-            { title: 'Program', href: '/general/program', icon: CalendarRange },
-        ],
-    },
-    {
-        label: 'Haji (kartu lama)',
-        items: [
-            { title: 'Dashboard Haji', href: '/kartu-bebas', icon: BookOpen },
-            { title: 'Peserta', href: '/kartu-bebas/peserta', icon: Users },
-            { title: 'Format Data', href: '/kartu-bebas/data', icon: Database },
-            {
-                title: 'Absensi & Link Scan',
-                href: '/kartu-bebas/absensi',
-                icon: ClipboardCheck,
-            },
-            {
-                title: 'Laporan Absensi',
-                href: '/kartu-bebas/laporan',
-                icon: FileSpreadsheet,
-            },
-            { title: 'Generate', href: '/kartu-bebas/generate', icon: Wand2 },
-        ],
-    },
-    {
-        label: 'Desain Kartu',
-        items: [
-            {
-                title: 'Frame & Bingkai',
-                href: '/kartu-bebas/frames',
-                icon: Frame,
-            },
-            {
-                title: 'Layout Kartu',
-                href: '/kartu-bebas/layouts',
-                icon: LayoutTemplate,
-            },
-            {
-                title: 'Riwayat Kartu',
-                href: '/kartu-bebas/riwayat',
-                icon: History,
-            },
-        ],
-    },
     {
         label: 'Pengaturan',
         items: [
@@ -121,6 +194,7 @@ export const generalSections: GeneralSection[] = [
 ];
 
 export function GeneralSidebar() {
+    const konteks = useKonteksGeneral();
     const { app } = usePage<{
         app: { workspace_name?: string | null };
     }>().props;
@@ -150,6 +224,21 @@ export function GeneralSidebar() {
 
             <SidebarContent>
                 <NavGroup label="Utama" items={generalUtama} />
+                {menuKonteks(konteks?.aktif ?? null).map((section, i) =>
+                    i === 0 ? (
+                        <NavGroup
+                            key={section.label}
+                            label={section.label}
+                            items={section.items}
+                        />
+                    ) : (
+                        <NavCollapsibleGroup
+                            key={section.label}
+                            label={section.label}
+                            items={section.items}
+                        />
+                    ),
+                )}
                 {generalSections.map((section) => (
                     <NavCollapsibleGroup
                         key={section.label}

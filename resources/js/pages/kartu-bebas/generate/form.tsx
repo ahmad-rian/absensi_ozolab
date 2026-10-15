@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CardCropReposition  } from '@/components/shared/card-crop-reposition';
 import type {CropRect} from '@/components/shared/card-crop-reposition';
 import { DrivePhotoPicker } from '@/components/shared/drive-photo-picker';
+import { PilihKecamatan } from '@/components/shared/pilih-kecamatan';
 import { StepProgress  } from '@/components/shared/step-progress';
 import type {WizardStep} from '@/components/shared/step-progress';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ import { cn } from '@/lib/utils';
 import { browse, image, thumbnail } from '@/routes/kartu-bebas/drive';
 import { show as participantShow } from '@/routes/kartu-bebas/peserta';
 
-type FieldType = 'text' | 'date' | 'number' | 'select' | 'photo';
+type FieldType = 'text' | 'date' | 'number' | 'select' | 'kecamatan' | 'photo';
 
 type LayoutField = {
     key: string;
@@ -484,6 +485,8 @@ function FieldInput({
             {field.type === 'date' && (
                 <Input className="h-11" type="date" value={value} onChange={(e) => onValueChange(e.target.value)} />
             )}
+
+            {field.type === 'kecamatan' && <PilihKecamatan className="h-11" nilai={value} onUbah={onValueChange} />}
 
             {field.type === 'select' && (
                 <Select value={value} onValueChange={onValueChange}>

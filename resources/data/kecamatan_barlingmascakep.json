@@ -1,0 +1,502 @@
+{
+  "sumber": [
+    "https://github.com/cahyadsn/wilayah/blob/master/db/wilayah.sql (Kepmendagri No. 300.2.2-2138 Tahun 2025)",
+    "https://id.wikipedia.org/wiki/Daftar_kecamatan_dan_kelurahan_di_Kabupaten_Banjarnegara",
+    "https://id.wikipedia.org/wiki/Daftar_kecamatan_dan_kelurahan_di_Kabupaten_Purbalingga",
+    "https://id.wikipedia.org/wiki/Daftar_kecamatan_dan_kelurahan_di_Kabupaten_Banyumas",
+    "https://id.wikipedia.org/wiki/Daftar_kecamatan_dan_kelurahan_di_Kabupaten_Cilacap",
+    "https://id.wikipedia.org/wiki/Daftar_kecamatan_dan_kelurahan_di_Kabupaten_Kebumen"
+  ],
+  "kabupaten": [
+    {
+      "nama": "Banjarnegara",
+      "kode": "33.04",
+      "kecamatan": [
+        {
+          "kode": "33.04.01",
+          "nama": "Susukan"
+        },
+        {
+          "kode": "33.04.02",
+          "nama": "Purworeja Klampok"
+        },
+        {
+          "kode": "33.04.03",
+          "nama": "Mandiraja"
+        },
+        {
+          "kode": "33.04.04",
+          "nama": "Purwanegara"
+        },
+        {
+          "kode": "33.04.05",
+          "nama": "Bawang"
+        },
+        {
+          "kode": "33.04.06",
+          "nama": "Banjarnegara"
+        },
+        {
+          "kode": "33.04.07",
+          "nama": "Sigaluh"
+        },
+        {
+          "kode": "33.04.08",
+          "nama": "Madukara"
+        },
+        {
+          "kode": "33.04.09",
+          "nama": "Banjarmangu"
+        },
+        {
+          "kode": "33.04.10",
+          "nama": "Wanadadi"
+        },
+        {
+          "kode": "33.04.11",
+          "nama": "Rakit"
+        },
+        {
+          "kode": "33.04.12",
+          "nama": "Punggelan"
+        },
+        {
+          "kode": "33.04.13",
+          "nama": "Karangkobar"
+        },
+        {
+          "kode": "33.04.14",
+          "nama": "Pagentan"
+        },
+        {
+          "kode": "33.04.15",
+          "nama": "Pejawaran"
+        },
+        {
+          "kode": "33.04.16",
+          "nama": "Batur"
+        },
+        {
+          "kode": "33.04.17",
+          "nama": "Wanayasa"
+        },
+        {
+          "kode": "33.04.18",
+          "nama": "Kalibening"
+        },
+        {
+          "kode": "33.04.19",
+          "nama": "Pandanarum"
+        },
+        {
+          "kode": "33.04.20",
+          "nama": "Pagedongan"
+        }
+      ]
+    },
+    {
+      "nama": "Purbalingga",
+      "kode": "33.03",
+      "kecamatan": [
+        {
+          "kode": "33.03.01",
+          "nama": "Kemangkon"
+        },
+        {
+          "kode": "33.03.02",
+          "nama": "Bukateja"
+        },
+        {
+          "kode": "33.03.03",
+          "nama": "Kejobong"
+        },
+        {
+          "kode": "33.03.04",
+          "nama": "Kaligondang"
+        },
+        {
+          "kode": "33.03.05",
+          "nama": "Purbalingga"
+        },
+        {
+          "kode": "33.03.06",
+          "nama": "Kalimanah"
+        },
+        {
+          "kode": "33.03.07",
+          "nama": "Kutasari"
+        },
+        {
+          "kode": "33.03.08",
+          "nama": "Mrebet"
+        },
+        {
+          "kode": "33.03.09",
+          "nama": "Bobotsari"
+        },
+        {
+          "kode": "33.03.10",
+          "nama": "Karangreja"
+        },
+        {
+          "kode": "33.03.11",
+          "nama": "Karanganyar"
+        },
+        {
+          "kode": "33.03.12",
+          "nama": "Karangmoncol"
+        },
+        {
+          "kode": "33.03.13",
+          "nama": "Rembang"
+        },
+        {
+          "kode": "33.03.14",
+          "nama": "Bojongsari"
+        },
+        {
+          "kode": "33.03.15",
+          "nama": "Padamara"
+        },
+        {
+          "kode": "33.03.16",
+          "nama": "Pengadegan"
+        },
+        {
+          "kode": "33.03.17",
+          "nama": "Karangjambu"
+        },
+        {
+          "kode": "33.03.18",
+          "nama": "Kertanegara"
+        }
+      ]
+    },
+    {
+      "nama": "Banyumas",
+      "kode": "33.02",
+      "kecamatan": [
+        {
+          "kode": "33.02.01",
+          "nama": "Lumbir"
+        },
+        {
+          "kode": "33.02.02",
+          "nama": "Wangon"
+        },
+        {
+          "kode": "33.02.03",
+          "nama": "Jatilawang"
+        },
+        {
+          "kode": "33.02.04",
+          "nama": "Rawalo"
+        },
+        {
+          "kode": "33.02.05",
+          "nama": "Kebasen"
+        },
+        {
+          "kode": "33.02.06",
+          "nama": "Kemranjen"
+        },
+        {
+          "kode": "33.02.07",
+          "nama": "Sumpiuh"
+        },
+        {
+          "kode": "33.02.08",
+          "nama": "Tambak"
+        },
+        {
+          "kode": "33.02.09",
+          "nama": "Somagede"
+        },
+        {
+          "kode": "33.02.10",
+          "nama": "Kalibagor"
+        },
+        {
+          "kode": "33.02.11",
+          "nama": "Banyumas"
+        },
+        {
+          "kode": "33.02.12",
+          "nama": "Patikraja"
+        },
+        {
+          "kode": "33.02.13",
+          "nama": "Purwojati"
+        },
+        {
+          "kode": "33.02.14",
+          "nama": "Ajibarang"
+        },
+        {
+          "kode": "33.02.15",
+          "nama": "Gumelar"
+        },
+        {
+          "kode": "33.02.16",
+          "nama": "Pekuncen"
+        },
+        {
+          "kode": "33.02.17",
+          "nama": "Cilongok"
+        },
+        {
+          "kode": "33.02.18",
+          "nama": "Karanglewas"
+        },
+        {
+          "kode": "33.02.19",
+          "nama": "Sokaraja"
+        },
+        {
+          "kode": "33.02.20",
+          "nama": "Kembaran"
+        },
+        {
+          "kode": "33.02.21",
+          "nama": "Sumbang"
+        },
+        {
+          "kode": "33.02.22",
+          "nama": "Baturraden"
+        },
+        {
+          "kode": "33.02.23",
+          "nama": "Kedungbanteng"
+        },
+        {
+          "kode": "33.02.24",
+          "nama": "Purwokerto Selatan"
+        },
+        {
+          "kode": "33.02.25",
+          "nama": "Purwokerto Barat"
+        },
+        {
+          "kode": "33.02.26",
+          "nama": "Purwokerto Timur"
+        },
+        {
+          "kode": "33.02.27",
+          "nama": "Purwokerto Utara"
+        }
+      ]
+    },
+    {
+      "nama": "Cilacap",
+      "kode": "33.01",
+      "kecamatan": [
+        {
+          "kode": "33.01.01",
+          "nama": "Kedungreja"
+        },
+        {
+          "kode": "33.01.02",
+          "nama": "Kesugihan"
+        },
+        {
+          "kode": "33.01.03",
+          "nama": "Adipala"
+        },
+        {
+          "kode": "33.01.04",
+          "nama": "Binangun"
+        },
+        {
+          "kode": "33.01.05",
+          "nama": "Nusawungu"
+        },
+        {
+          "kode": "33.01.06",
+          "nama": "Kroya"
+        },
+        {
+          "kode": "33.01.07",
+          "nama": "Maos"
+        },
+        {
+          "kode": "33.01.08",
+          "nama": "Jeruklegi"
+        },
+        {
+          "kode": "33.01.09",
+          "nama": "Kawunganten"
+        },
+        {
+          "kode": "33.01.10",
+          "nama": "Gandrungmangu"
+        },
+        {
+          "kode": "33.01.11",
+          "nama": "Sidareja"
+        },
+        {
+          "kode": "33.01.12",
+          "nama": "Karangpucung"
+        },
+        {
+          "kode": "33.01.13",
+          "nama": "Cimanggu"
+        },
+        {
+          "kode": "33.01.14",
+          "nama": "Majenang"
+        },
+        {
+          "kode": "33.01.15",
+          "nama": "Wanareja"
+        },
+        {
+          "kode": "33.01.16",
+          "nama": "Dayeuhluhur"
+        },
+        {
+          "kode": "33.01.17",
+          "nama": "Sampang"
+        },
+        {
+          "kode": "33.01.18",
+          "nama": "Cipari"
+        },
+        {
+          "kode": "33.01.19",
+          "nama": "Patimuan"
+        },
+        {
+          "kode": "33.01.20",
+          "nama": "Bantarsari"
+        },
+        {
+          "kode": "33.01.21",
+          "nama": "Cilacap Selatan"
+        },
+        {
+          "kode": "33.01.22",
+          "nama": "Cilacap Tengah"
+        },
+        {
+          "kode": "33.01.23",
+          "nama": "Cilacap Utara"
+        },
+        {
+          "kode": "33.01.24",
+          "nama": "Kampung Laut"
+        }
+      ]
+    },
+    {
+      "nama": "Kebumen",
+      "kode": "33.05",
+      "kecamatan": [
+        {
+          "kode": "33.05.01",
+          "nama": "Ayah"
+        },
+        {
+          "kode": "33.05.02",
+          "nama": "Buayan"
+        },
+        {
+          "kode": "33.05.03",
+          "nama": "Puring"
+        },
+        {
+          "kode": "33.05.04",
+          "nama": "Petanahan"
+        },
+        {
+          "kode": "33.05.05",
+          "nama": "Klirong"
+        },
+        {
+          "kode": "33.05.06",
+          "nama": "Buluspesantren"
+        },
+        {
+          "kode": "33.05.07",
+          "nama": "Ambal"
+        },
+        {
+          "kode": "33.05.08",
+          "nama": "Mirit"
+        },
+        {
+          "kode": "33.05.09",
+          "nama": "Prembun"
+        },
+        {
+          "kode": "33.05.10",
+          "nama": "Kutowinangun"
+        },
+        {
+          "kode": "33.05.11",
+          "nama": "Alian"
+        },
+        {
+          "kode": "33.05.12",
+          "nama": "Kebumen"
+        },
+        {
+          "kode": "33.05.13",
+          "nama": "Pejagoan"
+        },
+        {
+          "kode": "33.05.14",
+          "nama": "Sruweng"
+        },
+        {
+          "kode": "33.05.15",
+          "nama": "Adimulyo"
+        },
+        {
+          "kode": "33.05.16",
+          "nama": "Kuwarasan"
+        },
+        {
+          "kode": "33.05.17",
+          "nama": "Rowokele"
+        },
+        {
+          "kode": "33.05.18",
+          "nama": "Sempor"
+        },
+        {
+          "kode": "33.05.19",
+          "nama": "Gombong"
+        },
+        {
+          "kode": "33.05.20",
+          "nama": "Karanganyar"
+        },
+        {
+          "kode": "33.05.21",
+          "nama": "Karanggayam"
+        },
+        {
+          "kode": "33.05.22",
+          "nama": "Sadang"
+        },
+        {
+          "kode": "33.05.23",
+          "nama": "Bonorowo"
+        },
+        {
+          "kode": "33.05.24",
+          "nama": "Padureso"
+        },
+        {
+          "kode": "33.05.25",
+          "nama": "Poncowarno"
+        },
+        {
+          "kode": "33.05.26",
+          "nama": "Karangsambung"
+        }
+      ]
+    }
+  ]
+}

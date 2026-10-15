@@ -3,6 +3,7 @@ import { CheckCircle2, Download, Image as ImageIcon, Loader2, Sparkles, XCircle 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CardCropReposition  } from '@/components/shared/card-crop-reposition';
 import type {CropRect} from '@/components/shared/card-crop-reposition';
+import { PilihKecamatan } from '@/components/shared/pilih-kecamatan';
 import { StepProgress  } from '@/components/shared/step-progress';
 import type {WizardStep} from '@/components/shared/step-progress';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
-type FieldType = 'text' | 'date' | 'number' | 'select' | 'photo';
+type FieldType = 'text' | 'date' | 'number' | 'select' | 'kecamatan' | 'photo';
 
 type FormField = {
     key: string;
@@ -250,6 +251,13 @@ export default function PublicCardForm({ form, result }: Props) {
                                             type="date"
                                             value={(data.data[field.key] as string) ?? ''}
                                             onChange={(e) => setField(field.key, e.target.value)}
+                                        />
+                                    )}
+
+                                    {field.type === 'kecamatan' && (
+                                        <PilihKecamatan
+                                            nilai={(data.data[field.key] as string) || ''}
+                                            onUbah={(v) => setField(field.key, v)}
                                         />
                                     )}
 

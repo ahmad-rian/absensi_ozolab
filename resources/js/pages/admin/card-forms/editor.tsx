@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 
-type FieldType = 'text' | 'date' | 'number' | 'select' | 'photo';
+type FieldType = 'text' | 'date' | 'number' | 'select' | 'kecamatan' | 'photo';
 
 type FormField = {
     key: string;
@@ -77,6 +77,7 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
     date: 'Tanggal',
     number: 'Angka',
     select: 'Pilihan',
+    kecamatan: 'Kecamatan (Barlingmascakep)',
     photo: 'Foto',
 };
 

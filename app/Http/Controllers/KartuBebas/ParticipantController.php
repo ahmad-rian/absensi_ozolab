@@ -7,6 +7,7 @@ use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Services\CardParticipantService;
 use App\Services\DynamicCardFiles;
+use App\Support\FilterKolomPeserta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,13 @@ class ParticipantController extends Controller
             'layout' => ['nullable', 'string'],
             'status' => ['nullable', Rule::in(['draft', 'processing', 'completed', 'failed'])],
         ]);
-        $records = CardFormSubmission::with('cardForm')
+        // Filter per kolom data (mis. kecamatan) dari kolom semua layout,
+        // atau layout yang sedang dipilih saja.
+        $forms = CardForm::when($filters['layout'] ?? null, fn ($q, $id) => $q->whereKey($id))->get();
+        $kolom = FilterKolomPeserta::kolom($forms->flatMap(fn (CardForm $f) => $f->inputFields()));
+        $records = CardFormSubmission::with('cardForm');
+        $filterKolom = FilterKolomPeserta::terapkan($records, $kolom, (array) $request->query('f', []));
+        $records = $records
             ->when($filters['layout'] ?? null, fn ($query, $layout) => $query->where('card_form_id', $layout))
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['q'] ?? null, fn ($query, $search) => $query->where('data', 'like', '%'.$search.'%'))
@@ -35,7 +42,8 @@ class ParticipantController extends Controller
         return Inertia::render('kartu-bebas/peserta/index', [
             'participants' => $records,
             'layouts' => CardForm::orderBy('name')->get(['id', 'name']),
-            'filters' => $filters,
+            'filters' => $filters + ['f' => $filterKolom],
+            'kolomFilter' => FilterKolomPeserta::denganOpsi($kolom, CardFormSubmission::query()->when($filters['layout'] ?? null, fn ($q, $id) => $q->where('card_form_id', $id))),
             'history' => $request->routeIs('kartu-bebas.riwayat'),
         ]);
     }

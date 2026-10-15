@@ -8,6 +8,7 @@ import type {
 } from '@/components/penyelenggara/riwayat-kehadiran';
 import { CardCropReposition } from '@/components/shared/card-crop-reposition';
 import type { CropRect } from '@/components/shared/card-crop-reposition';
+import { PilihKecamatan } from '@/components/shared/pilih-kecamatan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,7 +29,7 @@ import { STATUS_KARTU } from './index';
 type Field = {
     key: string;
     label: string;
-    type: 'text' | 'number' | 'date' | 'select' | 'photo';
+    type: 'text' | 'number' | 'date' | 'select' | 'kecamatan' | 'photo';
     required?: boolean;
     options?: string[];
 };
@@ -162,7 +163,20 @@ export default function PesertaForm({
                                                 </span>
                                             )}
                                         </Label>
-                                        {f.type === 'select' ? (
+                                        {f.type === 'kecamatan' ? (
+                                            <PilihKecamatan
+                                                id={f.key}
+                                                nilai={String(
+                                                    form.data.data[f.key] ?? '',
+                                                )}
+                                                onUbah={(v) =>
+                                                    form.setData('data', {
+                                                        ...form.data.data,
+                                                        [f.key]: v,
+                                                    })
+                                                }
+                                            />
+                                        ) : f.type === 'select' ? (
                                             <select
                                                 id={f.key}
                                                 className="h-9 rounded-md border bg-background px-2 text-sm"

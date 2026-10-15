@@ -9,6 +9,7 @@ use App\Models\Penyelenggara;
 use App\Models\School;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\KonteksGeneral;
 use App\Support\PenyelenggaraFeatures;
 use App\Support\SchoolFeatures;
 use Illuminate\Http\Request;
@@ -130,6 +131,10 @@ class HandleInertiaRequests extends Middleware
             'penyelenggaras' => $user?->isSuperAdmin() ? function () {
                 return Penyelenggara::orderBy('name')->get(['id', 'name', 'slug', 'is_active']);
             } : [],
+            // Pemilih kategori/program di kanan atas workspace general (spec 009).
+            'konteksGeneral' => $user?->isSuperAdmin() && $request->is('general', 'general/*', 'kartu-bebas', 'kartu-bebas/*', 'penyelenggara', 'penyelenggara/*')
+                ? fn () => ['aktif' => KonteksGeneral::aktif($request), 'opsi' => KonteksGeneral::opsi()]
+                : null,
             'penyelenggaraFeatures' => function () {
                 $penyelenggara = app()->bound('currentPenyelenggara') ? app('currentPenyelenggara') : null;
 

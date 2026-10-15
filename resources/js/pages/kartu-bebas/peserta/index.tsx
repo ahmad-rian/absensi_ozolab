@@ -1,5 +1,7 @@
 import { Head, Link, router, usePoll } from '@inertiajs/react';
 import { useState } from 'react';
+import { FilterKolom } from '@/components/shared/filter-kolom';
+import type { KolomFilter } from '@/components/shared/filter-kolom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -26,18 +28,28 @@ type Props = {
         next_page_url: string | null;
     };
     layouts: { id: string; name: string }[];
-    filters: { q?: string; layout?: string; status?: string };
+    filters: {
+        q?: string;
+        layout?: string;
+        status?: string;
+        f?: Record<string, string>;
+    };
+    kolomFilter: KolomFilter[];
     history: boolean;
 };
 export default function ParticipantIndex({
     participants,
     layouts,
     filters,
+    kolomFilter,
     history,
 }: Props) {
     const [query, setQuery] = useState(filters.q ?? '');
     const [layout, setLayout] = useState(filters.layout ?? '');
     const [status, setStatus] = useState(filters.status ?? '');
+    const [kolom, setKolom] = useState<Record<string, string>>(
+        filters.f && !Array.isArray(filters.f) ? filters.f : {},
+    );
     usePoll(5000, { only: ['participants'] });
     const title = history ? 'Riwayat Kartu' : 'Peserta';
 
@@ -63,7 +75,7 @@ export default function ParticipantIndex({
                         event.preventDefault();
                         router.get(
                             history ? riwayat.url() : index.url(),
-                            { q: query, layout, status },
+                            { q: query, layout, status, f: kolom },
                             { preserveState: true },
                         );
                     }}
@@ -101,6 +113,11 @@ export default function ParticipantIndex({
                             </option>
                         ))}
                     </select>
+                    <FilterKolom
+                        kolom={kolomFilter ?? []}
+                        nilai={kolom}
+                        onUbah={setKolom}
+                    />
                     <Button type="submit" variant="outline">
                         Cari
                     </Button>

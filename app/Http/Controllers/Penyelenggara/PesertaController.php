@@ -11,6 +11,7 @@ use App\Services\CardParticipantService;
 use App\Services\DynamicCardFiles;
 use App\Services\Penyelenggara\PesertaService;
 use App\Services\Penyelenggara\RiwayatPeserta;
+use App\Support\FilterKolomPeserta;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,9 @@ class PesertaController extends Controller
             ->latest();
 
         $kategori = $program->kategori()->first();
+        // Filter per kolom data (mis. kecamatan), seperti filter kelas pada siswa.
+        $kolom = FilterKolomPeserta::kolom($kategori?->visibleFields() ?? []);
+        $filterKolom = FilterKolomPeserta::terapkan($query, $kolom, (array) $request->query('f', []));
 
         return Inertia::render('penyelenggara/peserta/index', [
             'program' => $this->ringkasProgram($program),
@@ -61,7 +65,8 @@ class PesertaController extends Controller
                 ->orderBy('urutan')->orderBy('name')->get(['id', 'name', 'parent_id']),
             'tanpaGrup' => $grupTerlihat === [],
             'kuota' => $this->infoKuota(),
-            'filters' => ['q' => $request->q ?? '', 'grup' => $request->grup ?? '', 'arsip' => $request->boolean('arsip')],
+            'filters' => ['q' => $request->q ?? '', 'grup' => $request->grup ?? '', 'arsip' => $request->boolean('arsip'), 'f' => $filterKolom],
+            'kolomFilter' => FilterKolomPeserta::denganOpsi($kolom, $this->peserta->batasi(CardFormSubmission::where('program_id', $program->id), $request->user(), $program)),
         ]);
     }
 

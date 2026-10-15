@@ -179,3 +179,28 @@ test('logo general dipakai di workspace setelah diunggah, sekolah tetap memakai 
         ->assertInertia(fn (Assert $page) => $page->where('app.workspace_name', null)
             ->whereNot('app.logo', Storage::disk('public')->url('images/branding/general.webp')));
 });
+
+test('pemilih konteks: memilih program mengikat penyelenggara dan membuka dashboard program', function () {
+    $biro = Penyelenggara::factory()->create(['name' => 'Biro A']);
+    $program = programGeneral($biro, 'Haji 2027');
+    $super = createSuperAdminUser();
+
+    $this->actingAs($super)->get(route('general.dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('konteksGeneral.aktif.jenis', 'haji')
+            ->where('konteksGeneral.opsi.1.opsi.0.label', 'Haji 2027'));
+
+    $this->actingAs($super)->post(route('general.konteks'), ['konteks' => $program->id])
+        ->assertRedirect(route('penyelenggara.program.dashboard', $program));
+    expect(session('current_penyelenggara_id'))->toBe($biro->id);
+
+    $this->actingAs($super)->get(route('general.dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('konteksGeneral.aktif.program_id', $program->id)
+            ->where('konteksGeneral.aktif.label', 'Haji 2027'));
+
+    $this->actingAs($super)->post(route('general.konteks'), ['konteks' => 'haji'])->assertRedirect('/kartu-bebas');
+});
+
+test('pemilih konteks tidak dikirim ke admin sekolah', function () {
+    $this->actingAs(createAdminUser())->get(route('dashboard'))
+        ->assertInertia(fn (Assert $page) => $page->where('konteksGeneral', null));
+});

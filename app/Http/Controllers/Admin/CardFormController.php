@@ -121,7 +121,7 @@ class CardFormController extends Controller
             'fields' => ['required', 'array', 'min:1'],
             'fields.*.key' => ['required', 'string', 'max:64', 'regex:/^[a-z0-9_]+$/'],
             'fields.*.label' => ['required', 'string', 'max:255'],
-            'fields.*.type' => ['required', Rule::in(['text', 'date', 'number', 'select', 'photo'])],
+            'fields.*.type' => ['required', Rule::in(['text', 'date', 'number', 'select', 'kecamatan', 'photo'])],
             'fields.*.required' => ['boolean'],
             'fields.*.options' => ['nullable', 'array'],
             'fields.*.options.*' => ['string', 'max:255'],

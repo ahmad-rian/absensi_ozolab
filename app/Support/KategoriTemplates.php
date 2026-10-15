@@ -38,6 +38,7 @@ final class KategoriTemplates
                     ['key' => 'no_porsi', 'label' => 'No Porsi', 'type' => 'text', 'required' => false],
                     ['key' => 'kloter', 'label' => 'Kloter', 'type' => 'text', 'required' => false],
                     ['key' => 'jenis_kelamin', 'label' => 'Jenis Kelamin', 'type' => 'select', 'required' => false, 'options' => ['Laki-laki', 'Perempuan']],
+                    ['key' => 'kecamatan', 'label' => 'Kecamatan', 'type' => 'kecamatan', 'required' => false],
                     self::teleponWali('Telepon Keluarga'),
                     self::foto(),
                 ],

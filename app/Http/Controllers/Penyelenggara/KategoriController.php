@@ -88,7 +88,7 @@ class KategoriController extends Controller
             'fields' => ['required', 'array', 'max:40'],
             'fields.*.key' => ['required', 'string', 'max:64', 'regex:/^[a-z0-9_]+$/', 'distinct'],
             'fields.*.label' => ['required', 'string', 'max:60'],
-            'fields.*.type' => ['required', Rule::in(['text', 'number', 'date', 'select', 'photo'])],
+            'fields.*.type' => ['required', Rule::in(['text', 'number', 'date', 'select', 'kecamatan', 'photo'])],
             'fields.*.required' => ['boolean'],
             'fields.*.options' => ['array', 'required_if:fields.*.type,select'],
             'fields.*.options.*' => ['string', 'max:60'],

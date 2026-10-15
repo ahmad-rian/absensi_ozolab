@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { CardCropReposition } from '@/components/shared/card-crop-reposition';
 import type { CropRect } from '@/components/shared/card-crop-reposition';
 import { DrivePhotoPicker } from '@/components/shared/drive-photo-picker';
+import { PilihKecamatan } from '@/components/shared/pilih-kecamatan';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -198,6 +199,13 @@ export default function ParticipantForm({
                                     />
                                 )}
                             </>
+                        ) : field.type === 'kecamatan' ? (
+                            <PilihKecamatan
+                                id={`participant-${field.key}`}
+                                wajib={field.required}
+                                nilai={String(form.data.data[field.key] ?? '')}
+                                onUbah={(v) => form.setData('data', { ...form.data.data, [field.key]: v })}
+                            />
                         ) : field.type === 'select' ? (
                             <select
                                 id={`participant-${field.key}`}

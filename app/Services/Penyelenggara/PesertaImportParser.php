@@ -5,6 +5,7 @@ namespace App\Services\Penyelenggara;
 use App\Models\Grup;
 use App\Models\Program;
 use App\Services\Import\Concerns\ReadsSpreadsheetRows;
+use App\Support\KecamatanBarlingmascakep;
 
 /**
  * Baca berkas impor peserta dan cocokkan ke skema kategori — persis, tanpa tebakan.
@@ -148,6 +149,7 @@ class PesertaImportParser
                 'number' => is_numeric($nilai) ? null : 'harus angka',
                 'date' => strtotime($nilai) !== false ? null : 'harus tanggal (YYYY-MM-DD)',
                 'select' => in_array($nilai, $field['options'] ?? [], true) ? null : 'harus salah satu dari: '.implode(', ', $field['options'] ?? []),
+                'kecamatan' => in_array($nilai, KecamatanBarlingmascakep::nilai(), true) ? null : 'harus nama kecamatan Barlingmascakep, mis. "Purwokerto Barat, Banyumas"',
                 default => mb_strlen($nilai) > 1000 ? 'terlalu panjang' : null,
             };
             if ($salah) {

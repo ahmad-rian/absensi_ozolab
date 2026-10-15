@@ -1,8 +1,10 @@
-import type {CSSProperties} from 'react';
+import { usePage } from '@inertiajs/react';
+import type { CSSProperties } from 'react';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import { PenyelenggaraSidebar } from '@/components/penyelenggara-sidebar';
+import GeneralLayout from '@/layouts/general-layout';
 import type { AppLayoutProps } from '@/types';
 
 // Area penyelenggara memakai warna biru-laut sendiri supaya admin yang juga
@@ -20,6 +22,18 @@ export default function PenyelenggaraLayout({
     children,
     breadcrumbs = [],
 }: AppLayoutProps) {
+    const { auth } = usePage().props as unknown as {
+        auth: { user: { roles?: string[] } | null };
+    };
+
+    // Super admin membuka program dari workspace general: tetap di cangkang
+    // yang sama (pemilih kategori di kanan atas), tidak pindah tampilan.
+    if ((auth?.user?.roles ?? []).includes('SUPER_ADMIN')) {
+        return (
+            <GeneralLayout breadcrumbs={breadcrumbs}>{children}</GeneralLayout>
+        );
+    }
+
     return (
         <div style={tealTheme}>
             <AppShell variant="sidebar">

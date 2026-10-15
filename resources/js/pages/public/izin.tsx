@@ -102,6 +102,7 @@ export default function IzinPublik({
         bukti: File | null;
         pengirim_nama: string;
         pengirim_telepon: string;
+        situs: string;
     }>({
         school_id: '',
         student_id: '',
@@ -112,6 +113,7 @@ export default function IzinPublik({
         bukti: null,
         pengirim_nama: '',
         pengirim_telepon: '',
+        situs: '',
     });
 
     const sekolahTersaring = useMemo(() => {
@@ -576,6 +578,23 @@ export default function IzinPublik({
                                 <h2 className="font-semibold">
                                     Data pengirim & periksa ulang
                                 </h2>
+                                {/* Jebakan bot: tidak terlihat dan tidak bisa difokus manusia. */}
+                                <div
+                                    aria-hidden="true"
+                                    className="absolute -left-[9999px] h-0 w-0 overflow-hidden"
+                                >
+                                    <label htmlFor="situs">Situs web</label>
+                                    <input
+                                        id="situs"
+                                        name="situs"
+                                        tabIndex={-1}
+                                        autoComplete="off"
+                                        value={form.data.situs}
+                                        onChange={(e) =>
+                                            form.setData('situs', e.target.value)
+                                        }
+                                    />
+                                </div>
                                 <dl className="grid gap-2 rounded-xl bg-muted/60 p-4 text-sm">
                                     <div className="flex justify-between gap-3">
                                         <dt className="text-muted-foreground">

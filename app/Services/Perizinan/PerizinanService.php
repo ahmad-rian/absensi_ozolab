@@ -33,6 +33,18 @@ class PerizinanService
      */
     public function ajukan(Student $siswa, array $data, string $sumber, ?UploadedFile $bukti = null, ?string $parentProfileId = null): PengajuanIzin
     {
+        // Satu pengajuan aktif per rentang: mencegah klik ganda dan banjir
+        // pengajuan yang sama dari banyak orang untuk anak yang sama.
+        $tumpang = PengajuanIzin::withoutGlobalScope('school')
+            ->where('student_id', $siswa->id)
+            ->whereIn('status', [PengajuanIzin::MENUNGGU, PengajuanIzin::DISETUJUI])
+            ->where('tanggal_mulai', '<=', substr($data['tanggal_selesai'], 0, 10))
+            ->where('tanggal_selesai', '>=', substr($data['tanggal_mulai'], 0, 10))
+            ->exists();
+        if ($tumpang) {
+            throw ValidationException::withMessages(['tanggal_mulai' => 'Sudah ada pengajuan untuk anak ini di tanggal tersebut. Tunggu tinjauan sekolah atau pilih tanggal lain.']);
+        }
+
         // Bukti foto disimpan privat (data kesehatan) dan diperkecil ke webp.
         $buktiPath = $bukti ? $this->converter->storeAsWebp($bukti, "perizinan/{$siswa->school_id}", 'local', 80, 1600) : null;
 
@@ -165,7 +177,9 @@ class PerizinanService
                 }
             }],
             'alasan' => ['required', 'string', 'min:3', 'max:500'],
-            'bukti' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,heic', 'max:8192'],
+            // Batas ukuran + dimensi menahan unggahan raksasa; GD lalu menulis
+            // ulang gambar sebagai webp (metadata & muatan tersembunyi hilang).
+            'bukti' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:max_width=8000,max_height=8000'],
         ];
     }
 
@@ -180,7 +194,8 @@ class PerizinanService
             'tanggal_selesai.after_or_equal' => 'Tanggal selesai tidak boleh sebelum tanggal mulai.',
             'alasan.required' => 'Tuliskan alasan singkat.',
             'bukti.image' => 'Bukti harus berupa foto.',
-            'bukti.max' => 'Ukuran foto bukti maksimal 8 MB.',
+            'bukti.max' => 'Ukuran foto bukti maksimal 5 MB.',
+            'bukti.dimensions' => 'Resolusi foto terlalu besar. Kirim foto biasa dari kamera HP.',
         ];
     }
 

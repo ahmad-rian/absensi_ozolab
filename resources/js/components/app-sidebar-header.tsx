@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -5,8 +6,11 @@ import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 export function AppSidebarHeader({
     breadcrumbs = [],
+    kanan,
 }: {
     breadcrumbs?: BreadcrumbItemType[];
+    /** Kontrol tambahan di kanan atas, mis. pemilih kategori workspace general. */
+    kanan?: ReactNode;
 }) {
     return (
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border/50 px-3 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sm:h-16 sm:px-4 md:px-6">
@@ -14,7 +18,8 @@ export function AppSidebarHeader({
                 <SidebarTrigger className="-ml-1 shrink-0" />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
-            <div className="ml-auto flex shrink-0 items-center gap-1">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+                {kanan}
                 <ThemeToggle />
             </div>
         </header>

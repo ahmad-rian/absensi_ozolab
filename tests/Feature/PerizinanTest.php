@@ -122,8 +122,7 @@ test('form publik: cari siswa wajib lolos captcha server dulu', function () {
 test('form publik: pengajuan tersimpan dengan sumber publik dan data pengirim', function () {
     [$admin, $kelas] = sekolahIzin();
     [, $anak] = orangTuaIzin($admin, $kelas);
-    $this->get(route('izin.index'));
-    $this->postJson(route('izin.verifikasi'), ['jawaban' => session('izin_captcha')]);
+    lolosCaptchaIzin($this);
 
     $this->post(route('izin.store'), [
         'school_id' => $admin->school_id, 'student_id' => $anak->id,
@@ -140,8 +139,7 @@ test('form publik menolak siswa dari sekolah lain', function () {
     [$admin, $kelas] = sekolahIzin();
     [, $anak] = orangTuaIzin($admin, $kelas);
     $lain = School::factory()->create(['is_active' => true]);
-    $this->get(route('izin.index'));
-    $this->postJson(route('izin.verifikasi'), ['jawaban' => session('izin_captcha')]);
+    lolosCaptchaIzin($this);
 
     $this->post(route('izin.store'), [
         'school_id' => $lain->id, 'student_id' => $anak->id, 'jenis' => 'IZIN',
@@ -227,4 +225,78 @@ test('auto check-out tidak menutup baris Izin/Sakit dengan Hadir', function () {
     Artisan::call('attendance:auto-checkout', ['--date' => '2026-10-15']);
 
     expect(Attendance::withoutGlobalScopes()->where('type', AttendanceType::CheckOut)->count())->toBe(0);
+});
+
+// ── keamanan form publik ───────────────────────────────────────────────────
+function lolosCaptchaIzin($test): void
+{
+    $test->get(route('izin.index'));
+    $test->postJson(route('izin.verifikasi'), ['jawaban' => session('izin_captcha')])->assertOk();
+    // Lewati jeda minimum isi form.
+    session(['izin_lolos_pada' => now()->subMinute()->timestamp]);
+}
+
+function dataIzinPublik(string $schoolId, string $studentId, array $ubah = []): array
+{
+    return [
+        'school_id' => $schoolId, 'student_id' => $studentId, 'jenis' => 'IZIN',
+        'tanggal_mulai' => '2026-10-15', 'tanggal_selesai' => '2026-10-15', 'alasan' => 'Acara keluarga',
+        'pengirim_nama' => 'Ibu Sari', 'pengirim_telepon' => '081234567890', ...$ubah,
+    ];
+}
+
+test('captcha terkunci setelah 5 jawaban salah', function () {
+    sekolahIzin();
+
+    foreach (range(1, 5) as $i) {
+        $this->get(route('izin.index'));
+        $this->postJson(route('izin.verifikasi'), ['jawaban' => 999])->assertStatus(422);
+    }
+
+    $this->get(route('izin.index'));
+    $this->postJson(route('izin.verifikasi'), ['jawaban' => session('izin_captcha')])->assertStatus(429);
+});
+
+test('honeypot terisi: pengajuan diabaikan diam-diam', function () {
+    [$admin, $kelas] = sekolahIzin();
+    [, $anak] = orangTuaIzin($admin, $kelas);
+    lolosCaptchaIzin($this);
+
+    $this->post(route('izin.store'), dataIzinPublik($admin->school_id, $anak->id, ['situs' => 'http://spam.test']))
+        ->assertRedirect(route('izin.terkirim'));
+
+    expect(PengajuanIzin::withoutGlobalScopes()->count())->toBe(0);
+});
+
+test('pengajuan terlalu cepat setelah captcha ditolak', function () {
+    [$admin, $kelas] = sekolahIzin();
+    [, $anak] = orangTuaIzin($admin, $kelas);
+    $this->get(route('izin.index'));
+    $this->postJson(route('izin.verifikasi'), ['jawaban' => session('izin_captcha')]);
+
+    $this->post(route('izin.store'), dataIzinPublik($admin->school_id, $anak->id))->assertSessionHasErrors('alasan');
+    expect(PengajuanIzin::withoutGlobalScopes()->count())->toBe(0);
+});
+
+test('pengajuan ganda untuk siswa dan tanggal yang sama ditolak', function () {
+    [$admin, $kelas] = sekolahIzin();
+    [, $anak] = orangTuaIzin($admin, $kelas);
+    lolosCaptchaIzin($this);
+    $this->post(route('izin.store'), dataIzinPublik($admin->school_id, $anak->id))->assertRedirect(route('izin.terkirim'));
+
+    lolosCaptchaIzin($this);
+    $this->post(route('izin.store'), dataIzinPublik($admin->school_id, $anak->id))->assertSessionHasErrors('tanggal_mulai');
+
+    expect(PengajuanIzin::withoutGlobalScopes()->count())->toBe(1);
+});
+
+test('pencarian siswa dibatasi per sesi captcha', function () {
+    [$admin] = sekolahIzin();
+    lolosCaptchaIzin($this);
+
+    foreach (range(1, 30) as $i) {
+        $this->getJson(route('izin.siswa', ['school_id' => $admin->school_id, 'q' => "nama{$i}"]))->assertOk();
+    }
+
+    $this->getJson(route('izin.siswa', ['school_id' => $admin->school_id, 'q' => 'lagi']))->assertStatus(403);
 });

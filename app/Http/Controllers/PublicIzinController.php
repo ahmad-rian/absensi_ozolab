@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,6 +31,24 @@ class PublicIzinController extends Controller
 
     private const SESI_LOLOS = 'izin_lolos_sampai';
 
+    private const SESI_LOLOS_PADA = 'izin_lolos_pada';
+
+    private const SESI_CARI = 'izin_jumlah_cari';
+
+    /** Jawaban salah sebelum dikunci, dan lama kuncinya (detik). */
+    private const MAKS_SALAH = 5;
+
+    private const DETIK_KUNCI = 900;
+
+    /** Pencarian siswa per satu kali lolos captcha. */
+    private const MAKS_CARI = 30;
+
+    /** Jeda minimum antara lolos captcha dan kirim — manusia butuh waktu mengisi. */
+    private const MIN_DETIK_ISI = 5;
+
+    /** Pengajuan publik per siswa per hari. */
+    private const MAKS_PER_SISWA_HARIAN = 3;
+
     /** Lama akses setelah lolos captcha, dalam menit. */
     private const MENIT_LOLOS = 30;
 
@@ -47,17 +66,29 @@ class PublicIzinController extends Controller
 
     public function verifikasi(Request $request): JsonResponse
     {
+        $kunciSalah = 'izin-salah:'.$request->ip();
+        if (RateLimiter::tooManyAttempts($kunciSalah, self::MAKS_SALAH)) {
+            $menit = (int) ceil(RateLimiter::availableIn($kunciSalah) / 60);
+
+            return response()->json(['message' => "Terlalu banyak jawaban salah. Coba lagi {$menit} menit lagi."], 429);
+        }
+
         $jawaban = $request->validate(['jawaban' => ['required', 'integer']])['jawaban'];
         $benar = $request->session()->pull(self::SESI_JAWABAN);
 
         if ($benar === null || (int) $jawaban !== (int) $benar) {
+            RateLimiter::hit($kunciSalah, self::DETIK_KUNCI);
+
             return response()->json([
                 'message' => 'Jawaban belum tepat. Coba soal yang baru.',
                 'soal' => $this->soalBaru($request),
             ], 422);
         }
 
+        RateLimiter::clear($kunciSalah);
         $request->session()->put(self::SESI_LOLOS, now()->addMinutes(self::MENIT_LOLOS)->timestamp);
+        $request->session()->put(self::SESI_LOLOS_PADA, now()->timestamp);
+        $request->session()->put(self::SESI_CARI, 0);
 
         return response()->json(['ok' => true]);
     }
@@ -65,6 +96,15 @@ class PublicIzinController extends Controller
     public function siswa(Request $request): JsonResponse
     {
         abort_unless($this->lolos($request), 403, 'Selesaikan pertanyaan keamanan dulu.');
+
+        // Kuota pencarian per sesi captcha: mencegah daftar siswa disedot
+        // dengan menebak-nebak nama berulang kali.
+        $jumlah = (int) $request->session()->get(self::SESI_CARI, 0) + 1;
+        if ($jumlah > self::MAKS_CARI) {
+            $request->session()->forget(self::SESI_LOLOS);
+            abort(403, 'Batas pencarian tercapai. Jawab pertanyaan keamanan lagi.');
+        }
+        $request->session()->put(self::SESI_CARI, $jumlah);
 
         $data = $request->validate([
             'school_id' => ['required', 'string'],
@@ -92,6 +132,19 @@ class PublicIzinController extends Controller
     {
         abort_unless($this->lolos($request), 403, 'Sesi pengajuan habis. Muat ulang halaman dan jawab pertanyaan keamanan lagi.');
 
+        // Honeypot: kolom tersembunyi yang hanya diisi bot. Pura-pura berhasil
+        // supaya bot tidak belajar bahwa ia ketahuan.
+        if (filled($request->input('situs'))) {
+            $request->session()->forget(self::SESI_LOLOS);
+            $request->session()->flash('izin_terkirim', ['nama' => 'anak Anda', 'sekolah' => 'sekolah']);
+
+            return to_route('izin.terkirim');
+        }
+
+        if (now()->timestamp - (int) $request->session()->get(self::SESI_LOLOS_PADA, 0) < self::MIN_DETIK_ISI) {
+            throw ValidationException::withMessages(['alasan' => 'Pengajuan terkirim terlalu cepat. Periksa lagi isian lalu kirim ulang.']);
+        }
+
         $data = $request->validate(PerizinanService::aturan() + [
             'school_id' => ['required', 'string'],
             'student_id' => ['required', 'string'],
@@ -110,6 +163,15 @@ class PublicIzinController extends Controller
 
         if (! $siswa) {
             throw ValidationException::withMessages(['student_id' => 'Siswa tidak ditemukan di sekolah yang dipilih. Cari ulang nama anak.']);
+        }
+
+        $hariIni = PengajuanIzin::withoutGlobalScope('school')
+            ->where('student_id', $siswa->id)
+            ->where('sumber', PengajuanIzin::SUMBER_PUBLIK)
+            ->where('created_at', '>=', now()->startOfDay())
+            ->count();
+        if ($hariIni >= self::MAKS_PER_SISWA_HARIAN) {
+            throw ValidationException::withMessages(['student_id' => 'Pengajuan untuk anak ini hari ini sudah banyak. Hubungi wali kelas bila perlu perubahan.']);
         }
 
         $izin = $perizinan->ajukan($siswa, $data, PengajuanIzin::SUMBER_PUBLIK, $request->file('bukti'));

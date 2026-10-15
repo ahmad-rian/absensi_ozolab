@@ -1,6 +1,8 @@
 import { Form, Head, Link, router } from '@inertiajs/react';
 import { Plus, Upload } from 'lucide-react';
 import InputError from '@/components/input-error';
+import { FilterKolom } from '@/components/shared/filter-kolom';
+import type { KolomFilter } from '@/components/shared/filter-kolom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +44,13 @@ type Props = {
     grups: { id: string; name: string; parent_id: string | null }[];
     tanpaGrup: boolean;
     kuota: { terpakai: number; kuota: number | null };
-    filters: { q: string; grup: string; arsip: boolean };
+    filters: {
+        q: string;
+        grup: string;
+        arsip: boolean;
+        f: Record<string, string> | string[];
+    };
+    kolomFilter: KolomFilter[];
 };
 
 export const STATUS_KARTU: Record<string, string> = {
@@ -60,6 +68,7 @@ export default function PesertaIndex({
     tanpaGrup,
     kuota,
     filters,
+    kolomFilter,
 }: Props) {
     const akses = useAksesPenyelenggara();
     const bolehKelola = akses.kelolaPeserta && !program.archived;
@@ -184,6 +193,11 @@ export default function PesertaIndex({
                             </option>
                         ))}
                     </select>
+                    <FilterKolom
+                        kolom={kolomFilter}
+                        nilai={Array.isArray(filters.f) ? {} : filters.f}
+                        onUbah={(f) => cari({ f })}
+                    />
                     <label className="flex items-center gap-2 text-sm">
                         <input
                             type="checkbox"

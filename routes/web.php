@@ -42,6 +42,7 @@ use App\Http\Controllers\BerkasKeluaranController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\General\DashboardController as GeneralDashboardController;
 use App\Http\Controllers\General\KatalogController as GeneralKatalogController;
+use App\Http\Controllers\General\KonteksController as GeneralKonteksController;
 use App\Http\Controllers\General\PenyelenggaraController;
 use App\Http\Controllers\General\SettingsController as GeneralSettingsController;
 use App\Http\Controllers\General\UserController as GeneralUserController;
@@ -604,6 +605,7 @@ Route::middleware(['auth', 'verified', 'super-admin'])
     ->name('general.')
     ->group(function () {
         Route::get('/', GeneralDashboardController::class)->name('dashboard');
+        Route::post('konteks', GeneralKonteksController::class)->name('konteks');
 
         Route::prefix('penyelenggara')->name('penyelenggara.')->group(function () {
             Route::get('/', [PenyelenggaraController::class, 'index'])->name('index');
@@ -637,11 +639,11 @@ Route::middleware(['auth', 'super-admin'])->get('admin/penyelenggara/{rest?}', f
 // Form izin/sakit publik (tanpa login). Captcha diverifikasi di server; cari
 // siswa & kirim hanya setelah lolos, dan semuanya di-throttle.
 Route::prefix('izin')->name('izin.')->group(function () {
-    Route::get('/', [PublicIzinController::class, 'index'])->middleware('throttle:30,1')->name('index');
-    Route::post('verifikasi', [PublicIzinController::class, 'verifikasi'])->middleware('throttle:10,1')->name('verifikasi');
-    Route::get('siswa', [PublicIzinController::class, 'siswa'])->middleware('throttle:30,1')->name('siswa');
-    Route::post('/', [PublicIzinController::class, 'store'])->middleware('throttle:5,1')->name('store');
-    Route::get('terkirim', [PublicIzinController::class, 'terkirim'])->name('terkirim');
+    Route::get('/', [PublicIzinController::class, 'index'])->middleware('throttle:izin-publik')->name('index');
+    Route::post('verifikasi', [PublicIzinController::class, 'verifikasi'])->middleware('throttle:izin-verifikasi')->name('verifikasi');
+    Route::get('siswa', [PublicIzinController::class, 'siswa'])->middleware('throttle:izin-publik')->name('siswa');
+    Route::post('/', [PublicIzinController::class, 'store'])->middleware('throttle:izin-kirim')->name('store');
+    Route::get('terkirim', [PublicIzinController::class, 'terkirim'])->middleware('throttle:izin-publik')->name('terkirim');
 });
 
 // Terima undangan — publik; token SHA-256 di DB, throttle melawan tebakan.
