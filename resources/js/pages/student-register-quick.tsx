@@ -1,6 +1,7 @@
 import { AlertTriangle, CheckCircle2, Loader2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
+import { KELAS_TOMBOL_GELAP } from '@/components/shared/latar-langit';
 import {
     RegistrationFooter,
     RegistrationHeader,
@@ -385,7 +386,7 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
                             </div>
                         )}
 
-                        <Button className="h-12 w-full text-base" onClick={submit} disabled={!canSubmit}>
+                        <Button className={`h-12 w-full text-base ${KELAS_TOMBOL_GELAP}`} onClick={submit} disabled={!canSubmit}>
                             {submitting && <Loader2 className="mr-2 size-4 animate-spin" />}
                             Simpan
                         </Button>

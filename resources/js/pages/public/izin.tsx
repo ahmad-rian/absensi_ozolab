@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
@@ -6,6 +6,7 @@ import {
     Loader2,
     Search,
     ShieldCheck,
+    NotebookPen,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import BrandLogo from '@/components/brand-logo';
@@ -16,6 +17,13 @@ import {
     rentangTanggalIzin,
 } from '@/components/izin/izin-fields';
 import type { JenisIzin } from '@/components/izin/izin-fields';
+import {
+    KELAS_FIELD_LEMBUT,
+    KELAS_KARTU_KACA,
+    KELAS_TOMBOL_GELAP,
+    LatarLangit,
+} from '@/components/shared/latar-langit';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -77,6 +85,7 @@ export default function IzinPublik({
     terverifikasi,
     maksHari,
 }: Props) {
+    const { name } = usePage<{ name: string }>().props;
     const [langkah, setLangkah] = useState(terverifikasi ? 1 : 0);
     const [soal, setSoal] = useState(captcha.soal);
     const [jawaban, setJawaban] = useState('');
@@ -230,18 +239,31 @@ export default function IzinPublik({
     return (
         <>
             <Head title="Ajukan Izin Siswa" />
-            <div className="min-h-dvh bg-[linear-gradient(180deg,#EAF3FB_0%,#F7FAFD_45%,#FFFFFF_100%)] dark:bg-[linear-gradient(180deg,#0B1626_0%,#0F1B2D_100%)]">
-                <div className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-8 sm:py-12">
-                    <header className="flex items-center gap-3">
-                        <BrandLogo className="size-9 rounded-lg" />
-                        <div>
-                            <h1 className="text-lg font-bold tracking-tight">
-                                Ajukan izin / sakit
-                            </h1>
-                            <p className="text-sm text-muted-foreground">
-                                Kabari sekolah bila anak tidak bisa hadir.
-                            </p>
+            <div className="relative isolate flex min-h-dvh flex-col">
+                <LatarLangit tetap />
+                <div className="flex items-center justify-between px-5 py-5 sm:px-8">
+                    <a
+                        href="/"
+                        className="flex items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-zinc-900/30 focus-visible:outline-none"
+                    >
+                        <BrandLogo className="size-7 fill-current text-zinc-900 dark:text-white" />
+                        <span className="text-sm font-semibold text-zinc-900 dark:text-white">
+                            {name}
+                        </span>
+                    </a>
+                    <ThemeToggle />
+                </div>
+                <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pb-12">
+                    <header className="text-center">
+                        <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-white bg-white shadow-[0_6px_16px_-6px_rgba(30,64,110,0.35)] dark:border-white/10 dark:bg-white/10">
+                            <NotebookPen className="size-5 text-zinc-800 dark:text-zinc-100" />
                         </div>
+                        <h1 className="text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl dark:text-white">
+                            Ajukan izin / sakit
+                        </h1>
+                        <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+                            Kabari sekolah bila anak tidak bisa hadir.
+                        </p>
                     </header>
 
                     <ol
@@ -254,16 +276,16 @@ export default function IzinPublik({
                                     className={cn(
                                         'h-1.5 rounded-full',
                                         i <= langkah
-                                            ? 'bg-primary'
-                                            : 'bg-muted',
+                                            ? 'bg-zinc-900 dark:bg-white'
+                                            : 'bg-white/70 dark:bg-white/10',
                                     )}
                                 />
                                 <span
                                     className={cn(
                                         'truncate text-[11px] font-medium',
                                         i === langkah
-                                            ? 'text-foreground'
-                                            : 'text-muted-foreground',
+                                            ? 'text-zinc-900 dark:text-white'
+                                            : 'text-zinc-500',
                                     )}
                                 >
                                     {nama}
@@ -272,14 +294,14 @@ export default function IzinPublik({
                         ))}
                     </ol>
 
-                    <section className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+                    <section className={`p-6 sm:p-8 ${KELAS_KARTU_KACA}`}>
                         {langkah === 0 && (
                             <form
                                 onSubmit={kirimCaptcha}
                                 className="grid gap-4"
                             >
                                 <div className="flex items-center gap-2 font-semibold">
-                                    <ShieldCheck className="size-5 text-primary" />{' '}
+                                    <ShieldCheck className="size-5 text-zinc-700 dark:text-zinc-300" />{' '}
                                     Pertanyaan keamanan
                                 </div>
                                 <p className="text-sm text-muted-foreground">
@@ -306,7 +328,7 @@ export default function IzinPublik({
                                                 ),
                                             )
                                         }
-                                        className="h-11 text-lg"
+                                        className={`h-11 text-lg ${KELAS_FIELD_LEMBUT}`}
                                     />
                                     <InputError
                                         message={galatCaptcha ?? undefined}
@@ -315,7 +337,7 @@ export default function IzinPublik({
                                 <Button
                                     type="submit"
                                     disabled={!jawaban || memeriksa}
-                                    className="h-11"
+                                    className={`h-11 ${KELAS_TOMBOL_GELAP}`}
                                 >
                                     {memeriksa ? (
                                         <Loader2 className="size-4 animate-spin" />
@@ -337,7 +359,7 @@ export default function IzinPublik({
                                             setCariSekolah(e.target.value)
                                         }
                                         placeholder="Cari nama sekolah"
-                                        className="h-11 pl-9"
+                                        className={`h-11 pl-9 ${KELAS_FIELD_LEMBUT}`}
                                     />
                                 </div>
                                 <ul className="grid max-h-80 gap-2 overflow-y-auto">
@@ -395,7 +417,7 @@ export default function IzinPublik({
                                             setCariAnak(e.target.value)
                                         }
                                         placeholder="Ketik minimal 3 huruf nama anak"
-                                        className="h-11 pl-9"
+                                        className={`h-11 pl-9 ${KELAS_FIELD_LEMBUT}`}
                                     />
                                     {mencari && (
                                         <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
@@ -566,6 +588,7 @@ export default function IzinPublik({
                                     <Button
                                         disabled={!keteranganLengkap}
                                         onClick={() => setLangkah(4)}
+                                        className={KELAS_TOMBOL_GELAP}
                                     >
                                         Lanjut <ArrowRight className="size-4" />
                                     </Button>
@@ -591,7 +614,10 @@ export default function IzinPublik({
                                         autoComplete="off"
                                         value={form.data.situs}
                                         onChange={(e) =>
-                                            form.setData('situs', e.target.value)
+                                            form.setData(
+                                                'situs',
+                                                e.target.value,
+                                            )
                                         }
                                     />
                                 </div>
@@ -698,6 +724,7 @@ export default function IzinPublik({
                                     </Button>
                                     <Button
                                         type="submit"
+                                        className={KELAS_TOMBOL_GELAP}
                                         disabled={
                                             form.processing ||
                                             !form.data.pengirim_nama ||

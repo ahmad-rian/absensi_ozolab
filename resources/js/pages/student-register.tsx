@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import { KELAS_TOMBOL_GELAP } from '@/components/shared/latar-langit';
 import {
     RegistrationFooter as Footer,
     RegistrationSection as FormSection,
@@ -643,7 +644,7 @@ export default function StudentRegister({
                         <div className="mt-6 text-center">
                             <Button
                                 onClick={handleNewSubmission}
-                                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                                className={`${KELAS_TOMBOL_GELAP}`}
                             >
                                 Daftarkan Siswa Lain
                             </Button>
@@ -670,7 +671,7 @@ export default function StudentRegister({
                         </p>
                         <Button
                             onClick={handleNewSubmission}
-                            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                            className={`${KELAS_TOMBOL_GELAP}`}
                         >
                             Daftarkan Siswa Lain
                         </Button>
@@ -1439,7 +1440,7 @@ export default function StudentRegister({
                             type="button"
                             onClick={goNext}
                             disabled={step === 2 && previewLoading}
-                            className="h-11 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                            className={`h-11 gap-2 ${KELAS_TOMBOL_GELAP} disabled:opacity-50`}
                         >
                             {step === 2 && previewLoading && (
                                 <Loader2 className="size-4 animate-spin" />
@@ -1455,7 +1456,7 @@ export default function StudentRegister({
                             disabled={
                                 processing || generating || !captchaVerified
                             }
-                            className="h-11 bg-gradient-to-r from-blue-600 to-indigo-600 font-semibold text-white shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                            className={`h-11 ${KELAS_TOMBOL_GELAP} disabled:opacity-50`}
                         >
                             {generating ? <Spinner /> : 'Daftarkan Siswa'}
                         </Button>
@@ -1510,7 +1511,7 @@ function StepProgress({ current }: { current: number }) {
                                     done
                                         ? 'bg-green-600 text-white'
                                         : active
-                                          ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
+                                          ? 'bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900'
                                           : 'bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
                                 }`}
                             >
@@ -1519,7 +1520,7 @@ function StepProgress({ current }: { current: number }) {
                             <span
                                 className={`mt-1 hidden max-w-[72px] text-center text-[10px] leading-tight sm:block ${
                                     active
-                                        ? 'font-semibold text-blue-600 dark:text-blue-400'
+                                        ? 'font-semibold text-zinc-900 dark:text-white'
                                         : 'text-muted-foreground'
                                 }`}
                             >

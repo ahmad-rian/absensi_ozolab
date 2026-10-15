@@ -1,6 +1,9 @@
 import { Head, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
+import BrandLogo from '@/components/brand-logo';
+import { KELAS_KARTU_KACA, LatarLangit } from '@/components/shared/latar-langit';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 
 /**
  * Kulit halaman pendaftaran publik.
@@ -15,22 +18,20 @@ import AppLogoIcon from '@/components/app-logo-icon';
  * dilihat pendaftar.
  */
 export function RegistrationShell({ title, children }: { title: string; children: ReactNode }) {
+    const { name, app } = usePage<{ name?: string; app?: { workspace_name?: string | null } | null }>().props;
+
     return (
         <>
             <Head title={title} />
-            <div className="relative flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
-                {/* Grid pattern + gradient glow background */}
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-                    <div
-                        className="absolute inset-0 opacity-[0.05] dark:opacity-[0.08] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_0%,black,transparent)]"
-                        style={{
-                            backgroundImage:
-                                'linear-gradient(to right, var(--foreground) 1px, transparent 1px), linear-gradient(to bottom, var(--foreground) 1px, transparent 1px)',
-                            backgroundSize: '40px 40px',
-                        }}
-                    />
-                    <div className="absolute -top-32 left-1/2 size-[42rem] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[120px] dark:bg-blue-500/15" />
-                </div>
+            <div className="relative isolate flex min-h-dvh flex-col">
+                <LatarLangit tetap />
+                <header className="relative z-10 flex items-center justify-between px-5 py-5 sm:px-8">
+                    <a href="/" className="flex items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-zinc-900/30 focus-visible:outline-none">
+                        <BrandLogo className="size-7 fill-current text-zinc-900 dark:text-white" />
+                        <span className="text-sm font-semibold text-zinc-900 dark:text-white">{app?.workspace_name ?? name}</span>
+                    </a>
+                    <ThemeToggle />
+                </header>
                 <div className="relative z-10 flex flex-1 flex-col">{children}</div>
             </div>
         </>
@@ -59,15 +60,15 @@ export function RegistrationHeader({
 
     return (
         <div className="mb-6 text-center">
-            {src ? (
-                <img src={src} alt={schoolName ?? title} className="mx-auto mb-4 size-16 rounded-xl object-contain" />
-            ) : (
-                <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600">
-                    <AppLogoIcon className="size-8 fill-current text-white" />
-                </div>
-            )}
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-            <p className="text-muted-foreground mt-2 text-sm sm:text-base">{subtitle}</p>
+            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl border border-white bg-white shadow-[0_6px_16px_-6px_rgba(30,64,110,0.35)] dark:border-white/10 dark:bg-white/10">
+                {src ? (
+                    <img src={src} alt={schoolName ?? title} className="size-11 rounded-lg object-contain" />
+                ) : (
+                    <AppLogoIcon className="size-8 fill-current text-zinc-800 dark:text-zinc-100" />
+                )}
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight text-balance text-zinc-900 sm:text-3xl dark:text-white">{title}</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm text-balance text-zinc-600 sm:text-base dark:text-zinc-400">{subtitle}</p>
         </div>
     );
 }
@@ -75,9 +76,9 @@ export function RegistrationHeader({
 /** Kartu putih bernomor. `/quick-regis` cuma punya satu, `/daftar` punya enam. */
 export function RegistrationSection({ number, title, children }: { number: number; title: string; children: ReactNode }) {
     return (
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className={`p-5 sm:p-7 ${KELAS_KARTU_KACA}`}>
             <div className="mb-5 flex items-center gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-sm font-bold text-white">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-sm font-semibold text-white dark:bg-white dark:text-zinc-900">
                     {number}
                 </span>
                 <h2 className="text-lg font-semibold">{title}</h2>
@@ -89,8 +90,8 @@ export function RegistrationSection({ number, title, children }: { number: numbe
 
 export function RegistrationFooter() {
     return (
-        <footer className="mt-auto border-t border-zinc-200 py-6 text-center dark:border-zinc-800">
-            <p className="text-muted-foreground text-sm">
+        <footer className="mt-auto py-6 text-center">
+            <p className="text-xs text-zinc-500">
                 Powered by <span className="font-semibold">Tyas Photo</span>
             </p>
         </footer>

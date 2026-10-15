@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { AlertTriangle, Check, CheckCircle2, Copy, Download, Loader2, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { KELAS_TOMBOL_GELAP, LatarLangit } from '@/components/shared/latar-langit';
 
 type Student = {
     id: string;
@@ -84,19 +85,8 @@ export default function StudentRegisterResult({ student, queued }: Props) {
     return (
         <>
             <Head title={`Hasil Pendaftaran — ${student.full_name}`} />
-            <div className="relative flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
-                {/* Grid pattern + gradient glow background */}
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-                    <div
-                        className="absolute inset-0 opacity-[0.05] dark:opacity-[0.08] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_0%,black,transparent)]"
-                        style={{
-                            backgroundImage:
-                                'linear-gradient(to right, var(--foreground) 1px, transparent 1px), linear-gradient(to bottom, var(--foreground) 1px, transparent 1px)',
-                            backgroundSize: '40px 40px',
-                        }}
-                    />
-                    <div className="absolute -top-32 left-1/2 size-[42rem] -translate-x-1/2 rounded-full bg-green-500/10 blur-[120px] dark:bg-green-500/15" />
-                </div>
+            <div className="relative isolate flex min-h-dvh flex-col">
+                <LatarLangit tetap />
 
                 <div className="relative z-10 flex flex-1 flex-col">
                     <div className="mx-auto w-full max-w-2xl px-4 py-8">
@@ -197,7 +187,7 @@ export default function StudentRegisterResult({ student, queued }: Props) {
                             <div className="mt-6 text-center">
                                 <a
                                     href="/daftar"
-                                    className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/25"
+                                    className={`inline-flex items-center justify-center px-4 py-2 text-sm ${KELAS_TOMBOL_GELAP}`}
                                 >
                                     Daftarkan Siswa Lain
                                 </a>
