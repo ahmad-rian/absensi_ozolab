@@ -1,5 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import { AlertCircle, LogIn, Users } from 'lucide-react';
+import { AlertCircle, Lock, Mail } from 'lucide-react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -11,6 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
+
+/** Field lembut abu tanpa garis, seperti kartu referensi; ikon di kiri. */
+const KELAS_FIELD =
+    'h-11 rounded-[12px] border-transparent bg-zinc-100/90 pl-10 shadow-none focus-visible:bg-white dark:bg-white/5 dark:focus-visible:bg-white/10';
 
 type Props = {
     status?: string;
@@ -30,13 +34,13 @@ export default function Login({ status, canResetPassword }: Props) {
                 {({ processing, errors }) => (
                     <>
                         {status && (
-                            <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
+                            <div className="rounded-md border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
                                 {status}
                             </div>
                         )}
 
                         {errors.email && !errors.email.includes('required') && (
-                            <Alert variant="destructive" className="rounded-xl">
+                            <Alert variant="destructive">
                                 <AlertCircle className="size-4" />
                                 <AlertDescription>
                                     {errors.email}
@@ -44,86 +48,77 @@ export default function Login({ status, canResetPassword }: Props) {
                             </Alert>
                         )}
 
-                        <div className="grid gap-5">
-                            <div className="grid gap-2">
-                                <Label
-                                    htmlFor="email"
-                                    className="text-sm font-medium"
-                                >
+                        <div className="grid gap-3">
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="email" className="sr-only">
                                     Email
                                 </Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="nama@email.com"
-                                    className="h-11 rounded-xl"
-                                />
+                                <div className="relative">
+                                    <Mail className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-zinc-400" />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        name="email"
+                                        required
+                                        autoFocus
+                                        tabIndex={1}
+                                        autoComplete="email"
+                                        placeholder="Email"
+                                        className={KELAS_FIELD}
+                                    />
+                                </div>
                                 <InputError message={errors.email} />
                             </div>
 
-                            <div className="grid gap-2">
-                                <div className="flex items-center">
-                                    <Label
-                                        htmlFor="password"
-                                        className="text-sm font-medium"
-                                    >
-                                        Kata Sandi
-                                    </Label>
-                                    {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-xs"
-                                            tabIndex={5}
-                                        >
-                                            Lupa kata sandi?
-                                        </TextLink>
-                                    )}
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="password" className="sr-only">
+                                    Kata sandi
+                                </Label>
+                                <div className="relative">
+                                    <Lock className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-zinc-400" />
+                                    <PasswordInput
+                                        id="password"
+                                        name="password"
+                                        required
+                                        tabIndex={2}
+                                        autoComplete="current-password"
+                                        placeholder="Kata sandi"
+                                        className={KELAS_FIELD}
+                                    />
                                 </div>
-                                <PasswordInput
-                                    id="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Masukkan kata sandi"
-                                    className="h-11 rounded-xl"
-                                />
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center space-x-2.5">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
-                                <Label
+                            <div className="flex items-center justify-between">
+                                <label
                                     htmlFor="remember"
-                                    className="text-sm font-normal"
+                                    className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400"
                                 >
+                                    <Checkbox
+                                        id="remember"
+                                        name="remember"
+                                        tabIndex={3}
+                                    />
                                     Ingat saya
-                                </Label>
+                                </label>
+                                {canResetPassword && (
+                                    <TextLink
+                                        href={request()}
+                                        className="text-xs font-medium text-zinc-800 no-underline hover:underline dark:text-zinc-200"
+                                        tabIndex={5}
+                                    >
+                                        Lupa kata sandi?
+                                    </TextLink>
+                                )}
                             </div>
 
                             <Button
                                 type="submit"
                                 tabIndex={4}
                                 disabled={processing}
-                                className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-50"
+                                className="mt-2 h-11 w-full rounded-[12px] bg-[linear-gradient(180deg,#3A3F47_0%,#15181D_100%)] text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(15,18,24,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] hover:brightness-110 dark:bg-[linear-gradient(180deg,#FFFFFF_0%,#E4E8EE_100%)] dark:text-zinc-900"
                             >
-                                {processing ? (
-                                    <Spinner />
-                                ) : (
-                                    <>
-                                        <LogIn className="mr-2 size-4" />
-                                        Masuk
-                                    </>
-                                )}
+                                {processing ? <Spinner /> : 'Masuk'}
                             </Button>
                         </div>
 
@@ -136,17 +131,16 @@ export default function Login({ status, canResetPassword }: Props) {
                             login, jadi kalimat "hubungi sekolah" di sini
                             adalah jalan keluar yang sebenarnya.
                         */}
-                        <div className="mt-1 flex items-start gap-2.5 rounded-xl border border-zinc-200/80 bg-zinc-50/60 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                            <Users className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                            <p className="text-xs leading-relaxed text-muted-foreground">
-                                <span className="font-medium text-foreground">
-                                    Orang tua siswa
-                                </span>{' '}
-                                memakai email yang terdaftar di sekolah. Belum
-                                menerima akun? Hubungi wali kelas atau operator
-                                sekolah.
-                            </p>
+                        <div className="flex items-center gap-3 text-[11px] text-zinc-400">
+                            <span className="h-px flex-1 border-t border-dashed border-zinc-300 dark:border-zinc-700" />
+                            Orang tua siswa
+                            <span className="h-px flex-1 border-t border-dashed border-zinc-300 dark:border-zinc-700" />
                         </div>
+                        <p className="-mt-2 text-center text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                            Masuk dengan email yang terdaftar di sekolah. Belum
+                            punya akun? Hubungi wali kelas atau operator
+                            sekolah.
+                        </p>
                     </>
                 )}
             </Form>
@@ -155,6 +149,6 @@ export default function Login({ status, canResetPassword }: Props) {
 }
 
 Login.layout = {
-    title: 'Selamat datang',
-    description: 'Satu pintu masuk untuk sekolah dan orang tua siswa.',
+    title: 'Masuk dengan email',
+    description: 'Untuk sekolah, orang tua siswa, dan penyelenggara kegiatan.',
 };
