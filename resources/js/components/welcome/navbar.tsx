@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ArrowRight, Moon, Send, Sun, X } from 'lucide-react';
+import { ArrowRight, Moon, NotebookPen, Send, Sun, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import BrandLogo from '@/components/brand-logo';
 import { Button } from '@/components/ui/button';
@@ -101,6 +101,17 @@ export function Navbar() {
                             </a>
                         ))}
                         <div className="mx-2 h-5 w-px bg-[var(--garis)]" />
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-full"
+                            asChild
+                        >
+                            <Link href="/izin">
+                                <NotebookPen className="mr-1.5 size-4" />
+                                Ajukan Izin
+                            </Link>
+                        </Button>
                         <Button
                             variant="ghost"
                             size="sm"
@@ -256,6 +267,19 @@ export function Navbar() {
                             transitionDelay: mobileVisible ? '380ms' : '0ms',
                         }}
                     >
+                        <Button
+                            variant="outline"
+                            className="mb-3 h-12 w-full rounded-xl text-base"
+                            asChild
+                        >
+                            <Link
+                                href="/izin"
+                                onClick={() => setMobileOpen(false)}
+                            >
+                                <NotebookPen className="mr-2 size-5" />
+                                Ajukan Izin / Sakit
+                            </Link>
+                        </Button>
                         <Button
                             variant="outline"
                             className="mb-3 h-12 w-full rounded-xl text-base"

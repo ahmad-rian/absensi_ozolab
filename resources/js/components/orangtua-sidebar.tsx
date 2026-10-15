@@ -9,6 +9,7 @@ import {
     LogOut,
     Moon,
     Users,
+    NotebookPen,
 } from 'lucide-react';
 import { NavGroup } from '@/components/nav-main';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,14 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { logout } from '@/routes';
-import { absensi, galeri, index, laporan, sholat } from '@/routes/orangtua';
+import {
+    absensi,
+    galeri,
+    index,
+    izin,
+    laporan,
+    sholat,
+} from '@/routes/orangtua';
 import { edit as editProfile } from '@/routes/profile';
 
 type Anak = {
@@ -77,6 +85,11 @@ export function OrangtuaSidebar() {
             title: 'Absensi Sekolah',
             href: withAnak(absensi().url, aktif),
             icon: CalendarCheck,
+        },
+        {
+            title: 'Ajukan Izin',
+            href: withAnak(izin().url, aktif),
+            icon: NotebookPen,
         },
         ...(props.fiturSholat
             ? [

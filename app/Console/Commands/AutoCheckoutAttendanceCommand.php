@@ -75,6 +75,9 @@ class AutoCheckoutAttendanceCommand extends Command
             ->where('school_id', $schedule->school_id)
             ->whereDate('attendance_date', $date->toDateString())
             ->where('type', AttendanceType::CheckIn)
+            // Izin/Sakit/Alpa bukan kedatangan: menutupnya dengan "Hadir" pulang
+            // palsu membuat anak yang izin terlihat hadir di laporan.
+            ->whereIn('status', [AttendanceStatus::Hadir->value, AttendanceStatus::Terlambat->value])
             ->when(
                 $schedule->classroom_id,
                 fn ($q) => $q->whereHas('student', fn ($s) => $s->withoutGlobalScope('school')->where('classroom_id', $schedule->classroom_id)),

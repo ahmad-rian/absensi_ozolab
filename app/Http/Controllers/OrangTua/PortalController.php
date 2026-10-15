@@ -6,13 +6,16 @@ use App\Enums\PrayerType;
 use App\Enums\SchoolFeature;
 use App\Http\Controllers\Controller;
 use App\Models\CardGenerationLog;
+use App\Models\PengajuanIzin;
 use App\Models\Student;
 use App\Services\Berkas\BerkasKeluaran;
+use App\Services\Perizinan\PerizinanService;
 use App\Services\Student\StudentReportBuilder;
 use App\Services\Student\StudentStatsBuilder;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use App\Support\StudentPhotoStorage;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -142,6 +145,49 @@ class PortalController extends Controller
         abort_unless($path && Storage::disk('public')->exists($path), 404);
 
         return Storage::disk('public')->download($path);
+    }
+
+    /**
+     * Ajukan izin/sakit untuk anak yang sedang dipilih, plus riwayat
+     * pengajuannya. Sekolah yang menyetujui; absensi terisi setelah disetujui.
+     */
+    public function izin(Request $request): Response
+    {
+        $student = $this->student($request);
+
+        return Inertia::render('orangtua/izin', $this->shell($request, [
+            'riwayat' => $student
+                ? PengajuanIzin::withoutGlobalScope('school')
+                    ->where('student_id', $student->id)
+                    ->latest()
+                    ->limit(30)
+                    ->get()
+                    ->map(fn (PengajuanIzin $i) => [
+                        'id' => $i->id,
+                        'jenis' => $i->jenis,
+                        'tanggal_mulai' => $i->tanggal_mulai,
+                        'tanggal_selesai' => $i->tanggal_selesai,
+                        'alasan' => $i->alasan,
+                        'status' => $i->status,
+                        'catatan_review' => $i->catatan_review,
+                        'dikirim' => $i->created_at?->toIso8601String(),
+                    ])
+                : [],
+            'maksHari' => PengajuanIzin::MAKS_HARI,
+        ]));
+    }
+
+    public function ajukanIzin(Request $request, PerizinanService $perizinan): RedirectResponse
+    {
+        $student = $this->student($request);
+        abort_unless($student, 404);
+
+        $data = $request->validate(PerizinanService::aturan(), PerizinanService::pesan());
+        $perizinan->ajukan($student, $data, PengajuanIzin::SUMBER_PORTAL, $request->file('bukti'), $student->parent_profile_id);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengajuan terkirim. Sekolah akan meninjaunya.']);
+
+        return to_route('orangtua.izin', ['anak' => $student->id]);
     }
 
     /**

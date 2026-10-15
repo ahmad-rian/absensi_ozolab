@@ -34,6 +34,8 @@ createInertiaApp({
             case name === 'scan/library':
             case name === 'parent-telegram':
             case name === 'public/card-form':
+            case name === 'public/izin':
+            case name === 'public/izin-terkirim':
             case name.startsWith('undangan/'):
             case name === 'penyelenggara/nonaktif':
                 return null;

@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\NotifikasiController;
 use App\Http\Controllers\Admin\OrangTuaController;
 use App\Http\Controllers\Admin\PanduanController;
 use App\Http\Controllers\Admin\PengaturanController;
+use App\Http\Controllers\Admin\PerizinanController;
 use App\Http\Controllers\Admin\PhotoSheetBatchController;
 use App\Http\Controllers\Admin\PhotoSheetController;
 use App\Http\Controllers\Admin\RfidCardController;
@@ -71,6 +72,7 @@ use App\Http\Controllers\Penyelenggara\SwitchController as PenyelenggaraSwitchCo
 use App\Http\Controllers\Penyelenggara\TimController as PenyelenggaraTimController;
 use App\Http\Controllers\PrayerScannerController;
 use App\Http\Controllers\Public\CardFormController;
+use App\Http\Controllers\PublicIzinController;
 use App\Http\Controllers\PublicProgramScanController;
 use App\Http\Controllers\PublicScannerController;
 use App\Http\Controllers\SeoController;
@@ -357,6 +359,14 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
         Route::post('absensi', [AbsensiController::class, 'store'])->name('admin.absensi.store');
     });
 
+    // Pengajuan izin/sakit dari orang tua (portal & form publik /izin).
+    Route::middleware(['permission:perizinan.access', 'feature:absensi_sekolah'])->prefix('perizinan')->name('admin.perizinan.')->group(function () {
+        Route::get('/', [PerizinanController::class, 'index'])->name('index');
+        Route::post('{izin}/setujui', [PerizinanController::class, 'setujui'])->name('setujui');
+        Route::post('{izin}/tolak', [PerizinanController::class, 'tolak'])->name('tolak');
+        Route::get('{izin}/bukti', [PerizinanController::class, 'bukti'])->name('bukti');
+    });
+
     Route::middleware(['permission:laporan.access', 'feature:laporan'])->group(function () {
         Route::get('laporan/export-pdf', [LaporanController::class, 'exportPdf'])->name('admin.laporan.export-pdf');
         Route::get('laporan/export', [LaporanController::class, 'export'])->name('admin.laporan.export');
@@ -624,6 +634,16 @@ Route::middleware(['auth', 'verified', 'super-admin'])
 Route::middleware(['auth', 'super-admin'])->get('admin/penyelenggara/{rest?}', fn (?string $rest = null) => redirect('/general/penyelenggara'.($rest ? '/'.$rest : ''), 301))
     ->where('rest', '.*');
 
+// Form izin/sakit publik (tanpa login). Captcha diverifikasi di server; cari
+// siswa & kirim hanya setelah lolos, dan semuanya di-throttle.
+Route::prefix('izin')->name('izin.')->group(function () {
+    Route::get('/', [PublicIzinController::class, 'index'])->middleware('throttle:30,1')->name('index');
+    Route::post('verifikasi', [PublicIzinController::class, 'verifikasi'])->middleware('throttle:10,1')->name('verifikasi');
+    Route::get('siswa', [PublicIzinController::class, 'siswa'])->middleware('throttle:30,1')->name('siswa');
+    Route::post('/', [PublicIzinController::class, 'store'])->middleware('throttle:5,1')->name('store');
+    Route::get('terkirim', [PublicIzinController::class, 'terkirim'])->name('terkirim');
+});
+
 // Terima undangan — publik; token SHA-256 di DB, throttle melawan tebakan.
 Route::get('undangan/{token}', [UndanganController::class, 'show'])->middleware('throttle:30,1')->name('undangan.show');
 Route::post('undangan/{token}', [UndanganController::class, 'accept'])->middleware('throttle:10,1')->name('undangan.accept');
@@ -721,6 +741,8 @@ Route::middleware(['auth', 'permission:portal-orang-tua.access', 'password.ganti
         Route::get('sholat', [PortalController::class, 'sholat'])->name('sholat');
         Route::get('laporan', [PortalController::class, 'laporan'])->name('laporan');
         Route::get('galeri', [PortalController::class, 'galeri'])->name('galeri');
+        Route::get('izin', [PortalController::class, 'izin'])->name('izin');
+        Route::post('izin', [PortalController::class, 'ajukanIzin'])->middleware('throttle:10,1')->name('izin.store');
         Route::get('unduh/{asset}', [PortalController::class, 'download'])->name('download');
 
         // Bentuk lama yang sudah beredar sebagai tautan; diarahkan, bukan 404.

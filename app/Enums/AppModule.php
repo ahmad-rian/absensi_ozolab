@@ -17,6 +17,7 @@ enum AppModule: string
     case Kelas = 'kelas';
     case JadwalAbsensi = 'jadwal-absensi';
     case Absensi = 'absensi';
+    case Perizinan = 'perizinan';
     case RfidCards = 'kartu-rfid';
     case KunjunganPerpus = 'kunjungan-perpus';
     case Laporan = 'laporan';
@@ -62,6 +63,7 @@ enum AppModule: string
             self::Kelas => 'Kelas',
             self::JadwalAbsensi => 'Jadwal Absensi',
             self::Absensi => 'Absensi',
+            self::Perizinan => 'Data Perizinan',
             self::RfidCards => 'Kartu RFID',
             self::KunjunganPerpus => 'Kunjungan Perpus',
             self::Laporan => 'Laporan',
@@ -98,7 +100,7 @@ enum AppModule: string
     {
         return match ($this) {
             self::Dashboard, self::Siswa, self::OrangTua, self::Kelas,
-            self::JadwalAbsensi, self::Absensi, self::RfidCards,
+            self::JadwalAbsensi, self::Absensi, self::Perizinan, self::RfidCards,
             self::KunjunganPerpus, self::Laporan,
             self::PortalOrangTua, self::Notifikasi => 'Akademik',
 
@@ -139,7 +141,7 @@ enum AppModule: string
 
             UserRole::Admin => [
                 self::Dashboard, self::Siswa, self::OrangTua, self::Kelas,
-                self::JadwalAbsensi, self::Absensi, self::RfidCards,
+                self::JadwalAbsensi, self::Absensi, self::Perizinan, self::RfidCards,
                 self::KunjunganPerpus, self::Laporan,
                 self::Notifikasi, self::Frames, self::CardLayouts, self::CardGeneration,
                 self::AlbumLayouts, self::AlbumGeneration, self::PhotoSheets,
@@ -147,7 +149,7 @@ enum AppModule: string
             ],
 
             UserRole::Guru => [
-                self::Dashboard, self::Siswa, self::Absensi,
+                self::Dashboard, self::Siswa, self::Absensi, self::Perizinan,
                 self::Laporan, self::Notifikasi,
             ],
 

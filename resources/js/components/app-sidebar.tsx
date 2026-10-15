@@ -9,6 +9,7 @@ import {
     Camera,
     Clock,
     CreditCard,
+    FileCheck,
     FileSpreadsheet,
     Frame,
     Globe,
@@ -100,6 +101,7 @@ export const sections: NavSection[] = [
         label: 'Absensi',
         items: [
             { title: 'Absensi', href: '/admin/absensi', icon: CalendarCheck, permission: 'absensi.access', feature: 'absensi_sekolah' },
+            { title: 'Data Perizinan', href: '/admin/perizinan', icon: FileCheck, permission: 'perizinan.access', feature: 'absensi_sekolah' },
             { title: 'Jadwal Absensi', href: '/admin/jadwal-absensi', icon: Clock, permission: 'jadwal-absensi.access', feature: 'absensi_sekolah' },
             { title: 'Kartu RFID', href: '/admin/rfid-cards', icon: CreditCard, permission: 'kartu-rfid.access', feature: 'absensi_rfid' },
             { title: 'Kunjungan Perpus', href: '/admin/kunjungan-perpus', icon: BookOpen, permission: 'kunjungan-perpus.access', feature: 'kunjungan_perpustakaan' },
@@ -202,7 +204,7 @@ export const sections: NavSection[] = [
 export function AppSidebar() {
     const { auth, notifications, features, studioUrl, generateMassal } = usePage().props as unknown as {
         auth: { user: { roles?: string[]; permissions?: string[] } | null };
-        notifications?: { unread: number };
+        notifications?: { unread: number; izin?: number };
         features?: Partial<SchoolFeatureMap>;
         studioUrl?: string;
         generateMassal?: boolean;
@@ -211,6 +213,7 @@ export function AppSidebar() {
     const isSuperAdmin = (auth?.user?.roles ?? []).includes('SUPER_ADMIN');
     const granted = auth?.user?.permissions ?? [];
     const unread = notifications?.unread ?? 0;
+    const izinMenunggu = notifications?.izin ?? 0;
 
     const visible = useMemo(() => {
         // Prop `features` selalu utuh dari server. Kalau benar-benar absen,
@@ -236,9 +239,13 @@ export function AppSidebar() {
                         return { ...item, href: studioUrl as string };
                     }
 
+                    if (item.href === '/admin/perizinan') {
+                        return { ...item, badge: izinMenunggu };
+                    }
+
                     return item.href === '/admin/notifikasi' ? { ...item, badge: unread } : item;
                 });
-    }, [isSuperAdmin, granted, unread, features, studioUrl, generateMassal]);
+    }, [isSuperAdmin, granted, unread, izinMenunggu, features, studioUrl, generateMassal]);
 
     const overview = visible(overviewItems);
 

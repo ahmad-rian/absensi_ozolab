@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\Controllers\General\SettingsController;
 use App\Models\NotificationLog;
+use App\Models\PengajuanIzin;
 use App\Models\Penyelenggara;
 use App\Models\School;
 use App\Models\Setting;
@@ -81,8 +82,12 @@ class HandleInertiaRequests extends Middleware
                     'unread' => $user->school_id
                         ? NotificationLog::where('school_id', $user->school_id)->whereNull('read_at')->count()
                         : 0,
+                    // Lencana Data Perizinan: pengajuan yang menunggu tinjauan.
+                    'izin' => $user->school_id && $user->can('perizinan.access')
+                        ? PengajuanIzin::withoutGlobalScope('school')->where('school_id', $user->school_id)->where('status', PengajuanIzin::MENUNGGU)->count()
+                        : 0,
                 ];
-            } : ['unread' => 0],
+            } : ['unread' => 0, 'izin' => 0],
             // Peta lengkap nyala/mati fitur sekolah aktif. Selalu utuh (semua
             // case hadir), jadi frontend boleh memakai perbandingan ketat dan
             // tidak perlu menebak makna key yang hilang.
