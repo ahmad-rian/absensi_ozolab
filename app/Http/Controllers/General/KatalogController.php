@@ -7,14 +7,15 @@ use App\Models\CardFormSubmission;
 use App\Models\Kategori;
 use App\Models\Penyelenggara;
 use App\Models\Program;
+use App\Support\KategoriTemplates;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Daftar kategori dan program lintas penyelenggara (read-only). Mengubahnya
- * tetap di area penyelenggara — tombol "Buka" memilih konteksnya dulu.
+ * Daftar kategori dan program lintas penyelenggara. Tambah/arsip/hapus kategori
+ * ada di General\KategoriController; editor kolomnya tetap di area penyelenggara.
  */
 class KatalogController extends Controller
 {
@@ -22,7 +23,10 @@ class KatalogController extends Controller
     {
         $kategoris = Kategori::acrossPenyelenggara()
             ->with('penyelenggara:id,name')
-            ->withCount(['programs' => fn ($q) => $q->withoutGlobalScope('penyelenggara')->whereNull('archived_at')])
+            ->withCount([
+                'programs' => fn ($q) => $q->withoutGlobalScope('penyelenggara')->whereNull('archived_at'),
+                'programs as programs_semua_count' => fn ($q) => $q->withoutGlobalScope('penyelenggara'),
+            ])
             ->when($request->penyelenggara, fn ($q, $id) => $q->where('penyelenggara_id', $id))
             ->when($request->q, fn ($q, $s) => $q->where('name', 'like', '%'.addcslashes($s, '%_\\').'%'))
             ->orderBy('name')
@@ -36,6 +40,8 @@ class KatalogController extends Controller
                 'istilah_grup' => $k->istilah_grup,
                 'archived' => $k->isArchived(),
                 'programs_count' => $k->programs_count,
+                // Hapus hanya untuk kategori yang belum pernah punya program.
+                'bisa_dihapus' => $k->programs_semua_count === 0,
                 'penyelenggara' => ['id' => $k->penyelenggara_id, 'name' => $k->penyelenggara?->name],
             ]);
 
@@ -43,6 +49,12 @@ class KatalogController extends Controller
             'kategoris' => $kategoris,
             'penyelenggaras' => $this->opsiPenyelenggara(),
             'filters' => ['penyelenggara' => $request->penyelenggara ?? '', 'q' => $request->q ?? ''],
+            'templates' => collect(KategoriTemplates::all())->map(fn (array $t, string $key) => [
+                'key' => $key,
+                'name' => $t['name'],
+                'istilah_peserta' => $t['istilah_peserta'],
+                'istilah_grup' => $t['istilah_grup'],
+            ])->values(),
         ]);
     }
 

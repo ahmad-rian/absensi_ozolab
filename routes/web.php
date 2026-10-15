@@ -43,6 +43,7 @@ use App\Http\Controllers\BerkasKeluaranController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\General\DashboardController as GeneralDashboardController;
 use App\Http\Controllers\General\KatalogController as GeneralKatalogController;
+use App\Http\Controllers\General\KategoriController as GeneralKategoriController;
 use App\Http\Controllers\General\KonteksController as GeneralKonteksController;
 use App\Http\Controllers\General\PenyelenggaraController;
 use App\Http\Controllers\General\SettingsController as GeneralSettingsController;
@@ -632,6 +633,9 @@ Route::middleware(['auth', 'verified', 'super-admin'])
         });
 
         Route::get('kategori', [GeneralKatalogController::class, 'kategori'])->name('kategori');
+        Route::post('kategori', [GeneralKategoriController::class, 'store'])->name('kategori.store');
+        Route::post('kategori/{kategori}/arsip', [GeneralKategoriController::class, 'arsip'])->name('kategori.arsip');
+        Route::delete('kategori/{kategori}', [GeneralKategoriController::class, 'destroy'])->name('kategori.destroy');
         Route::get('program', [GeneralKatalogController::class, 'program'])->name('program');
 
         Route::get('pengguna', [GeneralUserController::class, 'index'])->name('pengguna');
