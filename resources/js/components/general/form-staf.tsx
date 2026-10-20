@@ -1,8 +1,9 @@
 import { useForm } from '@inertiajs/react';
+import { MatriksModul } from '@/components/general/matriks-modul';
+import type { GrupModul } from '@/components/general/matriks-modul';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -15,10 +16,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { store, update } from '@/routes/general/staf';
 
-export type ModulGeneral = {
-    permission: string;
-    label: string;
-    keterangan: string | null;
+export type PeranStaf = {
+    id: string;
+    name: string;
+    modul: string[];
+    jumlah_staf: number;
 };
 
 export type Staf = {
@@ -27,11 +29,11 @@ export type Staf = {
     email: string;
     phone: string | null;
     is_active: boolean;
+    peran: { id: string; name: string } | null;
     modul: string[];
+    modul_efektif: string[];
     last_login_at: string | null;
 };
-
-const MODUL_PENGGUNA = 'general-pengguna.access';
 
 type DataStaf = {
     name: string;
@@ -39,21 +41,24 @@ type DataStaf = {
     phone: string;
     password: string;
     password_confirmation: string;
+    peran_id: string;
     modul: string[];
 };
 
 /**
- * Tambah / ubah akun staf General + matriks modul yang boleh dibuka.
- * Modul Pengguna hanya bisa diberikan super admin (server juga menjaga).
+ * Tambah / ubah akun staf General: peran (template modul) + modul tambahan
+ * per akun. Modul khusus hanya bisa diberikan super admin (server menjaga).
  */
 export function FormStaf({
     staf,
     katalog,
+    peranStaf,
     bolehBeriPengguna,
     onTutup,
 }: {
     staf: Staf | null;
-    katalog: ModulGeneral[];
+    katalog: GrupModul[];
+    peranStaf: PeranStaf[];
     bolehBeriPengguna: boolean;
     onTutup: () => void;
 }) {
@@ -64,36 +69,11 @@ export function FormStaf({
         phone: staf?.phone ?? '',
         password: '',
         password_confirmation: '',
+        peran_id: staf?.peran?.id ?? '',
         modul: staf?.modul ?? [],
     });
-
-    const terkunci = (permission: string) =>
-        permission === MODUL_PENGGUNA && !bolehBeriPengguna;
-    const bisaDipilih = katalog.filter((m) => !terkunci(m.permission));
-    const semuaTerpilih = bisaDipilih.every((m) =>
-        form.data.modul.includes(m.permission),
-    );
-
-    const ubahModul = (permission: string, pilih: boolean) =>
-        form.setData(
-            'modul',
-            pilih
-                ? [...form.data.modul, permission]
-                : form.data.modul.filter((p) => p !== permission),
-        );
-
-    const pilihSemua = () =>
-        form.setData(
-            'modul',
-            semuaTerpilih
-                ? form.data.modul.filter((p) => terkunci(p))
-                : [
-                      ...new Set([
-                          ...form.data.modul,
-                          ...bisaDipilih.map((m) => m.permission),
-                      ]),
-                  ],
-        );
+    const modulPeran =
+        peranStaf.find((p) => p.id === form.data.peran_id)?.modul ?? [];
 
     const simpan = (e: React.FormEvent) => {
         e.preventDefault();
@@ -194,65 +174,44 @@ export function FormStaf({
                         </div>
                     )}
 
-                    <fieldset className="grid gap-2">
-                        <div className="flex items-center justify-between">
-                            <legend className="text-sm font-medium">
-                                Hak akses modul
-                            </legend>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={pilihSemua}
-                            >
-                                {semuaTerpilih ? 'Kosongkan' : 'Pilih semua'}
-                            </Button>
-                        </div>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                            {katalog.map((m) => {
-                                const id = `modul-${m.permission}`;
-                                const kunci = terkunci(m.permission);
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="staf-peran">Peran staf</Label>
+                        <select
+                            id="staf-peran"
+                            value={form.data.peran_id}
+                            onChange={(e) =>
+                                form.setData('peran_id', e.target.value)
+                            }
+                            className="h-9 rounded-md border bg-background px-2 text-sm"
+                        >
+                            <option value="">
+                                Tanpa peran — centang modul sendiri
+                            </option>
+                            {peranStaf.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                    {p.name} ({p.modul.length} modul)
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-muted-foreground">
+                            Modul dari peran ikut berubah bila perannya diubah.
+                            Centang di bawah untuk modul tambahan khusus akun
+                            ini.
+                        </p>
+                        <InputError message={form.errors.peran_id} />
+                    </div>
 
-                                return (
-                                    <label
-                                        key={m.permission}
-                                        htmlFor={id}
-                                        className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 hover:bg-muted/40 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
-                                    >
-                                        <Checkbox
-                                            id={id}
-                                            checked={form.data.modul.includes(
-                                                m.permission,
-                                            )}
-                                            disabled={kunci}
-                                            onCheckedChange={(c) =>
-                                                ubahModul(
-                                                    m.permission,
-                                                    c === true,
-                                                )
-                                            }
-                                            className="mt-0.5"
-                                        />
-                                        <span className="grid gap-0.5">
-                                            <span className="text-sm font-medium">
-                                                {m.label}
-                                            </span>
-                                            {m.keterangan && (
-                                                <span className="text-xs text-muted-foreground">
-                                                    {m.keterangan}
-                                                </span>
-                                            )}
-                                            {kunci && (
-                                                <span className="text-xs text-amber-700 dark:text-amber-400">
-                                                    Hanya super admin yang bisa
-                                                    memberi modul ini.
-                                                </span>
-                                            )}
-                                        </span>
-                                    </label>
-                                );
-                            })}
-                        </div>
+                    <fieldset className="grid gap-2">
+                        <legend className="mb-2 text-sm font-medium">
+                            Hak akses modul
+                        </legend>
+                        <MatriksModul
+                            katalog={katalog}
+                            nilai={form.data.modul}
+                            onUbah={(nilai) => form.setData('modul', nilai)}
+                            dariPeran={modulPeran}
+                            bolehKhusus={bolehBeriPengguna}
+                        />
                         <InputError message={form.errors.modul} />
                     </fieldset>
 

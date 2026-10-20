@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { CheckCircle2, Download, Image as ImageIcon, Loader2, Sparkles, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import BrandLogo from '@/components/brand-logo';
 import { CardCropReposition  } from '@/components/shared/card-crop-reposition';
 import type {CropRect} from '@/components/shared/card-crop-reposition';
 import { PilihKecamatan } from '@/components/shared/pilih-kecamatan';
@@ -211,9 +212,7 @@ export default function PublicCardForm({ form, result }: Props) {
             <div className="flex min-h-screen items-start justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4 py-10">
                 <div className="w-full max-w-lg">
                     <div className="mb-6 flex flex-col items-center text-center">
-                        <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-                            <Sparkles className="size-6" />
-                        </div>
+                        <BrandLogo className="mb-3 size-14 rounded-2xl" />
                         <h1 className="text-2xl font-bold tracking-tight text-emerald-700">{form.name}</h1>
                         <p className="text-muted-foreground mt-1 text-sm">Isi data berikut untuk membuat kartu Anda.</p>
                     </div>

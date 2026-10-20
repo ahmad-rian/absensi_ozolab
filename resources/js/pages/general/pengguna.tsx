@@ -1,10 +1,13 @@
 import { Form, Head, router, usePage } from '@inertiajs/react';
 import { KeyRound } from 'lucide-react';
 import { useState } from 'react';
+import { DaftarPeranStaf } from '@/components/general/daftar-peran-staf';
 import { DaftarStaf } from '@/components/general/daftar-staf';
 import { FilterPenyelenggara } from '@/components/general/filter-penyelenggara';
-import type { ModulGeneral, Staf } from '@/components/general/form-staf';
+import type { PeranStaf, Staf } from '@/components/general/form-staf';
 import { Halaman } from '@/components/general/halaman';
+import type { GrupModul } from '@/components/general/matriks-modul';
+import { TombolMasukSebagai } from '@/components/general/tombol-masuk-sebagai';
 import { UndangAdmin } from '@/components/general/undang-admin';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -34,10 +37,14 @@ type Akun = {
 };
 
 type Props = {
-    tab: 'staf' | 'penyelenggara';
+    tab: 'staf' | 'peran' | 'penyelenggara';
     staf: Staf[];
-    katalogModul: ModulGeneral[];
+    katalogModul: GrupModul[];
+    peranStaf: PeranStaf[];
     bolehBeriPengguna: boolean;
+    bolehKelolaStaf: boolean;
+    bolehKelolaPenyelenggara: boolean;
+    bolehMasukSebagai: boolean;
     pengguna: {
         data: Akun[];
         total: number;
@@ -60,6 +67,7 @@ const PERAN: Record<string, string> = {
 
 const TAB = [
     { nilai: 'staf', label: 'Staf General' },
+    { nilai: 'peran', label: 'Peran Staf' },
     { nilai: 'penyelenggara', label: 'Akun Penyelenggara' },
 ] as const;
 
@@ -68,7 +76,11 @@ export default function GeneralPengguna({
     tab,
     staf,
     katalogModul,
+    peranStaf,
     bolehBeriPengguna,
+    bolehKelolaStaf,
+    bolehKelolaPenyelenggara,
+    bolehMasukSebagai,
     pengguna,
     penyelenggaras,
     filters,
@@ -89,7 +101,7 @@ export default function GeneralPengguna({
     const pindahTab = (nilai: Props['tab']) =>
         router.get(
             penggunaRoute.url(),
-            nilai === 'penyelenggara' ? { tab: nilai } : {},
+            nilai === 'staf' ? {} : { tab: nilai },
             { preserveState: true, replace: true },
         );
 
@@ -108,13 +120,17 @@ export default function GeneralPengguna({
                             di area sekolah.
                         </p>
                     </div>
-                    {tab === 'penyelenggara' && (
+                    {tab === 'penyelenggara' && bolehKelolaPenyelenggara && (
                         <UndangAdmin penyelenggaras={penyelenggaras} />
                     )}
                 </div>
 
                 <div className="flex flex-wrap gap-2" role="tablist">
-                    {TAB.map((t) => (
+                    {TAB.filter((t) =>
+                        t.nilai === 'penyelenggara'
+                            ? bolehKelolaPenyelenggara
+                            : bolehKelolaStaf,
+                    ).map((t) => (
                         <button
                             key={t.nilai}
                             type="button"
@@ -138,14 +154,25 @@ export default function GeneralPengguna({
                     ))}
                 </div>
 
-                {tab === 'staf' ? (
+                {tab === 'staf' && (
                     <DaftarStaf
                         staf={staf}
                         katalog={katalogModul}
+                        peranStaf={peranStaf}
                         bolehBeriPengguna={bolehBeriPengguna}
+                        bolehMasukSebagai={bolehMasukSebagai}
                         idSaya={auth?.user?.id ?? null}
                     />
-                ) : (
+                )}
+                {tab === 'peran' && (
+                    <DaftarPeranStaf
+                        peran={peranStaf}
+                        katalog={katalogModul}
+                        bolehKhusus={bolehBeriPengguna}
+                        error={errors?.peran}
+                    />
+                )}
+                {tab === 'penyelenggara' && (
                     <>
                         <div className="flex flex-col gap-2 lg:flex-row">
                             <FilterPenyelenggara
@@ -257,6 +284,17 @@ export default function GeneralPengguna({
                                                 </td>
                                                 <td className="p-3">
                                                     <div className="flex justify-end gap-2">
+                                                        {bolehMasukSebagai &&
+                                                            u.is_active && (
+                                                                <TombolMasukSebagai
+                                                                    userId={
+                                                                        u.id
+                                                                    }
+                                                                    nama={
+                                                                        u.name
+                                                                    }
+                                                                />
+                                                            )}
                                                         <Button
                                                             size="sm"
                                                             variant="outline"

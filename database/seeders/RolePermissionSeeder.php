@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\AppModule;
+use App\Enums\ModulGeneral;
 use App\Enums\UserRole;
 use App\Models\Permission;
 use App\Models\Role;
@@ -23,6 +24,11 @@ class RolePermissionSeeder extends Seeder
         $permissions = AppModule::permissions();
 
         foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+        }
+
+        // Modul workspace General (staf Tyas) — di luar matriks sekolah.
+        foreach (ModulGeneral::permissions() as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\General;
 
+use App\Enums\ModulGeneral;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\GoogleDriveService;
@@ -36,11 +37,16 @@ class SettingsController extends Controller
 
     public const WA_TOKEN = 'general_wa_fonnte_token';
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $logo = Setting::getValue(self::LOGO);
 
         return Inertia::render('general/pengaturan', [
+            'boleh' => [
+                'umum' => $request->user()->can(ModulGeneral::PengaturanUmum->permission()),
+                'drive' => $request->user()->can(ModulGeneral::PengaturanDrive->permission()),
+                'whatsapp' => $request->user()->can(ModulGeneral::PengaturanWhatsapp->permission()),
+            ],
             'umum' => [
                 'nama' => Setting::getValue(self::NAMA, 'Absensi General'),
                 'logo' => $logo ? Storage::disk('public')->url($logo) : null,

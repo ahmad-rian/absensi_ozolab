@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\General;
 
+use App\Enums\ModulGeneral;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\Penyelenggara;
@@ -44,9 +45,13 @@ class UserController extends Controller
             ]);
 
         return Inertia::render('general/pengguna', [
-            'tab' => $request->query('tab') === 'penyelenggara' ? 'penyelenggara' : 'staf',
+            'tab' => $request->query('tab') === 'penyelenggara' || ! $request->user()->can(ModulGeneral::PenggunaStaf->permission()) ? 'penyelenggara' : 'staf',
             'staf' => StafController::daftar(),
-            'katalogModul' => StafController::katalogModul(),
+            'katalogModul' => ModulGeneral::katalog(),
+            'peranStaf' => PeranStafController::daftar(),
+            'bolehKelolaStaf' => $request->user()->can(ModulGeneral::PenggunaStaf->permission()),
+            'bolehKelolaPenyelenggara' => $request->user()->can(ModulGeneral::PenggunaPenyelenggara->permission()),
+            'bolehMasukSebagai' => $request->user()->isSuperAdmin(),
             'bolehBeriPengguna' => $request->user()->isSuperAdmin(),
             'pengguna' => $pengguna,
             'penyelenggaras' => Penyelenggara::orderBy('name')->get(['id', 'name']),

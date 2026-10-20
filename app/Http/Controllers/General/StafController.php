@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\General;
 
-use App\Enums\AppModule;
+use App\Enums\ModulGeneral;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -17,11 +18,11 @@ use Inertia\Inertia;
 
 /**
  * Akun staf Tyas di workspace General: CRUD + modul yang boleh dibuka,
- * dicentang per akun (permission langsung `general-*.access`).
+ * dari peran staf (template) ditambah centang langsung per akun.
  *
- * Akun staf tidak punya sekolah maupun penyelenggara. Hanya super admin yang
- * boleh memberi modul Pengguna — supaya staf tidak bisa menaikkan haknya
- * sendiri — dan staf tidak pernah bisa mengubah akunnya sendiri.
+ * Akun staf tidak punya sekolah maupun penyelenggara. Modul Staf & Peran Staf
+ * hanya bisa diberikan super admin — staf tidak bisa menaikkan hak siapa pun —
+ * dan staf tidak pernah bisa mengubah akunnya sendiri.
  */
 class StafController extends Controller
 {
@@ -34,8 +35,9 @@ class StafController extends Controller
         ], $this->pesan());
 
         $modul = $this->modulBoleh($request, $data['modul'] ?? []);
+        $peran = $this->peranBoleh($request, $data['peran_id'] ?? null);
 
-        $staf = DB::transaction(function () use ($data, $modul) {
+        $staf = DB::transaction(function () use ($data, $modul, $peran) {
             $staf = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -49,13 +51,13 @@ class StafController extends Controller
             // Hook BelongsToSchool mengisi school_id dari sekolah pembuat;
             // akun staf General wajib tanpa sekolah.
             $staf->forceFill(['school_id' => null])->saveQuietly();
-            $staf->assignRole(UserRole::StafGeneral->value);
+            $staf->syncRoles(array_filter([UserRole::StafGeneral->value, $peran?->name]));
             $staf->syncPermissions($modul);
 
             return $staf;
         });
 
-        $this->catat($request, $staf, 'staf general dibuat', ['modul' => $modul]);
+        $this->catat($request, $staf, 'staf general dibuat', ['peran' => $peran?->name, 'modul' => $modul]);
         Inertia::flash('toast', ['type' => 'success', 'message' => "Akun {$staf->name} dibuat. Ia wajib mengganti sandi saat login pertama."]);
 
         return back();
@@ -70,13 +72,15 @@ class StafController extends Controller
         ], $this->pesan());
 
         $modul = $this->modulBoleh($request, $data['modul'] ?? [], $staf);
+        $peran = $this->peranBoleh($request, $data['peran_id'] ?? null, $staf);
 
-        DB::transaction(function () use ($staf, $data, $modul) {
+        DB::transaction(function () use ($staf, $data, $modul, $peran) {
             $staf->update(['name' => $data['name'], 'email' => $data['email'], 'phone' => $data['phone'] ?? null]);
+            $staf->syncRoles(array_filter([UserRole::StafGeneral->value, $peran?->name]));
             $staf->syncPermissions($modul);
         });
 
-        $this->catat($request, $staf, 'staf general diubah', ['modul' => $modul]);
+        $this->catat($request, $staf, 'staf general diubah', ['peran' => $peran?->name, 'modul' => $modul]);
         Inertia::flash('toast', ['type' => 'success', 'message' => "Akun {$staf->name} disimpan."]);
 
         return back();
@@ -119,6 +123,7 @@ class StafController extends Controller
 
         DB::transaction(function () use ($staf) {
             $staf->syncPermissions([]);
+            $staf->syncRoles([UserRole::StafGeneral->value]);
             $staf->delete();
         });
 
@@ -136,7 +141,7 @@ class StafController extends Controller
     public static function daftar(): array
     {
         return self::queryStaf()
-            ->with('permissions:id,name')
+            ->with(['permissions:id,name', 'roles' => fn ($q) => $q->with('permissions:id,name')])
             ->orderBy('name')
             ->get()
             ->map(fn (User $u) => [
@@ -145,24 +150,15 @@ class StafController extends Controller
                 'email' => $u->email,
                 'phone' => $u->phone,
                 'is_active' => $u->is_active,
+                'peran' => ($p = $u->roles->firstWhere('lingkup', Role::LINGKUP_GENERAL)) ? ['id' => $p->id, 'name' => $p->name] : null,
+                // Modul centang langsung (tambahan di luar peran).
                 'modul' => $u->permissions->pluck('name')->values(),
+                // Modul yang benar-benar dipegang: dari peran + tambahan.
+                'modul_efektif' => $u->roles->flatMap(fn ($r) => $r->permissions->pluck('name'))
+                    ->merge($u->permissions->pluck('name'))->unique()->values(),
                 'last_login_at' => $u->last_login_at?->toIso8601String(),
             ])
             ->all();
-    }
-
-    /**
-     * Katalog modul General untuk matriks centang.
-     *
-     * @return array<int, array{permission: string, label: string, keterangan: ?string}>
-     */
-    public static function katalogModul(): array
-    {
-        return array_map(fn (AppModule $m) => [
-            'permission' => $m->permission(),
-            'label' => $m->label(),
-            'keterangan' => $m->keterangan(),
-        ], AppModule::modulGeneral());
     }
 
     /**
@@ -187,27 +183,54 @@ class StafController extends Controller
     }
 
     /**
-     * Hanya modul General yang sah; modul Pengguna hanya bisa diberikan (atau
-     * dicabut) oleh super admin.
+     * Modul khusus super admin (Staf & Peran Staf) hanya bisa diberikan atau
+     * dicabut oleh super admin — staf tidak bisa menaikkan hak siapa pun.
      *
      * @param  array<int, string>  $diminta
      * @return array<int, string>
      */
     private function modulBoleh(Request $request, array $diminta, ?User $staf = null): array
     {
-        $pengguna = AppModule::GeneralPengguna->permission();
         $modul = array_values(array_unique($diminta));
 
-        if (! $request->user()->isSuperAdmin()) {
-            $punyaSebelumnya = $staf?->hasDirectPermission($pengguna) ?? false;
-            $modul = array_values(array_filter($modul, fn (string $p) => $p !== $pengguna));
+        if ($request->user()->isSuperAdmin()) {
+            return $modul;
+        }
 
-            if ($punyaSebelumnya) {
-                $modul[] = $pengguna;
+        foreach (ModulGeneral::cases() as $m) {
+            if (! $m->khususSuperAdmin()) {
+                continue;
+            }
+
+            $modul = array_values(array_filter($modul, fn (string $p) => $p !== $m->permission()));
+
+            if ($staf?->hasDirectPermission($m->permission())) {
+                $modul[] = $m->permission();
             }
         }
 
         return $modul;
+    }
+
+    /**
+     * Peran staf yang boleh dipasang. Staf tidak bisa memasang peran yang
+     * berisi modul khusus super admin.
+     */
+    private function peranBoleh(Request $request, ?string $id, ?User $staf = null): ?Role
+    {
+        if (! $id) {
+            return null;
+        }
+
+        $peran = Role::query()->peranStaf()->findOrFail($id);
+
+        if (! $request->user()->isSuperAdmin()
+            && ! $staf?->hasRole($peran->name)
+            && $peran->permissions->contains(fn ($p) => in_array($p->name, array_map(fn (ModulGeneral $m) => $m->permission(), array_filter(ModulGeneral::cases(), fn (ModulGeneral $m) => $m->khususSuperAdmin())), true))) {
+            abort(403, 'Peran ini berisi modul yang hanya bisa diberikan super admin.');
+        }
+
+        return $peran;
     }
 
     /**
@@ -218,8 +241,9 @@ class StafController extends Controller
         return [
             'name' => ['required', 'string', 'max:150'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'peran_id' => ['nullable', 'string'],
             'modul' => ['array'],
-            'modul.*' => ['string', Rule::in(array_map(fn (AppModule $m) => $m->permission(), AppModule::modulGeneral()))],
+            'modul.*' => ['string', Rule::in(ModulGeneral::permissions())],
         ];
     }
 

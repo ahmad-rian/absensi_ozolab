@@ -12,6 +12,9 @@ class ImpersonationController extends Controller
 {
     private const SESSION_KEY = 'impersonator_id';
 
+    /** Halaman tujuan saat kembali ke akun asli (mis. Pengguna General). */
+    private const SESSION_KEMBALI = 'impersonator_kembali';
+
     /**
      * Masuk sebagai user lain. Hanya untuk pemegang `masuk-sebagai.access`
      * (default: SUPER_ADMIN saja).
@@ -35,13 +38,17 @@ class ImpersonationController extends Controller
             ->withProperties(['school_id' => $user->school_id])
             ->log('impersonation.started');
 
+        $dariGeneral = $request->routeIs('general.*');
+
         $request->session()->regenerate();
         $request->session()->put(self::SESSION_KEY, $impersonator->id);
         $request->session()->put('current_school_id', $user->school_id);
+        $request->session()->put(self::SESSION_KEMBALI, $dariGeneral ? route('general.pengguna', ['tab' => $user->isPenyelenggaraUser() ? 'penyelenggara' : null], false) : null);
 
         Auth::login($user);
 
-        return to_route('dashboard');
+        // Staf General dan akun penyelenggara punya beranda sendiri.
+        return to_route($user->homeRoute());
     }
 
     /**
@@ -51,6 +58,7 @@ class ImpersonationController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         $impersonatorId = $request->session()->pull(self::SESSION_KEY);
+        $kembali = $request->session()->pull(self::SESSION_KEMBALI);
 
         if (! $impersonatorId) {
             return to_route('dashboard');
@@ -75,6 +83,6 @@ class ImpersonationController extends Controller
 
         Auth::login($impersonator);
 
-        return to_route('admin.users.index');
+        return is_string($kembali) && str_starts_with($kembali, '/general') ? redirect($kembali) : to_route('admin.users.index');
     }
 }

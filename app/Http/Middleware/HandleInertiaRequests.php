@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\AppModule;
+use App\Enums\ModulGeneral;
 use App\Http\Controllers\General\SettingsController;
 use App\Models\NotificationLog;
 use App\Models\PengajuanIzin;
@@ -140,7 +141,7 @@ class HandleInertiaRequests extends Middleware
             // Pemilih kategori/program di kanan atas workspace general (spec 009).
             // Daftar program lintas penyelenggara hanya untuk yang boleh membukanya;
             // staf modul Haji saja cukup melihat pilihan Haji lama.
-            'konteksGeneral' => ($user?->bolehLintasPenyelenggara() || $user?->can(AppModule::GeneralHaji->permission())) && $request->is('general', 'general/*', 'kartu-bebas', 'kartu-bebas/*', 'penyelenggara', 'penyelenggara/*')
+            'konteksGeneral' => ($user?->bolehLintasPenyelenggara() || $user?->canAny(ModulGeneral::izinHaji())) && $request->is('general', 'general/*', 'kartu-bebas', 'kartu-bebas/*', 'penyelenggara', 'penyelenggara/*')
                 ? fn () => ['aktif' => KonteksGeneral::aktif($request), 'opsi' => KonteksGeneral::opsi($user->bolehLintasPenyelenggara())]
                 : null,
             'penyelenggaraFeatures' => function () {

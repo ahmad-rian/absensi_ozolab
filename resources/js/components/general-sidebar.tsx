@@ -39,7 +39,7 @@ import {
 import type { NavItem } from '@/types';
 
 /** Item menu + izin modul General yang dibutuhkan (kosong = semua yang masuk). */
-export type ItemGeneral = NavItem & { izin?: string };
+export type ItemGeneral = NavItem & { izin?: string | string[] };
 
 export type GeneralSection = { label: string; items: ItemGeneral[] };
 
@@ -58,11 +58,17 @@ export function saringMenuGeneral(
         return items;
     }
 
-    return items.filter(
-        (item) =>
-            !item.izin ||
-            (item.izin !== SUPER_ADMIN_SAJA && permissions.includes(item.izin)),
-    );
+    return items.filter((item) => {
+        if (!item.izin) {
+            return true;
+        }
+
+        const izin = Array.isArray(item.izin) ? item.izin : [item.izin];
+
+        return izin.some(
+            (i) => i !== SUPER_ADMIN_SAJA && permissions.includes(i),
+        );
+    });
 }
 
 /**
@@ -87,19 +93,22 @@ export const generalUtama: ItemGeneral[] = [
         title: 'Semua Kategori',
         href: '/general/kategori',
         icon: Shapes,
-        izin: 'general-katalog.access',
+        izin: 'general-kategori.access',
     },
     {
         title: 'Semua Program',
         href: '/general/program',
         icon: CalendarRange,
-        izin: 'general-katalog.access',
+        izin: 'general-program.access',
     },
     {
         title: 'Pengguna',
         href: '/general/pengguna',
         icon: UserCog,
-        izin: 'general-pengguna.access',
+        izin: [
+            'general-pengguna-staf.access',
+            'general-pengguna-penyelenggara.access',
+        ],
     },
 ];
 
@@ -118,36 +127,37 @@ export function menuKonteks(aktif: KonteksAktif | null): GeneralSection[] {
                         title: 'Dashboard',
                         href: '/kartu-bebas',
                         icon: BookOpen,
-                        izin: 'general-haji.access',
+                        izin: 'general-haji-dashboard.access',
                     },
                     {
                         title: 'Peserta',
                         href: '/kartu-bebas/peserta',
                         icon: Users,
-                        izin: 'general-haji.access',
+                        izin: 'general-haji-peserta.access',
                     },
                     {
                         title: 'Format Data',
                         href: '/kartu-bebas/data',
                         icon: Database,
-                        izin: 'general-haji.access',
+                        izin: 'general-haji-format.access',
                     },
                     {
                         title: 'Absensi & Link Scan',
                         href: '/kartu-bebas/absensi',
                         icon: ClipboardCheck,
-                        izin: 'general-haji.access',
+                        izin: 'general-haji-absensi.access',
                     },
                     {
                         title: 'Laporan Absensi',
                         href: '/kartu-bebas/laporan',
                         icon: FileSpreadsheet,
-                        izin: 'general-haji.access',
+                        izin: 'general-haji-laporan.access',
                     },
                     {
                         title: 'Generate',
                         href: '/kartu-bebas/generate',
                         icon: Wand2,
+                        izin: 'general-haji-generate.access',
                     },
                 ],
             },
@@ -158,19 +168,19 @@ export function menuKonteks(aktif: KonteksAktif | null): GeneralSection[] {
                         title: 'Frame & Bingkai',
                         href: '/kartu-bebas/frames',
                         icon: Frame,
-                        izin: 'general-haji.access',
+                        izin: 'general-desain-frame.access',
                     },
                     {
                         title: 'Layout Kartu',
                         href: '/kartu-bebas/layouts',
                         icon: LayoutTemplate,
-                        izin: 'general-haji.access',
+                        izin: 'general-desain-layout.access',
                     },
                     {
                         title: 'Riwayat Kartu',
                         href: '/kartu-bebas/riwayat',
                         icon: History,
-                        izin: 'general-haji.access',
+                        izin: 'general-desain-riwayat.access',
                     },
                 ],
             },
@@ -218,7 +228,7 @@ export function menuKonteks(aktif: KonteksAktif | null): GeneralSection[] {
                     title: 'Frame & Bingkai',
                     href: '/kartu-bebas/frames',
                     icon: Frame,
-                    izin: 'general-haji.access',
+                    izin: 'general-desain-frame.access',
                 },
             ],
         },
@@ -233,19 +243,19 @@ export const generalSections: GeneralSection[] = [
                 title: 'Umum & Branding',
                 href: '/general/pengaturan',
                 icon: Settings,
-                izin: 'general-pengaturan.access',
+                izin: 'general-pengaturan-umum.access',
             },
             {
                 title: 'Google Drive',
                 href: '/general/pengaturan#drive',
                 icon: HardDrive,
-                izin: 'general-pengaturan.access',
+                izin: 'general-pengaturan-drive.access',
             },
             {
                 title: 'WhatsApp',
                 href: '/general/pengaturan#whatsapp',
                 icon: MessageSquare,
-                izin: 'general-pengaturan.access',
+                izin: 'general-pengaturan-whatsapp.access',
             },
         ],
     },

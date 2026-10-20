@@ -46,6 +46,7 @@ use App\Http\Controllers\General\KatalogController as GeneralKatalogController;
 use App\Http\Controllers\General\KategoriController as GeneralKategoriController;
 use App\Http\Controllers\General\KonteksController as GeneralKonteksController;
 use App\Http\Controllers\General\PenyelenggaraController;
+use App\Http\Controllers\General\PeranStafController as GeneralPeranStafController;
 use App\Http\Controllers\General\SettingsController as GeneralSettingsController;
 use App\Http\Controllers\General\StafController as GeneralStafController;
 use App\Http\Controllers\General\UserController as GeneralUserController;
@@ -532,67 +533,67 @@ Route::middleware('auth')
     ->name('admin.stop-impersonate');
 
 // Haji (kartu lama): super admin, atau staf General dengan modul Haji.
-Route::middleware(['auth', 'verified', 'general', 'permission:general-haji.access|kartu-bebas.access', 'kartu-bebas-legacy'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
-    Route::get('/', [KartuBebasDashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth', 'verified', 'general', 'permission:general-haji-dashboard.access|general-haji-peserta.access|general-haji-format.access|general-haji-absensi.access|general-haji-laporan.access|general-haji-generate.access|general-desain-frame.access|general-desain-layout.access|general-desain-riwayat.access|kartu-bebas.access', 'kartu-bebas-legacy'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
+    Route::get('/', [KartuBebasDashboardController::class, 'index'])->middleware('permission:general-haji-dashboard.access|kartu-bebas.access')->name('dashboard');
 
     Route::get('drive/jelajah', [DrivePhotoController::class, 'browse'])->name('drive.browse');
     Route::get('drive/thumb/{fileId}', [DrivePhotoController::class, 'thumbnail'])->name('drive.thumbnail');
     Route::get('drive/image/{fileId}', [DrivePhotoController::class, 'image'])->name('drive.image');
 
     // Layout Kartu (= CardForm template: dynamic fields + card design)
-    Route::get('layouts', [LayoutController::class, 'index'])->name('layouts');
-    Route::get('layouts/create', [LayoutController::class, 'create'])->name('layouts.create');
-    Route::post('layouts', [LayoutController::class, 'store'])->name('layouts.store');
-    Route::get('layouts/{cardForm}/edit', [LayoutController::class, 'edit'])->name('layouts.edit');
-    Route::put('layouts/{cardForm}', [LayoutController::class, 'update'])->name('layouts.update');
-    Route::delete('layouts/{cardForm}', [LayoutController::class, 'destroy'])->name('layouts.destroy');
+    Route::get('layouts', [LayoutController::class, 'index'])->middleware('permission:general-desain-layout.access|kartu-bebas.access')->name('layouts');
+    Route::get('layouts/create', [LayoutController::class, 'create'])->middleware('permission:general-desain-layout.access|kartu-bebas.access')->name('layouts.create');
+    Route::post('layouts', [LayoutController::class, 'store'])->middleware('permission:general-desain-layout.access|kartu-bebas.access')->name('layouts.store');
+    Route::get('layouts/{cardForm}/edit', [LayoutController::class, 'edit'])->middleware('permission:general-desain-layout.access|kartu-bebas.access')->name('layouts.edit');
+    Route::put('layouts/{cardForm}', [LayoutController::class, 'update'])->middleware('permission:general-desain-layout.access|kartu-bebas.access')->name('layouts.update');
+    Route::delete('layouts/{cardForm}', [LayoutController::class, 'destroy'])->middleware('permission:general-desain-layout.access|kartu-bebas.access')->name('layouts.destroy');
 
     // Data = "Format Data" (reusable dynamic field schema)
-    Route::get('data', [DatasetController::class, 'index'])->name('data');
-    Route::get('data/create', [DatasetController::class, 'create'])->name('data.create');
-    Route::post('data', [DatasetController::class, 'store'])->name('data.store');
-    Route::get('data/{dataset}', [DatasetController::class, 'show'])->name('data.show');
-    Route::get('data/{dataset}/edit', [DatasetController::class, 'edit'])->name('data.edit');
-    Route::put('data/{dataset}', [DatasetController::class, 'update'])->name('data.update');
-    Route::delete('data/{dataset}', [DatasetController::class, 'destroy'])->name('data.destroy');
+    Route::get('data', [DatasetController::class, 'index'])->middleware('permission:general-haji-format.access|kartu-bebas.access')->name('data');
+    Route::get('data/create', [DatasetController::class, 'create'])->middleware('permission:general-haji-format.access|kartu-bebas.access')->name('data.create');
+    Route::post('data', [DatasetController::class, 'store'])->middleware('permission:general-haji-format.access|kartu-bebas.access')->name('data.store');
+    Route::get('data/{dataset}', [DatasetController::class, 'show'])->middleware('permission:general-haji-format.access|kartu-bebas.access')->name('data.show');
+    Route::get('data/{dataset}/edit', [DatasetController::class, 'edit'])->middleware('permission:general-haji-format.access|kartu-bebas.access')->name('data.edit');
+    Route::put('data/{dataset}', [DatasetController::class, 'update'])->middleware('permission:general-haji-format.access|kartu-bebas.access')->name('data.update');
+    Route::delete('data/{dataset}', [DatasetController::class, 'destroy'])->middleware('permission:general-haji-format.access|kartu-bebas.access')->name('data.destroy');
 
     // Generate = pick a layout, fill data via wizard, produce a card
-    Route::get('generate', [GenerateController::class, 'index'])->name('generate');
-    Route::get('generate/{cardForm}', [GenerateController::class, 'create'])->name('generate.create');
-    Route::post('generate/{cardForm}', [GenerateController::class, 'store'])->middleware('throttle:30,1')->name('generate.store');
-    Route::get('generate/status/{submission}', [GenerateController::class, 'status'])->middleware('throttle:120,1')->name('generate.status');
+    Route::get('generate', [GenerateController::class, 'index'])->middleware('permission:general-haji-generate.access|kartu-bebas.access')->name('generate');
+    Route::get('generate/{cardForm}', [GenerateController::class, 'create'])->middleware('permission:general-haji-generate.access|kartu-bebas.access')->name('generate.create');
+    Route::post('generate/{cardForm}', [GenerateController::class, 'store'])->middleware('throttle:30,1')->middleware('permission:general-haji-generate.access|kartu-bebas.access')->name('generate.store');
+    Route::get('generate/status/{submission}', [GenerateController::class, 'status'])->middleware('throttle:120,1')->middleware('permission:general-haji-generate.access|kartu-bebas.access')->name('generate.status');
 
     // Delete a generated card (from Riwayat)
-    Route::get('absensi', [CardAttendanceController::class, 'index'])->name('absensi.index');
-    Route::post('absensi/{submission}', [CardAttendanceController::class, 'store'])->name('absensi.store');
-    Route::post('layouts/{cardForm}/scanner-token', [CardAttendanceController::class, 'rotate'])->name('absensi.rotate');
-    Route::post('layouts/{cardForm}/kartu-lama', [CardAttendanceController::class, 'terimaKartuLama'])->name('absensi.legacy');
-    Route::post('layouts/{cardForm}/generate-ulang', [CardAttendanceController::class, 'regenerate'])->middleware(['throttle:6,1', 'generate-massal'])->name('absensi.regenerate');
-    Route::get('layouts/{cardForm}/unduh-kartu', [CardAttendanceController::class, 'downloadCards'])->middleware('throttle:6,1')->name('absensi.download-cards');
-    Route::get('laporan', [CardAttendanceController::class, 'report'])->name('laporan.index');
-    Route::get('laporan/export/{format}', [CardAttendanceController::class, 'export'])->whereIn('format', ['xlsx', 'pdf'])->name('laporan.export');
+    Route::get('absensi', [CardAttendanceController::class, 'index'])->middleware('permission:general-haji-absensi.access|kartu-bebas.access')->name('absensi.index');
+    Route::post('absensi/{submission}', [CardAttendanceController::class, 'store'])->middleware('permission:general-haji-absensi.access|kartu-bebas.access')->name('absensi.store');
+    Route::post('layouts/{cardForm}/scanner-token', [CardAttendanceController::class, 'rotate'])->middleware('permission:general-haji-absensi.access|kartu-bebas.access')->name('absensi.rotate');
+    Route::post('layouts/{cardForm}/kartu-lama', [CardAttendanceController::class, 'terimaKartuLama'])->middleware('permission:general-haji-absensi.access|kartu-bebas.access')->name('absensi.legacy');
+    Route::post('layouts/{cardForm}/generate-ulang', [CardAttendanceController::class, 'regenerate'])->middleware(['throttle:6,1', 'generate-massal'])->middleware('permission:general-haji-absensi.access|kartu-bebas.access')->name('absensi.regenerate');
+    Route::get('layouts/{cardForm}/unduh-kartu', [CardAttendanceController::class, 'downloadCards'])->middleware('throttle:6,1')->middleware('permission:general-haji-absensi.access|kartu-bebas.access')->name('absensi.download-cards');
+    Route::get('laporan', [CardAttendanceController::class, 'report'])->middleware('permission:general-haji-laporan.access|kartu-bebas.access')->name('laporan.index');
+    Route::get('laporan/export/{format}', [CardAttendanceController::class, 'export'])->whereIn('format', ['xlsx', 'pdf'])->middleware('permission:general-haji-laporan.access|kartu-bebas.access')->name('laporan.export');
 
-    Route::get('peserta', [ParticipantController::class, 'index'])->name('peserta.index');
-    Route::get('peserta/create', [ParticipantController::class, 'create'])->name('peserta.create');
-    Route::post('peserta', [ParticipantController::class, 'store'])->name('peserta.store');
-    Route::get('peserta/{submission}', [ParticipantController::class, 'show'])->name('peserta.show');
-    Route::get('peserta/{submission}/edit', [ParticipantController::class, 'edit'])->name('peserta.edit');
-    Route::put('peserta/{submission}', [ParticipantController::class, 'update'])->name('peserta.update');
-    Route::delete('peserta/{submission}', [ParticipantController::class, 'destroy'])->name('peserta.destroy');
-    Route::post('peserta/{submission}/generate', [ParticipantController::class, 'generate'])->middleware('throttle:30,1')->name('peserta.generate');
-    Route::get('peserta/{submission}/preview', [ParticipantController::class, 'preview'])->name('peserta.preview');
-    Route::get('peserta/{submission}/download', [ParticipantController::class, 'download'])->name('peserta.download');
+    Route::get('peserta', [ParticipantController::class, 'index'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.index');
+    Route::get('peserta/create', [ParticipantController::class, 'create'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.create');
+    Route::post('peserta', [ParticipantController::class, 'store'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.store');
+    Route::get('peserta/{submission}', [ParticipantController::class, 'show'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.show');
+    Route::get('peserta/{submission}/edit', [ParticipantController::class, 'edit'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.edit');
+    Route::put('peserta/{submission}', [ParticipantController::class, 'update'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.update');
+    Route::delete('peserta/{submission}', [ParticipantController::class, 'destroy'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.destroy');
+    Route::post('peserta/{submission}/generate', [ParticipantController::class, 'generate'])->middleware('throttle:30,1')->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.generate');
+    Route::get('peserta/{submission}/preview', [ParticipantController::class, 'preview'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.preview');
+    Route::get('peserta/{submission}/download', [ParticipantController::class, 'download'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('peserta.download');
 
-    Route::delete('data-card/{submission}', [ParticipantController::class, 'destroy'])->name('card.destroy');
+    Route::delete('data-card/{submission}', [ParticipantController::class, 'destroy'])->middleware('permission:general-haji-peserta.access|kartu-bebas.access')->name('card.destroy');
 
     // Frame & Bingkai (category = kartu_bebas)
-    Route::get('frames', [KartuBebasFrameController::class, 'index'])->name('frames');
-    Route::post('frames', [KartuBebasFrameController::class, 'store'])->name('frames.store');
-    Route::put('frames/{frame}', [KartuBebasFrameController::class, 'update'])->name('frames.update');
-    Route::delete('frames/{frame}', [KartuBebasFrameController::class, 'destroy'])->name('frames.destroy');
+    Route::get('frames', [KartuBebasFrameController::class, 'index'])->middleware('permission:general-desain-frame.access|kartu-bebas.access')->name('frames');
+    Route::post('frames', [KartuBebasFrameController::class, 'store'])->middleware('permission:general-desain-frame.access|kartu-bebas.access')->name('frames.store');
+    Route::put('frames/{frame}', [KartuBebasFrameController::class, 'update'])->middleware('permission:general-desain-frame.access|kartu-bebas.access')->name('frames.update');
+    Route::delete('frames/{frame}', [KartuBebasFrameController::class, 'destroy'])->middleware('permission:general-desain-frame.access|kartu-bebas.access')->name('frames.destroy');
 
     // Riwayat Kartu
-    Route::get('riwayat', [ParticipantController::class, 'index'])->name('riwayat');
+    Route::get('riwayat', [ParticipantController::class, 'index'])->middleware('permission:general-desain-riwayat.access|kartu-bebas.access')->name('riwayat');
 });
 
 require __DIR__.'/settings.php';
@@ -624,7 +625,7 @@ Route::middleware(['auth', 'verified', 'general'])
     ->group(function () {
         Route::get('/', GeneralDashboardController::class)->middleware('permission:general-ringkasan.access')->name('dashboard');
         Route::post('konteks', GeneralKonteksController::class)
-            ->middleware('permission:general-haji.access|general-katalog.access|general-penyelenggara.access')
+            ->middleware('permission:general-haji-dashboard.access|general-haji-peserta.access|general-haji-format.access|general-haji-absensi.access|general-haji-laporan.access|general-haji-generate.access|general-desain-frame.access|general-desain-layout.access|general-desain-riwayat.access|general-kategori.access|general-program.access|general-penyelenggara-masuk.access')
             ->name('konteks');
 
         Route::middleware('permission:general-penyelenggara.access')->prefix('penyelenggara')->name('penyelenggara.')->group(function () {
@@ -636,35 +637,48 @@ Route::middleware(['auth', 'verified', 'general'])
 
         // Undang admin penyelenggara: dari detail penyelenggara atau halaman Pengguna.
         Route::post('penyelenggara/{penyelenggara}/undangan', [PenyelenggaraController::class, 'invite'])
-            ->middleware(['permission:general-penyelenggara.access|general-pengguna.access', 'throttle:20,1'])
+            ->middleware(['permission:general-penyelenggara.access|general-pengguna-penyelenggara.access', 'throttle:20,1'])
             ->name('penyelenggara.invite');
 
-        Route::middleware('permission:general-katalog.access')->group(function () {
+        Route::middleware('permission:general-kategori.access')->group(function () {
             Route::get('kategori', [GeneralKatalogController::class, 'kategori'])->name('kategori');
             Route::post('kategori', [GeneralKategoriController::class, 'store'])->name('kategori.store');
             Route::post('kategori/{kategori}/arsip', [GeneralKategoriController::class, 'arsip'])->name('kategori.arsip');
             Route::delete('kategori/{kategori}', [GeneralKategoriController::class, 'destroy'])->name('kategori.destroy');
-            Route::get('program', [GeneralKatalogController::class, 'program'])->name('program');
         });
+        Route::get('program', [GeneralKatalogController::class, 'program'])->middleware('permission:general-program.access')->name('program');
 
-        Route::middleware('permission:general-pengguna.access')->group(function () {
-            Route::get('pengguna', [GeneralUserController::class, 'index'])->name('pengguna');
+        // Halaman Pengguna: tab Staf dan/atau tab Akun Penyelenggara.
+        Route::get('pengguna', [GeneralUserController::class, 'index'])->middleware('permission:general-pengguna-staf.access|general-pengguna-penyelenggara.access')->name('pengguna');
+
+        Route::middleware('permission:general-pengguna-penyelenggara.access')->group(function () {
             Route::put('pengguna/{user}/status', [GeneralUserController::class, 'status'])->name('pengguna.status');
             Route::put('pengguna/{user}/sandi', [GeneralUserController::class, 'sandi'])->middleware('throttle:20,1')->name('pengguna.sandi');
+        });
 
-            // Akun staf General: CRUD + modul per akun.
+        // Akun staf General + peran staf (template modul).
+        Route::middleware('permission:general-pengguna-staf.access')->group(function () {
             Route::post('staf', [GeneralStafController::class, 'store'])->name('staf.store');
             Route::put('staf/{user}', [GeneralStafController::class, 'update'])->name('staf.update');
             Route::put('staf/{user}/status', [GeneralStafController::class, 'status'])->name('staf.status');
             Route::put('staf/{user}/sandi', [GeneralStafController::class, 'sandi'])->middleware('throttle:20,1')->name('staf.sandi');
             Route::delete('staf/{user}', [GeneralStafController::class, 'destroy'])->name('staf.destroy');
+
+            Route::post('peran-staf', [GeneralPeranStafController::class, 'store'])->name('peran-staf.store');
+            Route::put('peran-staf/{role}', [GeneralPeranStafController::class, 'update'])->name('peran-staf.update');
+            Route::delete('peran-staf/{role}', [GeneralPeranStafController::class, 'destroy'])->name('peran-staf.destroy');
         });
 
-        Route::middleware('permission:general-pengaturan.access')->group(function () {
-            Route::get('pengaturan', [GeneralSettingsController::class, 'index'])->name('pengaturan');
+        // Masuk sebagai staf / akun penyelenggara — khusus super admin.
+        Route::post('pengguna/{user}/masuk-sebagai', [ImpersonationController::class, 'store'])->middleware('super-admin')->name('pengguna.masuk-sebagai');
+
+        Route::get('pengaturan', [GeneralSettingsController::class, 'index'])->middleware('permission:general-pengaturan-umum.access|general-pengaturan-drive.access|general-pengaturan-whatsapp.access')->name('pengaturan');
+        Route::middleware('permission:general-pengaturan-umum.access')->group(function () {
             Route::put('pengaturan/umum', [GeneralSettingsController::class, 'umum'])->name('pengaturan.umum');
             Route::post('pengaturan/logo', [GeneralSettingsController::class, 'logo'])->name('pengaturan.logo');
-            Route::put('pengaturan/drive', [GeneralSettingsController::class, 'drive'])->name('pengaturan.drive');
+        });
+        Route::put('pengaturan/drive', [GeneralSettingsController::class, 'drive'])->middleware('permission:general-pengaturan-drive.access')->name('pengaturan.drive');
+        Route::middleware('permission:general-pengaturan-whatsapp.access')->group(function () {
             Route::put('pengaturan/whatsapp', [GeneralSettingsController::class, 'whatsapp'])->name('pengaturan.whatsapp');
             Route::post('pengaturan/whatsapp/uji', [GeneralSettingsController::class, 'ujiWhatsapp'])->middleware('throttle:10,1')->name('pengaturan.whatsapp.uji');
         });

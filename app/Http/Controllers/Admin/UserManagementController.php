@@ -36,7 +36,7 @@ class UserManagementController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $roles = Role::orderBy('name')->get(['id', 'name']);
+        $roles = Role::query()->bukanPeranStaf()->where('name', '!=', UserRole::StafGeneral->value)->orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('admin/users/index', [
             'users' => $query,
@@ -217,7 +217,8 @@ class UserManagementController extends Controller
         // Peran penyelenggara hanya lahir lewat undangan penyelenggara (spec 001):
         // akun sekolah yang diberi peran itu akan jadi akun dua tenant.
         return Role::query()
-            ->whereNotIn('name', array_map(fn (UserRole $r) => $r->value, UserRole::penyelenggaraRoles()))
+            ->bukanPeranStaf()
+            ->whereNotIn('name', [...array_map(fn (UserRole $r) => $r->value, UserRole::penyelenggaraRoles()), UserRole::StafGeneral->value])
             ->when(
                 ! auth()->user()->isSuperAdmin(),
                 fn ($q) => $q->where('name', '!=', UserRole::SuperAdmin->value),

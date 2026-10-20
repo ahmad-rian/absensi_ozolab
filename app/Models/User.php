@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\AppModule;
+use App\Enums\ModulGeneral;
 use App\Enums\UserRole;
 use App\Models\Concerns\BelongsToSchool;
 use Database\Factories\UserFactory;
@@ -107,14 +108,17 @@ class User extends Authenticatable implements PasskeyUser
 
         return $this->isStafGeneral()
             && $this->is_active
-            && $this->hasAnyPermission([AppModule::GeneralPenyelenggara->permission(), AppModule::GeneralKatalog->permission()]);
+            && $this->hasAnyPermission([
+                ModulGeneral::PenyelenggaraMasuk->permission(),
+                ModulGeneral::Kategori->permission(),
+                ModulGeneral::Program->permission(),
+            ]);
     }
 
     /**
-     * Izin `penyelenggara-*` yang diwakilkan oleh modul General. Modul
-     * Penyelenggara = admin penuh di area penyelenggara mana pun; modul
-     * Kategori & Program hanya beranda, kategori, dan program — tidak tim,
-     * kelola peserta, atau kartu.
+     * Izin `penyelenggara-*` yang diwakilkan modul General: Masuk Area
+     * Penyelenggara = admin penuh; Kategori / Program hanya beranda plus
+     * menunya sendiri — tidak tim, kelola peserta, atau kartu.
      */
     public function aksesPenyelenggaraLewatGeneral(string $ability): bool
     {
@@ -122,16 +126,19 @@ class User extends Authenticatable implements PasskeyUser
             return false;
         }
 
-        if ($this->hasPermissionTo(AppModule::GeneralPenyelenggara->permission())) {
+        if ($this->hasPermissionTo(ModulGeneral::PenyelenggaraMasuk->permission())) {
             return true;
         }
 
-        return $this->hasPermissionTo(AppModule::GeneralKatalog->permission())
-            && in_array($ability, [
-                AppModule::PenyelenggaraBeranda->permission(),
-                AppModule::PenyelenggaraKategori->permission(),
-                AppModule::PenyelenggaraProgram->permission(),
-            ], true);
+        $kategori = $this->hasPermissionTo(ModulGeneral::Kategori->permission());
+        $program = $this->hasPermissionTo(ModulGeneral::Program->permission());
+
+        return match ($ability) {
+            AppModule::PenyelenggaraBeranda->permission() => $kategori || $program,
+            AppModule::PenyelenggaraKategori->permission() => $kategori,
+            AppModule::PenyelenggaraProgram->permission() => $program,
+            default => false,
+        };
     }
 
     public function homeRoute(): string

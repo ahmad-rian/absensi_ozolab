@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\AppModule;
+use App\Enums\ModulGeneral;
 use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
 use App\Models\Attendance;
@@ -181,7 +182,8 @@ test('all literal route permissions exist in the module registry', function () {
     foreach (['web.php', 'api.php'] as $file) {
         preg_match_all('/permission:([a-z-]+\.access)/', file_get_contents(base_path('routes/'.$file)), $matches);
         foreach ($matches[1] as $permission) {
-            expect(AppModule::permissions())->toContain($permission);
+            // Modul workspace General (staf Tyas) punya registry sendiri.
+            expect([...AppModule::permissions(), ...ModulGeneral::permissions()])->toContain($permission);
         }
     }
 });

@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { ImpersonationBanner } from '@/components/impersonation-banner';
 import { PenyelenggaraSidebar } from '@/components/penyelenggara-sidebar';
 import GeneralLayout from '@/layouts/general-layout';
 import type { AppLayoutProps } from '@/types';
@@ -41,6 +42,7 @@ export default function PenyelenggaraLayout({
             <AppShell variant="sidebar">
                 <PenyelenggaraSidebar />
                 <AppContent variant="sidebar" className="overflow-x-hidden">
+                    <ImpersonationBanner />
                     <AppSidebarHeader breadcrumbs={breadcrumbs} />
                     {children}
                 </AppContent>

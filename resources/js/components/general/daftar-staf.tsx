@@ -2,7 +2,9 @@ import { Form, router } from '@inertiajs/react';
 import { KeyRound, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { FormStaf } from '@/components/general/form-staf';
-import type { ModulGeneral, Staf } from '@/components/general/form-staf';
+import type { PeranStaf, Staf } from '@/components/general/form-staf';
+import type { GrupModul } from '@/components/general/matriks-modul';
+import { TombolMasukSebagai } from '@/components/general/tombol-masuk-sebagai';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
@@ -30,18 +32,24 @@ const waktu = (iso: string | null) =>
 export function DaftarStaf({
     staf,
     katalog,
+    peranStaf,
     bolehBeriPengguna,
+    bolehMasukSebagai,
     idSaya,
 }: {
     staf: Staf[];
-    katalog: ModulGeneral[];
+    katalog: GrupModul[];
+    peranStaf: PeranStaf[];
     bolehBeriPengguna: boolean;
+    bolehMasukSebagai: boolean;
     idSaya: string | null;
 }) {
     const [ubah, setUbah] = useState<Staf | 'baru' | null>(null);
     const [resetUntuk, setResetUntuk] = useState<Staf | null>(null);
+    const semuaModul = katalog.flatMap((g) => g.modul);
     const label = (permission: string) =>
-        katalog.find((m) => m.permission === permission)?.label ?? permission;
+        semuaModul.find((m) => m.permission === permission)?.label ??
+        permission;
 
     const ubahStatus = (s: Staf) => {
         const pesan = s.is_active
@@ -90,7 +98,9 @@ export function DaftarStaf({
                         <thead className="bg-muted/50 text-left">
                             <tr>
                                 <th className="p-3 font-medium">Nama</th>
-                                <th className="p-3 font-medium">Modul</th>
+                                <th className="p-3 font-medium">
+                                    Peran & modul
+                                </th>
                                 <th className="p-3 font-medium">
                                     Login terakhir
                                 </th>
@@ -125,20 +135,37 @@ export function DaftarStaf({
                                             </span>
                                         </td>
                                         <td className="p-3">
-                                            {s.modul.length === 0 ? (
-                                                <span className="text-xs text-muted-foreground">
+                                            {s.peran && (
+                                                <Badge className="mb-1.5">
+                                                    {s.peran.name}
+                                                </Badge>
+                                            )}
+                                            {s.modul_efektif.length === 0 ? (
+                                                <span className="block text-xs text-muted-foreground">
                                                     Belum ada modul
                                                 </span>
                                             ) : (
                                                 <div className="flex flex-wrap gap-1">
-                                                    {s.modul.map((m) => (
-                                                        <Badge
-                                                            key={m}
-                                                            variant="outline"
-                                                        >
-                                                            {label(m)}
+                                                    {s.modul_efektif
+                                                        .slice(0, 6)
+                                                        .map((m) => (
+                                                            <Badge
+                                                                key={m}
+                                                                variant="outline"
+                                                            >
+                                                                {label(m)}
+                                                            </Badge>
+                                                        ))}
+                                                    {s.modul_efektif.length >
+                                                        6 && (
+                                                        <Badge variant="secondary">
+                                                            +
+                                                            {s.modul_efektif
+                                                                .length -
+                                                                6}{' '}
+                                                            modul
                                                         </Badge>
-                                                    ))}
+                                                    )}
                                                 </div>
                                             )}
                                         </td>
@@ -152,6 +179,13 @@ export function DaftarStaf({
                                                 </span>
                                             ) : (
                                                 <div className="flex flex-wrap justify-end gap-1.5">
+                                                    {bolehMasukSebagai &&
+                                                        s.is_active && (
+                                                            <TombolMasukSebagai
+                                                                userId={s.id}
+                                                                nama={s.name}
+                                                            />
+                                                        )}
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
@@ -207,6 +241,7 @@ export function DaftarStaf({
                     key={ubah === 'baru' ? 'baru' : ubah.id}
                     staf={ubah === 'baru' ? null : ubah}
                     katalog={katalog}
+                    peranStaf={peranStaf}
                     bolehBeriPengguna={bolehBeriPengguna}
                     onTutup={() => setUbah(null)}
                 />

@@ -16,7 +16,8 @@ class RolePermissionController extends Controller
 {
     public function index(): Response
     {
-        $roles = Role::with('permissions')->orderBy('name')->get()->map(fn (Role $role) => [
+        // Peran staf General dan STAF_GENERAL dikelola di workspace General.
+        $roles = Role::with('permissions')->bukanPeranStaf()->where('name', '!=', UserRole::StafGeneral->value)->orderBy('name')->get()->map(fn (Role $role) => [
             'id' => $role->id,
             'name' => $role->name,
             'label' => $this->roleLabel($role->name),
@@ -51,6 +52,8 @@ class RolePermissionController extends Controller
 
     public function update(Request $request, Role $role): RedirectResponse
     {
+        abort_if($this->milikGeneral($role), 404);
+
         if ($role->name === UserRole::SuperAdmin->value) {
             return to_route('admin.roles')
                 ->withErrors(['permissions' => 'Super Admin selalu punya akses penuh dan tidak bisa diubah.']);
@@ -68,6 +71,8 @@ class RolePermissionController extends Controller
 
     public function destroy(Role $role): RedirectResponse
     {
+        abort_if($this->milikGeneral($role), 404);
+
         if ($this->isBuiltin($role->name)) {
             return to_route('admin.roles')->withErrors(['delete' => 'Role bawaan tidak bisa dihapus.']);
         }
@@ -107,6 +112,11 @@ class RolePermissionController extends Controller
     private function isBuiltin(string $name): bool
     {
         return UserRole::tryFrom($name) !== null;
+    }
+
+    private function milikGeneral(Role $role): bool
+    {
+        return $role->lingkup === Role::LINGKUP_GENERAL || $role->name === UserRole::StafGeneral->value;
     }
 
     private function roleLabel(string $name): string
