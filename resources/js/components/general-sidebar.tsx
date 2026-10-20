@@ -38,19 +38,69 @@ import {
 } from '@/components/ui/sidebar';
 import type { NavItem } from '@/types';
 
-export type GeneralSection = { label: string; items: NavItem[] };
+/** Item menu + izin modul General yang dibutuhkan (kosong = semua yang masuk). */
+export type ItemGeneral = NavItem & { izin?: string };
+
+export type GeneralSection = { label: string; items: ItemGeneral[] };
+
+const SUPER_ADMIN_SAJA = 'super-admin';
+
+/**
+ * Saring menu sesuai modul staf General. Super admin melihat semuanya;
+ * `super-admin` menandai menu di luar workspace (area sekolah).
+ */
+export function saringMenuGeneral(
+    items: ItemGeneral[],
+    roles: string[],
+    permissions: string[],
+): ItemGeneral[] {
+    if (roles.includes('SUPER_ADMIN')) {
+        return items;
+    }
+
+    return items.filter(
+        (item) =>
+            !item.izin ||
+            (item.izin !== SUPER_ADMIN_SAJA && permissions.includes(item.izin)),
+    );
+}
 
 /**
  * Menu workspace Absensi General (spec 009), dikelompokkan seperti sidebar
  * sekolah. "Haji (kartu lama)" memakai rute `/kartu-bebas/*` yang sudah ada:
  * hanya letak menunya yang pindah, data dan link scan kartu tercetak tetap.
  */
-export const generalUtama: NavItem[] = [
-    { title: 'Ringkasan', href: '/general', icon: LayoutGrid },
-    { title: 'Penyelenggara', href: '/general/penyelenggara', icon: Building2 },
-    { title: 'Semua Kategori', href: '/general/kategori', icon: Shapes },
-    { title: 'Semua Program', href: '/general/program', icon: CalendarRange },
-    { title: 'Pengguna', href: '/general/pengguna', icon: UserCog },
+export const generalUtama: ItemGeneral[] = [
+    {
+        title: 'Ringkasan',
+        href: '/general',
+        icon: LayoutGrid,
+        izin: 'general-ringkasan.access',
+    },
+    {
+        title: 'Penyelenggara',
+        href: '/general/penyelenggara',
+        icon: Building2,
+        izin: 'general-penyelenggara.access',
+    },
+    {
+        title: 'Semua Kategori',
+        href: '/general/kategori',
+        icon: Shapes,
+        izin: 'general-katalog.access',
+    },
+    {
+        title: 'Semua Program',
+        href: '/general/program',
+        icon: CalendarRange,
+        izin: 'general-katalog.access',
+    },
+    {
+        title: 'Pengguna',
+        href: '/general/pengguna',
+        icon: UserCog,
+        izin: 'general-pengguna.access',
+    },
 ];
 
 /**
@@ -68,26 +118,31 @@ export function menuKonteks(aktif: KonteksAktif | null): GeneralSection[] {
                         title: 'Dashboard',
                         href: '/kartu-bebas',
                         icon: BookOpen,
+                        izin: 'general-haji.access',
                     },
                     {
                         title: 'Peserta',
                         href: '/kartu-bebas/peserta',
                         icon: Users,
+                        izin: 'general-haji.access',
                     },
                     {
                         title: 'Format Data',
                         href: '/kartu-bebas/data',
                         icon: Database,
+                        izin: 'general-haji.access',
                     },
                     {
                         title: 'Absensi & Link Scan',
                         href: '/kartu-bebas/absensi',
                         icon: ClipboardCheck,
+                        izin: 'general-haji.access',
                     },
                     {
                         title: 'Laporan Absensi',
                         href: '/kartu-bebas/laporan',
                         icon: FileSpreadsheet,
+                        izin: 'general-haji.access',
                     },
                     {
                         title: 'Generate',
@@ -103,16 +158,19 @@ export function menuKonteks(aktif: KonteksAktif | null): GeneralSection[] {
                         title: 'Frame & Bingkai',
                         href: '/kartu-bebas/frames',
                         icon: Frame,
+                        izin: 'general-haji.access',
                     },
                     {
                         title: 'Layout Kartu',
                         href: '/kartu-bebas/layouts',
                         icon: LayoutTemplate,
+                        izin: 'general-haji.access',
                     },
                     {
                         title: 'Riwayat Kartu',
                         href: '/kartu-bebas/riwayat',
                         icon: History,
+                        izin: 'general-haji.access',
                     },
                 ],
             },
@@ -160,6 +218,7 @@ export function menuKonteks(aktif: KonteksAktif | null): GeneralSection[] {
                     title: 'Frame & Bingkai',
                     href: '/kartu-bebas/frames',
                     icon: Frame,
+                    izin: 'general-haji.access',
                 },
             ],
         },
@@ -174,30 +233,50 @@ export const generalSections: GeneralSection[] = [
                 title: 'Umum & Branding',
                 href: '/general/pengaturan',
                 icon: Settings,
+                izin: 'general-pengaturan.access',
             },
             {
                 title: 'Google Drive',
                 href: '/general/pengaturan#drive',
                 icon: HardDrive,
+                izin: 'general-pengaturan.access',
             },
             {
                 title: 'WhatsApp',
                 href: '/general/pengaturan#whatsapp',
                 icon: MessageSquare,
+                izin: 'general-pengaturan.access',
             },
         ],
     },
     {
         label: 'Bantuan',
-        items: [{ title: 'Panduan', href: '/admin/panduan', icon: LifeBuoy }],
+        items: [
+            {
+                title: 'Panduan',
+                href: '/admin/panduan',
+                icon: LifeBuoy,
+                izin: SUPER_ADMIN_SAJA,
+            },
+        ],
     },
 ];
 
 export function GeneralSidebar() {
     const konteks = useKonteksGeneral();
-    const { app } = usePage<{
+    const { app, auth } = usePage<{
         app: { workspace_name?: string | null };
+        auth: { user: { roles?: string[]; permissions?: string[] } | null };
     }>().props;
+    const roles = auth?.user?.roles ?? [];
+    const permissions = auth?.user?.permissions ?? [];
+    const superAdmin = roles.includes('SUPER_ADMIN');
+    const saring = (items: ItemGeneral[]) =>
+        saringMenuGeneral(items, roles, permissions);
+    const tampil = (sections: GeneralSection[]) =>
+        sections
+            .map((section) => ({ ...section, items: saring(section.items) }))
+            .filter((section) => section.items.length > 0);
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -213,7 +292,9 @@ export function GeneralSidebar() {
                                             'Absensi General'}
                                     </span>
                                     <span className="truncate text-xs text-muted-foreground">
-                                        Workspace super admin
+                                        {superAdmin
+                                            ? 'Workspace super admin'
+                                            : 'Workspace staf'}
                                     </span>
                                 </div>
                             </Link>
@@ -223,23 +304,26 @@ export function GeneralSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavGroup label="Utama" items={generalUtama} />
-                {menuKonteks(konteks?.aktif ?? null).map((section, i) =>
-                    i === 0 ? (
-                        <NavGroup
-                            key={section.label}
-                            label={section.label}
-                            items={section.items}
-                        />
-                    ) : (
-                        <NavCollapsibleGroup
-                            key={section.label}
-                            label={section.label}
-                            items={section.items}
-                        />
-                    ),
+                {saring(generalUtama).length > 0 && (
+                    <NavGroup label="Utama" items={saring(generalUtama)} />
                 )}
-                {generalSections.map((section) => (
+                {tampil(menuKonteks(konteks?.aktif ?? null)).map(
+                    (section, i) =>
+                        i === 0 ? (
+                            <NavGroup
+                                key={section.label}
+                                label={section.label}
+                                items={section.items}
+                            />
+                        ) : (
+                            <NavCollapsibleGroup
+                                key={section.label}
+                                label={section.label}
+                                items={section.items}
+                            />
+                        ),
+                )}
+                {tampil(generalSections).map((section) => (
                     <NavCollapsibleGroup
                         key={section.label}
                         label={section.label}
@@ -249,19 +333,21 @@ export function GeneralSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton
-                            asChild
-                            tooltip={{ children: 'Kembali ke Sekolah' }}
-                        >
-                            <a href="/dashboard">
-                                <ArrowLeft />
-                                <span>Kembali ke Sekolah</span>
-                            </a>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+                {superAdmin && (
+                    <SidebarMenu>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                asChild
+                                tooltip={{ children: 'Kembali ke Sekolah' }}
+                            >
+                                <a href="/dashboard">
+                                    <ArrowLeft />
+                                    <span>Kembali ke Sekolah</span>
+                                </a>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                )}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

@@ -9,13 +9,13 @@ use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Super admin memilih penyelenggara yang sedang dibuka (per browser, di session).
+ * Super admin (atau staf General ber-modul penyelenggara) memilih penyelenggara yang sedang dibuka (per browser, di session).
  */
 class SwitchController extends Controller
 {
     public function __invoke(Request $request): Response
     {
-        abort_unless($request->user()->isSuperAdmin(), 403);
+        abort_unless($request->user()->bolehLintasPenyelenggara(), 403);
 
         $validated = $request->validate([
             'penyelenggara_id' => ['required', 'exists:penyelenggaras,id'],

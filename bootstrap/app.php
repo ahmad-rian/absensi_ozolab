@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuthenticateStudioToken;
+use App\Http\Middleware\EnsureAksesGeneral;
 use App\Http\Middleware\EnsureBukanPenyelenggara;
 use App\Http\Middleware\EnsureFeatureEnabled;
 use App\Http\Middleware\EnsureGenerateMassalAktif;
@@ -40,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'super-admin' => EnsureSuperAdmin::class,
+            'general' => EnsureAksesGeneral::class,
             'feature' => EnsureFeatureEnabled::class,
             'generate-massal' => EnsureGenerateMassalAktif::class,
             'penyelenggara' => EnsurePenyelenggaraUser::class,

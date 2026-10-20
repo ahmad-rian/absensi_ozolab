@@ -32,7 +32,7 @@ class SetCurrentPenyelenggara
         // di sana super admin memang tidak punya konteks penyelenggara.
         $session = $request->hasSession() ? $request->session() : null;
 
-        $id = $user->isSuperAdmin()
+        $id = $user->bolehLintasPenyelenggara()
             ? $session?->get('current_penyelenggara_id')
             : $user->penyelenggara_id;
 

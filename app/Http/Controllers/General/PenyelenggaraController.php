@@ -99,7 +99,8 @@ class PenyelenggaraController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Undangan dikirim ke {$validated['email']}."]);
 
-        return to_route('general.penyelenggara.show', $penyelenggara);
+        // Dari halaman Pengguna kembali ke sana; dari detail penyelenggara ke detailnya.
+        return back();
     }
 
     /**

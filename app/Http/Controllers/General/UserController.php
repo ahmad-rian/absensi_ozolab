@@ -44,6 +44,10 @@ class UserController extends Controller
             ]);
 
         return Inertia::render('general/pengguna', [
+            'tab' => $request->query('tab') === 'penyelenggara' ? 'penyelenggara' : 'staf',
+            'staf' => StafController::daftar(),
+            'katalogModul' => StafController::katalogModul(),
+            'bolehBeriPengguna' => $request->user()->isSuperAdmin(),
             'pengguna' => $pengguna,
             'penyelenggaras' => Penyelenggara::orderBy('name')->get(['id', 'name']),
             'filters' => [

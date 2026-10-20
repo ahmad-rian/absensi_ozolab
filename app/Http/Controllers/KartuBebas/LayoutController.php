@@ -36,16 +36,22 @@ class LayoutController extends Controller
                 'dataset_name' => $form->cardDataset?->name,
                 'fields_count' => is_array($form->fields) ? count($form->fields) : 0,
                 'submissions_count' => $form->submissions_count,
-                'public_url' => url('/f/'.$form->token),
+                'public_url' => $form->publicUrl(),
                 'created_at' => $form->created_at?->toDateTimeString(),
             ]),
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        // "Buat layout dari format ini" di halaman Format Data membawa
+        // ?dataset= supaya formatnya langsung terpilih di editor.
+        $datasetAwal = $request->filled('dataset')
+            ? CardDataset::query()->whereKey($request->query('dataset'))->value('id')
+            : null;
+
         return Inertia::render('kartu-bebas/layouts/editor', [
-            'form' => null,
+            'form' => $datasetAwal ? ['card_dataset_id' => $datasetAwal] : null,
             'frames' => $this->frames(),
             'datasets' => $this->datasets(),
         ]);
@@ -85,7 +91,7 @@ class LayoutController extends Controller
                 'frame_id' => $cardForm->frame_id,
                 'is_active' => $cardForm->is_active,
                 'layout_config' => $cardForm->normalizedConfig(),
-                'public_url' => url('/f/'.$cardForm->token),
+                'public_url' => $cardForm->publicUrl(),
             ],
             'frames' => $this->frames(),
             'datasets' => $this->datasets(),

@@ -1,6 +1,8 @@
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
+import { SaklarFormPublik } from '@/components/penyelenggara/saklar-form-publik';
+import type { FormPublikProgram } from '@/components/penyelenggara/saklar-form-publik';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,9 +36,13 @@ export const FITUR_LABEL: Record<string, string> = {
 /** Saklar yang disimpan sekarang tapi fiturnya baru hadir di rilis berikutnya. */
 const FITUR_SEGERA = new Set(['notifikasi_wali', 'portal_wali', 'rfid']);
 
-type Props = { kategori: Kategori; errors: Record<string, string> };
+type Props = {
+    kategori: Kategori;
+    errors: Record<string, string>;
+    formPublik: FormPublikProgram[];
+};
 
-export default function KategoriEdit({ kategori, errors }: Props) {
+export default function KategoriEdit({ kategori, errors, formPublik }: Props) {
     const [name, setName] = useState(kategori.name);
     const [istilahPeserta, setIstilahPeserta] = useState(
         kategori.istilah_peserta,
@@ -210,6 +216,34 @@ export default function KategoriEdit({ kategori, errors }: Props) {
                 >
                     Simpan kategori
                 </Button>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">
+                            Form pendaftaran publik per program
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                            Calon peserta mengisi format data di atas lewat link
+                            ini. Tiap program punya link sendiri dan bisa
+                            dinyalakan/dimatikan.
+                        </p>
+                    </CardHeader>
+                    <CardContent className="grid gap-3">
+                        {formPublik.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                Belum ada program di kategori ini. Buat program
+                                dulu, link pendaftarannya muncul di sini.
+                            </p>
+                        ) : (
+                            formPublik.map((item) => (
+                                <SaklarFormPublik
+                                    key={item.program_id}
+                                    item={item}
+                                />
+                            ))
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </>
     );

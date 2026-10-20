@@ -108,7 +108,7 @@ class PesertaService
      */
     public function grupTerlihat(User $user, Program $program): ?array
     {
-        if ($user->isSuperAdmin() || ! $user->hasRole(UserRole::Pendamping->value)) {
+        if ($user->bolehLintasPenyelenggara() || ! $user->hasRole(UserRole::Pendamping->value)) {
             return null;
         }
 

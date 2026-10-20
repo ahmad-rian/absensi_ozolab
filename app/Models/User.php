@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\AppModule;
 use App\Enums\UserRole;
 use App\Models\Concerns\BelongsToSchool;
 use Database\Factories\UserFactory;
@@ -86,10 +87,61 @@ class User extends Authenticatable implements PasskeyUser
         return $this->penyelenggara_id !== null;
     }
 
+    /**
+     * Akun staf Tyas di workspace General — tanpa sekolah dan tanpa
+     * penyelenggara; modulnya permission langsung per akun.
+     */
+    public function isStafGeneral(): bool
+    {
+        return $this->hasRole(UserRole::StafGeneral->value) && ! $this->isSuperAdmin();
+    }
+
+    /**
+     * Boleh memilih dan membuka penyelenggara mana pun (seperti super admin)?
+     */
+    public function bolehLintasPenyelenggara(): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->isStafGeneral()
+            && $this->is_active
+            && $this->hasAnyPermission([AppModule::GeneralPenyelenggara->permission(), AppModule::GeneralKatalog->permission()]);
+    }
+
+    /**
+     * Izin `penyelenggara-*` yang diwakilkan oleh modul General. Modul
+     * Penyelenggara = admin penuh di area penyelenggara mana pun; modul
+     * Kategori & Program hanya beranda, kategori, dan program — tidak tim,
+     * kelola peserta, atau kartu.
+     */
+    public function aksesPenyelenggaraLewatGeneral(string $ability): bool
+    {
+        if (! str_starts_with($ability, 'penyelenggara-') || ! $this->isStafGeneral() || ! $this->is_active) {
+            return false;
+        }
+
+        if ($this->hasPermissionTo(AppModule::GeneralPenyelenggara->permission())) {
+            return true;
+        }
+
+        return $this->hasPermissionTo(AppModule::GeneralKatalog->permission())
+            && in_array($ability, [
+                AppModule::PenyelenggaraBeranda->permission(),
+                AppModule::PenyelenggaraKategori->permission(),
+                AppModule::PenyelenggaraProgram->permission(),
+            ], true);
+    }
+
     public function homeRoute(): string
     {
         if ($this->isPenyelenggaraUser()) {
             return 'penyelenggara.dashboard';
+        }
+
+        if ($this->isStafGeneral()) {
+            return 'general.dashboard';
         }
 
         return $this->hasRole(UserRole::OrangTua) ? 'orangtua.index' : 'dashboard';

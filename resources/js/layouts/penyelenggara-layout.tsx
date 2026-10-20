@@ -23,12 +23,14 @@ export default function PenyelenggaraLayout({
     breadcrumbs = [],
 }: AppLayoutProps) {
     const { auth } = usePage().props as unknown as {
-        auth: { user: { roles?: string[] } | null };
+        auth: {
+            user: { roles?: string[]; lintas_penyelenggara?: boolean } | null;
+        };
     };
 
-    // Super admin membuka program dari workspace general: tetap di cangkang
-    // yang sama (pemilih kategori di kanan atas), tidak pindah tampilan.
-    if ((auth?.user?.roles ?? []).includes('SUPER_ADMIN')) {
+    // Super admin / staf General membuka program dari workspace general: tetap
+    // di cangkang yang sama (pemilih kategori di kanan atas), tidak pindah tampilan.
+    if (auth?.user?.lintas_penyelenggara) {
         return (
             <GeneralLayout breadcrumbs={breadcrumbs}>{children}</GeneralLayout>
         );

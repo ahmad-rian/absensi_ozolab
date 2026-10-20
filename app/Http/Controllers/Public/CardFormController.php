@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
+use App\Models\Penyelenggara;
 use App\Services\CardParticipantService;
+use App\Services\Penyelenggara\PesertaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,9 +19,7 @@ class CardFormController extends Controller
 {
     public function show(string $token): Response
     {
-        $form = CardForm::where('token', $token)
-            ->where('is_active', true)
-            ->firstOrFail();
+        $form = $this->formPublik($token);
 
         return Inertia::render('public/card-form', [
             'form' => [
@@ -31,11 +31,15 @@ class CardFormController extends Controller
         ]);
     }
 
-    public function submit(string $token, Request $request, CardParticipantService $participants): RedirectResponse|Response
+    public function submit(string $token, Request $request, CardParticipantService $participants, PesertaService $peserta): RedirectResponse|Response
     {
-        $form = CardForm::where('token', $token)
-            ->where('is_active', true)
-            ->firstOrFail();
+        $form = $this->formPublik($token);
+
+        // Pendaftar publik program memakan kuota penyelenggara sama seperti
+        // peserta yang ditambahkan admin.
+        if ($form->program_id !== null) {
+            $peserta->pastikanKuota(Penyelenggara::findOrFail($form->penyelenggara_id), 1);
+        }
 
         $submission = $participants->save($request, $form);
         $participants->generate($submission);
@@ -53,6 +57,14 @@ class CardFormController extends Controller
                 'download_url' => null,
             ],
         ]);
+    }
+
+    private function formPublik(string $token): CardForm
+    {
+        $form = CardForm::where('token', $token)->firstOrFail();
+        abort_unless($form->terbukaUntukPublik(), 404);
+
+        return $form;
     }
 
     /**

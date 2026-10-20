@@ -10,6 +10,7 @@ enum UserRole: string
     case OrangTua = 'ORANG_TUA';
     case AdminPenyelenggara = 'ADMIN_PENYELENGGARA';
     case Pendamping = 'PENDAMPING';
+    case StafGeneral = 'STAF_GENERAL';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum UserRole: string
             self::OrangTua => 'Orang Tua',
             self::AdminPenyelenggara => 'Admin Penyelenggara',
             self::Pendamping => 'Pendamping',
+            self::StafGeneral => 'Staf General',
         };
     }
 
@@ -32,6 +34,7 @@ enum UserRole: string
             self::OrangTua => 'Orang tua/wali siswa',
             self::AdminPenyelenggara => 'Administrator penyelenggara (biro, panitia), kelola data penyelenggaranya',
             self::Pendamping => 'Pendamping/muthawif, mencatat kehadiran grup yang ditugaskan',
+            self::StafGeneral => 'Staf Tyas di workspace Absensi General; modulnya dicentang per akun',
         };
     }
 

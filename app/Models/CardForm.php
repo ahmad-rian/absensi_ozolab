@@ -25,6 +25,7 @@ class CardForm extends Model
         'frame_id',
         'layout_config',
         'is_active',
+        'form_publik',
         'penyelenggara_id',
         'program_id',
     ];
@@ -36,6 +37,7 @@ class CardForm extends Model
             'accept_legacy_qr' => 'boolean',
             'layout_config' => 'array',
             'is_active' => 'boolean',
+            'form_publik' => 'boolean',
         ];
     }
 
@@ -44,6 +46,41 @@ class CardForm extends Model
         static::creating(function (CardForm $form): void {
             $form->scanner_token = $form->scanner_token ?: Str::random(48);
         });
+    }
+
+    /**
+     * Link form pendaftaran publik — dibangun dari rute, jadi ikut domain dan
+     * token saat ini.
+     */
+    public function publicUrl(): string
+    {
+        return route('public.card-forms.show', $this->token);
+    }
+
+    /**
+     * Boleh diisi publik? Form Haji/Kartu Bebas (tanpa program) cukup aktif —
+     * link-nya sudah beredar. Form program wajib dinyalakan eksplisit dan
+     * programnya masih berjalan di penyelenggara yang aktif.
+     */
+    public function terbukaUntukPublik(): bool
+    {
+        if (! $this->is_active) {
+            return false;
+        }
+
+        if ($this->program_id === null) {
+            return true;
+        }
+
+        if ($this->form_publik !== true) {
+            return false;
+        }
+
+        $program = Program::acrossPenyelenggara()->find($this->program_id);
+
+        return $program !== null
+            && ! $program->isArchived()
+            && (bool) Penyelenggara::whereKey($this->penyelenggara_id)->value('is_active');
     }
 
     public function submissions(): HasMany

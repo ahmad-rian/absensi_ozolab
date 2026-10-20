@@ -49,6 +49,12 @@ enum AppModule: string
     case PenyelenggaraPesertaKelola = 'penyelenggara-peserta-kelola';
     case PenyelenggaraKartu = 'penyelenggara-kartu';
     case Penyelenggara = 'penyelenggara';
+    case GeneralRingkasan = 'general-ringkasan';
+    case GeneralPenyelenggara = 'general-penyelenggara';
+    case GeneralKatalog = 'general-katalog';
+    case GeneralHaji = 'general-haji';
+    case GeneralPengguna = 'general-pengguna';
+    case GeneralPengaturan = 'general-pengaturan';
 
     public function permission(): string
     {
@@ -97,6 +103,12 @@ enum AppModule: string
             self::PenyelenggaraPesertaKelola => 'Kelola Peserta (tambah, impor, arsip, kartu)',
             self::PenyelenggaraKartu => 'Kartu Peserta',
             self::Penyelenggara => 'Kelola Penyelenggara',
+            self::GeneralRingkasan => 'Ringkasan General',
+            self::GeneralPenyelenggara => 'Penyelenggara (kelola + masuk area)',
+            self::GeneralKatalog => 'Kategori & Program',
+            self::GeneralHaji => 'Haji (kartu lama) & Desain Kartu',
+            self::GeneralPengguna => 'Pengguna General',
+            self::GeneralPengaturan => 'Pengaturan General',
         };
     }
 
@@ -122,7 +134,34 @@ enum AppModule: string
             self::PenyelenggaraKategori, self::PenyelenggaraProgram,
             self::PenyelenggaraPeserta, self::PenyelenggaraPesertaKelola,
             self::PenyelenggaraKartu => 'Penyelenggara',
+
+            self::GeneralRingkasan, self::GeneralPenyelenggara, self::GeneralKatalog,
+            self::GeneralHaji, self::GeneralPengguna, self::GeneralPengaturan => 'General',
         };
+    }
+
+    /**
+     * Penjelasan singkat modul workspace General untuk matriks hak akses staf.
+     */
+    public function keterangan(): ?string
+    {
+        return match ($this) {
+            self::GeneralRingkasan => 'Halaman Ringkasan: statistik semua penyelenggara dan pintasan.',
+            self::GeneralPenyelenggara => 'Tambah/ubah penyelenggara, undang admin, dan masuk ke area penyelenggara mana pun.',
+            self::GeneralKatalog => 'Semua Kategori & Program: tambah, arsip, hapus kategori, buka program.',
+            self::GeneralHaji => 'Seluruh menu Haji (kartu lama): peserta, format data, absensi, generate, frame, layout.',
+            self::GeneralPengguna => 'Kelola akun penyelenggara dan akun staf General.',
+            self::GeneralPengaturan => 'Branding, Google Drive, dan WhatsApp workspace General.',
+            default => null,
+        };
+    }
+
+    /**
+     * @return array<int, self>
+     */
+    public static function modulGeneral(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $m) => $m->group() === 'General'));
     }
 
     /**
@@ -166,6 +205,9 @@ enum AppModule: string
             ],
 
             UserRole::Pendamping => [self::PenyelenggaraBeranda, self::PenyelenggaraPeserta],
+
+            // Modul staf dicentang per akun (permission langsung), bukan lewat peran.
+            UserRole::StafGeneral => [],
         };
     }
 }

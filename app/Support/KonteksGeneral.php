@@ -55,16 +55,20 @@ class KonteksGeneral
      *
      * @return array<int, array{grup: string, opsi: array<int, array{id: string, label: string}>}>
      */
-    public static function opsi(): array
+    public static function opsi(bool $denganProgram = true): array
     {
+        $grup = [['grup' => 'Kartu lama', 'opsi' => [['id' => self::HAJI_LAMA, 'label' => 'Haji (kartu lama)']]]];
+
+        if (! $denganProgram) {
+            return $grup;
+        }
+
         $programs = Program::acrossPenyelenggara()
             ->whereNull('archived_at')
             ->orderByDesc('starts_on')
             ->get(['id', 'name', 'kategori_id', 'penyelenggara_id']);
         $kategoris = Kategori::acrossPenyelenggara()->whereIn('id', $programs->pluck('kategori_id'))->pluck('name', 'id');
         $penyelenggaras = Penyelenggara::whereIn('id', $programs->pluck('penyelenggara_id'))->pluck('name', 'id');
-
-        $grup = [['grup' => 'Kartu lama', 'opsi' => [['id' => self::HAJI_LAMA, 'label' => 'Haji (kartu lama)']]]];
 
         foreach ($programs->groupBy(fn (Program $p) => $p->kategori_id) as $kategoriId => $daftar) {
             $grup[] = [

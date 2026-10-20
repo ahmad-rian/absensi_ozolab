@@ -7,7 +7,14 @@ export type AksesPenyelenggara = {
 };
 
 type AuthProps = {
-    auth: { user: { roles?: string[]; permissions?: string[] } | null };
+    auth: {
+        user: {
+            roles?: string[];
+            permissions?: string[];
+            lintas_penyelenggara?: boolean;
+            penyelenggara_penuh?: boolean;
+        } | null;
+    };
 };
 
 /**
@@ -18,9 +25,16 @@ type AuthProps = {
 export function aksesDari(
     roles: string[],
     permissions: string[],
+    penyelenggaraPenuh = false,
+    lintasPenyelenggara = false,
 ): AksesPenyelenggara {
+    // Staf General: modul Penyelenggara = penuh; modul Kategori & Program
+    // hanya program (server: User::aksesPenyelenggaraLewatGeneral).
     const boleh = (izin: string) =>
-        roles.includes('SUPER_ADMIN') || permissions.includes(izin);
+        penyelenggaraPenuh ||
+        roles.includes('SUPER_ADMIN') ||
+        permissions.includes(izin) ||
+        (lintasPenyelenggara && izin === 'penyelenggara-program.access');
 
     return {
         program: boleh('penyelenggara-program.access'),
@@ -32,5 +46,10 @@ export function aksesDari(
 export function useAksesPenyelenggara(): AksesPenyelenggara {
     const { auth } = usePage().props as unknown as AuthProps;
 
-    return aksesDari(auth?.user?.roles ?? [], auth?.user?.permissions ?? []);
+    return aksesDari(
+        auth?.user?.roles ?? [],
+        auth?.user?.permissions ?? [],
+        auth?.user?.penyelenggara_penuh ?? false,
+        auth?.user?.lintas_penyelenggara ?? false,
+    );
 }

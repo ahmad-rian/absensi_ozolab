@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\AppModule;
 use App\Http\Controllers\General\SettingsController;
 use App\Models\NotificationLog;
 use App\Models\PengajuanIzin;
@@ -62,6 +63,11 @@ class HandleInertiaRequests extends Middleware
                     'penyelenggara_id' => $user->penyelenggara_id,
                     'roles' => $user->getRoleNames(),
                     'permissions' => $user->getAllPermissions()->pluck('name'),
+                    // Staf General ber-modul penyelenggara bertindak seperti
+                    // super admin di area penyelenggara (pemilih + semua menu).
+                    'lintas_penyelenggara' => $user->bolehLintasPenyelenggara(),
+                    // Admin penuh di area penyelenggara (super admin / staf modul Penyelenggara).
+                    'penyelenggara_penuh' => $user->isSuperAdmin() || $user->aksesPenyelenggaraLewatGeneral(AppModule::PenyelenggaraTim->permission()),
                 ] : null,
             ],
             'impersonation' => function () use ($request) {
@@ -128,12 +134,14 @@ class HandleInertiaRequests extends Middleware
                     'slug' => $penyelenggara->slug,
                 ] : null;
             },
-            'penyelenggaras' => $user?->isSuperAdmin() ? function () {
+            'penyelenggaras' => $user?->bolehLintasPenyelenggara() ? function () {
                 return Penyelenggara::orderBy('name')->get(['id', 'name', 'slug', 'is_active']);
             } : [],
             // Pemilih kategori/program di kanan atas workspace general (spec 009).
-            'konteksGeneral' => $user?->isSuperAdmin() && $request->is('general', 'general/*', 'kartu-bebas', 'kartu-bebas/*', 'penyelenggara', 'penyelenggara/*')
-                ? fn () => ['aktif' => KonteksGeneral::aktif($request), 'opsi' => KonteksGeneral::opsi()]
+            // Daftar program lintas penyelenggara hanya untuk yang boleh membukanya;
+            // staf modul Haji saja cukup melihat pilihan Haji lama.
+            'konteksGeneral' => ($user?->bolehLintasPenyelenggara() || $user?->can(AppModule::GeneralHaji->permission())) && $request->is('general', 'general/*', 'kartu-bebas', 'kartu-bebas/*', 'penyelenggara', 'penyelenggara/*')
+                ? fn () => ['aktif' => KonteksGeneral::aktif($request), 'opsi' => KonteksGeneral::opsi($user->bolehLintasPenyelenggara())]
                 : null,
             'penyelenggaraFeatures' => function () {
                 $penyelenggara = app()->bound('currentPenyelenggara') ? app('currentPenyelenggara') : null;

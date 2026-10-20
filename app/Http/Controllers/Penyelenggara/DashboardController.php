@@ -33,7 +33,7 @@ class DashboardController extends Controller
             ],
             // Ringkasan cepat; angka rinci per sesi ada di dashboard program.
             'programs' => Program::whereNull('archived_at')
-                ->when(! $request->user()->isSuperAdmin() && $request->user()->hasRole(UserRole::Pendamping->value), fn ($q) => $q->whereIn(
+                ->when(! $request->user()->bolehLintasPenyelenggara() && $request->user()->hasRole(UserRole::Pendamping->value), fn ($q) => $q->whereIn(
                     'id',
                     Grup::whereHas('pendamping', fn ($p) => $p->where('users.id', $request->user()->id))->pluck('program_id'),
                 ))

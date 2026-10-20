@@ -25,6 +25,16 @@ class EnsureBukanPenyelenggara
             return to_route('penyelenggara.dashboard');
         }
 
+        // Staf General juga tanpa school_id: scope sekolah fail-open, jadi
+        // area sekolah tertutup sepenuhnya untuknya.
+        if ($request->user()?->isStafGeneral()) {
+            if ($request->expectsJson() && ! $request->header('X-Inertia')) {
+                abort(403);
+            }
+
+            return to_route('general.dashboard');
+        }
+
         return $next($request);
     }
 }

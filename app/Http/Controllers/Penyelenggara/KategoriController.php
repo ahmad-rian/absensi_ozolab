@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Penyelenggara;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kategori;
+use App\Models\Program;
 use App\Services\Penyelenggara\SesiGenerator;
 use App\Support\KategoriTemplates;
 use Illuminate\Http\RedirectResponse;
@@ -72,6 +73,21 @@ class KategoriController extends Controller
                 'hiddenFields' => array_values(array_filter($kategori->fields(), fn (array $f) => ! empty($f['hidden']))),
                 'archived' => $kategori->isArchived(),
             ],
+            // Satu form pendaftaran publik per program di kategori ini.
+            'formPublik' => Program::where('kategori_id', $kategori->id)
+                ->with('cardForm')
+                ->orderByRaw('archived_at is not null')
+                ->orderByDesc('starts_on')
+                ->get()
+                ->filter(fn (Program $p) => $p->cardForm !== null)
+                ->map(fn (Program $p) => [
+                    'program_id' => $p->id,
+                    'program' => $p->name,
+                    'arsip' => $p->isArchived(),
+                    'aktif' => $p->cardForm->form_publik === true,
+                    'terbuka' => $p->cardForm->terbukaUntukPublik(),
+                    'url' => $p->cardForm->publicUrl(),
+                ])->values(),
         ]);
     }
 

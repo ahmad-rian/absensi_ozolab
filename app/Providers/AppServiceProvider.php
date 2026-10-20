@@ -113,6 +113,11 @@ class AppServiceProvider extends ServiceProvider
     protected function configureAuthorization(): void
     {
         Gate::before(fn (User $user) => $user->isSuperAdmin() ? true : null);
+
+        // Staf General di area penyelenggara: hanya izin `penyelenggara-*` yang
+        // diwakilkan modul General-nya (lihat User::aksesPenyelenggaraLewatGeneral);
+        // modul sekolah dan Sistem tidak pernah ikut terbuka.
+        Gate::before(fn (User $user, string $ability) => $user->aksesPenyelenggaraLewatGeneral($ability) ? true : null);
     }
 
     protected function configureEvents(): void

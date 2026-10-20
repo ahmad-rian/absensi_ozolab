@@ -1,9 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, LayoutTemplate, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, LayoutTemplate, Pencil, Plus, Trash2 } from 'lucide-react';
+import { LinkFormPublik } from '@/components/shared/link-form-publik';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import KartuBebasLayout from '@/layouts/kartu-bebas-layout';
-import { FIELD_TYPE_LABELS, type FormField } from './field-builder';
+import { FIELD_TYPE_LABELS  } from './field-builder';
+import type {FormField} from './field-builder';
 
 type Dataset = {
     id: string;
@@ -13,13 +16,22 @@ type Dataset = {
     created_at: string | null;
 };
 
-type LayoutItem = { id: string; name: string; orientation: string };
+type LayoutItem = {
+    id: string;
+    name: string;
+    orientation: string;
+    is_active: boolean;
+    publik: boolean;
+    public_url: string;
+    submissions_count: number;
+};
 
 export default function KartuBebasDataShow({ dataset, layouts }: { dataset: Dataset; layouts: LayoutItem[] }) {
     function handleDelete() {
         if (!confirm(`Hapus format "${dataset.name}"?`)) {
             return;
         }
+
         router.delete(`/kartu-bebas/data/${dataset.id}`);
     }
 
@@ -75,25 +87,51 @@ export default function KartuBebasDataShow({ dataset, layouts }: { dataset: Data
 
                 <Card>
                     <CardContent className="p-5">
-                        <h2 className="mb-3 text-sm font-semibold">Layout yang memakai format ini</h2>
-                        {layouts.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">
-                                Belum ada layout. Buat di{' '}
-                                <Link href="/kartu-bebas/layouts/create" className="text-indigo-600 underline">
-                                    Layout Kartu
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <h2 className="text-sm font-semibold">Form publik dari format ini</h2>
+                                <p className="text-muted-foreground text-xs">
+                                    Tiap layout punya link pendaftaran sendiri. Bagikan link ke peserta; isiannya masuk ke layout itu.
+                                </p>
+                            </div>
+                            <Button asChild variant="outline" size="sm" className="gap-1.5">
+                                <Link href={`/kartu-bebas/layouts/create?dataset=${dataset.id}`}>
+                                    <Plus className="size-4" /> Buat layout dari format ini
                                 </Link>
-                                .
+                            </Button>
+                        </div>
+                        {layouts.length === 0 ? (
+                            <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
+                                Belum ada layout, jadi belum ada link form publik. Buat layout dulu dari tombol di atas.
                             </p>
                         ) : (
-                            <div className="flex flex-wrap gap-2">
+                            <div className="grid gap-3">
                                 {layouts.map((l) => (
-                                    <Link
-                                        key={l.id}
-                                        href={`/kartu-bebas/layouts/${l.id}/edit`}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted"
-                                    >
-                                        <LayoutTemplate className="size-4 text-indigo-600" /> {l.name}
-                                    </Link>
+                                    <div key={l.id} className="grid gap-2 rounded-lg border p-3">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <Link
+                                                href={`/kartu-bebas/layouts/${l.id}/edit`}
+                                                className="inline-flex items-center gap-1.5 font-medium hover:underline"
+                                            >
+                                                <LayoutTemplate className="size-4 text-indigo-600" /> {l.name}
+                                            </Link>
+                                            <div className="flex items-center gap-2 text-xs">
+                                                <span className="text-muted-foreground">{l.submissions_count} isian</span>
+                                                {l.publik ? (
+                                                    <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">Terbuka</Badge>
+                                                ) : (
+                                                    <Badge variant="outline">Nonaktif</Badge>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {l.publik ? (
+                                            <LinkFormPublik url={l.public_url} />
+                                        ) : (
+                                            <p className="text-muted-foreground text-xs">
+                                                Layout nonaktif — aktifkan di editor layout supaya link bisa dibuka.
+                                            </p>
+                                        )}
+                                    </div>
                                 ))}
                             </div>
                         )}

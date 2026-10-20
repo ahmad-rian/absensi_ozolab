@@ -42,7 +42,14 @@ class KartuController extends Controller
                 'frame_id' => $form->frame_id,
                 'is_active' => $form->is_active,
                 'layout_config' => $form->normalizedConfig(),
-                'public_url' => null,
+                // Link pendaftaran publik hanya ada saat dinyalakan.
+                'public_url' => $form->terbukaUntukPublik() ? $form->publicUrl() : null,
+            ],
+            'formPublik' => [
+                'aktif' => $form->form_publik === true,
+                'url' => $form->publicUrl(),
+                'terbuka' => $form->terbukaUntukPublik(),
+                'arsip' => $program->isArchived(),
             ],
             'frames' => SchoolFrame::acrossSchools()
                 ->where('category', 'kartu_bebas')
@@ -63,6 +70,24 @@ class KartuController extends Controller
                 'fields' => $kategori->visibleFields(),
             ]],
         ]);
+    }
+
+    /**
+     * Nyalakan/matikan form pendaftaran publik (/f/{token}) program ini.
+     * Pendaftar publik tetap tunduk kuota peserta penyelenggara.
+     */
+    public function formPublik(Request $request, Program $program): RedirectResponse
+    {
+        abort_if($program->isArchived(), 403, 'Program sudah diarsip, form publiknya tidak bisa dinyalakan.');
+
+        $aktif = $request->validate(['aktif' => ['required', 'boolean']])['aktif'];
+        $program->cardForm()->firstOrFail()->update(['form_publik' => (bool) $aktif]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $aktif
+            ? 'Form pendaftaran publik dinyalakan. Bagikan link-nya ke calon peserta.'
+            : 'Form pendaftaran publik dimatikan. Link lama tidak bisa dibuka lagi.']);
+
+        return back();
     }
 
     public function update(Request $request, Program $program): RedirectResponse

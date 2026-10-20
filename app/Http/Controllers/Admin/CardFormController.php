@@ -32,7 +32,7 @@ class CardFormController extends Controller
                 'is_active' => $form->is_active,
                 'fields_count' => is_array($form->fields) ? count($form->fields) : 0,
                 'submissions_count' => $form->submissions_count,
-                'public_url' => url('/f/'.$form->token),
+                'public_url' => $form->publicUrl(),
                 'created_at' => $form->created_at?->toDateTimeString(),
             ]),
         ]);
@@ -78,7 +78,7 @@ class CardFormController extends Controller
                 'frame_id' => $cardForm->frame_id,
                 'is_active' => $cardForm->is_active,
                 'layout_config' => $cardForm->normalizedConfig(),
-                'public_url' => url('/f/'.$cardForm->token),
+                'public_url' => $cardForm->publicUrl(),
             ],
             'frames' => $this->frames(),
         ]);

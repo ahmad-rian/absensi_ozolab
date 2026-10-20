@@ -19,9 +19,9 @@ class EnsurePenyelenggaraUser
     {
         $user = $request->user();
 
-        abort_unless($user && ($user->isSuperAdmin() || $user->isPenyelenggaraUser()), 403);
+        abort_unless($user && ($user->bolehLintasPenyelenggara() || $user->isPenyelenggaraUser()), 403);
 
-        if (! $user->isSuperAdmin()) {
+        if (! $user->bolehLintasPenyelenggara()) {
             $penyelenggara = $user->penyelenggara;
 
             if (! $penyelenggara || ! $penyelenggara->is_active || ! $user->is_active) {

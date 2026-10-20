@@ -4,6 +4,7 @@ namespace App\Http\Controllers\KartuBebas;
 
 use App\Http\Controllers\Controller;
 use App\Models\CardDataset;
+use App\Models\CardForm;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,6 +21,7 @@ class DatasetController extends Controller
     {
         $datasets = CardDataset::query()
             ->withCount('forms')
+            ->with(['forms' => fn ($q) => $q->orderBy('name')->select(['id', 'card_dataset_id', 'name', 'token', 'is_active', 'form_publik', 'program_id', 'penyelenggara_id'])])
             ->orderByDesc('created_at')
             ->get();
 
@@ -29,6 +31,8 @@ class DatasetController extends Controller
                 'name' => $d->name,
                 'fields' => array_values($d->fields ?? []),
                 'layouts_count' => $d->forms_count,
+                'links' => $d->forms->filter(fn (CardForm $f) => $f->terbukaUntukPublik())
+                    ->map(fn (CardForm $f) => ['id' => $f->id, 'name' => $f->name, 'url' => $f->publicUrl()])->values(),
                 'created_at' => $d->created_at?->toDateTimeString(),
             ]),
         ]);
@@ -51,8 +55,17 @@ class DatasetController extends Controller
                 'layouts_count' => $dataset->forms_count,
                 'created_at' => $dataset->created_at?->toDateTimeString(),
             ],
-            'layouts' => $dataset->forms()->orderBy('name')->get(['id', 'name', 'orientation'])
-                ->map(fn ($f) => ['id' => $f->id, 'name' => $f->name, 'orientation' => $f->orientation]),
+            // Tiap layout = satu form pendaftaran publik (/f/{token}).
+            'layouts' => $dataset->forms()->orderBy('name')->get()
+                ->map(fn (CardForm $f) => [
+                    'id' => $f->id,
+                    'name' => $f->name,
+                    'orientation' => $f->orientation,
+                    'is_active' => $f->is_active,
+                    'publik' => $f->terbukaUntukPublik(),
+                    'public_url' => $f->publicUrl(),
+                    'submissions_count' => $f->submissions()->count(),
+                ]),
         ]);
     }
 

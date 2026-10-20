@@ -47,6 +47,7 @@ use App\Http\Controllers\General\KategoriController as GeneralKategoriController
 use App\Http\Controllers\General\KonteksController as GeneralKonteksController;
 use App\Http\Controllers\General\PenyelenggaraController;
 use App\Http\Controllers\General\SettingsController as GeneralSettingsController;
+use App\Http\Controllers\General\StafController as GeneralStafController;
 use App\Http\Controllers\General\UserController as GeneralUserController;
 use App\Http\Controllers\KartuBebas\AttendanceController as CardAttendanceController;
 use App\Http\Controllers\KartuBebas\DashboardController as KartuBebasDashboardController;
@@ -530,7 +531,8 @@ Route::middleware('auth')
     ->post('admin/stop-impersonate', [ImpersonationController::class, 'destroy'])
     ->name('admin.stop-impersonate');
 
-Route::middleware(['auth', 'verified', 'permission:kartu-bebas.access', 'super-admin', 'kartu-bebas-legacy'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
+// Haji (kartu lama): super admin, atau staf General dengan modul Haji.
+Route::middleware(['auth', 'verified', 'general', 'permission:general-haji.access|kartu-bebas.access', 'kartu-bebas-legacy'])->prefix('kartu-bebas')->name('kartu-bebas.')->group(function () {
     Route::get('/', [KartuBebasDashboardController::class, 'index'])->name('dashboard');
 
     Route::get('drive/jelajah', [DrivePhotoController::class, 'browse'])->name('drive.browse');
@@ -613,41 +615,59 @@ Route::middleware('auth')->group(function () {
  | pertama bila tidak disebut, dan tetap menolak anak milik orang lain.
  */
 // ── Workspace Absensi General (spec 009) ────────────────────────────────────
-// Berdiri sendiri, khusus super admin, terpisah dari grup /admin sekolah:
-// tidak ada konteks sekolah yang dipakai dan pengaturannya di `general_*`.
-Route::middleware(['auth', 'verified', 'super-admin'])
+// Berdiri sendiri, terpisah dari grup /admin sekolah: tidak ada konteks
+// sekolah dan pengaturannya di `general_*`. Super admin atau staf General;
+// tiap modul dijaga permission `general-*` (super admin lolos Gate::before).
+Route::middleware(['auth', 'verified', 'general'])
     ->prefix('general')
     ->name('general.')
     ->group(function () {
-        Route::get('/', GeneralDashboardController::class)->name('dashboard');
-        Route::post('konteks', GeneralKonteksController::class)->name('konteks');
+        Route::get('/', GeneralDashboardController::class)->middleware('permission:general-ringkasan.access')->name('dashboard');
+        Route::post('konteks', GeneralKonteksController::class)
+            ->middleware('permission:general-haji.access|general-katalog.access|general-penyelenggara.access')
+            ->name('konteks');
 
-        Route::prefix('penyelenggara')->name('penyelenggara.')->group(function () {
+        Route::middleware('permission:general-penyelenggara.access')->prefix('penyelenggara')->name('penyelenggara.')->group(function () {
             Route::get('/', [PenyelenggaraController::class, 'index'])->name('index');
             Route::post('/', [PenyelenggaraController::class, 'store'])->name('store');
             Route::get('{penyelenggara}', [PenyelenggaraController::class, 'show'])->name('show');
             Route::put('{penyelenggara}', [PenyelenggaraController::class, 'update'])->name('update');
-            Route::post('{penyelenggara}/undangan', [PenyelenggaraController::class, 'invite'])
-                ->middleware('throttle:20,1')
-                ->name('invite');
         });
 
-        Route::get('kategori', [GeneralKatalogController::class, 'kategori'])->name('kategori');
-        Route::post('kategori', [GeneralKategoriController::class, 'store'])->name('kategori.store');
-        Route::post('kategori/{kategori}/arsip', [GeneralKategoriController::class, 'arsip'])->name('kategori.arsip');
-        Route::delete('kategori/{kategori}', [GeneralKategoriController::class, 'destroy'])->name('kategori.destroy');
-        Route::get('program', [GeneralKatalogController::class, 'program'])->name('program');
+        // Undang admin penyelenggara: dari detail penyelenggara atau halaman Pengguna.
+        Route::post('penyelenggara/{penyelenggara}/undangan', [PenyelenggaraController::class, 'invite'])
+            ->middleware(['permission:general-penyelenggara.access|general-pengguna.access', 'throttle:20,1'])
+            ->name('penyelenggara.invite');
 
-        Route::get('pengguna', [GeneralUserController::class, 'index'])->name('pengguna');
-        Route::put('pengguna/{user}/status', [GeneralUserController::class, 'status'])->name('pengguna.status');
-        Route::put('pengguna/{user}/sandi', [GeneralUserController::class, 'sandi'])->middleware('throttle:20,1')->name('pengguna.sandi');
+        Route::middleware('permission:general-katalog.access')->group(function () {
+            Route::get('kategori', [GeneralKatalogController::class, 'kategori'])->name('kategori');
+            Route::post('kategori', [GeneralKategoriController::class, 'store'])->name('kategori.store');
+            Route::post('kategori/{kategori}/arsip', [GeneralKategoriController::class, 'arsip'])->name('kategori.arsip');
+            Route::delete('kategori/{kategori}', [GeneralKategoriController::class, 'destroy'])->name('kategori.destroy');
+            Route::get('program', [GeneralKatalogController::class, 'program'])->name('program');
+        });
 
-        Route::get('pengaturan', [GeneralSettingsController::class, 'index'])->name('pengaturan');
-        Route::put('pengaturan/umum', [GeneralSettingsController::class, 'umum'])->name('pengaturan.umum');
-        Route::post('pengaturan/logo', [GeneralSettingsController::class, 'logo'])->name('pengaturan.logo');
-        Route::put('pengaturan/drive', [GeneralSettingsController::class, 'drive'])->name('pengaturan.drive');
-        Route::put('pengaturan/whatsapp', [GeneralSettingsController::class, 'whatsapp'])->name('pengaturan.whatsapp');
-        Route::post('pengaturan/whatsapp/uji', [GeneralSettingsController::class, 'ujiWhatsapp'])->middleware('throttle:10,1')->name('pengaturan.whatsapp.uji');
+        Route::middleware('permission:general-pengguna.access')->group(function () {
+            Route::get('pengguna', [GeneralUserController::class, 'index'])->name('pengguna');
+            Route::put('pengguna/{user}/status', [GeneralUserController::class, 'status'])->name('pengguna.status');
+            Route::put('pengguna/{user}/sandi', [GeneralUserController::class, 'sandi'])->middleware('throttle:20,1')->name('pengguna.sandi');
+
+            // Akun staf General: CRUD + modul per akun.
+            Route::post('staf', [GeneralStafController::class, 'store'])->name('staf.store');
+            Route::put('staf/{user}', [GeneralStafController::class, 'update'])->name('staf.update');
+            Route::put('staf/{user}/status', [GeneralStafController::class, 'status'])->name('staf.status');
+            Route::put('staf/{user}/sandi', [GeneralStafController::class, 'sandi'])->middleware('throttle:20,1')->name('staf.sandi');
+            Route::delete('staf/{user}', [GeneralStafController::class, 'destroy'])->name('staf.destroy');
+        });
+
+        Route::middleware('permission:general-pengaturan.access')->group(function () {
+            Route::get('pengaturan', [GeneralSettingsController::class, 'index'])->name('pengaturan');
+            Route::put('pengaturan/umum', [GeneralSettingsController::class, 'umum'])->name('pengaturan.umum');
+            Route::post('pengaturan/logo', [GeneralSettingsController::class, 'logo'])->name('pengaturan.logo');
+            Route::put('pengaturan/drive', [GeneralSettingsController::class, 'drive'])->name('pengaturan.drive');
+            Route::put('pengaturan/whatsapp', [GeneralSettingsController::class, 'whatsapp'])->name('pengaturan.whatsapp');
+            Route::post('pengaturan/whatsapp/uji', [GeneralSettingsController::class, 'ujiWhatsapp'])->middleware('throttle:10,1')->name('pengaturan.whatsapp.uji');
+        });
     });
 
 // Alamat lama kelola penyelenggara (sebelum spec 009) — bookmark tetap jalan.
@@ -677,7 +697,8 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
         Route::get('/', [PenyelenggaraDashboardController::class, 'index'])
             ->middleware('permission:penyelenggara-beranda.access')
             ->name('dashboard');
-        Route::post('switch', PenyelenggaraSwitchController::class)->middleware('super-admin')->name('switch');
+        // Super admin / staf General lintas penyelenggara; dicek di controller.
+        Route::post('switch', PenyelenggaraSwitchController::class)->name('switch');
 
         Route::middleware('permission:penyelenggara-kategori.access')->prefix('kategori')->name('kategori.')->group(function () {
             Route::get('/', [PenyelenggaraKategoriController::class, 'index'])->name('index');
@@ -695,6 +716,7 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
             Route::post('program/{program}/arsip', [PenyelenggaraProgramController::class, 'arsip'])->name('program.arsip');
             Route::post('program/{program}/salin', [PenyelenggaraProgramController::class, 'salin'])->name('program.salin');
             Route::post('program/{program}/link-scan', [PenyelenggaraKehadiranController::class, 'rotate'])->name('kehadiran.rotate');
+            Route::post('program/{program}/form-publik', [PenyelenggaraKartuController::class, 'formPublik'])->name('kartu.form-publik');
 
             Route::post('program/{program}/grup', [PenyelenggaraGrupController::class, 'store'])->name('grup.store');
             Route::put('grup/{grup}', [PenyelenggaraGrupController::class, 'update'])->name('grup.update');

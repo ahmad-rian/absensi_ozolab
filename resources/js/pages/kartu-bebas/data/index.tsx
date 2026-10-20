@@ -1,15 +1,18 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Database, Pencil, Plus, Trash2 } from 'lucide-react';
+import { LinkFormPublik } from '@/components/shared/link-form-publik';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import KartuBebasLayout from '@/layouts/kartu-bebas-layout';
-import { type FormField } from './field-builder';
+import type {FormField} from './field-builder';
 
 type Dataset = {
     id: string;
     name: string;
     fields: FormField[];
     layouts_count: number;
+    /** Form publik yang sedang terbuka untuk format ini (satu per layout aktif). */
+    links: { id: string; name: string; url: string }[];
     created_at: string | null;
 };
 
@@ -18,6 +21,7 @@ export default function KartuBebasDataIndex({ datasets }: { datasets: Dataset[] 
         if (!confirm(`Hapus format "${dataset.name}"?`)) {
             return;
         }
+
         router.delete(`/kartu-bebas/data/${dataset.id}`, { preserveScroll: true });
     }
 
@@ -62,6 +66,31 @@ export default function KartuBebasDataIndex({ datasets }: { datasets: Dataset[] 
                                             <span>{dataset.layouts_count} layout pakai</span>
                                         </div>
                                     </Link>
+                                    <div className="mb-4 grid gap-1.5">
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                            Link form publik
+                                        </span>
+                                        {dataset.links.length === 0 ? (
+                                            <Link
+                                                href={`/kartu-bebas/layouts/create?dataset=${dataset.id}`}
+                                                className="text-xs text-indigo-600 underline dark:text-indigo-400"
+                                            >
+                                                Belum ada layout aktif — buat layout dari format ini
+                                            </Link>
+                                        ) : (
+                                            <>
+                                                <LinkFormPublik url={dataset.links[0].url} />
+                                                {dataset.links.length > 1 && (
+                                                    <Link
+                                                        href={`/kartu-bebas/data/${dataset.id}`}
+                                                        className="text-xs text-muted-foreground underline"
+                                                    >
+                                                        +{dataset.links.length - 1} link lain dari layout berbeda
+                                                    </Link>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
                                     <div className="flex gap-2">
                                         <Button asChild variant="outline" size="sm" className="flex-1">
                                             <Link href={`/kartu-bebas/data/${dataset.id}/edit`}>
