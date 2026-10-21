@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\KartuBebas;
 
 use App\Http\Controllers\Controller;
+use App\Models\CardAttendance;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Services\CardParticipantService;
@@ -66,7 +67,23 @@ class ParticipantController extends Controller
 
     public function show(CardFormSubmission $submission): Response
     {
-        return Inertia::render('kartu-bebas/peserta/show', ['participant' => $this->payload($submission)]);
+        return Inertia::render('kartu-bebas/peserta/show', [
+            'participant' => $this->payload($submission),
+            // Riwayat kehadiran dari card_attendances — tabel yang sama dengan
+            // yang ditulis scan, jadi selalu sinkron dengan halaman scan.
+            'kehadiran' => Inertia::defer(fn () => CardAttendance::query()
+                ->where('card_form_submission_id', $submission->id)
+                ->orderByDesc('attendance_date')
+                ->limit(90)
+                ->get()
+                ->map(fn (CardAttendance $a) => [
+                    'tanggal' => substr((string) $a->getRawOriginal('attendance_date'), 0, 10),
+                    'status' => $a->status,
+                    'masuk' => $a->check_in ? substr($a->check_in, 0, 5) : null,
+                    'pulang' => $a->check_out ? substr($a->check_out, 0, 5) : null,
+                    'catatan' => $a->note,
+                ])->values()),
+        ]);
     }
 
     public function edit(CardFormSubmission $submission): Response

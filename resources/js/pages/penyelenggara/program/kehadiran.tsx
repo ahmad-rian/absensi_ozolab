@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePoll } from '@inertiajs/react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,7 @@ type Props = {
         peserta: string | null;
         lama: string | null;
         baru: string | null;
+        perubahan: string;
     }[];
     grups: { id: string; name: string }[];
     statusOptions: { value: string; label: string }[];
@@ -128,6 +129,9 @@ function BarisPeserta({
     );
 }
 
+/** Seberapa sering daftar kehadiran ditarik ulang selama halaman terbuka. */
+const JEDA_MUAT_ULANG_MS = 10_000;
+
 export default function Kehadiran({
     program,
     tanggal,
@@ -141,6 +145,9 @@ export default function Kehadiran({
     filters,
 }: Props) {
     const akses = useAksesPenyelenggara();
+
+    // Scan dari gerbang langsung terlihat tanpa muat ulang manual.
+    usePoll(JEDA_MUAT_ULANG_MS, { only: ['peserta', 'riwayat'] });
     const buka = (patch: Record<string, string>) =>
         router.get(
             index.url(program.id),
@@ -350,8 +357,7 @@ export default function Kehadiran({
                                                 {namaPeserta.get(
                                                     r.peserta ?? '',
                                                 ) ?? 'Peserta'}
-                                                : {r.lama ?? '—'} →{' '}
-                                                {r.baru ?? '—'}
+                                                : {r.perubahan}
                                             </li>
                                         ))}
                                     </ul>

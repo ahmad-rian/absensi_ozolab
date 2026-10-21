@@ -16,6 +16,7 @@ use App\Support\ProgramShortLink;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -42,7 +43,7 @@ class KehadiranController extends Controller
             $sesis = $sesis->filter(fn (Sesi $s) => ! $s->grup_id
                 || array_intersect(Grup::denganTurunan($program->id, [$s->grup_id]), $grupTerlihat) !== [])->values();
         }
-        $sesi = $sesis->firstWhere('id', $request->input('sesi')) ?? $sesis->first();
+        $sesi = $sesis->firstWhere('id', $request->input('sesi')) ?? $this->sesiBawaan($sesis, $program, $tanggal);
 
         $baris = collect();
         $riwayat = collect();
@@ -89,11 +90,12 @@ class KehadiranController extends Controller
                 ->get()
                 ->map(fn (Activity $a) => [
                     'waktu' => $a->created_at->toIso8601String(),
-                    'oleh' => $a->causer?->name ?? 'Sistem',
+                    'oleh' => $a->causer?->name ?? 'Scan',
                     'peserta' => $kehadiran->firstWhere('id', $a->subject_id)?->card_form_submission_id,
                     // activitylog v5 menyimpan perubahan di `attribute_changes`.
                     'lama' => $a->attribute_changes?->get('old')['status'] ?? null,
                     'baru' => $a->attribute_changes?->get('attributes')['status'] ?? null,
+                    'perubahan' => self::ringkasPerubahan($a, $program->timezone),
                 ]);
         }
 
@@ -158,5 +160,67 @@ class KehadiranController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Link scan diganti. Link lama tidak berlaku; kartu peserta tetap sama.']);
 
         return back();
+    }
+
+    /**
+     * Sesi yang dibuka bila operator belum memilih: hari ini = sesi yang
+     * sedang berjalan (atau yang terakhir dimulai), supaya scan ke sesi 2
+     * tidak tampak "tidak tercatat" karena halaman membuka sesi 1.
+     *
+     * @param  Collection<int, Sesi>  $sesis
+     */
+    private function sesiBawaan(Collection $sesis, Program $program, string $tanggal): ?Sesi
+    {
+        $sekarang = CarbonImmutable::now($program->timezone);
+
+        if ($tanggal !== $sekarang->toDateString()) {
+            return $sesis->first();
+        }
+
+        $jam = $sekarang->format('H:i:s');
+
+        return $sesis->first(fn (Sesi $s) => $s->datang_mulai <= $jam && $jam <= $s->selesai())
+            ?? $sesis->filter(fn (Sesi $s) => $s->datang_mulai <= $jam)->last()
+            ?? $sesis->first();
+    }
+
+    /**
+     * Kalimat singkat satu perubahan kehadiran: status, atau jam datang/pulang
+     * dari scan (yang statusnya tidak berubah).
+     */
+    private static function ringkasPerubahan(Activity $a, string $zona): string
+    {
+        $lama = $a->attribute_changes?->get('old') ?? [];
+        $baru = $a->attribute_changes?->get('attributes') ?? [];
+        $bagian = [];
+
+        if (($lama['status'] ?? null) !== ($baru['status'] ?? null) && isset($baru['status'])) {
+            $bagian[] = ($lama['status'] ?? 'BELUM').' → '.$baru['status'];
+        }
+
+        foreach (['datang_at' => 'Datang', 'pulang_at' => 'Pulang'] as $kolom => $label) {
+            if (! empty($baru[$kolom]) && ($lama[$kolom] ?? null) !== $baru[$kolom]) {
+                $bagian[] = $label.' '.self::jamDinding((string) $baru[$kolom], $zona);
+            }
+        }
+
+        if (! empty($baru['sumber'])) {
+            $bagian[] = 'via '.$baru['sumber'];
+        }
+
+        return $bagian === [] ? 'Diperbarui' : implode(' · ', $bagian);
+    }
+
+    /**
+     * Log aktivitas menyimpan jam sebagai ISO ber-zona (UTC); tampilkan
+     * kembali dalam jam dinding program. Nilai tanpa zona sudah jam dinding.
+     */
+    private static function jamDinding(string $nilai, string $zona): string
+    {
+        if (preg_match('/(Z|[+-]\d{2}:?\d{2})$/', $nilai) === 1) {
+            return CarbonImmutable::parse($nilai)->setTimezone($zona)->format('H:i');
+        }
+
+        return substr($nilai, 11, 5);
     }
 }

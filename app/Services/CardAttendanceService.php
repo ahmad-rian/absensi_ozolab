@@ -70,6 +70,11 @@ class CardAttendanceService
             if (! $participant || (! $kartuLama && ! hash_equals($this->qrToken($participant), $token))) {
                 throw ValidationException::withMessages(['token' => 'Kartu tidak terdaftar pada layout ini.']);
             }
+            // Peserta program penyelenggara dicatat di `kehadirans` lewat link
+            // scan programnya; tercatat di sini membuat riwayatnya terpecah.
+            if ($participant->program_id !== null) {
+                throw ValidationException::withMessages(['token' => 'Kartu ini milik program penyelenggara. Scan lewat link scan program tersebut.']);
+            }
             $record = CardAttendance::firstOrNew(['card_form_submission_id' => $participant->id, 'attendance_date' => SchoolTime::todayString()]);
             if ($record->exists && $record->status !== 'hadir') {
                 throw ValidationException::withMessages(['token' => 'Status peserta sudah dicatat admin. Minta admin memperbaikinya terlebih dahulu.']);

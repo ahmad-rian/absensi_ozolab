@@ -586,6 +586,10 @@
             'use strict';
 
             var SCAN_URL = @json($scanUrl);
+            /* Riwayat bersama dari server (halaman peserta Haji/program). Gerbang
+               sekolah tidak mengirimnya — daftar lokal lama tetap dipakai. */
+            var RIWAYAT_URL = @json($riwayatUrl ?? null);
+            var RIWAYAT_MS = 20000;
             var SAME_CARD_MS = 1500;
             var RESULT_MS = 2500;
             var KEY_IDLE_MS = 600;
@@ -807,6 +811,41 @@
                 logEl.innerHTML = html;
             }
 
+            /* Ganti isi panel dengan riwayat hari ini dari database (jam server). */
+            function renderServer(list) {
+                entries = [];
+                for (var i = 0; i < list.length && i < 12; i++) {
+                    entries.push({
+                        ok: true,
+                        nama: list[i].nama,
+                        kelas: list[i].sesi ? list[i].jenis + ' \u00b7 ' + list[i].sesi : list[i].jenis,
+                        at: String(list[i].jam).slice(0, 5),
+                    });
+                }
+
+                var html = '';
+                for (var j = 0; j < entries.length; j++) {
+                    html +=
+                        '<div class="row"><div class="dot"></div>' +
+                        '<div class="txt"><b>' + esc(entries[j].nama) + '</b>' +
+                        '<span>' + esc(entries[j].kelas + ' \u00b7 ' + entries[j].at) + '</span></div></div>';
+                }
+                logEl.innerHTML = html;
+            }
+
+            function muatRiwayat() {
+                if (!RIWAYAT_URL) return;
+                fetch(RIWAYAT_URL, { headers: { 'Accept': 'application/json' } })
+                    .then(function (res) { return res.ok ? res.json() : null; })
+                    .then(function (data) { if (data && data.riwayat) { renderServer(data.riwayat); } })
+                    .catch(function () {});
+            }
+
+            if (RIWAYAT_URL) {
+                muatRiwayat();
+                setInterval(muatRiwayat, RIWAYAT_MS);
+            }
+
             function submitScan(raw) {
                 var token = String(raw).replace(/^\s+|\s+$/g, '');
                 if (!token || token.length < 3) return;
@@ -842,7 +881,7 @@
                         /* Hanya yang berhasil ditahan; yang gagal boleh langsung diulang. */
                         if (data.success) { recent[token] = new Date().getTime(); }
                         showResult(data);
-                        pushLog(data);
+                        if (data.riwayat) { renderServer(data.riwayat); } else { pushLog(data); }
                         if (data.success) {
                             beep(880, 120);
                             say(data.student ? data.student.full_name : '');

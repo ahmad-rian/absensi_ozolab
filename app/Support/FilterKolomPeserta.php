@@ -18,6 +18,56 @@ final class FilterKolomPeserta
 {
     private const MAKS_OPSI = 300;
 
+    /** Kelompok laporan untuk peserta yang kolom kecamatannya kosong. */
+    public const TANPA_KECAMATAN = 'Tanpa kecamatan';
+
+    /**
+     * Kunci kolom kecamatan sebuah skema: kolom bertipe `kecamatan` dulu,
+     * lalu kolom data lama yang kunci/labelnya memuat "kecamatan".
+     *
+     * @param  iterable<int, array<string, mixed>>  $fields
+     */
+    public static function kolomKecamatan(iterable $fields): ?string
+    {
+        $cadangan = null;
+        foreach ($fields as $f) {
+            $key = (string) ($f['key'] ?? '');
+            if ($key === '' || ! preg_match('/^[a-z0-9_]+$/', $key)) {
+                continue;
+            }
+            if (($f['type'] ?? '') === 'kecamatan') {
+                return $key;
+            }
+            if ($cadangan === null && str_contains(strtolower($key.' '.($f['label'] ?? '')), 'kecamatan')) {
+                $cadangan = $key;
+            }
+        }
+
+        return $cadangan;
+    }
+
+    /**
+     * Nama kecamatan untuk pengelompokan: bagian sebelum koma, jadi isian lama
+     * "Purwokerto Barat" dan "Purwokerto Barat, Banyumas" masuk kelompok sama.
+     * Kosong menjadi {@see self::TANPA_KECAMATAN}.
+     */
+    public static function namaKecamatan(mixed $nilai): string
+    {
+        $teks = trim(explode(',', is_scalar($nilai) ? (string) $nilai : '')[0]);
+        $teks = (string) preg_replace('/^kec(amatan)?\.?\s+/iu', '', $teks);
+        $teks = (string) preg_replace('/\s+/u', ' ', $teks);
+
+        return $teks === '' ? self::TANPA_KECAMATAN : mb_convert_case(mb_strtolower($teks), MB_CASE_TITLE);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $data
+     */
+    public static function kecamatanPeserta(?array $data, ?string $kunci): string
+    {
+        return self::namaKecamatan($kunci ? ($data[$kunci] ?? null) : null);
+    }
+
     /**
      * @param  iterable<int, array<string, mixed>>  $fields
      * @return array<string, array{key: string, label: string, type: string, options: array<int, string>}>

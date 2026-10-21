@@ -8,9 +8,11 @@ import { PublicScanConsole } from '@/components/scanner/public-scan-console';
 export default function ProgramScanner({
     program,
     scanUrl,
+    riwayatUrl,
 }: {
     program: { name: string; aktif: boolean };
     scanUrl: string;
+    riwayatUrl: string;
 }) {
     const { app } = usePage<{ app: { logo?: string | null } }>().props;
 
@@ -26,6 +28,7 @@ export default function ProgramScanner({
                     is_active: program.aktif,
                 }}
                 scanUrl={scanUrl}
+                riwayatUrl={riwayatUrl}
                 tagline="Absensi peserta · datang & pulang mengikuti jadwal sesi"
                 hint="Arahkan QR kartu peserta ke kamera, atau gunakan scanner gun."
                 disabledNotice={

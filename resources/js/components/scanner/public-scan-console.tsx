@@ -95,7 +95,23 @@ type ScanResult = {
     success: boolean;
     message: string;
     student: ScanStudentResult | null;
+    /** Scan ulang yang tidak mengubah apa pun (jam sudah tercatat). */
+    duplikat?: boolean;
+    /** Riwayat hari ini dari server, dikirim ulang setiap scan berhasil. */
+    riwayat?: RiwayatServer[];
 };
+
+/** Satu kejadian datang/pulang dari database (jam server). */
+export type RiwayatServer = {
+    nama: string;
+    jenis: string;
+    jam: string;
+    status: string;
+    sesi?: string | null;
+};
+
+/** Seberapa sering riwayat bersama ditarik ulang dari server. */
+const JEDA_RIWAYAT_MS = 15_000;
 
 type ScanLogItem = {
     id: number;
@@ -119,6 +135,12 @@ type Props = {
     disabledNotice?: string | null;
     subjectLabel?: string;
     groupLabel?: string;
+    /**
+     * Endpoint GET riwayat scan hari ini. Bila diisi, daftar riwayat dibaca
+     * dari database (sama di semua perangkat, jam server) — bukan dari memori
+     * tab. Tanpa ini perilaku lama tetap (dipakai gerbang sekolah).
+     */
+    riwayatUrl?: string;
 };
 
 let logId = 0;
@@ -256,7 +278,7 @@ function peramban_dalam_aplikasi(): boolean {
  * Dipakai bersama oleh absensi sekolah dan absen sholat — dua halaman itu
  * hanya berbeda endpoint dan label, jadi implementasinya tidak digandakan.
  */
-export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNotice = null, subjectLabel = 'siswa', groupLabel = 'Kelas' }: Props) {
+export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNotice = null, subjectLabel = 'siswa', groupLabel = 'Kelas', riwayatUrl }: Props) {
     const [cameraStatus, setCameraStatus] = useState<'loading' | 'scanning' | 'error'>('loading');
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [cameras, setCameras] = useState<CameraDevice[]>([]);
@@ -265,6 +287,34 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     /** QR sudah terbaca dan sedang dikirim ke server. */
     const [memproses, setMemproses] = useState(false);
     const [scanLog, setScanLog] = useState<ScanLogItem[]>([]);
+    const [riwayatServer, setRiwayatServer] = useState<RiwayatServer[] | null>(null);
+
+    // Riwayat bersama: dimuat saat halaman dibuka lalu ditarik berkala, jadi
+    // scan dari perangkat lain dan reload halaman tetap terlihat.
+    useEffect(() => {
+        if (!riwayatUrl) {
+            return;
+        }
+
+        let batal = false;
+        const muat = () =>
+            fetch(riwayatUrl, { headers: { Accept: 'application/json' } })
+                .then((r) => (r.ok ? r.json() : null))
+                .then((data: { riwayat?: RiwayatServer[] } | null) => {
+                    if (!batal && data?.riwayat) {
+                        setRiwayatServer(data.riwayat);
+                    }
+                })
+                .catch(() => undefined);
+
+        muat();
+        const jeda = setInterval(muat, JEDA_RIWAYAT_MS);
+
+        return () => {
+            batal = true;
+            clearInterval(jeda);
+        };
+    }, [riwayatUrl]);
     /**
      * Bentuk bacaan terakhir, ditampilkan hanya saat gagal.
      *
@@ -468,13 +518,18 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 if (data.success) recent.set(token, Date.now());
 
                 setLastResult(data);
+
+                if (data.riwayat) {
+                    setRiwayatServer(data.riwayat);
+                }
+
                 setScanLog((prev) =>
                     [
                         {
                             id: ++logId,
                             student: data.student,
                             success: data.success,
-                            message: data.message,
+                            message: data.duplikat ? `${data.message} (scan ulang)` : data.message,
                             time: new Date().toLocaleTimeString('id-ID'),
                         },
                         ...prev,
@@ -1105,11 +1160,38 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             <aside className="mx-auto flex w-full min-h-0 min-w-0 max-w-2xl flex-1 flex-col px-5 pb-4 lg:mx-0 lg:max-w-none lg:pb-6 lg:pl-2 lg:pt-6">
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-2">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Riwayat Scan</h3>
-                        {scanLog.length > 0 && <span className="font-mono text-xs text-slate-400">{scanLog.length}</span>}
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            {riwayatServer ? 'Riwayat Scan Hari Ini' : 'Riwayat Scan'}
+                        </h3>
+                        {(riwayatServer ?? scanLog).length > 0 && (
+                            <span className="font-mono text-xs text-slate-400">{(riwayatServer ?? scanLog).length}</span>
+                        )}
                     </div>
 
-                    {scanLog.length === 0 ? (
+                    {riwayatServer ? (
+                        riwayatServer.length === 0 ? (
+                            <p className="px-4 py-3 text-sm text-slate-400">Belum ada scan hari ini.</p>
+                        ) : (
+                            <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">
+                                {riwayatServer.map((entry, i) => (
+                                    <div key={`${entry.nama}-${entry.jenis}-${entry.jam}-${i}`} className="flex items-center gap-3 px-4 py-2">
+                                        <div className="flex aspect-[3/4] w-8 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-emerald-600">
+                                            <CheckCircle2 className="size-4" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-semibold text-slate-800">{entry.nama}</p>
+                                            <p className="truncate text-xs text-slate-400">
+                                                {entry.jenis}
+                                                {entry.sesi ? ` · ${entry.sesi}` : ''}
+                                                {entry.status ? ` · ${entry.status}` : ''}
+                                            </p>
+                                        </div>
+                                        <span className="shrink-0 font-mono text-xs text-slate-400">{entry.jam.slice(0, 5)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    ) : scanLog.length === 0 ? (
                         <p className="px-4 py-3 text-sm text-slate-400">Belum ada kartu yang discan.</p>
                     ) : (
                         <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto">

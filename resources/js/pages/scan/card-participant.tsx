@@ -2,7 +2,7 @@ import { Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { PublicScanConsole } from '@/components/scanner/public-scan-console';
 import { Button } from '@/components/ui/button';
-import { scan } from '@/routes/public/card-scanner';
+import { riwayat, scan } from '@/routes/public/card-scanner';
 
 export default function CardParticipantScanner({
     layout,
@@ -37,6 +37,8 @@ export default function CardParticipantScanner({
             <PublicScanConsole
                 subjectLabel="peserta"
                 groupLabel="Layout"
+                // Remount per mode supaya kamera memakai endpoint mode yang
+                // baru; riwayat tetap karena dibaca ulang dari server.
                 key={mode}
                 school={{
                     name: layout.name,
@@ -44,6 +46,7 @@ export default function CardParticipantScanner({
                     is_active: true,
                 }}
                 scanUrl={scan.url({ token: layout.token, mode })}
+                riwayatUrl={riwayat.url({ token: layout.token })}
                 tagline={`Absensi peserta · ${mode === 'masuk' ? 'Masuk / Hadir' : 'Pulang'}`}
                 hint="Gunakan QR absensi peserta. Scan berulang dalam mode yang sama tidak mengubah jam yang sudah tercatat."
             />

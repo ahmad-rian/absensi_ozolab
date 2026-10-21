@@ -18,14 +18,15 @@ function harness(file, props) {
     });
     const exports = {};
     new Function('require', 'exports', outputText)((name) => {
-        if (name === 'react') return { ...React, useState: (initial) => {
+        if (name === 'react') return { ...React, useEffect() {}, useState: (initial) => {
             const key = cursor++;
             if (!(key in states)) states[key] = initial;
             return [states[key], (next) => { states[key] = next; }];
         } };
-        if (name === '@inertiajs/react') return { Head: 'head', Link: 'a', usePoll() {}, usePage: () => ({ props: { app: { logo: '/logo.png' }, errors: {}, generateMassal: halaman.generateMassal } }), router: { get: (...args) => requests.push(args) } };
+        if (name === '@inertiajs/react') return { Head: 'head', Link: 'a', usePoll: () => ({ start() {}, stop() {} }), usePage: () => ({ props: { app: { logo: '/logo.png' }, errors: {}, generateMassal: halaman.generateMassal } }), router: { get: (...args) => requests.push(args) } };
         if (name.startsWith('@/routes/')) return new Proxy({}, { get: (_, key) => ({ url: (args, options) => {
             if (key === 'scan') return `/scan/${args.token}/${args.mode}`;
+            if (key === 'riwayat') return `/scan/${args.token}/riwayat`;
             if (key === 'exportMethod') return `/export/${args}?${new URLSearchParams(options.query)}`;
             return `/${key}`;
         } }) });
@@ -56,7 +57,10 @@ test('participant scanner starts in masuk mode and explicitly switches the endpo
     tree = page.render();
     scanner = find(tree, (node) => node.type === 'PublicScanConsole');
     assert.equal(scanner.props.scanUrl, '/scan/private-scanner/pulang');
+    // Remount per mode: kamera wajib memakai endpoint baru. Riwayat tidak
+    // hilang karena dibaca dari server lewat riwayatUrl.
     assert.notEqual(scanner.key, initialKey);
+    assert.equal(scanner.props.riwayatUrl, '/scan/private-scanner/riwayat');
 });
 
 test('attendance page exposes the selected layout scan link and flags legacy QR layouts', () => {
@@ -73,7 +77,7 @@ test('attendance page exposes the selected layout scan link and flags legacy QR 
 
 test('report downloads use applied date layout and status filters', () => {
     const filters = { start_date: '2026-09-01', end_date: '2026-09-29', layout: 'haji', status: 'izin' };
-    const page = harness('kartu-bebas/absensi/report.tsx', { filters, layouts: [], counts: {}, records: { data: [], total: 0 } });
+    const page = harness('kartu-bebas/absensi/report.tsx', { filters, layouts: [], counts: {}, records: { data: [], total: 0 }, kecamatan: ['Ajibarang'], ringkasanKecamatan: [] });
     let tree = page.render();
     const excel = find(tree, (node) => node.type === 'a' && node.props.children === 'Unduh Excel');
     assert.ok(excel.props.href.includes('layout=haji'));

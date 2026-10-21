@@ -100,6 +100,7 @@ Route::get('/', fn () => auth()->check() ? to_route(auth()->user()->homeRoute())
 Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('llms.txt', [SeoController::class, 'llms'])->name('seo.llms');
 Route::get('scan-peserta/{token}', [CardAttendanceController::class, 'scanner'])->name('public.card-scanner');
+Route::get('scan-peserta/{token}/riwayat', [CardAttendanceController::class, 'riwayat'])->middleware('throttle:60,1')->name('public.card-scanner.riwayat');
 Route::post('scan-peserta/{token}/{mode}', [CardAttendanceController::class, 'scan'])->whereIn('mode', ['masuk', 'pulang'])->middleware('throttle:scan-gerbang')->name('public.card-scanner.scan');
 
 Route::get('scan/{school:scanner_token}', [PublicScannerController::class, 'index'])->name('public.scanner');
@@ -167,6 +168,11 @@ Route::get('p/{kode}', [CardAttendanceController::class, 'ringan'])
     ->withoutMiddleware($tanpaSession)
     ->name('public.card-scanner.short');
 
+Route::get('p/{kode}/riwayat', [CardAttendanceController::class, 'riwayatRingan'])
+    ->middleware('throttle:60,1')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.card-scanner.short.riwayat');
+
 Route::post('p/{kode}', [CardAttendanceController::class, 'scanRingan'])
     ->middleware('throttle:scan-gerbang')
     ->withoutMiddleware($tanpaSession)
@@ -178,6 +184,10 @@ Route::post('p/{kode}', [CardAttendanceController::class, 'scanRingan'])
 Route::get('hadir/{kode}', [PublicProgramScanController::class, 'halaman'])
     ->middleware('throttle:30,1')
     ->name('public.program-scan');
+Route::get('hadir/{kode}/riwayat', [PublicProgramScanController::class, 'riwayat'])
+    ->middleware('throttle:60,1')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.program-scan.riwayat');
 Route::post('hadir/{kode}', [PublicProgramScanController::class, 'scan'])
     ->middleware('throttle:scan-gerbang')
     ->withoutMiddleware($tanpaSession)
@@ -186,6 +196,10 @@ Route::get('h/{kode}', [PublicProgramScanController::class, 'ringan'])
     ->middleware('throttle:30,1')
     ->withoutMiddleware($tanpaSession)
     ->name('public.program-scan.ringan');
+Route::get('h/{kode}/riwayat', [PublicProgramScanController::class, 'riwayat'])
+    ->middleware('throttle:60,1')
+    ->withoutMiddleware($tanpaSession)
+    ->name('public.program-scan.ringan.riwayat');
 Route::post('h/{kode}', [PublicProgramScanController::class, 'scanRingan'])
     ->middleware('throttle:scan-gerbang')
     ->withoutMiddleware($tanpaSession)

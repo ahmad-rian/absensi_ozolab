@@ -1,5 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { RingkasanKecamatan } from '@/components/shared/ringkasan-kecamatan';
+import type { BarisKecamatan } from '@/components/shared/ringkasan-kecamatan';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,25 +20,39 @@ type Filters = {
     end_date: string;
     layout?: string;
     status?: string;
+    kecamatan?: string;
 };
 type Row = {
     date: string;
     name: string;
     layout: string;
+    kecamatan: string;
     status: string;
     check_in: string | null;
     check_out: string | null;
     note: string | null;
 };
+const KOLOM_RINGKASAN = [
+    { key: 'hadir', label: 'Hadir' },
+    { key: 'izin', label: 'Izin' },
+    { key: 'sakit', label: 'Sakit' },
+    { key: 'alpa', label: 'Alpa' },
+    { key: 'total', label: 'Total' },
+];
+
 export default function CardAttendanceReport({
     filters,
     layouts,
     counts,
+    kecamatan,
+    ringkasanKecamatan,
     records,
 }: {
     filters: Filters;
     layouts: { id: string; name: string }[];
     counts: Record<string, number>;
+    kecamatan: string[];
+    ringkasanKecamatan: BarisKecamatan[];
     records: {
         data: Row[];
         total: number;
@@ -117,6 +133,24 @@ export default function CardAttendanceReport({
                             <option key={status}>{status}</option>
                         ))}
                     </select>
+                    <select
+                        aria-label="Filter kecamatan"
+                        className="rounded border bg-background p-2"
+                        value={values.kecamatan ?? ''}
+                        onChange={(event) =>
+                            setValues({
+                                ...values,
+                                kecamatan: event.target.value,
+                            })
+                        }
+                    >
+                        <option value="">Semua kecamatan</option>
+                        {kecamatan.map((nama) => (
+                            <option key={nama} value={nama}>
+                                {nama}
+                            </option>
+                        ))}
+                    </select>
                     <Button>Tampilkan</Button>
                 </form>
                 <div className="flex flex-wrap gap-4">
@@ -129,6 +163,28 @@ export default function CardAttendanceReport({
                         </span>
                     ))}
                 </div>
+                {ringkasanKecamatan.length > 0 && (
+                    <section className="space-y-2">
+                        <h2 className="font-semibold">
+                            Ringkasan per kecamatan
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            Klik kecamatan untuk menampilkan catatannya saja.
+                        </p>
+                        <RingkasanKecamatan
+                            baris={ringkasanKecamatan}
+                            kolom={KOLOM_RINGKASAN}
+                            aktif={filters.kecamatan}
+                            onPilih={(nama) =>
+                                router.get(index.url(), {
+                                    ...filters,
+                                    kecamatan:
+                                        filters.kecamatan === nama ? '' : nama,
+                                })
+                            }
+                        />
+                    </section>
+                )}
                 <div className="flex gap-3">
                     <Button asChild variant="outline">
                         <a href={exportMethod.url('xlsx', { query: filters })}>
@@ -143,7 +199,7 @@ export default function CardAttendanceReport({
                 </div>
                 <p className="text-sm text-muted-foreground">
                     {records.total} catatan. Ekspor mengikuti filter yang
-                    ditampilkan dan dipisahkan per layout. Peserta yang belum
+                    ditampilkan dan dipisahkan per kecamatan. Peserta yang belum
                     dicatat tidak dihitung sebagai alpa.
                 </p>
                 {Object.entries(errors).map(([key, message]) => (
@@ -158,6 +214,7 @@ export default function CardAttendanceReport({
                                 'Tanggal',
                                 'Peserta',
                                 'Layout',
+                                'Kecamatan',
                                 'Status',
                                 'Masuk',
                                 'Pulang',
@@ -179,7 +236,7 @@ export default function CardAttendanceReport({
                         ))}
                         {!records.data.length && (
                             <TableRow>
-                                <TableCell colSpan={7}>
+                                <TableCell colSpan={8}>
                                     Belum ada catatan absensi pada periode ini.
                                 </TableCell>
                             </TableRow>

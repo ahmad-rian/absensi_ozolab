@@ -6,7 +6,7 @@ import {
     usePoll,
     usePage,
 } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -65,11 +65,18 @@ type Props = {
 function AttendanceRow({
     participant,
     date,
+    onEditing,
 }: {
     participant: Participant;
     date: string;
+    /** Memberi tahu halaman bahwa form koreksi sedang dibuka/ditutup. */
+    onEditing: (id: string, buka: boolean) => void;
 }) {
-    const [editing, setEditing] = useState(false);
+    const [editing, setEditingState] = useState(false);
+    const setEditing = (buka: boolean) => {
+        setEditingState(buka);
+        onEditing(participant.id, buka);
+    };
     const form = useForm({
         date,
         status: participant.attendance?.status ?? 'hadir',
@@ -212,7 +219,25 @@ export default function CardAttendanceIndex({
     const [q, setQ] = useState(filters.q);
     const [copied, setCopied] = useState(false);
     const selected = layouts.find((layout) => layout.id === filters.layout);
-    usePoll(10000, { only: ['participants', 'kartu_lama'] });
+    // Poll dijeda selama ada form koreksi terbuka: hasil poll yang mengubah
+    // baris itu me-remount barisnya dan menutup form yang sedang diketik.
+    const [sedangEdit, setSedangEdit] = useState<string[]>([]);
+    const { start, stop } = usePoll(10000, {
+        only: ['participants', 'kartu_lama'],
+    });
+    useEffect(() => {
+        if (sedangEdit.length > 0) {
+            stop();
+        } else {
+            start();
+        }
+    }, [sedangEdit.length, start, stop]);
+    const tandaiEdit = (id: string, buka: boolean) =>
+        setSedangEdit((daftar) =>
+            buka
+                ? [...new Set([...daftar, id])]
+                : daftar.filter((x) => x !== id),
+        );
 
     return (
         <>
@@ -478,6 +503,7 @@ export default function CardAttendanceIndex({
                                 key={`${participant.id}-${filters.date}-${JSON.stringify(participant.attendance)}`}
                                 participant={participant}
                                 date={filters.date}
+                                onEditing={tandaiEdit}
                             />
                         ))}
                         {!participants.data.length && (

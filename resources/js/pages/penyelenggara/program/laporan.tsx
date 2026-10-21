@@ -1,5 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
+import { Deferred, Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import { RingkasanKecamatan } from '@/components/shared/ringkasan-kecamatan';
+import type { BarisKecamatan } from '@/components/shared/ringkasan-kecamatan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,18 +19,43 @@ type Props = {
     grups: { id: string; name: string }[];
     sesis: { id: string; name: string; tanggal: string }[];
     peserta: { id: string; nama: string }[];
+    kecamatan: string[];
+    periode: { dari: string; sampai: string };
+    ringkasanKecamatan?: BarisKecamatan[];
 };
+
+type Mode = 'grup' | 'kecamatan' | 'sesi' | 'peserta';
+
+const MODE: { nilai: Mode; label: string }[] = [
+    { nilai: 'grup', label: 'Per grup' },
+    { nilai: 'kecamatan', label: 'Per kecamatan' },
+    { nilai: 'sesi', label: 'Per sesi' },
+    { nilai: 'peserta', label: 'Per peserta' },
+];
+
+const KOLOM_RINGKASAN = [
+    { key: 'hadir', label: 'Hadir' },
+    { key: 'terlambat', label: 'Terlambat' },
+    { key: 'izin', label: 'Izin' },
+    { key: 'sakit', label: 'Sakit' },
+    { key: 'alpa', label: 'Alpa' },
+    { key: 'belum', label: 'Belum' },
+];
 
 export default function LaporanProgram({
     program,
     grups,
     sesis,
     peserta,
+    kecamatan,
+    periode,
+    ringkasanKecamatan,
 }: Props) {
     const akses = useAksesPenyelenggara();
-    const [mode, setMode] = useState<'grup' | 'sesi' | 'peserta'>('grup');
-    const [dari, setDari] = useState(program.starts_on);
-    const [sampai, setSampai] = useState(program.ends_on);
+    const [mode, setMode] = useState<Mode>('grup');
+    const [dari, setDari] = useState(periode.dari);
+    const [sampai, setSampai] = useState(periode.sampai);
+    const [kec, setKec] = useState('');
     const [grup, setGrup] = useState('');
     const [sesi, setSesi] = useState(sesis[0]?.id ?? '');
     const [orang, setOrang] = useState(peserta[0]?.id ?? '');
@@ -41,6 +68,7 @@ export default function LaporanProgram({
                 dari,
                 sampai,
                 ...(grup ? { grup } : {}),
+                ...(kec && mode !== 'peserta' ? { kecamatan: kec } : {}),
                 ...(mode === 'sesi' ? { sesi } : {}),
                 ...(mode === 'peserta' ? { peserta: orang } : {}),
             },
@@ -75,14 +103,16 @@ export default function LaporanProgram({
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="flex flex-wrap gap-2">
-                            {(['grup', 'sesi', 'peserta'] as const).map((m) => (
+                            {MODE.map((m) => (
                                 <Button
-                                    key={m}
-                                    variant={mode === m ? 'default' : 'outline'}
+                                    key={m.nilai}
+                                    variant={
+                                        mode === m.nilai ? 'default' : 'outline'
+                                    }
                                     size="sm"
-                                    onClick={() => setMode(m)}
+                                    onClick={() => setMode(m.nilai)}
                                 >
-                                    Per {m}
+                                    {m.label}
                                 </Button>
                             ))}
                         </div>
@@ -140,6 +170,21 @@ export default function LaporanProgram({
                                 ))}
                             </select>
                         )}
+                        {mode !== 'peserta' && kecamatan.length > 0 && (
+                            <select
+                                aria-label="Kecamatan"
+                                className="h-9 rounded-md border bg-background px-2 text-sm"
+                                value={kec}
+                                onChange={(e) => setKec(e.target.value)}
+                            >
+                                <option value="">Semua kecamatan</option>
+                                {kecamatan.map((k) => (
+                                    <option key={k} value={k}>
+                                        {k}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                         {mode !== 'peserta' && (
                             <select
                                 aria-label="Grup"
@@ -164,9 +209,60 @@ export default function LaporanProgram({
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Mode per grup: satu sheet per grup, kolom per sesi.
-                            Rentang maksimal 1 tahun.
+                            Per grup: satu sheet per grup, kolom per sesi. Per
+                            kecamatan: ringkasan + satu sheet per kecamatan.
+                            Sesi di hari libur tidak dihitung. Rentang maksimal
+                            1 tahun.
                         </p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">
+                            Ringkasan per kecamatan
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                            {periode.dari} s/d {periode.sampai}. Klik kecamatan
+                            untuk memilihnya di filter laporan.{' '}
+                            <button
+                                type="button"
+                                className="underline"
+                                onClick={() =>
+                                    router.reload({
+                                        data: { dari, sampai },
+                                        only: ['periode', 'ringkasanKecamatan'],
+                                    })
+                                }
+                            >
+                                Pakai tanggal di atas
+                            </button>
+                        </p>
+                    </CardHeader>
+                    <CardContent>
+                        <Deferred
+                            data="ringkasanKecamatan"
+                            fallback={
+                                <div className="h-24 animate-pulse rounded-lg bg-muted" />
+                            }
+                        >
+                            {ringkasanKecamatan &&
+                            ringkasanKecamatan.length > 0 ? (
+                                <RingkasanKecamatan
+                                    baris={ringkasanKecamatan}
+                                    kolom={KOLOM_RINGKASAN}
+                                    aktif={kec}
+                                    onPilih={(nama) =>
+                                        setKec(kec === nama ? '' : nama)
+                                    }
+                                />
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    Belum ada peserta atau sesi pada periode
+                                    ini.
+                                </p>
+                            )}
+                        </Deferred>
                     </CardContent>
                 </Card>
             </div>

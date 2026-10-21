@@ -1,4 +1,4 @@
-import { Head, Link, router, usePoll } from '@inertiajs/react';
+import { Deferred, Head, Link, router, usePoll } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import KartuBebasLayout from '@/layouts/kartu-bebas-layout';
@@ -6,11 +6,33 @@ import { destroy, edit, generate, index } from '@/routes/kartu-bebas/peserta';
 import { participantName, statusLabels } from './types';
 import type { Participant } from './types';
 
+type BarisKehadiran = {
+    tanggal: string;
+    status: string;
+    masuk: string | null;
+    pulang: string | null;
+    catatan: string | null;
+};
+
+const LABEL_KEHADIRAN: Record<string, string> = {
+    hadir: 'Hadir',
+    izin: 'Izin',
+    sakit: 'Sakit',
+    alpa: 'Alpa',
+};
+
+/** Seberapa sering riwayat kehadiran disegarkan selama halaman terbuka. */
+const JEDA_KEHADIRAN_MS = 15_000;
+
 export default function ParticipantShow({
     participant,
+    kehadiran,
 }: {
     participant: Participant;
+    kehadiran?: BarisKehadiran[];
 }) {
+    // Scan dari gerbang langsung muncul di riwayat tanpa muat ulang manual.
+    usePoll(JEDA_KEHADIRAN_MS, { only: ['kehadiran'] });
     const processing = participant.status === 'processing';
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -159,6 +181,83 @@ export default function ParticipantShow({
                         )}
                     </section>
                 </div>
+
+                <section className="rounded-lg border p-4">
+                    <h2 className="mb-3 font-semibold">Riwayat kehadiran</h2>
+                    <Deferred
+                        data="kehadiran"
+                        fallback={
+                            <p className="text-sm text-muted-foreground">
+                                Memuat riwayat…
+                            </p>
+                        }
+                    >
+                        {!kehadiran || kehadiran.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                                Belum ada catatan kehadiran.
+                            </p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="text-left text-muted-foreground">
+                                        <tr>
+                                            <th className="py-2 pr-3 font-medium">
+                                                Tanggal
+                                            </th>
+                                            <th className="py-2 pr-3 font-medium">
+                                                Status
+                                            </th>
+                                            <th className="py-2 pr-3 font-medium">
+                                                Masuk
+                                            </th>
+                                            <th className="py-2 pr-3 font-medium">
+                                                Pulang
+                                            </th>
+                                            <th className="py-2 font-medium">
+                                                Catatan
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {kehadiran.map((k) => (
+                                            <tr key={k.tanggal}>
+                                                <td className="py-2 pr-3 whitespace-nowrap">
+                                                    {new Intl.DateTimeFormat(
+                                                        'id-ID',
+                                                        {
+                                                            weekday: 'short',
+                                                            day: 'numeric',
+                                                            month: 'short',
+                                                            year: 'numeric',
+                                                        },
+                                                    ).format(
+                                                        new Date(
+                                                            `${k.tanggal}T00:00:00`,
+                                                        ),
+                                                    )}
+                                                </td>
+                                                <td className="py-2 pr-3">
+                                                    {LABEL_KEHADIRAN[
+                                                        k.status
+                                                    ] ?? k.status}
+                                                </td>
+                                                <td className="py-2 pr-3 tabular-nums">
+                                                    {k.masuk ?? '—'}
+                                                </td>
+                                                <td className="py-2 pr-3 tabular-nums">
+                                                    {k.pulang ?? '—'}
+                                                </td>
+                                                <td className="py-2 text-muted-foreground">
+                                                    {k.catatan ?? '—'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </Deferred>
+                </section>
             </div>
         </>
     );

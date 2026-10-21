@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Program;
 use App\Services\CardAttendanceService;
 use App\Services\Penyelenggara\KehadiranRecorder;
+use App\Services\RiwayatScan;
 use App\Support\ProgramShortLink;
 use App\Support\StudentPhotoStorage;
 use Illuminate\Contracts\View\View;
@@ -33,6 +34,7 @@ class PublicProgramScanController extends Controller
         return Inertia::render('scan/program', [
             'program' => ['name' => $program->name, 'aktif' => ! $program->isArchived()],
             'scanUrl' => route('public.program-scan.scan', $kode),
+            'riwayatUrl' => route('public.program-scan.riwayat', $kode),
         ]);
     }
 
@@ -54,6 +56,7 @@ class PublicProgramScanController extends Controller
             'logoUrl' => null,
             'petunjuk' => 'Tempelkan kartu atau tembak QR peserta — jam datang/pulang mengikuti jadwal sesi',
             'scanUrl' => route('public.program-scan.ringan.scan', $kode),
+            'riwayatUrl' => route('public.program-scan.ringan.riwayat', $kode),
             'jendelaSholat' => [],
         ]);
     }
@@ -61,6 +64,17 @@ class PublicProgramScanController extends Controller
     public function scanRingan(Request $request, string $kode): JsonResponse
     {
         return $this->rekam($request, ProgramShortLink::resolve($kode));
+    }
+
+    /**
+     * Riwayat scan hari ini (kamera `/hadir` maupun ringan `/h`).
+     */
+    public function riwayat(string $kode): JsonResponse
+    {
+        $program = ProgramShortLink::fromToken($kode) ?? ProgramShortLink::resolve($kode);
+        abort_if($program === null || $program->isArchived(), 404);
+
+        return response()->json(['riwayat' => app(RiwayatScan::class)->program($program)]);
     }
 
     private function rekam(Request $request, ?Program $program): JsonResponse
@@ -84,6 +98,8 @@ class PublicProgramScanController extends Controller
 
         return response()->json([
             'success' => true,
+            'duplikat' => $hasil['duplikat'],
+            'riwayat' => app(RiwayatScan::class)->program($program),
             'message' => $hasil['duplikat'] ? "Sudah tercatat {$jam} · {$hasil['sesi']->name}." : "{$label} tercatat · {$hasil['sesi']->name}.",
             'student' => [
                 'full_name' => $this->kartu->participantName($hasil['peserta']),

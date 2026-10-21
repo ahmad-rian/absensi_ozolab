@@ -8,6 +8,8 @@ use App\Models\CardForm;
 use App\Models\CardFormSubmission;
 use App\Services\CardAttendanceService;
 use App\Services\CardParticipantService;
+use App\Services\RiwayatScan;
+use App\Support\FilterKolomPeserta;
 use App\Support\PesertaShortLink;
 use App\Support\SchoolTime;
 use App\Support\StudentPhotoStorage;
@@ -184,6 +186,27 @@ class AttendanceController extends Controller
         return Inertia::render('scan/card-participant', ['layout' => ['name' => $form->name, 'token' => $token]]);
     }
 
+    /**
+     * Riwayat scan hari ini untuk halaman scan kamera (`/scan-peserta/{token}`).
+     */
+    public function riwayat(string $token): JsonResponse
+    {
+        $form = CardForm::where('scanner_token', $token)->where('is_active', true)->firstOrFail();
+
+        return response()->json(['riwayat' => app(RiwayatScan::class)->hajiLama($form)]);
+    }
+
+    /**
+     * Riwayat scan hari ini untuk halaman scan ringan (`/p/{kode}`).
+     */
+    public function riwayatRingan(string $kode): JsonResponse
+    {
+        $form = PesertaShortLink::resolve($kode);
+        abort_if($form === null || ! $form->is_active, 404);
+
+        return response()->json(['riwayat' => app(RiwayatScan::class)->hajiLama($form)]);
+    }
+
     public function scan(Request $request, string $token, string $mode): JsonResponse
     {
         return $this->rekamScan($request, CardForm::where('scanner_token', $token)->where('is_active', true)->firstOrFail(), $mode);
@@ -208,6 +231,7 @@ class AttendanceController extends Controller
             'logoUrl' => null,
             'petunjuk' => 'Tempelkan kartu atau tembak QR Code peserta — scan pertama masuk, berikutnya pulang',
             'scanUrl' => route('public.card-scanner.short.scan', $kode),
+            'riwayatUrl' => route('public.card-scanner.short.riwayat', $kode),
             'jendelaSholat' => [],
         ]);
     }
@@ -239,6 +263,9 @@ class AttendanceController extends Controller
 
         return response()->json([
             'success' => true, 'message' => $result['duplicate'] ? 'Scan '.$label.' sudah tercatat hari ini.' : 'Absensi '.$label.' tercatat.',
+            'duplikat' => $result['duplicate'],
+            // Riwayat dari database, supaya semua perangkat melihat daftar yang sama.
+            'riwayat' => app(RiwayatScan::class)->hajiLama($form),
             'student' => [
                 'full_name' => $this->attendance->participantName($participant), 'nis' => null, 'no_absen' => null,
                 'classroom' => $form->name, 'photo_url' => StudentPhotoStorage::displayUrl($participant->photo_path),
@@ -256,6 +283,8 @@ class AttendanceController extends Controller
 
         return Inertia::render('kartu-bebas/absensi/report', [
             'filters' => $filters, 'layouts' => CardForm::orderBy('name')->get(['id', 'name']), 'counts' => $counts,
+            'kecamatan' => $this->opsiKecamatanLaporan($filters),
+            'ringkasanKecamatan' => $this->ringkasanKecamatanLaporan($query),
             'records' => $query->paginate(30)->withQueryString()->through(fn ($record) => $this->reportRow($record)),
         ]);
     }
@@ -263,18 +292,37 @@ class AttendanceController extends Controller
     public function export(Request $request, string $format): BinaryFileResponse|HttpResponse
     {
         $filters = $this->reportFilters($request);
-        $groups = $this->reportQuery($filters)->get()->groupBy(fn ($record) => $record->participant->card_form_id);
-        $sheets = [];
+        $query = $this->reportQuery($filters);
+        $ringkasan = $this->ringkasanKecamatanLaporan($query);
+
+        // Dikelompokkan per kecamatan; dibaca bertahap supaya rentang setahun
+        // tidak dimuat ke memori sekaligus.
+        $perKecamatan = [];
+        foreach ($query->lazy(500) as $record) {
+            $row = $this->reportRow($record);
+            $perKecamatan[$row['kecamatan']][] = $row;
+        }
+        uksort($perKecamatan, fn ($a, $b) => $this->urutKecamatan($a, $b));
+
+        $header = ['Tanggal', 'Peserta', 'Layout', 'Kecamatan', 'Status', 'Masuk', 'Pulang', 'Catatan'];
         $sections = [];
-        foreach ($groups as $records) {
-            $name = $records->first()->participant->cardForm->name;
-            $rows = $records->map(fn ($record) => $this->reportRow($record))->values()->all();
-            $sections[] = ['name' => $name, 'rows' => $rows];
-            $sheetName = (count($sheets) + 1).' '.mb_substr(preg_replace('/[\[\]:*?\/\\\\]/u', ' ', $name), 0, 25);
-            $sheets[$sheetName] = ['header' => ['Tanggal', 'Peserta', 'Layout', 'Status', 'Masuk', 'Pulang', 'Catatan'], 'rows' => array_map('array_values', $rows)];
+        $sheets = [];
+        $terpakai = [];
+        if ($ringkasan !== []) {
+            $sheets['Ringkasan per Kecamatan'] = [
+                'header' => ['Kecamatan', 'Peserta', 'Hadir', 'Izin', 'Sakit', 'Alpa', 'Total catatan'],
+                'rows' => array_map(fn (array $r) => [$r['kecamatan'], $r['peserta'], $r['hadir'], $r['izin'], $r['sakit'], $r['alpa'], $r['total']], $ringkasan),
+            ];
+            $terpakai[] = 'Ringkasan per Kecamatan';
+        }
+        foreach ($perKecamatan as $kecamatan => $rows) {
+            $sections[] = ['name' => $kecamatan, 'rows' => $rows];
+            $sheet = XlsxDownload::namaSheet((string) $kecamatan, $terpakai);
+            $terpakai[] = $sheet;
+            $sheets[$sheet] = ['header' => $header, 'rows' => array_map('array_values', $rows)];
         }
         if ($format === 'pdf') {
-            return Pdf::loadView('reports.card-attendance', ['sections' => $sections, 'filters' => $filters])->setPaper('a4', 'landscape')->download('absensi-peserta.pdf');
+            return Pdf::loadView('reports.card-attendance', ['sections' => $sections, 'filters' => $filters, 'ringkasan' => $ringkasan])->setPaper('a4', 'landscape')->download('absensi-peserta.pdf');
         }
 
         return XlsxDownload::sheets('absensi-peserta.xlsx', $sheets ?: ['Absensi' => ['header' => ['Belum ada absensi pada periode ini'], 'rows' => []]]);
@@ -286,6 +334,7 @@ class AttendanceController extends Controller
         $data = $request->validate([
             'start_date' => ['nullable', 'date_format:Y-m-d'], 'end_date' => ['nullable', 'date_format:Y-m-d'],
             'layout' => ['nullable', 'exists:card_forms,id'], 'status' => ['nullable', Rule::in(['hadir', 'izin', 'sakit', 'alpa'])],
+            'kecamatan' => ['nullable', 'string', 'max:120'],
         ]);
         $data['start_date'] = $data['start_date'] ?? SchoolTime::now()->startOfMonth()->toDateString();
         $data['end_date'] = $data['end_date'] ?? SchoolTime::todayString();
@@ -302,12 +351,116 @@ class AttendanceController extends Controller
             ->select('card_attendances.*')->whereBetween('attendance_date', [$filters['start_date'], $filters['end_date']])
             ->when($filters['layout'] ?? null, fn ($query, $layout) => $query->where('participants.card_form_id', $layout))
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('card_attendances.status', $status))
+            ->when($filters['kecamatan'] ?? null, fn ($query, $kecamatan) => $query->whereIn('participants.id', $this->pesertaDiKecamatan($kecamatan, $filters['layout'] ?? null)))
             ->orderBy('participants.card_form_id')->orderBy('attendance_date')->orderBy('participants.id');
     }
 
-    /** @return array{date: string, name: string, layout: string, status: string, check_in: ?string, check_out: ?string, note: ?string} */
+    /** @return array{date: string, name: string, layout: string, kecamatan: string, status: string, check_in: ?string, check_out: ?string, note: ?string} */
     private function reportRow(CardAttendance $record): array
     {
-        return ['date' => $record->attendance_date->format('Y-m-d'), 'name' => $this->attendance->participantName($record->participant), 'layout' => $record->participant->cardForm->name, 'status' => $record->status, 'check_in' => $record->check_in, 'check_out' => $record->check_out, 'note' => $record->note];
+        return ['date' => $record->attendance_date->format('Y-m-d'), 'name' => $this->attendance->participantName($record->participant), 'layout' => $record->participant->cardForm->name, 'kecamatan' => $this->kecamatanPeserta($record->participant), 'status' => $record->status, 'check_in' => $record->check_in, 'check_out' => $record->check_out, 'note' => $record->note];
+    }
+
+    /** @var array<string, string> kunci kolom kecamatan per layout ('' = tidak ada) */
+    private array $kunciKecamatan = [];
+
+    private function kunciKecamatanLayout(string $formId): ?string
+    {
+        if (! array_key_exists($formId, $this->kunciKecamatan)) {
+            $form = CardForm::query()->find($formId);
+            $this->kunciKecamatan[$formId] = $form ? (FilterKolomPeserta::kolomKecamatan($form->inputFields()) ?? '') : '';
+        }
+
+        return $this->kunciKecamatan[$formId] ?: null;
+    }
+
+    private function kecamatanPeserta(CardFormSubmission $participant): string
+    {
+        return FilterKolomPeserta::kecamatanPeserta($participant->data, $this->kunciKecamatanLayout($participant->card_form_id));
+    }
+
+    /**
+     * Peserta (dalam cakupan layout) yang kecamatannya cocok, dicocokkan
+     * setelah dinormalkan — isian bebas lama ikut tertangkap.
+     *
+     * @return array<int, string>
+     */
+    private function pesertaDiKecamatan(string $kecamatan, ?string $layout): array
+    {
+        $cocok = [];
+        CardFormSubmission::query()->when($layout, fn ($q) => $q->where('card_form_id', $layout))
+            ->select(['id', 'card_form_id', 'data'])->orderBy('id')
+            ->chunk(500, function ($rows) use (&$cocok, $kecamatan) {
+                foreach ($rows as $p) {
+                    if ($this->kecamatanPeserta($p) === $kecamatan) {
+                        $cocok[] = $p->id;
+                    }
+                }
+            });
+
+        return $cocok;
+    }
+
+    /**
+     * Pilihan kecamatan otomatis dari data peserta (bukan daftar tetap), jadi
+     * yang muncul hanya kecamatan yang memang punya peserta.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<int, string>
+     */
+    private function opsiKecamatanLaporan(array $filters): array
+    {
+        $nama = [];
+        CardFormSubmission::query()->when($filters['layout'] ?? null, fn ($q, $layout) => $q->where('card_form_id', $layout))
+            ->select(['id', 'card_form_id', 'data'])->orderBy('id')
+            ->chunk(500, function ($rows) use (&$nama) {
+                foreach ($rows as $p) {
+                    $nama[$this->kecamatanPeserta($p)] = true;
+                }
+            });
+        $nama = array_keys($nama);
+        usort($nama, fn ($a, $b) => $this->urutKecamatan($a, $b));
+
+        return $nama;
+    }
+
+    /**
+     * Rekap catatan per kecamatan untuk filter yang sedang aktif.
+     *
+     * @return array<int, array{kecamatan: string, peserta: int, hadir: int, izin: int, sakit: int, alpa: int, total: int}>
+     */
+    private function ringkasanKecamatanLaporan(Builder $query): array
+    {
+        $baris = (clone $query)->reorder()->getQuery()
+            ->select(['participants.id as pid', 'card_attendances.status'])
+            ->selectRaw('COUNT(*) as total')
+            ->groupBy('participants.id', 'card_attendances.status')
+            ->get();
+        if ($baris->isEmpty()) {
+            return [];
+        }
+
+        $peserta = CardFormSubmission::query()->whereIn('id', $baris->pluck('pid')->unique()->values())
+            ->get(['id', 'card_form_id', 'data'])->keyBy('id');
+        $rekap = [];
+        foreach ($baris as $b) {
+            $p = $peserta->get($b->pid);
+            $kec = $p ? $this->kecamatanPeserta($p) : FilterKolomPeserta::TANPA_KECAMATAN;
+            $rekap[$kec] ??= ['kecamatan' => $kec, 'peserta' => [], 'hadir' => 0, 'izin' => 0, 'sakit' => 0, 'alpa' => 0, 'total' => 0];
+            $rekap[$kec]['peserta'][$b->pid] = true;
+            if (isset($rekap[$kec][$b->status])) {
+                $rekap[$kec][$b->status] += (int) $b->total;
+            }
+            $rekap[$kec]['total'] += (int) $b->total;
+        }
+        uksort($rekap, fn ($a, $b) => $this->urutKecamatan($a, $b));
+
+        return array_values(array_map(fn (array $r) => [...$r, 'peserta' => count($r['peserta'])], $rekap));
+    }
+
+    /** "Tanpa kecamatan" selalu di akhir, sisanya alfabetis. */
+    private function urutKecamatan(string $a, string $b): int
+    {
+        return [$a === FilterKolomPeserta::TANPA_KECAMATAN, $a] <=> [$b === FilterKolomPeserta::TANPA_KECAMATAN, $b];
     }
 }
