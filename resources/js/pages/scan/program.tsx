@@ -9,10 +9,15 @@ export default function ProgramScanner({
     program,
     scanUrl,
     riwayatUrl,
+    tagline = 'Absensi peserta · datang & pulang mengikuti jadwal sesi',
+    pesanMati = 'Program ini sudah diarsip.',
 }: {
     program: { name: string; aktif: boolean };
     scanUrl: string;
     riwayatUrl: string;
+    /** Dipakai juga oleh halaman kamera Haji (`/p/{kode}/kamera`). */
+    tagline?: string;
+    pesanMati?: string;
 }) {
     const { app } = usePage<{ app: { logo?: string | null } }>().props;
 
@@ -29,11 +34,9 @@ export default function ProgramScanner({
                 }}
                 scanUrl={scanUrl}
                 riwayatUrl={riwayatUrl}
-                tagline="Absensi peserta · datang & pulang mengikuti jadwal sesi"
+                tagline={tagline}
                 hint="Arahkan QR kartu peserta ke kamera, atau gunakan scanner gun."
-                disabledNotice={
-                    program.aktif ? null : 'Program ini sudah diarsip.'
-                }
+                disabledNotice={program.aktif ? null : pesanMati}
             />
         </>
     );

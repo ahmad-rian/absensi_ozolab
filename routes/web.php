@@ -151,6 +151,12 @@ Route::get('scan/{school:scanner_token}/ringan', [PublicScannerController::class
 // Alamat pendek menuju halaman ringan di atas. Alamatnya diketik dengan remote
 // TV, jadi 40 karakter scanner_token tidak masuk akal. Throttle-nya rapat karena
 // rute ini satu-satunya yang mengubah tebakan pendek jadi token penuh.
+// Konsol kamera untuk HP lewat kode pendek (halaman ringan tanpa kamera).
+// Bersession karena halaman React; endpoint scan-nya tetap POST /g/{kode}.
+Route::get('g/{kode}/kamera', [PublicScannerController::class, 'kameraPendek'])
+    ->middleware('throttle:30,1')
+    ->name('public.scanner.short.kamera');
+
 Route::get('g/{kode}', [PublicScannerController::class, 'shortLink'])
     ->middleware('throttle:30,1')
     ->withoutMiddleware($tanpaSession)
@@ -163,6 +169,10 @@ Route::post('g/{kode}', [PublicScannerController::class, 'shortScan'])
 
 // Halaman scan ringan peserta (haji/umrah) — sama dengan /g/ tapi per layout.
 // Satu link: scan pertama hari itu masuk, scan berikutnya pulang.
+Route::get('p/{kode}/kamera', [CardAttendanceController::class, 'kameraRingan'])
+    ->middleware('throttle:30,1')
+    ->name('public.card-scanner.short.kamera');
+
 Route::get('p/{kode}', [CardAttendanceController::class, 'ringan'])
     ->middleware('throttle:30,1')
     ->withoutMiddleware($tanpaSession)
@@ -192,6 +202,9 @@ Route::post('hadir/{kode}', [PublicProgramScanController::class, 'scan'])
     ->middleware('throttle:scan-gerbang')
     ->withoutMiddleware($tanpaSession)
     ->name('public.program-scan.scan');
+Route::get('h/{kode}/kamera', [PublicProgramScanController::class, 'kameraRingan'])
+    ->middleware('throttle:30,1')
+    ->name('public.program-scan.ringan.kamera');
 Route::get('h/{kode}', [PublicProgramScanController::class, 'ringan'])
     ->middleware('throttle:30,1')
     ->withoutMiddleware($tanpaSession)

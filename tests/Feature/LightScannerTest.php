@@ -2,6 +2,7 @@
 
 use App\Enums\SchoolFeature;
 use App\Models\School;
+use App\Support\ScannerShortLink;
 
 /**
  * Halaman scan versi ringan untuk perangkat gerbang berspesifikasi rendah.
@@ -221,4 +222,29 @@ test('halaman ringan tetap ringan saat dikirim', function () {
 
     expect(strlen(gzencode($html, 9)))->toBeLessThan(16 * 1024)
         ->and(strlen($html))->toBeLessThan(64 * 1024);
+});
+
+test('halaman ringan menyediakan tombol ke halaman kamera untuk HP (iPhone tidak bisa memindai di sini)', function () {
+    $school = School::factory()->create();
+
+    $this->get(route('public.scanner.light', ['school' => $school->scanner_token]))
+        ->assertOk()
+        ->assertSee('Scan pakai kamera HP')
+        ->assertSee(route('public.scanner.short.kamera', ['kode' => ScannerShortLink::codeFor($school)]), false)
+        // Tombol hanya ditampilkan JS di layar sentuh — box TV tidak melihatnya.
+        ->assertSee('(pointer: coarse)', false);
+});
+
+test('halaman kamera lewat kode pendek memakai endpoint pendek dan tidak memuat scanner_token', function () {
+    $school = School::factory()->create(['name' => 'SMP KAMERA', 'scan_short_code' => 'smp-kamera']);
+
+    $this->withoutVite()->get('/g/smp-kamera/kamera')
+        ->assertOk()
+        ->assertDontSee($school->scanner_token)
+        ->assertInertia(fn ($page) => $page->component('scan/public')
+            ->where('school.name', 'SMP KAMERA')
+            ->where('scanUrl', '/g/smp-kamera')
+            ->where('scanToken', ''));
+
+    $this->get('/g/tidak-ada-ini/kamera')->assertNotFound();
 });

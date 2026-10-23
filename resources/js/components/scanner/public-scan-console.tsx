@@ -17,6 +17,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { pilihKamera } from '@/components/scanner/pilih-kamera';
 import { playErrorSound, playReadTick, playSuccessSound } from '@/components/scanner/use-scan-sound';
 
 /*
@@ -161,6 +162,9 @@ const SAME_CARD_MS = 1500;
 /** Frame per detik yang diperiksa. Detektor bawaan sanggup jauh di atas 15. */
 const FPS_PINDAI = 25;
 
+/** Frame per detik saat memakai ZXing JavaScript (iPhone/Safari). */
+const FPS_PINDAI_ZXING = 12;
+
 /**
  * Minta autofokus kontinu bila kamera mendukung. Banyak kamera ponsel
  * memulai dengan fokus tetap sehingga kartu yang didekatkan kabur dan QR-nya
@@ -177,6 +181,13 @@ async function fokusKontinu(scanner: Html5Qrcode): Promise<void> {
         /* Tidak semua peramban mengizinkan; kamera tetap jalan dengan fokus bawaannya. */
     }
 }
+
+/**
+ * Tanpa detektor QR bawaan peramban (iPhone/Safari), pemindaian berjalan di
+ * ZXing JavaScript. Frame per detik dan kotak dibuat lebih hemat supaya HP
+ * tidak panas dan setiap frame sempat diperiksa sampai selesai.
+ */
+const ADA_DETEKTOR_BAWAAN = typeof window !== 'undefined' && 'BarcodeDetector' in window;
 
 /** Umur kartu hasil di layar. Scan baru tetap menggantikannya seketika. */
 const RESULT_MS = 2500;
@@ -570,7 +581,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
         // 90%: kartu yang tidak pas di tengah tetap terbaca. Dengan detektor
         // bawaan peramban, area besar tidak membuat pemindaian lebih berat.
         const kecil = Math.min(lebar, tinggi);
-        const sisi = Math.min(kecil, Math.max(120, Math.floor(kecil * 0.9)));
+        const sisi = Math.min(kecil, Math.max(120, Math.floor(kecil * (ADA_DETEKTOR_BAWAAN ? 0.9 : 0.75))));
 
         return { width: sisi, height: sisi };
     }, []);
@@ -687,7 +698,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                         await scanner.start(
                             constraint,
                             {
-                                fps: FPS_PINDAI,
+                                fps: ADA_DETEKTOR_BAWAAN ? FPS_PINDAI : FPS_PINDAI_ZXING,
                                 qrbox: kotakPindai,
                                 disableFlip: false,
                                 // Resolusi lebih tinggi supaya QR kecil/jauh tetap
@@ -742,8 +753,11 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                     // Kamera dipegang aplikasi lain. Sering terjadi di PC
                     // gerbang yang juga membuka aplikasi kamera bawaan.
                     setCameraError('Kamera sedang dipakai aplikasi lain. Tutup aplikasi kamera itu, lalu tekan Coba Lagi.');
+                } else if (msg.includes('Overconstrained')) {
+                    setCameraError('Kamera ini tidak mendukung pengaturan yang diminta. Pilih kamera lain di daftar, lalu tekan Coba Lagi.');
                 } else {
-                    setCameraError(`Gagal memulai kamera: ${msg}`);
+                    const nama = err instanceof Error && err.name && err.name !== 'Error' ? ` (${err.name})` : '';
+                    setCameraError(`Gagal memulai kamera${nama}: ${msg}`);
                 }
 
                 setCameraStatus('error');
@@ -800,15 +814,13 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                  * `facingMode: environment` di `startWithCamera` — peramban
                  * yang paling tahu kamera mana yang utama.
                  */
-                const eksternal = cams.find((c) => /usb|iware|external|web ?cam|hd/i.test(c.label));
-                const belakang = cams.find((c) => /back|rear|environment|belakang/i.test(c.label));
-                const pilih = eksternal ?? belakang ?? null;
+                const pilih = pilihKamera(cams);
 
                 if (pilih) {
-                    setSelectedCamera(pilih.id);
+                    setSelectedCamera(pilih);
                 }
 
-                await startWithCamera(pilih?.id ?? '');
+                await startWithCamera(pilih ?? '');
             } catch {
                 if (!mountedRef.current) return;
 

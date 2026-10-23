@@ -57,7 +57,23 @@ class PublicProgramScanController extends Controller
             'petunjuk' => 'Tempelkan kartu atau tembak QR peserta — jam datang/pulang mengikuti jadwal sesi',
             'scanUrl' => route('public.program-scan.ringan.scan', $kode),
             'riwayatUrl' => route('public.program-scan.ringan.riwayat', $kode),
+            'kameraUrl' => route('public.program-scan.ringan.kamera', $kode),
             'jendelaSholat' => [],
+        ]);
+    }
+
+    /**
+     * Konsol kamera untuk HP lewat kode pendek (`/h/{kode}/kamera`).
+     */
+    public function kameraRingan(string $kode): Response
+    {
+        $program = ProgramShortLink::resolve($kode);
+        abort_if($program === null, 404);
+
+        return Inertia::render('scan/program', [
+            'program' => ['name' => $program->name, 'aktif' => ! $program->isArchived()],
+            'scanUrl' => route('public.program-scan.ringan.scan', $kode, false),
+            'riwayatUrl' => route('public.program-scan.ringan.riwayat', $kode, false),
         ]);
     }
 

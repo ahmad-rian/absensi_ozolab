@@ -110,6 +110,29 @@ class PublicScannerController extends Controller
     }
 
     /**
+     * `GET /g/{kode}/kamera` — konsol kamera untuk HP (iPhone tidak bisa
+     * memindai di halaman ringan). Dibuka lewat kode pendek dan memakai
+     * endpoint scan pendek, jadi `scanner_token` tetap tidak pernah tampil.
+     */
+    public function kameraPendek(string $kode): Response
+    {
+        $school = ScannerShortLink::resolve($kode);
+        abort_if($school === null, 404);
+
+        return Inertia::render('scan/public', [
+            'school' => [
+                'name' => $school->name,
+                'logo_url' => $school->logo_path ? Storage::disk('public')->url($school->logo_path) : null,
+                'is_active' => $school->is_active,
+            ],
+            'scanToken' => '',
+            'scanUrl' => route('public.scanner.short.scan', ['kode' => ScannerShortLink::codeFor($school)], false),
+            'jendelaSholat' => self::jendelaSholat($school),
+            'featureEnabled' => self::gerbangTerbuka($school),
+        ]);
+    }
+
+    /**
      * `POST /g/{kode}` — endpoint scan milik halaman ringan.
      *
      * Alasannya sama dengan di atas: halaman ringan tidak boleh memuat
@@ -136,6 +159,9 @@ class PublicScannerController extends Controller
             'school' => $school,
             'logoUrl' => $school->logo_path ? Storage::disk('public')->url($school->logo_path) : null,
             'scanUrl' => route('public.scanner.short.scan', ['kode' => ScannerShortLink::codeFor($school)]),
+            // HP (terutama iPhone) tidak bisa memindai di halaman ringan.
+            // Lewat kode pendek: scanner_token tidak boleh tampil di sini.
+            'kameraUrl' => route('public.scanner.short.kamera', ['kode' => ScannerShortLink::codeFor($school)]),
             'featureEnabled' => self::gerbangTerbuka($school),
             // Jendela sholat yang berlaku hari ini, supaya layar menganggur
             // bisa menyebut apa yang sedang dibuka. Operator tidak perlu

@@ -190,6 +190,28 @@
         .stage.ok { border-color: #10b981; }
         .stage.bad { border-color: #ef4444; }
 
+        /* Tombol pindah ke halaman kamera. Halaman ringan sengaja tanpa kamera
+           (box TV), jadi di HP — iPhone terutama — tanpa tombol ini tidak ada
+           cara memindai sama sekali. Tampil hanya di layar sentuh. */
+        .kamera {
+            display: none;
+            position: fixed;
+            left: 50%;
+            bottom: 16px;
+            -webkit-transform: translateX(-50%);
+            transform: translateX(-50%);
+            z-index: 20;
+            padding: 12px 20px;
+            border-radius: 999px;
+            background: #10b981;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            text-decoration: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+        .kamera.tampil { display: block; }
+
         .idle {
             flex: 1;
             display: flex;
@@ -523,6 +545,9 @@
     </style>
 </head>
 <body>
+    @if (! empty($kameraUrl))
+        <a class="kamera" id="kamera" href="{{ $kameraUrl }}">Scan pakai kamera HP</a>
+    @endif
 
 @if (! $aktif || ! $featureEnabled)
     <div class="notice">
@@ -589,6 +614,17 @@
             /* Riwayat bersama dari server (halaman peserta Haji/program). Gerbang
                sekolah tidak mengirimnya — daftar lokal lama tetap dipakai. */
             var RIWAYAT_URL = @json($riwayatUrl ?? null);
+
+            /* Layar sentuh tanpa mouse (HP/tablet): tampilkan tombol kamera.
+               PC gerbang dan box TV ber-remote tidak melaporkan
+               `pointer: coarse` dan `hover: none` sekaligus. */
+            (function () {
+                var tombol = document.getElementById('kamera');
+                if (!tombol || !window.matchMedia) return;
+                if (window.matchMedia('(pointer: coarse)').matches && window.matchMedia('(hover: none)').matches) {
+                    tombol.className += ' tampil';
+                }
+            })();
             var RIWAYAT_MS = 20000;
             var SAME_CARD_MS = 1500;
             var RESULT_MS = 2500;

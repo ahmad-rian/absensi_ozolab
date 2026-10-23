@@ -10,6 +10,8 @@ type JendelaSholat = {
 type PageProps = {
     school: ScanSchool;
     scanToken: string;
+    /** Endpoint scan siap pakai (halaman kamera via kode pendek /g/{kode}/kamera). */
+    scanUrl?: string;
     featureEnabled: boolean;
     jendelaSholat: JendelaSholat[];
 };
@@ -30,13 +32,13 @@ function petunjuk(jendela: JendelaSholat[]): string | undefined {
         .join(' · ');
 }
 
-export default function PublicScanPage({ school, scanToken, featureEnabled, jendelaSholat }: PageProps) {
+export default function PublicScanPage({ school, scanToken, scanUrl, featureEnabled, jendelaSholat }: PageProps) {
     return (
         <>
             <Head title={`Scan Absensi — ${school.name}`} />
             <PublicScanConsole
                 school={school}
-                scanUrl={`/scan/${scanToken}`}
+                scanUrl={scanUrl ?? `/scan/${scanToken}`}
                 tagline="Absensi Digital"
                 hint={petunjuk(jendelaSholat)}
                 disabledNotice={featureEnabled ? null : 'Absensi sekolah sedang dimatikan oleh admin.'}

@@ -197,6 +197,24 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Konsol kamera untuk HP lewat kode pendek (`/p/{kode}/kamera`). Satu
+     * link untuk masuk dan pulang (mode otomatis), sama dengan `/p/{kode}`.
+     */
+    public function kameraRingan(string $kode): Response
+    {
+        $form = PesertaShortLink::resolve($kode);
+        abort_if($form === null, 404);
+
+        return Inertia::render('scan/program', [
+            'program' => ['name' => $form->name, 'aktif' => (bool) $form->is_active],
+            'scanUrl' => route('public.card-scanner.short.scan', $kode, false),
+            'riwayatUrl' => route('public.card-scanner.short.riwayat', $kode, false),
+            'tagline' => 'Absensi peserta · scan pertama masuk, berikutnya pulang',
+            'pesanMati' => 'Layout ini sedang dinonaktifkan.',
+        ]);
+    }
+
+    /**
      * Riwayat scan hari ini untuk halaman scan ringan (`/p/{kode}`).
      */
     public function riwayatRingan(string $kode): JsonResponse
@@ -232,6 +250,7 @@ class AttendanceController extends Controller
             'petunjuk' => 'Tempelkan kartu atau tembak QR Code peserta — scan pertama masuk, berikutnya pulang',
             'scanUrl' => route('public.card-scanner.short.scan', $kode),
             'riwayatUrl' => route('public.card-scanner.short.riwayat', $kode),
+            'kameraUrl' => route('public.card-scanner.short.kamera', $kode),
             'jendelaSholat' => [],
         ]);
     }

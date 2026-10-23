@@ -145,3 +145,24 @@ test('halaman kehadiran membuka sesi yang sedang berjalan dan mencatat jam pulan
 
     expect(Kehadiran::acrossPenyelenggara()->count())->toBe(1);
 });
+
+test('halaman scan ringan haji dan program menyediakan tombol ke halaman kamera HP', function () {
+    [$form, , $qr] = layoutHajiRiwayat();
+    $kode = PesertaShortLink::codeFor($form);
+    $this->get(route('public.card-scanner.short', $kode))
+        ->assertOk()->assertSee('/p/'.$kode.'/kamera', false)->assertDontSee($form->scanner_token);
+
+    // Halaman kamera via kode pendek: endpoint pendek (mode otomatis), riwayat bersama.
+    $this->withoutVite()->get('/p/'.$kode.'/kamera')->assertOk()
+        ->assertDontSee($form->scanner_token)
+        ->assertInertia(fn (Assert $page) => $page->component('scan/program')
+            ->where('scanUrl', '/p/'.$kode)
+            ->where('riwayatUrl', '/p/'.$kode.'/riwayat'));
+    $this->postJson('/p/'.$kode, ['token' => $qr])->assertOk()->assertJsonPath('student.type', 'CHECK_IN');
+
+    [$program] = programRiwayat();
+    $kodeProgram = ProgramShortLink::codeFor($program);
+    $this->get('/h/'.$kodeProgram)->assertOk()->assertSee('/h/'.$kodeProgram.'/kamera', false);
+    $this->withoutVite()->get('/h/'.$kodeProgram.'/kamera')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('scan/program')->where('scanUrl', '/h/'.$kodeProgram));
+});
