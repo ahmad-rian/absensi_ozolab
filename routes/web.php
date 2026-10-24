@@ -39,6 +39,7 @@ use App\Http\Controllers\Admin\StudioTokenController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
+use App\Http\Controllers\Auth\ResetLangsungController;
 use App\Http\Controllers\BerkasKeluaranController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\General\DashboardController as GeneralDashboardController;
@@ -714,6 +715,11 @@ Route::middleware(['auth', 'verified', 'general'])
 // Alamat lama kelola penyelenggara (sebelum spec 009) — bookmark tetap jalan.
 Route::middleware(['auth', 'super-admin'])->get('admin/penyelenggara/{rest?}', fn (?string $rest = null) => redirect('/general/penyelenggara'.($rest ? '/'.$rest : ''), 301))
     ->where('rest', '.*');
+
+// Lupa sandi orang tua tanpa email: email + nomor WA terdaftar + captcha.
+Route::post('lupa-sandi/langsung', [ResetLangsungController::class, 'store'])
+    ->middleware(['guest', 'throttle:10,1'])
+    ->name('lupa-sandi.langsung');
 
 // Form izin/sakit publik (tanpa login). Captcha diverifikasi di server; cari
 // siswa & kirim hanya setelah lolos, dan semuanya di-throttle.

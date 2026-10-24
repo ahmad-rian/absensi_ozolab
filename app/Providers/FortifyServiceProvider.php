@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Enums\ParentRelation;
+use App\Http\Controllers\Auth\ResetLangsungController;
 use App\Http\Responses\RoleLoginResponse;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
@@ -67,6 +68,8 @@ class FortifyServiceProvider extends ServiceProvider
 
         Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/forgot-password', [
             'status' => $request->session()->get('status'),
+            // Orang tua: ganti sandi langsung di halaman ini (tanpa email).
+            'soal' => ResetLangsungController::soalBaru($request),
         ]));
 
         Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/verify-email', [
