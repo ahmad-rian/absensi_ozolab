@@ -545,7 +545,7 @@ class NotificationDispatcher
         // combined_types diisi command ketika dua jenis sholat alpa bersamaan;
         // kalau kosong, cukup jenis alert ini sendiri.
         $labels = $alert->combined_types
-            ?: [$alert->prayer_type->shortLabel()];
+            ?: [$alert->prayer_type->shortLabel($school)];
 
         return [
             'nama_siswa' => $student->full_name,

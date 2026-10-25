@@ -108,7 +108,7 @@ class StudentReportBuilder
         $pdf = Pdf::loadView('pdf.student-prayer', [
             'student' => $siswa->loadMissing('classroom'),
             'schoolName' => $siswa->school?->name ?? 'Sekolah',
-            'title' => $type?->label() ?? 'Sholat Berjamaah',
+            'title' => $type?->label($siswa->school) ?? 'Sholat Berjamaah',
             'startDate' => $start,
             'endDate' => $end,
             'window' => $data['window'],
@@ -131,7 +131,7 @@ class StudentReportBuilder
         }
         foreach (['dhuha' => SchoolFeature::SholatDhuha, 'dzuhur' => SchoolFeature::SholatDzuhur] as $slug => $feature) {
             if (in_array($kind, ['semuanya', $slug], true) && $student->school && SchoolFeatures::for($student->school)->enabled($feature)) {
-                $sections[] = ['title' => 'Sholat '.ucfirst($slug), ...$this->stats->prayerFor($student, $start, $end, PrayerType::fromSlug($slug), null)];
+                $sections[] = ['title' => PrayerType::fromSlug($slug)->label($student->school), ...$this->stats->prayerFor($student, $start, $end, PrayerType::fromSlug($slug), null)];
             }
         }
 

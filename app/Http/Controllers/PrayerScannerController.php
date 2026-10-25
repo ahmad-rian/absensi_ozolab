@@ -101,7 +101,7 @@ class PrayerScannerController extends Controller
                 // `type` tetap 'PRAYER' — frontend memakainya sebagai penanda
                 // mode scanner; yang jadi dinamis adalah labelnya.
                 'type' => 'PRAYER',
-                'type_label' => $result['attendance']?->prayer_type->label() ?? 'Sholat',
+                'type_label' => $result['attendance']?->prayer_type->label($school) ?? 'Sholat',
                 'time' => SchoolTime::now()->format('H:i:s'),
             ] : null,
         ], $result['success'] ? 200 : 422);

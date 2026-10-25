@@ -198,8 +198,8 @@ class StudentStatsBuilder
 
             $perType[] = [
                 'type' => $type->value,
-                'label' => $type->label(),
-                'short_label' => $type->shortLabel(),
+                'label' => $settings->label(),
+                'short_label' => $settings->shortLabel(),
                 'enabled' => $settings->enabled,
                 'window' => $settings->windowLabel(),
                 'summary' => [
@@ -218,7 +218,7 @@ class StudentStatsBuilder
                     'date' => $row->prayer_date->format('d M Y'),
                     'sort_key' => $row->prayer_date->toDateString().' '.($row->recorded_at?->format('H:i') ?? '00:00'),
                     'type' => $row->prayer_type->value,
-                    'type_label' => $row->prayer_type->label(),
+                    'type_label' => $row->prayer_type->label($student->school),
                     'status' => $row->status->value,
                     'status_label' => $row->status->label(),
                     'time' => $row->recorded_at?->format('H:i'),

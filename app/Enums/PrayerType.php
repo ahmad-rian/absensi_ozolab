@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Models\School;
+
 /**
  * Jenis sholat berjamaah yang diabsen.
  *
@@ -14,15 +16,37 @@ enum PrayerType: string
     case Dhuha = 'DHUHA';
     case Dzuhur = 'DZUHUR';
 
-    public function label(): string
+    /**
+     * Panjang maksimum nama tampilan yang boleh diisi sekolah.
+     */
+    public const NAMA_MAKS = 30;
+
+    /**
+     * "Sholat Dhuha", atau nama yang diatur sekolah.
+     *
+     * Nama sekolah yang sudah diawali "Sholat" dipakai apa adanya supaya
+     * tidak jadi "Sholat Sholat ...".
+     *
+     * Tanpa argumen, sekolah diambil dari konteks request. Pemanggil yang
+     * berjalan di luar request (console, antrean, rute gerbang tanpa
+     * session) WAJIB mengirim sekolahnya sendiri.
+     */
+    public function label(?School $school = null): string
     {
-        return match ($this) {
-            self::Dhuha => 'Sholat Dhuha',
-            self::Dzuhur => 'Sholat Dzuhur',
-        };
+        $nama = $this->shortLabel($school);
+
+        return preg_match('/^(sholat|shalat|salat|solat)\b/i', $nama) ? $nama : 'Sholat '.$nama;
     }
 
-    public function shortLabel(): string
+    public function shortLabel(?School $school = null): string
+    {
+        $school ??= app()->bound('currentSchool') ? app('currentSchool') : null;
+        $nama = $school instanceof School ? trim((string) $school->getSetting($this->settingKey('nama'), '')) : '';
+
+        return $nama !== '' ? $nama : $this->namaBawaan();
+    }
+
+    public function namaBawaan(): string
     {
         return match ($this) {
             self::Dhuha => 'Dhuha',

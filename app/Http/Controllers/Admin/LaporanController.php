@@ -130,7 +130,7 @@ class LaporanController extends Controller
         $school = app()->bound('currentSchool') ? app('currentSchool') : null;
         foreach (['dhuha' => SchoolFeature::SholatDhuha, 'dzuhur' => SchoolFeature::SholatDzuhur] as $slug => $feature) {
             if ($school && SchoolFeatures::for($school)->enabled($feature)) {
-                $kinds[$slug] = ucfirst($slug);
+                $kinds[$slug] = PrayerType::fromSlug($slug)->shortLabel($school);
             }
         }
 

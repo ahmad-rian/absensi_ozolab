@@ -1,6 +1,8 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import type { FormEvent} from 'react';
+import { useState } from 'react';
+import { show as absenKelas } from '@/actions/App/Http/Controllers/Admin/AbsensiKelasController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -149,10 +151,26 @@ export default function AbsensiIndex() {
                         <h1 className="text-2xl font-bold tracking-tight">Rekap Absensi</h1>
                         <p className="text-muted-foreground text-sm">Lihat rekap absensi harian dan kelola status kehadiran.</p>
                     </div>
-                    <Button onClick={() => setDialogOpen(true)}>
-                        <Plus className="mr-2 size-4" />
-                        Input Manual
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        {classrooms.length > 0 && (
+                            <Select onValueChange={(id) => router.get(absenKelas.url(id, { query: { tanggal: filters.date } }))}>
+                                <SelectTrigger className="w-44">
+                                    <SelectValue placeholder="Absen per kelas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {classrooms.map((c) => (
+                                        <SelectItem key={c.id} value={c.id}>
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        <Button onClick={() => setDialogOpen(true)}>
+                            <Plus className="mr-2 size-4" />
+                            Input Manual
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Flash Messages */}

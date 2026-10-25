@@ -2,7 +2,9 @@
 
 namespace App\Services\Attendance;
 
+use App\Models\School;
 use App\Models\Student;
+use App\Support\IsiQrSiswa;
 use App\Support\ScanRejectionLog;
 
 /**
@@ -12,6 +14,10 @@ use App\Support\ScanRejectionLog;
  * bisa ditebak (NIS 8 digit dengan rentang sempit), sehingga scanner publik
  * dulu bisa dipakai memalsukan kehadiran dan memanen PII siswa satu sekolah
  * tanpa akun sama sekali.
+ *
+ * Satu pengecualian sadar: sekolah yang menyalakan saklar `qr_isi_nisn`
+ * (lihat IsiQrSiswa, hanya super admin) memang mencetak NISN polos di QR
+ * kartunya, jadi NISN 10 digit diterima SETELAH pencocokan token gagal.
  */
 class StudentLookup
 {
@@ -50,7 +56,7 @@ class StudentLookup
         $bersih = self::extractQrToken($token);
 
         if ($bersih === null || $bersih === $token) {
-            return null;
+            return $this->cocokkanNisn($token, $schoolId);
         }
 
         $siswa = $this->cocokkanQrPersis($bersih, $schoolId);
@@ -68,6 +74,43 @@ class StudentLookup
     public static function extractQrToken(string $raw): ?string
     {
         return preg_match(self::BENTUK_QR, trim($raw), $cocok) === 1 ? $cocok[0] : null;
+    }
+
+    /**
+     * NISN polos, hanya untuk sekolah yang menyalakan saklarnya.
+     *
+     * Sampah non-digit di tepi bacaan dibuang (gun yang menambah karakter),
+     * tetapi isinya tetap harus tepat 10 digit — tidak ada awalan atau LIKE.
+     * NISN ganda di satu sekolah ditolak, bukan ditebak siswa yang mana.
+     */
+    private function cocokkanNisn(string $bacaan, string $schoolId): ?Student
+    {
+        if (preg_match('/^\D*(\d{10})\D*$/', $bacaan, $cocok) !== 1) {
+            return null;
+        }
+
+        $school = School::find($schoolId);
+
+        if (! IsiQrSiswa::aktif($school)) {
+            return null;
+        }
+
+        $siswa = Student::where('nisn', $cocok[1])
+            ->where('school_id', $schoolId)
+            ->where('is_active', true)
+            ->with('classroom')
+            ->limit(2)
+            ->get();
+
+        if ($siswa->count() !== 1) {
+            return null;
+        }
+
+        if ($cocok[1] !== $bacaan) {
+            ScanRejectionLog::diselamatkan($school, $bacaan, $cocok[1]);
+        }
+
+        return $siswa->first();
     }
 
     private function cocokkanQrPersis(string $token, string $schoolId): ?Student

@@ -9,6 +9,7 @@ use App\Models\Classroom;
 use App\Models\NotificationLog;
 use App\Models\School;
 use App\Models\Student;
+use App\Services\Attendance\DaftarKetidakhadiran;
 use App\Services\Dashboard\SiswaTercepat;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
@@ -34,6 +35,7 @@ class DashboardController extends Controller
             'activityFeed' => Inertia::defer(fn () => $this->getActivityFeed()),
             'notificationStats' => Inertia::defer(fn () => $this->getNotificationStats($today)),
             'siswaTercepat' => Inertia::defer(fn () => $this->getSiswaTercepat(), 'peringkat'),
+            'tidakHadir' => Inertia::defer(fn () => $this->getTidakHadir($today), 'tidakHadir'),
         ]);
     }
 
@@ -362,5 +364,61 @@ class DashboardController extends Controller
         }
 
         return $initials;
+    }
+
+    /**
+     * Siswa yang belum / tidak absen masuk hari ini, dikelompokkan per kelas.
+     *
+     * Memakai aturan yang sama dengan sapuan WA dan poin (DaftarKetidakhadiran)
+     * supaya angka di dashboard tidak berbeda dengan yang dikirim ke orang tua.
+     * Keadaan:
+     * - libur: tidak ada jadwal aktif hari ini;
+     * - belum_ada_scan: belum satu pun siswa absen masuk (pagi buta / libur tak terdaftar);
+     * - berjalan: jam masuk belum tutup, daftar = yang BELUM hadir;
+     * - tutup: jam masuk sudah tutup, daftar = yang TIDAK hadir.
+     *
+     * @return array{keadaan: string, jumlah: int|null, kelas: list<array{id: string|null, nama: string, siswa: list<array{id: string, nama: string, nis: string|null}>}>}|null
+     */
+    private function getTidakHadir(Carbon $today): ?array
+    {
+        $school = app()->bound('currentSchool') ? app('currentSchool') : null;
+
+        if (! $school instanceof School) {
+            return null;
+        }
+
+        $daftar = app(DaftarKetidakhadiran::class);
+        $schedules = $daftar->jadwal($school, $today);
+
+        if ($schedules->isEmpty()) {
+            return ['keadaan' => 'libur', 'jumlah' => null, 'kelas' => []];
+        }
+
+        if (! $daftar->adaCheckIn($school, $today)) {
+            return ['keadaan' => 'belum_ada_scan', 'jumlah' => null, 'kelas' => []];
+        }
+
+        $siswa = $daftar->tidakHadir($school, $schedules, $today);
+
+        $kelas = $siswa
+            ->groupBy(fn (Student $s) => $s->classroom_id ?? '')
+            ->map(fn ($grup, $classroomId) => [
+                'id' => $classroomId === '' ? null : (string) $classroomId,
+                'nama' => $grup->first()->classroom?->name ?? 'Tanpa kelas',
+                'siswa' => $grup->sortBy('full_name')->map(fn (Student $s) => [
+                    'id' => $s->id,
+                    'nama' => $s->full_name,
+                    'nis' => $s->nis,
+                ])->values()->all(),
+            ])
+            ->sortBy('nama', SORT_NATURAL)
+            ->values()
+            ->all();
+
+        return [
+            'keadaan' => $daftar->jendelaTutup($schedules, 'check_in_end', $today) ? 'tutup' : 'berjalan',
+            'jumlah' => $siswa->count(),
+            'kelas' => $kelas,
+        ];
     }
 }

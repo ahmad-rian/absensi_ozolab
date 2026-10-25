@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Models\Student;
+use App\Support\IsiQrSiswa;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -59,7 +60,7 @@ class QrTokenGenerator
 
         $writer = new Writer($renderer);
 
-        return $writer->writeString($student->qr_token);
+        return $writer->writeString(IsiQrSiswa::untuk($student) ?? $student->qr_token);
     }
 
     public function rotate(Student $student): string

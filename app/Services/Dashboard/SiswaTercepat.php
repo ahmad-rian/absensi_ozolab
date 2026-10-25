@@ -68,7 +68,7 @@ class SiswaTercepat
 
         foreach ([[SchoolFeature::SholatDhuha, PrayerType::Dhuha], [SchoolFeature::SholatDzuhur, PrayerType::Dzuhur]] as [$saklar, $sholat]) {
             if ($fitur->enabled($saklar)) {
-                $kategori[] = [$sholat->slug(), 'Sholat '.$sholat->label(), $this->catatanSholat($school->id, $sholat, $mulai, $hariIni)];
+                $kategori[] = [$sholat->slug(), $sholat->label($school), $this->catatanSholat($school->id, $sholat, $mulai, $hariIni)];
             }
         }
 

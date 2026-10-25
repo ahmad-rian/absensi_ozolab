@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { Save, Users } from 'lucide-react';
 import { useEffect } from 'react';
 import type { FormEvent } from 'react';
+import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -11,6 +12,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 import type { SettingsValues } from './settings-tabs';
@@ -20,7 +22,21 @@ type SholatData = {
     prayer_dhuha_enabled: boolean;
     prayer_enabled: boolean;
     prayer_all_religions: boolean;
+    prayer_dhuha_nama: string;
+    prayer_nama: string;
 };
+
+/** Sama dengan PrayerType::NAMA_MAKS di server. */
+const NAMA_MAKS = 30;
+
+const JENIS = [
+    {
+        aktif: 'prayer_dhuha_enabled',
+        nama: 'prayer_dhuha_nama',
+        bawaan: 'Dhuha',
+    },
+    { aktif: 'prayer_enabled', nama: 'prayer_nama', bawaan: 'Dzuhur' },
+] as const;
 
 export function SholatTab({
     settings,
@@ -29,12 +45,15 @@ export function SholatTab({
     settings: SettingsValues;
     onDirtyChange: (dirty: boolean) => void;
 }) {
-    const { data, setData, put, processing, isDirty } = useForm<SholatData>({
-        section: 'sholat',
-        prayer_dhuha_enabled: Boolean(settings.prayer_dhuha_enabled),
-        prayer_enabled: Boolean(settings.prayer_enabled),
-        prayer_all_religions: Boolean(settings.prayer_all_religions),
-    });
+    const { data, setData, put, processing, isDirty, errors } =
+        useForm<SholatData>({
+            section: 'sholat',
+            prayer_dhuha_enabled: Boolean(settings.prayer_dhuha_enabled),
+            prayer_enabled: Boolean(settings.prayer_enabled),
+            prayer_all_religions: Boolean(settings.prayer_all_religions),
+            prayer_dhuha_nama: String(settings.prayer_dhuha_nama ?? ''),
+            prayer_nama: String(settings.prayer_nama ?? ''),
+        });
 
     useEffect(() => onDirtyChange(isDirty), [isDirty, onDirtyChange]);
 
@@ -51,22 +70,47 @@ export function SholatTab({
                 boleh saling beririsan. Hari aktifnya mengikuti Jadwal Absensi.
             </p>
 
-            <div className="flex flex-wrap gap-6">
-                {(['prayer_dhuha_enabled', 'prayer_enabled'] as const).map(
-                    (key) => (
-                        <Label key={key} className="flex items-center gap-3">
-                            <Checkbox
-                                checked={data[key]}
-                                onCheckedChange={(value) =>
-                                    setData(key, Boolean(value))
-                                }
-                            />
-                            {key === 'prayer_dhuha_enabled'
-                                ? 'Aktifkan Dhuha'
-                                : 'Aktifkan Dzuhur'}
-                        </Label>
-                    ),
-                )}
+            <div className="grid gap-4 sm:grid-cols-2">
+                {JENIS.map(({ aktif, nama, bawaan }) => {
+                    const tampil = data[nama].trim() || bawaan;
+
+                    return (
+                        <div
+                            key={aktif}
+                            className="flex flex-col gap-3 rounded-lg border p-4"
+                        >
+                            <Label className="flex items-center gap-3">
+                                <Checkbox
+                                    checked={data[aktif]}
+                                    onCheckedChange={(value) =>
+                                        setData(aktif, Boolean(value))
+                                    }
+                                />
+                                Aktifkan {tampil}
+                            </Label>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor={nama} className="text-xs">
+                                    Nama tampilan (bawaan: {bawaan})
+                                </Label>
+                                <Input
+                                    id={nama}
+                                    value={data[nama]}
+                                    maxLength={NAMA_MAKS}
+                                    placeholder={bawaan}
+                                    onChange={(e) =>
+                                        setData(nama, e.target.value)
+                                    }
+                                />
+                                <InputError message={errors[nama]} />
+                                <p className="text-xs text-muted-foreground">
+                                    Dipakai di layar scan, laporan, dan pesan
+                                    WhatsApp. Kosongkan untuk memakai nama
+                                    bawaan.
+                                </p>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
             <p className="text-sm text-muted-foreground">
                 Jam sholat diatur melalui menu Jadwal Absensi.

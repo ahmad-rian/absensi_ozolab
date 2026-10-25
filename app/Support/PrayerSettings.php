@@ -25,6 +25,7 @@ class PrayerSettings
         public readonly string $end,
         public readonly bool $allReligions,
         public readonly PrayerType $type = PrayerType::Dzuhur,
+        public readonly ?School $school = null,
     ) {}
 
     public static function for(School $school, PrayerType $type = PrayerType::Dzuhur): self
@@ -52,6 +53,7 @@ class PrayerSettings
                 config('attendance.prayer.all_religions'),
             ),
             type: $type,
+            school: $school,
         );
     }
 
@@ -71,6 +73,19 @@ class PrayerSettings
         }
 
         return $this->allReligions || $student->religion === Religion::Islam;
+    }
+
+    /**
+     * Nama tampilan menurut sekolah pemilik pengaturan, mis. "Sholat Dhuha".
+     */
+    public function label(): string
+    {
+        return $this->type->label($this->school);
+    }
+
+    public function shortLabel(): string
+    {
+        return $this->type->shortLabel($this->school);
     }
 
     public function isWithinWindow(Carbon $time): bool
@@ -115,7 +130,7 @@ class PrayerSettings
      * Key `enabled/start/end/all_religions` dipertahankan persis supaya
      * halaman scan dan test yang sudah ada tidak perlu diubah.
      *
-     * @return array{enabled: bool, start: string, end: string, all_religions: bool, type: string, type_label: string, type_short: string, window: string}
+     * @return array{enabled: bool, start: string, end: string, all_religions: bool, type: string, type_label: string, type_short: string, nama: string, nama_bawaan: string, window: string}
      */
     public function toArray(): array
     {
@@ -125,8 +140,11 @@ class PrayerSettings
             'end' => $this->displayEnd(),
             'all_religions' => $this->allReligions,
             'type' => $this->type->value,
-            'type_label' => $this->type->label(),
-            'type_short' => $this->type->shortLabel(),
+            'type_label' => $this->label(),
+            'type_short' => $this->shortLabel(),
+            // Nilai mentah untuk form pengaturan: kosong = pakai nama bawaan.
+            'nama' => (string) ($this->school?->getSetting($this->type->settingKey('nama'), '') ?? ''),
+            'nama_bawaan' => $this->type->namaBawaan(),
             'window' => $this->windowLabel(),
         ];
     }

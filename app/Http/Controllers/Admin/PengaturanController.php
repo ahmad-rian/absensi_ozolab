@@ -49,6 +49,9 @@ class PengaturanController extends Controller
             'prayer_start' => ['sometimes', 'date_format:H:i'],
             'prayer_end' => ['sometimes', 'date_format:H:i', 'after:prayer_start'],
             'prayer_all_religions' => ['required', 'boolean'],
+            // Nama tampilan per jenis; kosong = nama bawaan (Dhuha / Dzuhur).
+            'prayer_dhuha_nama' => ['sometimes', 'nullable', 'string', 'max:'.PrayerType::NAMA_MAKS, 'regex:'.self::POLA_NAMA_SHOLAT],
+            'prayer_nama' => ['sometimes', 'nullable', 'string', 'max:'.PrayerType::NAMA_MAKS, 'regex:'.self::POLA_NAMA_SHOLAT],
         ],
         'notifikasi' => [
             'whatsapp_enabled' => ['required', 'boolean'],
@@ -71,6 +74,13 @@ class PengaturanController extends Controller
             'whatsapp_template_prayer_absence' => ['nullable', 'string', 'max:2000'],
         ],
     ];
+
+    /**
+     * Huruf, angka, spasi, dan tanda baca nama yang wajar. Nama ini ikut
+     * tercetak di pesan WhatsApp dan PDF, jadi baris baru dan simbol lain
+     * ditolak.
+     */
+    private const POLA_NAMA_SHOLAT = "/^[\\pL\\pN '().\\-]+$/u";
 
     /**
      * Ruleset lama, dipakai kalau payload tidak membawa `section`.
@@ -174,6 +184,7 @@ class PengaturanController extends Controller
                 $settings[$type->settingKey('enabled')] = $prayer->enabled;
                 $settings[$type->settingKey('start')] = $prayer->displayStart();
                 $settings[$type->settingKey('end')] = $prayer->displayEnd();
+                $settings[$type->settingKey('nama')] = (string) ($school->getSetting($type->settingKey('nama')) ?? '');
             }
 
             $settings['prayer_all_religions'] = PrayerSettings::for($school)->allReligions;
@@ -248,6 +259,15 @@ class PengaturanController extends Controller
 
         if ($academicYearId) {
             AcademicYear::forSchool()->findOrFail($academicYearId)->activate();
+        }
+
+        // Nama sholat dirapikan; kosong disimpan sebagai '' supaya kembali
+        // ke nama bawaan.
+        foreach (PrayerType::chronological() as $type) {
+            $key = $type->settingKey('nama');
+            if (array_key_exists($key, $validated)) {
+                $validated[$key] = trim((string) $validated[$key]);
+            }
         }
 
         foreach (self::BOOLEAN_KEYS as $key) {

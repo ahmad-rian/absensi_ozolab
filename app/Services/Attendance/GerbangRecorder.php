@@ -124,7 +124,7 @@ class GerbangRecorder
                 'success' => true,
                 'message' => $ibadah['message'],
                 'jenis' => 'PRAYER',
-                'label' => $type->label(),
+                'label' => $type->label($student->school),
                 'status' => $ibadah['attendance']->status->label(),
             ];
         }
@@ -178,7 +178,7 @@ class GerbangRecorder
                     ->get()
                     ->map(fn (PrayerAttendance $baris): string => sprintf(
                         '%s %s',
-                        $baris->prayer_type->label(),
+                        $baris->prayer_type->label($student->school),
                         $baris->recorded_at?->format('H:i') ?? '',
                     ))
             )

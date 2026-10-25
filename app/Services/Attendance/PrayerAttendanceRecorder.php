@@ -71,7 +71,7 @@ class PrayerAttendanceRecorder
 
         if ($settings === null) {
             if ($type !== null) {
-                return $this->fail('Absen '.$type->label().' belum diaktifkan untuk sekolah ini.');
+                return $this->fail('Absen '.$type->label($school).' belum diaktifkan untuk sekolah ini.');
             }
 
             // Deteksi otomatis gagal: sebutkan SEMUA jendela yang aktif supaya
@@ -83,13 +83,13 @@ class PrayerAttendanceRecorder
         // supaya pencatatan manual tidak bisa memalsukan jam.
         if (! $settings->isWithinWindow($timestamp)) {
             return $this->fail(
-                'Absen '.$settings->type->label().' dibuka pukul '
+                'Absen '.$settings->label().' dibuka pukul '
                 .$settings->displayStart().' s/d '.$settings->displayEnd().'.'
             );
         }
 
         if ($existing = $this->existingRecord($student, $date, $settings->type)) {
-            return $this->fail($this->alreadyRecordedMessage($settings->type, $existing));
+            return $this->fail($this->alreadyRecordedMessage($settings, $existing));
         }
 
         try {
@@ -106,13 +106,13 @@ class PrayerAttendanceRecorder
                 'device_id' => $deviceId ?? $settings->type->deviceId(),
             ]);
         } catch (UniqueConstraintViolationException) {
-            return $this->fail($this->alreadyRecordedMessage($settings->type, null));
+            return $this->fail($this->alreadyRecordedMessage($settings, null));
         }
 
         return [
             'success' => true,
             'attendance' => $attendance,
-            'message' => 'Absen '.$settings->type->label().' berhasil dicatat.',
+            'message' => 'Absen '.$settings->label().' berhasil dicatat.',
         ];
     }
 
@@ -141,7 +141,7 @@ class PrayerAttendanceRecorder
             ->first();
     }
 
-    private function alreadyRecordedMessage(PrayerType $type, ?PrayerAttendance $existing): string
+    private function alreadyRecordedMessage(PrayerSettings $settings, ?PrayerAttendance $existing): string
     {
         // `recorded_at` disimpan sebagai jam dinding sekolah (lihat SchoolTime),
         // jadi diformat apa adanya tanpa konversi zona waktu.
@@ -149,7 +149,7 @@ class PrayerAttendanceRecorder
             ? ' pukul '.$existing->recorded_at->format('H:i')
             : '';
 
-        return 'Sudah absen '.$type->label().' hari ini'.$at.'.';
+        return 'Sudah absen '.$settings->label().' hari ini'.$at.'.';
     }
 
     /**

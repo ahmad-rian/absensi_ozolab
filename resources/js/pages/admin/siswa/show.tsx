@@ -82,6 +82,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { labelSholat, useNamaSholat } from '@/hooks/use-nama-sholat';
 import { dashboard } from '@/routes';
 import type { SchoolFeatureMap } from '@/types';
 import type { ParentProfile as ParentProfileModel } from '@/types/models';
@@ -371,20 +372,22 @@ export default function SiswaShow({
         (auth?.user?.roles ?? []).includes('SUPER_ADMIN') ||
         (auth?.user?.permissions ?? []).includes('orang-tua.access');
 
+    const namaSholat = useNamaSholat();
+
     // Tab jenis sholat yang dimatikan sekolah disembunyikan sepenuhnya, bukan
     // ditampilkan lalu kosong — flag-nya ada di prop non-defer supaya tidak
     // ada kedip panel kosong sebelum payload statistiknya tiba.
     const prayerTabs = [
         {
             value: 'dhuha',
-            label: 'Sholat Dhuha',
+            label: labelSholat(namaSholat.dhuha),
             prop: 'prayerDhuha',
             riwayatProp: 'riwayatDhuha',
             feature: 'sholat_dhuha' as const,
         },
         {
             value: 'dzuhur',
-            label: 'Sholat Dzuhur',
+            label: labelSholat(namaSholat.dzuhur),
             prop: 'prayerDzuhur',
             riwayatProp: 'riwayatDzuhur',
             feature: 'sholat_dzuhur' as const,

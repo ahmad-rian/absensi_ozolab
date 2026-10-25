@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\SchoolCardLayout;
 use App\Services\Attendance\ScheduleProvisioner;
+use App\Support\IsiQrSiswa;
 use App\Support\PrayerSchedule;
 use App\Support\ScannerShortLink;
 use App\Support\SchoolFeatures;
@@ -131,6 +132,7 @@ class SchoolController extends Controller
                 // Kode yang BERLAKU sekarang: alias kalau sudah diatur, potongan
                 // token kalau belum. Dipakai untuk pratinjau alamatnya.
                 'scan_short_code_effective' => ScannerShortLink::codeFor($school),
+                'qr_isi_nisn' => IsiQrSiswa::aktif($school),
             ],
         ]);
     }
@@ -146,6 +148,7 @@ class SchoolController extends Controller
             'website' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
             'scan_short_code' => ScannerShortLink::rules($school),
+            'qr_isi_nisn' => ['sometimes', 'boolean'],
         ], [
             'scan_short_code.regex' => 'Kode hanya boleh huruf kecil, angka, strip, dan garis bawah, diawali huruf atau angka.',
             'scan_short_code.unique' => 'Kode ini sudah dipakai sekolah lain.',
@@ -155,6 +158,15 @@ class SchoolController extends Controller
         // menuntut huruf kecil, jadi pemakai harus melihat kesalahannya alih-alih
         // diam-diam dibetulkan.
         $validated['scan_short_code'] = ScannerShortLink::normalize($validated['scan_short_code'] ?? null);
+
+        // Saklar QR NISN tinggal di kolom settings, bukan kolom sendiri.
+        if (array_key_exists('qr_isi_nisn', $validated)) {
+            $validated['settings'] = [
+                ...($school->settings ?? []),
+                IsiQrSiswa::SETTING => (bool) $validated['qr_isi_nisn'],
+            ];
+            unset($validated['qr_isi_nisn']);
+        }
 
         $school->update($validated);
 

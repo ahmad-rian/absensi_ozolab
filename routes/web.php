@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AbsensiController;
+use App\Http\Controllers\Admin\AbsensiKelasController;
 use App\Http\Controllers\Admin\AlbumGenerationController;
 use App\Http\Controllers\Admin\AlbumLayoutController;
 use App\Http\Controllers\Admin\AttendanceScheduleController;
@@ -390,6 +391,8 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
     Route::middleware(['permission:absensi.access', 'feature:absensi_sekolah'])->group(function () {
         Route::get('absensi', [AbsensiController::class, 'index'])->name('admin.absensi');
         Route::post('absensi', [AbsensiController::class, 'store'])->name('admin.absensi.store');
+        Route::get('absensi/kelas/{classroom}', [AbsensiKelasController::class, 'show'])->name('admin.absensi.kelas');
+        Route::post('absensi/kelas/{classroom}', [AbsensiKelasController::class, 'store'])->middleware('throttle:30,1')->name('admin.absensi.kelas.simpan');
     });
 
     // Pengajuan izin/sakit dari orang tua (portal & form publik /izin).

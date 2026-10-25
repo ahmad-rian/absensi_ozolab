@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Enums\AppModule;
 use App\Enums\ModulGeneral;
+use App\Enums\PrayerType;
 use App\Http\Controllers\General\SettingsController;
 use App\Models\NotificationLog;
 use App\Models\PengajuanIzin;
@@ -107,6 +108,12 @@ class HandleInertiaRequests extends Middleware
 
                 return SchoolFeatures::for($school)->toArray();
             },
+            // Nama tampilan sholat milik sekolah aktif (bisa diganti di
+            // Pengaturan → Sholat). Tanpa konteks sekolah: nama bawaan.
+            'namaSholat' => fn () => [
+                'dhuha' => PrayerType::Dhuha->shortLabel(),
+                'dzuhur' => PrayerType::Dzuhur->shortLabel(),
+            ],
             'currentSchool' => function () {
                 // Read from singleton set by SetCurrentSchool middleware — always fresh
                 $school = app()->bound('currentSchool') ? app('currentSchool') : null;

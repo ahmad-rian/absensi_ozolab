@@ -98,7 +98,7 @@ class NotifyPrayerAbsenceCommand extends Command
 
                     $studentId = $row['student']->id;
                     $perStudent[$studentId]['alerts'][] = $alert;
-                    $perStudent[$studentId]['labels'][] = $type->shortLabel();
+                    $perStudent[$studentId]['labels'][] = $type->shortLabel($school);
                 }
             }
 
@@ -198,7 +198,7 @@ class NotifyPrayerAbsenceCommand extends Command
         }
 
         if ($dryRun) {
-            $this->line("  [dry-run] {$student->full_name} — {$type->shortLabel()} {$row['streak']} hari");
+            $this->line("  [dry-run] {$student->full_name} — {$type->shortLabel($school)} {$row['streak']} hari");
 
             return null;
         }

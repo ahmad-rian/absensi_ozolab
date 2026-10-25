@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, Check, Copy, ExternalLink, RefreshCw, ScanLine, Tv } from 'lucide-react';
+import { ArrowLeft, Check, Copy, ExternalLink, QrCode, RefreshCw, ScanLine, Tv } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
@@ -19,6 +19,8 @@ type SchoolData = {
     scan_short_code: string | null;
     /** Kode yang berlaku sekarang — alias kalau ada, potongan token kalau belum. */
     scan_short_code_effective: string;
+    /** QR kartu berisi NISN polos, bukan token. */
+    qr_isi_nisn: boolean;
 };
 
 export default function SchoolsEdit({ school }: { school: SchoolData }) {
@@ -26,6 +28,7 @@ export default function SchoolsEdit({ school }: { school: SchoolData }) {
         name: school.name, address: school.address ?? '', city: school.city ?? '',
         phone: school.phone ?? '', email: school.email ?? '', website: school.website ?? '',
         is_active: school.is_active, scan_short_code: school.scan_short_code ?? '',
+        qr_isi_nisn: school.qr_isi_nisn,
     });
 
     const [copied, setCopied] = useState(false);
@@ -65,7 +68,10 @@ export default function SchoolsEdit({ school }: { school: SchoolData }) {
     }
 
     function regenerateLink() {
-        if (!confirm('Buat ulang link scan? Link lama akan langsung tidak berlaku.')) return;
+        if (!confirm('Buat ulang link scan? Link lama akan langsung tidak berlaku.')) {
+return;
+}
+
         router.post(`/admin/schools/${school.id}/scanner-token`, {}, {
             preserveScroll: true,
             onStart: () => setRegenerating(true),
@@ -191,6 +197,29 @@ export default function SchoolsEdit({ school }: { school: SchoolData }) {
                                 ringan tidak memuat token sekolah sama sekali — gerbang sholat dan perpustakaan tetap
                                 terlindungi walau nama ini tersebar.
                             </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><QrCode className="size-5" /> Isi QR Kartu Siswa</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-3">
+                            <div className="flex items-start gap-2.5">
+                                <Checkbox id="qr_isi_nisn" checked={data.qr_isi_nisn} onCheckedChange={(c) => setData('qr_isi_nisn', Boolean(c))} />
+                                <div className="grid gap-1">
+                                    <Label htmlFor="qr_isi_nisn" className="font-normal">QR berisi NISN polos</Label>
+                                    <p className="text-muted-foreground text-xs">
+                                        Kartu yang dibuat setelah ini memuat NISN 10 digit, dan scanner sekolah ini menerima NISN.
+                                        Siswa tanpa NISN tetap memakai token. Kartu lama tetap bisa di-scan; generate ulang supaya
+                                        QR-nya berisi NISN.
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                                NISN mudah ditebak. Siapa pun yang tahu NISN siswa bisa membuat QR sendiri dan mengabsenkannya.
+                                Nyalakan hanya kalau sekolah memang meminta QR berisi NISN.
+                            </p>
+                            <InputError message={errors.qr_isi_nisn} />
                         </CardContent>
                     </Card>
                     <div className="flex gap-3">

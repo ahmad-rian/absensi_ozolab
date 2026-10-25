@@ -1,8 +1,10 @@
 import { Head, usePage } from '@inertiajs/react';
-import { AlertTriangle, GraduationCap, Percent, Users } from 'lucide-react';
+import { AlertTriangle, GraduationCap, Percent, UserX, Users } from 'lucide-react';
 import { AttendanceStatusPie } from '@/components/dashboard/attendance-status-pie';
 import { AttendanceTrendChart } from '@/components/dashboard/attendance-trend-chart';
 import { ClassComparisonBar } from '@/components/dashboard/class-comparison-bar';
+import { DaftarTidakHadir, judulTidakHadir, nilaiTidakHadir } from '@/components/dashboard/daftar-tidak-hadir';
+import type { TidakHadir } from '@/components/dashboard/daftar-tidak-hadir';
 import { FastestStudentsCard } from '@/components/dashboard/fastest-students-card';
 import type { KategoriCepat } from '@/components/dashboard/fastest-students-card';
 import { LatestCheckinsTable } from '@/components/dashboard/latest-checkins-table';
@@ -36,6 +38,7 @@ type DashboardProps = {
     latestCheckins?: CheckinItem[];
     activityFeed?: ActivityItem[];
     siswaTercepat?: KategoriCepat[];
+    tidakHadir?: TidakHadir | null;
 };
 
 const today = new Intl.DateTimeFormat('id-ID', {
@@ -54,6 +57,7 @@ export default function Dashboard({
     latestCheckins,
     activityFeed,
     siswaTercepat,
+    tidakHadir,
 }: DashboardProps) {
     const { currentSchool } = usePage().props as { currentSchool?: { name: string } | null };
 
@@ -71,7 +75,7 @@ export default function Dashboard({
                 </div>
 
                 {/* Stat Cards */}
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                     <StatCard
                         title="Total Siswa"
                         value={stats.totalStudents}
@@ -95,12 +99,20 @@ export default function Dashboard({
                         color="amber"
                     />
                     <StatCard
+                        title={judulTidakHadir(tidakHadir)}
+                        value={nilaiTidakHadir(tidakHadir)}
+                        icon={<UserX className="size-5" />}
+                        color="red"
+                    />
+                    <StatCard
                         title="Kehadiran"
                         value={`${stats.attendanceRate}%`}
                         icon={<Percent className="size-5" />}
                         color="blue"
                     />
                 </div>
+
+                <DaftarTidakHadir data={tidakHadir} />
 
                 {/* Main Charts */}
                 <div className="grid gap-6 lg:grid-cols-5">

@@ -51,7 +51,7 @@ class PublicScannerController extends Controller
         $sekarang = $jadwal->resolveFor(SchoolTime::now());
 
         return array_map(fn ($jendela): array => [
-            'label' => $jendela->type->shortLabel(),
+            'label' => $jendela->shortLabel(),
             'jam' => $jendela->windowLabel(),
             'aktif' => $sekarang !== null && $sekarang->type === $jendela->type,
         ], $jadwal->enabled());
