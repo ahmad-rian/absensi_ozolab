@@ -6,6 +6,7 @@ use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\Student;
 use App\Support\SchoolTime;
+use Illuminate\Support\Carbon;
 
 function absenMasukHariIni(Student $student, AttendanceStatus $status): void
 {
@@ -91,4 +92,21 @@ test('angkatan di luar rentang ditolak', function () {
 
     $this->actingAs($user)->get(route('admin.laporan', filterLaporanBulanIni(['angkatan' => 99])))
         ->assertSessionHasErrors('angkatan');
+});
+
+test('grafik tren kehadiran memuat angka hari ini, terlambat ikut hadir', function () {
+    // Senin; tren melewati Sabtu-Minggu.
+    $this->travelTo(Carbon::parse('2026-10-26 03:00:00', 'UTC'));
+    $user = createAdminUser();
+    absenMasukHariIni(Student::factory()->create(['school_id' => $user->school_id]), AttendanceStatus::Hadir);
+    absenMasukHariIni(Student::factory()->create(['school_id' => $user->school_id]), AttendanceStatus::Terlambat);
+
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->reloadOnly('trend', fn ($reload) => $reload
+                ->where('trend', fn ($trend) => collect($trend)->last()['hadir'] === 2
+                    && collect($trend)->last()['terlambat'] === 1)
+            )
+        );
 });

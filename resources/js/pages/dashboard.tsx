@@ -114,14 +114,13 @@ export default function Dashboard({
                     </p>
                 </div>
 
-                {/* Stat Cards */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {/* Angka utama hari ini */}
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
                     <StatCard
                         title="Total Siswa"
                         value={stats.totalStudents}
-                        delta={stats.totalStudentsDelta}
-                        deltaLabel="vs minggu lalu"
-                        icon={<GraduationCap className="size-5" />}
+                        hint="Siswa aktif"
+                        icon={<GraduationCap />}
                         color="blue"
                     />
                     <StatCard
@@ -129,56 +128,53 @@ export default function Dashboard({
                         value={stats.presentToday}
                         delta={stats.presentTodayDelta}
                         deltaLabel="vs kemarin"
-                        icon={<Users className="size-5" />}
+                        icon={<Users />}
                         color="green"
                     />
                     <StatCard
-                        title="Terlambat (termasuk hadir)"
+                        title="Terlambat"
                         value={stats.lateToday}
-                        icon={<AlertTriangle className="size-5" />}
+                        hint="Sudah termasuk hadir"
+                        icon={<AlertTriangle />}
                         color="amber"
                     />
                     <StatCard
                         title={judulTidakHadir(tidakHadir)}
                         value={nilaiTidakHadir(tidakHadir)}
-                        icon={<UserX className="size-5" />}
+                        hint="Tanpa izin / sakit"
+                        icon={<UserX />}
                         color="red"
                     />
                     <StatCard
-                        title="Kehadiran"
+                        title="Kehadiran 30 Hari"
                         value={`${stats.attendanceRate}%`}
-                        icon={<Percent className="size-5" />}
-                        color="blue"
+                        hint="Hadir + terlambat"
+                        icon={<Percent />}
+                        color="violet"
                     />
                 </div>
 
-                <DaftarTidakHadir data={tidakHadir} />
-
-                {/* Main Charts */}
-                <div className="grid gap-6 lg:grid-cols-5">
-                    <div className="lg:col-span-3">
+                {/*
+                    Kolom kiri: grafik dan tabel yang dibaca berurutan.
+                    Kolom kanan: daftar yang perlu ditindak hari ini, selalu
+                    terlihat tanpa menggulir melewati semua grafik.
+                */}
+                <div className="grid gap-6 xl:grid-cols-3">
+                    <div className="flex min-w-0 flex-col gap-6 xl:col-span-2">
                         <AttendanceTrendChart data={trend} />
-                    </div>
-                    <div className="lg:col-span-2">
-                        <AttendanceStatusPie data={statusDistribution} />
-                    </div>
-                </div>
-
-                {/* Secondary Charts */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                    <ClassComparisonBar data={classComparison} />
-                    <WeeklyAreaChart data={weeklyPattern} />
-                </div>
-
-                {/* Peringkat */}
-                <FastestStudentsCard data={siswaTercepat} />
-
-                {/* Activity Section */}
-                <div className="grid gap-6 lg:grid-cols-3">
-                    <div className="lg:col-span-2">
+                        <div className="grid gap-6 lg:grid-cols-2">
+                            <AttendanceStatusPie data={statusDistribution} />
+                            <WeeklyAreaChart data={weeklyPattern} />
+                        </div>
                         <LatestCheckinsTable data={latestCheckins} />
+                        <ClassComparisonBar data={classComparison} />
                     </div>
-                    <LiveActivityFeed data={activityFeed} />
+
+                    <div className="flex min-w-0 flex-col gap-6">
+                        <DaftarTidakHadir data={tidakHadir} />
+                        <LiveActivityFeed data={activityFeed} />
+                        <FastestStudentsCard data={siswaTercepat} />
+                    </div>
                 </div>
             </div>
         </>

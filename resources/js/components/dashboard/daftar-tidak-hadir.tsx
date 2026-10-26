@@ -102,7 +102,7 @@ export function DaftarTidakHadir({ data }: { data?: TidakHadir | null }) {
                             : 'Tidak ada data untuk ditampilkan.'}
                     </p>
                 ) : (
-                    <ul className="divide-y divide-border rounded-xl border">
+                    <ul className="max-h-[420px] divide-y divide-border overflow-y-auto rounded-xl border">
                         {data.kelas.map((kelas) => (
                             <li key={kelas.id ?? 'tanpa-kelas'}>
                                 <details className="group">
@@ -119,7 +119,7 @@ export function DaftarTidakHadir({ data }: { data?: TidakHadir | null }) {
                                         </Badge>
                                     </summary>
                                     <div className="space-y-3 px-4 pb-4">
-                                        <ol className="grid gap-1 text-sm sm:grid-cols-2">
+                                        <ol className="grid gap-1 text-sm">
                                             {kelas.siswa.map((s) => (
                                                 <li
                                                     key={s.id}

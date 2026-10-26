@@ -32,7 +32,7 @@ import {
     UserCog,
     Users,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import AppLogo from '@/components/app-logo';
 import { NavCollapsibleGroup, NavGroup, type BadgedNavItem } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -45,6 +45,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import type { SchoolFeatureKey, SchoolFeatureMap } from '@/types';
@@ -249,7 +250,12 @@ export function AppSidebar() {
                 });
     }, [isSuperAdmin, granted, unread, izinMenunggu, features, studioUrl, generateMassal]);
 
-    const overview = visible(overviewItems);
+    // Grup kosong (semua menunya tersaring) dibuang lebih dulu supaya garis
+    // pemisah tidak menumpuk dua kali berturut-turut.
+    const groups = [
+        { label: 'Utama', items: visible(overviewItems), collapsible: false },
+        ...sections.map((section) => ({ label: section.label, items: visible(section.items), collapsible: true })),
+    ].filter((group) => group.items.length > 0);
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -268,10 +274,16 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
-                <NavGroup label="Utama" items={overview} />
-                {sections.map((section) => (
-                    <NavCollapsibleGroup key={section.label} label={section.label} items={visible(section.items)} />
+            <SidebarContent className="gap-1 group-data-[collapsible=icon]:overflow-y-auto">
+                {groups.map((group, index) => (
+                    <Fragment key={group.label}>
+                        {index > 0 && <SidebarSeparator className="mx-4 group-data-[collapsible=icon]:mx-3" />}
+                        {group.collapsible ? (
+                            <NavCollapsibleGroup label={group.label} items={group.items} />
+                        ) : (
+                            <NavGroup label={group.label} items={group.items} />
+                        )}
+                    </Fragment>
                 ))}
             </SidebarContent>
 

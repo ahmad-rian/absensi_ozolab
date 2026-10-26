@@ -118,11 +118,14 @@ class DashboardController extends Controller
             ->groupBy('attendance_date')
             ->select(
                 'attendance_date',
-                DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Hadir->value.'\' THEN 1 END) as hadir'),
+                DB::raw("COUNT(CASE WHEN status IN ('".implode("', '", self::STATUS_DATANG)."') THEN 1 END) as hadir"),
                 DB::raw('COUNT(CASE WHEN status = \''.AttendanceStatus::Terlambat->value.'\' THEN 1 END) as terlambat'),
             )
             ->orderBy('attendance_date')
-            ->get();
+            ->get()
+            // attendance_date di-cast ke Carbon, jadi firstWhere() dengan teks
+            // tanggal tidak pernah cocok dan seluruh grafik terbaca nol.
+            ->keyBy(fn ($row) => Carbon::parse($row->attendance_date)->format('Y-m-d'));
 
         $result = [];
         $period = CarbonPeriod::create($startDate, $today);
@@ -133,7 +136,7 @@ class DashboardController extends Controller
             }
 
             $dateStr = $date->format('Y-m-d');
-            $row = $data->firstWhere('attendance_date', $dateStr);
+            $row = $data->get($dateStr);
 
             $result[] = [
                 'date' => $date->format('d M'),
