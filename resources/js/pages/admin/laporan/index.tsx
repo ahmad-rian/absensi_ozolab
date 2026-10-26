@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/table';
 import { dashboard } from '@/routes';
 
-type Classroom = { id: string; name: string };
+type Classroom = { id: string; name: string; grade_level: number | null };
 
 type ReportRow = {
     prayers?: Record<
@@ -64,6 +64,7 @@ type Filters = {
     start_date: string;
     end_date: string;
     classroom_id: string;
+    angkatan: string;
 };
 
 type Props = {
@@ -89,6 +90,36 @@ export default function LaporanIndex({
     const [startDate, setStartDate] = useState(filters.start_date);
     const [endDate, setEndDate] = useState(filters.end_date);
     const [classroomId, setClassroomId] = useState(filters.classroom_id);
+    const [angkatan, setAngkatan] = useState(filters.angkatan);
+    const daftarAngkatan = [
+        ...new Set(
+            classrooms
+                .map((c) => c.grade_level)
+                .filter((g): g is number => g !== null),
+        ),
+    ].sort((a, b) => a - b);
+    const kelasTerlihat = angkatan
+        ? classrooms.filter((c) => String(c.grade_level) === angkatan)
+        : classrooms;
+    const queryUnduh = new URLSearchParams({
+        jenis,
+        start_date: startDate,
+        end_date: endDate,
+        ...(classroomId && classroomId !== 'all'
+            ? { classroom_id: classroomId }
+            : {}),
+        ...(angkatan ? { angkatan } : {}),
+    }).toString();
+
+    function gantiAngkatan(nilai: string) {
+        const baru = nilai === 'all' ? '' : nilai;
+        setAngkatan(baru);
+        const kelas = classrooms.find((c) => c.id === classroomId);
+
+        if (baru && kelas && String(kelas.grade_level) !== baru) {
+            setClassroomId('all');
+        }
+    }
     const [sortKey, setSortKey] = useState<SortKey>('full_name');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -100,6 +131,7 @@ export default function LaporanIndex({
                 start_date: startDate,
                 end_date: endDate,
                 classroom_id: classroomId || undefined,
+                angkatan: angkatan || undefined,
             },
             { preserveState: true },
         );
@@ -138,7 +170,7 @@ export default function LaporanIndex({
             color: 'text-green-600',
         },
         {
-            label: 'Total Terlambat',
+            label: 'Terlambat (termasuk hadir)',
             value: summary.total_terlambat,
             icon: Clock,
             color: 'text-yellow-600',
@@ -223,6 +255,32 @@ export default function LaporanIndex({
                             </div>
                             <div className="grid gap-2">
                                 <Label className="text-sm font-medium">
+                                    Angkatan
+                                </Label>
+                                <Select
+                                    value={angkatan || 'all'}
+                                    onValueChange={gantiAngkatan}
+                                >
+                                    <SelectTrigger className="w-40">
+                                        <SelectValue placeholder="Semua Angkatan" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Semua Angkatan
+                                        </SelectItem>
+                                        {daftarAngkatan.map((g) => (
+                                            <SelectItem
+                                                key={g}
+                                                value={String(g)}
+                                            >
+                                                Kelas {g}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label className="text-sm font-medium">
                                     Kelas
                                 </Label>
                                 <Select
@@ -236,7 +294,7 @@ export default function LaporanIndex({
                                         <SelectItem value="all">
                                             Semua Kelas
                                         </SelectItem>
-                                        {classrooms.map((c) => (
+                                        {kelasTerlihat.map((c) => (
                                             <SelectItem
                                                 key={c.id}
                                                 value={String(c.id)}
@@ -252,16 +310,14 @@ export default function LaporanIndex({
                                 Generate
                             </Button>
                             <Button variant="outline" className="gap-2" asChild>
-                                <a
-                                    href={`/admin/laporan/export?jenis=${jenis}&start_date=${startDate}&end_date=${endDate}${classroomId && classroomId !== 'all' ? `&classroom_id=${classroomId}` : ''}`}
-                                >
+                                <a href={`/admin/laporan/export?${queryUnduh}`}>
                                     <Download className="size-4" />
                                     Export Excel
                                 </a>
                             </Button>
                             <Button variant="outline" className="gap-2" asChild>
                                 <a
-                                    href={`/admin/laporan/export-pdf?jenis=${jenis}&start_date=${startDate}&end_date=${endDate}${classroomId && classroomId !== 'all' ? `&classroom_id=${classroomId}` : ''}`}
+                                    href={`/admin/laporan/export-pdf?${queryUnduh}`}
                                 >
                                     <FileText className="size-4" />
                                     Export PDF

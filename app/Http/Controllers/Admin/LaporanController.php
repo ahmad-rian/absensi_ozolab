@@ -31,6 +31,7 @@ class LaporanController extends Controller
         $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
         $classroomId = $request->input('classroom_id');
+        $angkatan = $request->integer('angkatan') ?: null;
 
         $schoolId = auth()->user()->school_id;
 
@@ -39,7 +40,7 @@ class LaporanController extends Controller
             ->distinct('attendance_date')
             ->count('attendance_date');
 
-        $reportData = $this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind);
+        $reportData = $this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind, $angkatan);
 
         $summary = [
             'effective_days' => $effectiveDays,
@@ -48,7 +49,7 @@ class LaporanController extends Controller
             'total_tidak_hadir' => $reportData->sum('izin') + $reportData->sum('sakit') + $reportData->sum('alpa'),
         ];
 
-        $classrooms = Classroom::forSchool()->orderBy('name')->get(['id', 'name']);
+        $classrooms = Classroom::forSchool()->orderBy('name')->get(['id', 'name', 'grade_level']);
 
         return Inertia::render('admin/laporan/index', [
             'reportData' => $reportData->values(),
@@ -59,6 +60,7 @@ class LaporanController extends Controller
                 'start_date' => $startDate,
                 'end_date' => $endDate,
                 'classroom_id' => $classroomId ?? '',
+                'angkatan' => $angkatan ? (string) $angkatan : '',
                 'jenis' => $kind,
             ],
         ]);
@@ -70,10 +72,13 @@ class LaporanController extends Controller
         $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
         $classroomId = $request->input('classroom_id');
+        $angkatan = $request->integer('angkatan') ?: null;
         $schoolId = auth()->user()->school_id;
 
+        $akhiran = $angkatan ? '-kelas-'.$angkatan : '';
+
         if ($kind === 'semuanya') {
-            return XlsxDownload::sheets('laporan-'.$startDate.'.xlsx', $this->reportSheets($startDate, $endDate, $classroomId, $schoolId, $kind));
+            return XlsxDownload::sheets('laporan-'.$startDate.$akhiran.'.xlsx', $this->reportSheets($startDate, $endDate, $classroomId, $schoolId, $kind, $angkatan));
         }
 
         $kolom = $kind === 'absensi'
@@ -81,8 +86,8 @@ class LaporanController extends Controller
             : ['NIS', 'Nama Siswa', 'Kelas', 'Ikut', 'Tidak Ikut', 'Hari Efektif', '% Kehadiran'];
 
         return XlsxDownload::sheets(
-            ($kind === 'absensi' ? 'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d') : 'laporan-'.$startDate).'.xlsx',
-            $this->sheetPerKelas($this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind), $kolom, fn (array $row): array => $this->barisSheet($row, $kind)),
+            ($kind === 'absensi' ? 'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d') : 'laporan-'.$startDate).$akhiran.'.xlsx',
+            $this->sheetPerKelas($this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind, $angkatan), $kolom, fn (array $row): array => $this->barisSheet($row, $kind)),
         );
     }
 
@@ -92,9 +97,10 @@ class LaporanController extends Controller
         $startDate = $request->input('start_date', SchoolTime::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', SchoolTime::now()->endOfMonth()->toDateString());
         $classroomId = $request->input('classroom_id');
+        $angkatan = $request->integer('angkatan') ?: null;
         $schoolId = auth()->user()->school_id;
 
-        $reportData = $this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind);
+        $reportData = $this->dataFor($startDate, $endDate, $classroomId, $schoolId, $kind, $angkatan);
 
         $summary = [
             'total_hadir' => $reportData->sum('hadir'),
@@ -119,7 +125,7 @@ class LaporanController extends Controller
 
         $pdf->setPaper('a4', 'landscape');
 
-        $filename = 'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d').'.pdf';
+        $filename = 'laporan-kehadiran-'.SchoolTime::now()->format('Y-m-d').($angkatan ? '-kelas-'.$angkatan : '').'.pdf';
 
         return $pdf->download($filename);
     }
@@ -139,39 +145,45 @@ class LaporanController extends Controller
 
     private function reportKind(Request $request): string
     {
-        $request->validate(['jenis' => ['nullable', 'string', 'in:absensi,dhuha,dzuhur,semuanya'], 'start_date' => ['nullable', 'date_format:Y-m-d'], 'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'], 'classroom_id' => ['nullable', 'string']]);
+        $request->validate(['jenis' => ['nullable', 'string', 'in:absensi,dhuha,dzuhur,semuanya'], 'start_date' => ['nullable', 'date_format:Y-m-d'], 'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'], 'classroom_id' => ['nullable', 'string'], 'angkatan' => ['nullable', 'integer', 'between:1,12']]);
         $kind = $request->input('jenis', 'absensi');
         abort_unless($kind === 'semuanya' || isset($this->availableKinds()[$kind]), 403);
 
         return $kind;
     }
 
-    private function dataFor(string $start, string $end, ?string $classroom, ?string $school, string $kind): Collection
+    private function dataFor(string $start, string $end, ?string $classroom, ?string $school, string $kind, ?int $angkatan = null): Collection
     {
         $classroom = $classroom === 'all' ? null : $classroom;
         $stats = app(StudentStatsBuilder::class);
 
-        return Student::where('school_id', $school)->when($classroom, fn ($q) => $q->where('classroom_id', $classroom))->with(['school', 'classroom'])->orderBy('full_name')->get()->map(function ($student) use ($stats, $start, $end, $kind): array {
-            $attendance = $stats->attendanceFor($student, $start, $end)['summary'];
-            $prayers = [];
-            foreach ($this->availableKinds() as $slug => $label) {
-                if ($slug !== 'absensi') {
-                    $prayers[$slug] = $stats->prayerFor($student, $start, $end, PrayerType::fromSlug($slug))['summary'];
+        return Student::where('school_id', $school)
+            ->when($classroom, fn ($q) => $q->where('classroom_id', $classroom))
+            ->when($angkatan, fn ($q) => $q->whereHas('classroom', fn ($k) => $k->where('grade_level', $angkatan)))
+            ->with(['school', 'classroom'])->orderBy('full_name')->get()->map(function ($student) use ($stats, $start, $end, $kind): array {
+                $attendance = $stats->attendanceFor($student, $start, $end)['summary'];
+                $prayers = [];
+                foreach ($this->availableKinds() as $slug => $label) {
+                    if ($slug !== 'absensi') {
+                        $prayers[$slug] = $stats->prayerFor($student, $start, $end, PrayerType::fromSlug($slug))['summary'];
+                    }
                 }
-            }
-            $summary = in_array($kind, ['semuanya', 'absensi'], true) ? $attendance : $prayers[$kind];
+                $sekolah = in_array($kind, ['semuanya', 'absensi'], true);
+                $summary = $sekolah ? $attendance : $prayers[$kind];
 
-            return [
-                'student_id' => $student->id, 'nis' => $student->nis, 'full_name' => $student->full_name, 'classroom_name' => $student->classroom?->name ?? '-',
-                'hadir' => $summary['hadir'], 'terlambat' => $summary['terlambat'] ?? 0, 'izin' => $summary['izin'] ?? 0, 'sakit' => $summary['sakit'] ?? 0,
-                'alpa' => $summary['alpa'] ?? $summary['tidak_hadir'] ?? 0, 'attendance_rate' => $summary['rate'], 'effective_days' => $summary['effective_days'], 'prayers' => $prayers,
-            ];
-        });
+                return [
+                    'student_id' => $student->id, 'nis' => $student->nis, 'full_name' => $student->full_name, 'classroom_name' => $student->classroom?->name ?? '-',
+                    // Terlambat tetap datang ke sekolah, jadi ikut dihitung Hadir;
+                    // kolom Terlambat tinggal keterangan berapa di antaranya telat.
+                    'hadir' => $summary['hadir'] + ($sekolah ? ($summary['terlambat'] ?? 0) : 0), 'terlambat' => $summary['terlambat'] ?? 0, 'izin' => $summary['izin'] ?? 0, 'sakit' => $summary['sakit'] ?? 0,
+                    'alpa' => $summary['alpa'] ?? $summary['tidak_hadir'] ?? 0, 'attendance_rate' => $summary['rate'], 'effective_days' => $summary['effective_days'], 'prayers' => $prayers,
+                ];
+            });
     }
 
-    private function reportSheets(string $start, string $end, ?string $classroom, ?string $school, string $kind): array
+    private function reportSheets(string $start, string $end, ?string $classroom, ?string $school, string $kind, ?int $angkatan = null): array
     {
-        $rows = KelompokKelas::dari($this->dataFor($start, $end, $classroom, $school, 'semuanya'))->flatten(1);
+        $rows = KelompokKelas::dari($this->dataFor($start, $end, $classroom, $school, 'semuanya', $angkatan))->flatten(1);
         $sheets = [];
         $kinds = $this->availableKinds();
         if ($kind === 'semuanya') {

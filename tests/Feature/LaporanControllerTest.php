@@ -54,7 +54,7 @@ test('laporan returns attendance summary data', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->has('reportData', 1)
-        ->where('summary.total_hadir', 1)
+        ->where('summary.total_hadir', 2)
         ->where('summary.total_terlambat', 1)
     );
 });

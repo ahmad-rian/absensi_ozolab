@@ -1,9 +1,19 @@
 import { Head, usePage } from '@inertiajs/react';
-import { AlertTriangle, GraduationCap, Percent, UserX, Users } from 'lucide-react';
+import {
+    AlertTriangle,
+    GraduationCap,
+    Percent,
+    UserX,
+    Users,
+} from 'lucide-react';
 import { AttendanceStatusPie } from '@/components/dashboard/attendance-status-pie';
 import { AttendanceTrendChart } from '@/components/dashboard/attendance-trend-chart';
 import { ClassComparisonBar } from '@/components/dashboard/class-comparison-bar';
-import { DaftarTidakHadir, judulTidakHadir, nilaiTidakHadir } from '@/components/dashboard/daftar-tidak-hadir';
+import {
+    DaftarTidakHadir,
+    judulTidakHadir,
+    nilaiTidakHadir,
+} from '@/components/dashboard/daftar-tidak-hadir';
 import type { TidakHadir } from '@/components/dashboard/daftar-tidak-hadir';
 import { FastestStudentsCard } from '@/components/dashboard/fastest-students-card';
 import type { KategoriCepat } from '@/components/dashboard/fastest-students-card';
@@ -25,9 +35,31 @@ type Stats = {
 type TrendItem = { date: string; hadir: number; terlambat: number };
 type StatusItem = { name: string; value: number; color: string };
 type ClassItem = { name: string; rate: number };
-type WeeklyItem = { day: string; hadir: number; terlambat: number; tidakHadir: number };
-type CheckinItem = { id: string; studentName: string; className: string | null; time: string; date: string; status: string; statusColor: string; notificationSent: boolean; initials: string };
-type ActivityItem = { id: string; message: string; time: string; type: string; status: string; initials: string };
+type WeeklyItem = {
+    day: string;
+    hadir: number;
+    terlambat: number;
+    tidakHadir: number;
+};
+type CheckinItem = {
+    id: string;
+    studentName: string;
+    className: string | null;
+    time: string;
+    date: string;
+    status: string;
+    statusColor: string;
+    notificationSent: boolean;
+    initials: string;
+};
+type ActivityItem = {
+    id: string;
+    message: string;
+    time: string;
+    type: string;
+    status: string;
+    initials: string;
+};
 
 type DashboardProps = {
     stats: Stats;
@@ -59,7 +91,9 @@ export default function Dashboard({
     siswaTercepat,
     tidakHadir,
 }: DashboardProps) {
-    const { currentSchool } = usePage().props as { currentSchool?: { name: string } | null };
+    const { currentSchool } = usePage().props as {
+        currentSchool?: { name: string } | null;
+    };
 
     return (
         <>
@@ -68,10 +102,16 @@ export default function Dashboard({
                 {/* Header */}
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <p className="text-primary text-sm font-semibold">{currentSchool?.name ?? 'Dashboard'}</p>
-                        <h1 className="text-2xl font-bold tracking-tight">Selamat Datang</h1>
+                        <p className="text-sm font-semibold text-primary">
+                            {currentSchool?.name ?? 'Dashboard'}
+                        </p>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Selamat Datang
+                        </h1>
                     </div>
-                    <p className="text-muted-foreground text-sm capitalize">{today}</p>
+                    <p className="text-sm text-muted-foreground capitalize">
+                        {today}
+                    </p>
                 </div>
 
                 {/* Stat Cards */}
@@ -93,7 +133,7 @@ export default function Dashboard({
                         color="green"
                     />
                     <StatCard
-                        title="Terlambat"
+                        title="Terlambat (termasuk hadir)"
                         value={stats.lateToday}
                         icon={<AlertTriangle className="size-5" />}
                         color="amber"
@@ -146,7 +186,5 @@ export default function Dashboard({
 }
 
 Dashboard.layout = {
-    breadcrumbs: [
-        { title: 'Dashboard', href: dashboard() },
-    ],
+    breadcrumbs: [{ title: 'Dashboard', href: dashboard() }],
 };

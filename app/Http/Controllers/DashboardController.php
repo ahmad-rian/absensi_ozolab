@@ -20,6 +20,12 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    /**
+     * Status masuk yang dihitung "hadir": siswa yang terlambat tetap datang,
+     * jadi ikut Hadir; kartu Terlambat tinggal keterangan berapa yang telat.
+     */
+    private const STATUS_DATANG = [AttendanceStatus::Hadir->value, AttendanceStatus::Terlambat->value];
+
     public function index(): Response
     {
         $today = SchoolTime::today();
@@ -49,7 +55,7 @@ class DashboardController extends Controller
         $presentToday = Attendance::whereHas('student', fn ($q) => $q->where('school_id', $schoolId))
             ->where('attendance_date', $today)
             ->where('type', AttendanceType::CheckIn)
-            ->where('status', AttendanceStatus::Hadir)
+            ->whereIn('status', self::STATUS_DATANG)
             ->count();
 
         $lateToday = Attendance::whereHas('student', fn ($q) => $q->where('school_id', $schoolId))
@@ -66,7 +72,7 @@ class DashboardController extends Controller
         $presentYesterday = Attendance::whereHas('student', fn ($q) => $q->where('school_id', $schoolId))
             ->where('attendance_date', $yesterday)
             ->where('type', AttendanceType::CheckIn)
-            ->where('status', AttendanceStatus::Hadir)
+            ->whereIn('status', self::STATUS_DATANG)
             ->count();
 
         // Attendance rate for the last 30 days
@@ -75,7 +81,7 @@ class DashboardController extends Controller
             ->where('type', AttendanceType::CheckIn)
             ->where('attendance_date', '>=', $thirtyDaysAgo)
             ->where('attendance_date', '<=', $today)
-            ->selectRaw('COUNT(CASE WHEN status = ? THEN 1 END) as hadir', [AttendanceStatus::Hadir->value])
+            ->selectRaw('COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as hadir', self::STATUS_DATANG)
             ->selectRaw('COUNT(*) as total')
             ->first();
 
@@ -195,7 +201,7 @@ class DashboardController extends Controller
             ->groupBy('students.classroom_id')
             ->select(
                 'students.classroom_id',
-                DB::raw('COUNT(CASE WHEN attendances.status = \''.AttendanceStatus::Hadir->value.'\' THEN 1 END) as hadir'),
+                DB::raw("COUNT(CASE WHEN attendances.status IN ('".implode("', '", self::STATUS_DATANG)."') THEN 1 END) as hadir"),
                 DB::raw('COUNT(*) as total'),
             )
             ->get()

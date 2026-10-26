@@ -41,7 +41,7 @@ class StudentReportBuilder
                 $row['device_id'] ?? '-',
             ], $data['recent']),
             $this->summaryLines([
-                'Hadir' => $data['summary']['hadir'],
+                'Hadir (termasuk terlambat)' => $data['summary']['hadir'] + $data['summary']['terlambat'],
                 'Terlambat' => $data['summary']['terlambat'],
                 'Izin' => $data['summary']['izin'],
                 'Sakit' => $data['summary']['sakit'],
