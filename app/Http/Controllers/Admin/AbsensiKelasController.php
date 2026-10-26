@@ -10,6 +10,7 @@ use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Student;
+use App\Services\Attendance\RekapBulananKelas;
 use App\Services\Poin\SapuanPoin;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
@@ -29,9 +30,14 @@ use Inertia\Response;
  */
 class AbsensiKelasController extends Controller
 {
-    public function show(Request $request, Classroom $classroom): Response
+    /** Tab halaman detail kelas. */
+    private const TAB = ['absen', 'rekap', 'siswa'];
+
+    public function show(Request $request, Classroom $classroom, RekapBulananKelas $rekap): Response
     {
         $tanggal = $this->tanggal($request->query('tanggal'));
+        $bulan = $this->bulan($request->query('bulan'), $tanggal);
+        $tab = in_array($request->query('tab'), self::TAB, true) ? $request->query('tab') : 'absen';
 
         $absen = Attendance::query()
             ->whereDate('attendance_date', $tanggal)
@@ -44,13 +50,14 @@ class AbsensiKelasController extends Controller
             ->where('classroom_id', $classroom->id)
             ->where('is_active', true)
             ->orderBy('full_name')
-            ->get(['id', 'nis', 'full_name'])
+            ->get(['id', 'nis', 'nisn', 'full_name'])
             ->map(function (Student $student) use ($absen): array {
                 $baris = $absen->get($student->id);
 
                 return [
                     'id' => $student->id,
                     'nis' => $student->nis,
+                    'nisn' => $student->nisn,
                     'nama' => $student->full_name,
                     'status' => $baris?->status?->value,
                     'catatan' => $baris?->notes,
@@ -61,10 +68,18 @@ class AbsensiKelasController extends Controller
             ->values();
 
         return Inertia::render('admin/absensi/kelas', [
-            'kelas' => ['id' => $classroom->id, 'name' => $classroom->name],
+            'kelas' => [
+                'id' => $classroom->id,
+                'name' => $classroom->name,
+                'grade_level' => $classroom->grade_level,
+                'wali' => $classroom->homeroomTeacher?->name,
+            ],
             'daftarKelas' => Classroom::query()->orderBy('name')->get(['id', 'name']),
             'tanggal' => $tanggal,
+            'bulan' => $bulan,
+            'tab' => $tab,
             'siswa' => $siswa,
+            'rekap' => Inertia::defer(fn (): array => $rekap->untuk($classroom, $bulan), 'rekap'),
         ]);
     }
 
@@ -185,6 +200,21 @@ class AbsensiKelasController extends Controller
         return $tanggal === $sekarang->toDateString()
             ? $sekarang
             : Carbon::createFromFormat('Y-m-d H:i:s', $tanggal.' '.$sekarang->format('H:i:s'), SchoolTime::timezone());
+    }
+
+    /**
+     * Bulan rekap (Y-m). Tidak boleh melewati bulan ini; bawaannya bulan dari
+     * tanggal yang sedang dibuka.
+     */
+    private function bulan(mixed $nilai, string $tanggal): string
+    {
+        $bulanIni = substr(SchoolTime::todayString(), 0, 7);
+
+        if (is_string($nilai) && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $nilai) === 1) {
+            return min($nilai, $bulanIni);
+        }
+
+        return substr($tanggal, 0, 7);
     }
 
     private function tanggal(mixed $nilai): string

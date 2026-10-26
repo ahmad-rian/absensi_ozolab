@@ -157,3 +157,58 @@ test('mengoreksi alpa menjadi hadir langsung menghapus poin otomatis', function 
 
     expect(PoinSiswa::withoutGlobalScopes()->where('student_id', $siswa->id)->count())->toBe(0);
 });
+
+test('detail kelas memuat tab, bulan, dan nisn siswa', function () {
+    [, $admin, $kelas] = akKelas();
+    akSiswa($kelas);
+
+    $this->actingAs($admin)->get(route('admin.absensi.kelas', [$kelas, 'tab' => 'rekap', 'bulan' => '2026-09']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('admin/absensi/kelas')
+            ->where('tab', 'rekap')
+            ->where('bulan', '2026-09')
+            ->has('siswa.0.nisn')
+            ->missing('rekap')
+        );
+});
+
+test('tab dan bulan tak dikenal jatuh ke bawaan, bulan depan dibatasi bulan ini', function () {
+    [, $admin, $kelas] = akKelas();
+
+    $this->actingAs($admin)->get(route('admin.absensi.kelas', [$kelas, 'tab' => 'hapus', 'bulan' => '2027-05']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('tab', 'absen')->where('bulan', '2026-10'));
+});
+
+test('rekap bulanan berisi hari sekolah dari jadwal dan huruf status per siswa', function () {
+    [$school, $admin, $kelas] = akKelas();
+    $siswa = akSiswa($kelas);
+    // Jadwal Senin–Jumat untuk sekolah ini.
+    foreach (range(1, 5) as $hari) {
+        AttendanceSchedule::factory()->create(['school_id' => $school->id, 'classroom_id' => null, 'day_of_week' => $hari, 'is_active' => true]);
+    }
+    foreach (['2026-10-01' => AttendanceStatus::Hadir, '2026-10-02' => AttendanceStatus::Terlambat, '2026-10-05' => AttendanceStatus::Sakit] as $tanggal => $status) {
+        Attendance::factory()->create([
+            'school_id' => $school->id, 'student_id' => $siswa->id, 'attendance_date' => $tanggal,
+            'type' => AttendanceType::CheckIn, 'status' => $status, 'recorded_at' => $tanggal.' 07:00:00',
+        ]);
+    }
+
+    $this->actingAs($admin)->get(route('admin.absensi.kelas', [$kelas, 'bulan' => '2026-10']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->loadDeferredProps('rekap', fn (Assert $reload) => $reload
+                // Oktober 2026: 22 hari kerja; 1 Okt = Kamis.
+                ->has('rekap.hari', 22)
+                ->where('rekap.hari.0.tanggal', '2026-10-01')
+                ->where('rekap.hari.0.nama', 'Kam')
+                ->where('rekap.baris.0.status.2026-10-01', 'H')
+                ->where('rekap.baris.0.status.2026-10-02', 'T')
+                ->where('rekap.baris.0.status.2026-10-05', 'S')
+                ->where('rekap.baris.0.jumlah.H', 1)
+                // 11 hari sekolah sampai Kamis 15 Okt; datang 2 (H + T).
+                ->where('rekap.baris.0.persen', fn ($p) => (float) $p === 18.2)
+            )
+        );
+});

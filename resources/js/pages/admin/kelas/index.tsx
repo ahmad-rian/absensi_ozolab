@@ -1,6 +1,8 @@
-import { Head, router, useForm } from '@inertiajs/react';
-import { Edit, GraduationCap, Plus, Trash2, Users } from 'lucide-react';
-import { FormEvent, useEffect, useState } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { ClipboardCheck, Edit, GraduationCap, Plus, Trash2, Users } from 'lucide-react';
+import type { FormEvent} from 'react';
+import { useEffect, useState } from 'react';
+import { show as absenKelas } from '@/actions/App/Http/Controllers/Admin/AbsensiKelasController';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -53,6 +55,14 @@ const GRADE_LEVELS = Array.from({ length: 12 }, (_, i) => ({
 const PARALLELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c) => ({ value: c, label: c }));
 
 export default function KelasIndex({ classrooms, academic_years }: PageProps) {
+    const { auth, features } = usePage().props as unknown as {
+        auth: { user: { roles?: string[]; permissions?: string[] } | null };
+        features?: Record<string, boolean>;
+    };
+    // Sama dengan penjaga rute absen kelas: izin absensi + fitur absensi sekolah.
+    const bolehAbsen =
+        features?.absensi_sekolah !== false &&
+        ((auth.user?.roles ?? []).includes('SUPER_ADMIN') || (auth.user?.permissions ?? []).includes('absensi.access'));
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
 
@@ -80,20 +90,31 @@ export default function KelasIndex({ classrooms, academic_years }: PageProps) {
     // Parse existing class name into grade_level and parallel (e.g. "7A" → "7", "A"; "10B" → "10", "B")
     function parseName(name: string): { grade: string; parallel: string } {
         const match = name.match(/^(\d+)([A-Z])$/);
+
         return match ? { grade: match[1], parallel: match[2] } : { grade: '', parallel: '' };
     }
 
     // Generate preview of classes to be created
     function bulkPreview(): string[] {
         const { grade_level, parallel_from, parallel_to } = bulkForm.data;
-        if (!grade_level || !parallel_from || !parallel_to) return [];
+
+        if (!grade_level || !parallel_from || !parallel_to) {
+return [];
+}
+
         const from = parallel_from.charCodeAt(0);
         const to = parallel_to.charCodeAt(0);
-        if (from > to) return [];
+
+        if (from > to) {
+return [];
+}
+
         const names: string[] = [];
+
         for (let i = from; i <= to; i++) {
             names.push(`${grade_level}${String.fromCharCode(i)}`);
         }
+
         return names;
     }
 
@@ -104,9 +125,11 @@ export default function KelasIndex({ classrooms, academic_years }: PageProps) {
     function openCreateDialog() {
         bulkForm.reset();
         const activeYear = academic_years.find((ay) => ay.is_active);
+
         if (activeYear) {
             bulkForm.setData('academic_year_id', String(activeYear.id));
         }
+
         setIsCreateOpen(true);
     }
 
@@ -132,7 +155,11 @@ export default function KelasIndex({ classrooms, academic_years }: PageProps) {
 
     function handleEdit(e: FormEvent) {
         e.preventDefault();
-        if (!editingClassroom) return;
+
+        if (!editingClassroom) {
+return;
+}
+
         editForm.put(`/admin/kelas/${editingClassroom.id}`, {
             preserveScroll: true,
             onSuccess: () => setEditingClassroom(null),
@@ -173,7 +200,15 @@ export default function KelasIndex({ classrooms, academic_years }: PageProps) {
                             <Card key={classroom.id} className="group relative cursor-pointer transition-shadow hover:shadow-md">
                                 <CardHeader className="pb-2">
                                     <div className="flex items-start justify-between">
-                                        <CardTitle className="text-lg">{classroom.name}</CardTitle>
+                                        <CardTitle className="text-lg">
+                                            {bolehAbsen ? (
+                                                <Link href={absenKelas.url(classroom.id)} className="hover:underline">
+                                                    {classroom.name}
+                                                </Link>
+                                            ) : (
+                                                classroom.name
+                                            )}
+                                        </CardTitle>
                                         <Badge variant="secondary">Kelas {classroom.grade_level}</Badge>
                                     </div>
                                 </CardHeader>
@@ -187,7 +222,15 @@ export default function KelasIndex({ classrooms, academic_years }: PageProps) {
                                         {classroom.academic_year?.name ?? '-'}
                                     </div>
                                 </CardContent>
-                                <CardFooter className="gap-2 pt-2">
+                                <CardFooter className="flex-wrap gap-2 pt-2">
+                                    {bolehAbsen && (
+                                        <Button size="sm" asChild>
+                                            <Link href={absenKelas.url(classroom.id)}>
+                                                <ClipboardCheck className="size-3.5" />
+                                                Buka Kelas
+                                            </Link>
+                                        </Button>
+                                    )}
                                     <Button variant="outline" size="sm" onClick={() => openEditDialog(classroom)}>
                                         <Edit className="size-3.5" />
                                         Edit
