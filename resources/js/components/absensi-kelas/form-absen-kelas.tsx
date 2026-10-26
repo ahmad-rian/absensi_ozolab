@@ -16,6 +16,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 type Pilihan = { status: Status | null; catatan: string };
@@ -154,13 +160,29 @@ export function FormAbsenKelas({
                 </CardContent>
             </Card>
 
-            <div className="flex flex-wrap gap-2 text-sm">
+            {/* Sekaligus keterangan arti huruf dan hitungan pilihan saat ini. */}
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Keterangan:</span>
                 {PILIHAN_STATUS.map((s) => (
-                    <Badge key={s.nilai} variant="outline">
-                        {s.label}: {ringkasan[s.nilai] ?? 0}
-                    </Badge>
+                    <span
+                        key={s.nilai}
+                        className="inline-flex items-center gap-1.5 rounded-full border py-0.5 pr-2.5 pl-0.5"
+                    >
+                        <span
+                            className={cn(
+                                'inline-flex size-6 items-center justify-center rounded-full text-xs font-semibold',
+                                s.aktif,
+                            )}
+                        >
+                            {s.singkat}
+                        </span>
+                        {s.label}
+                        <span className="font-semibold tabular-nums">
+                            {ringkasan[s.nilai] ?? 0}
+                        </span>
+                    </span>
                 ))}
-                <Badge variant="outline">
+                <Badge variant="outline" className="rounded-full">
                     Belum diisi: {ringkasan.KOSONG ?? 0}
                 </Badge>
             </div>
@@ -170,75 +192,88 @@ export function FormAbsenKelas({
                     Kelas ini belum punya siswa aktif.
                 </p>
             ) : (
-                <ul className="divide-y divide-border rounded-2xl border bg-card">
-                    {siswa.map((s, i) => {
-                        const p = pilihan[s.id];
+                <TooltipProvider delayDuration={150}>
+                    <ul className="divide-y divide-border rounded-2xl border bg-card">
+                        {siswa.map((s, i) => {
+                            const p = pilihan[s.id];
 
-                        return (
-                            <li
-                                key={s.id}
-                                className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-4"
-                            >
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate font-medium">
-                                        <span className="mr-2 text-muted-foreground tabular-nums">
-                                            {i + 1}.
-                                        </span>
-                                        {s.nama}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {s.nis ?? '-'}
-                                        {s.sumber && (
-                                            <span className="ml-2">
-                                                ·{' '}
-                                                {s.sumber === 'scan'
-                                                    ? `scan ${s.jam ?? ''}`
-                                                    : 'diisi manual'}
-                                            </span>
-                                        )}
-                                    </p>
-                                </div>
-                                <div
-                                    className="flex gap-1.5"
-                                    role="radiogroup"
-                                    aria-label={`Status ${s.nama}`}
+                            return (
+                                <li
+                                    key={s.id}
+                                    className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-4"
                                 >
-                                    {PILIHAN_STATUS.map((opsi) => (
-                                        <button
-                                            key={opsi.nilai}
-                                            type="button"
-                                            role="radio"
-                                            aria-checked={
-                                                p.status === opsi.nilai
-                                            }
-                                            title={opsi.label}
-                                            onClick={() =>
-                                                pilih(s.id, opsi.nilai)
-                                            }
-                                            className={cn(
-                                                'size-9 rounded-lg border text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-                                                p.status === opsi.nilai
-                                                    ? opsi.aktif
-                                                    : 'hover:bg-muted',
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate font-medium">
+                                            <span className="mr-2 text-muted-foreground tabular-nums">
+                                                {i + 1}.
+                                            </span>
+                                            {s.nama}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {s.nis ?? '-'}
+                                            {s.sumber && (
+                                                <span className="ml-2">
+                                                    ·{' '}
+                                                    {s.sumber === 'scan'
+                                                        ? `scan ${s.jam ?? ''}`
+                                                        : 'diisi manual'}
+                                                </span>
                                             )}
-                                        >
-                                            {opsi.singkat}
-                                        </button>
-                                    ))}
-                                </div>
-                                <Input
-                                    className="sm:w-48"
-                                    placeholder="Catatan (opsional)"
-                                    maxLength={500}
-                                    value={p.catatan}
-                                    onChange={(e) =>
-                                        ubahCatatan(s.id, e.target.value)
-                                    }
-                                />
-                            </li>
-                        );
-                    })}
-                </ul>
+                                        </p>
+                                    </div>
+                                    <div
+                                        className="flex gap-1.5"
+                                        role="radiogroup"
+                                        aria-label={`Status ${s.nama}`}
+                                    >
+                                        {PILIHAN_STATUS.map((opsi) => (
+                                            <Tooltip key={opsi.nilai}>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        role="radio"
+                                                        aria-checked={
+                                                            p.status ===
+                                                            opsi.nilai
+                                                        }
+                                                        aria-label={opsi.label}
+                                                        onClick={() =>
+                                                            pilih(
+                                                                s.id,
+                                                                opsi.nilai,
+                                                            )
+                                                        }
+                                                        className={cn(
+                                                            'size-9 rounded-lg border text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                                                            p.status ===
+                                                                opsi.nilai
+                                                                ? opsi.aktif
+                                                                : 'hover:bg-muted',
+                                                        )}
+                                                    >
+                                                        {opsi.singkat}
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    {opsi.label}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        ))}
+                                    </div>
+                                    <Input
+                                        className="sm:w-48"
+                                        placeholder="Catatan (opsional)"
+                                        maxLength={500}
+                                        value={p.catatan}
+                                        onChange={(e) =>
+                                            ubahCatatan(s.id, e.target.value)
+                                        }
+                                    />
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </TooltipProvider>
             )}
 
             <div className="sticky bottom-0 z-20 -mx-4 border-t bg-background/95 p-3 backdrop-blur md:-mx-6">

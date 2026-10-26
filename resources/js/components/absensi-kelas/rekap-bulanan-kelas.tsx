@@ -14,6 +14,14 @@ const WARNA: Record<string, string> = {
     A: 'bg-red-600/15 text-red-700 dark:text-red-400',
 };
 
+const LABEL: Record<string, string> = {
+    H: 'Hadir',
+    T: 'Terlambat',
+    I: 'Izin',
+    S: 'Sakit',
+    A: 'Alpa',
+};
+
 const NAMA_BULAN = new Intl.DateTimeFormat('id-ID', {
     month: 'long',
     year: 'numeric',
@@ -76,13 +84,7 @@ export function RekapBulananKelas({ kelasId, bulan, bulanIni, rekap }: Props) {
             </div>
 
             <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                {Object.entries({
-                    H: 'Hadir',
-                    T: 'Terlambat',
-                    I: 'Izin',
-                    S: 'Sakit',
-                    A: 'Alpa',
-                }).map(([huruf, label]) => (
+                {Object.entries(LABEL).map(([huruf, label]) => (
                     <span key={huruf} className="flex items-center gap-1.5">
                         <span
                             className={cn(
@@ -127,6 +129,7 @@ export function RekapBulananKelas({ kelasId, bulan, bulanIni, rekap }: Props) {
                                     (huruf) => (
                                         <th
                                             key={huruf}
+                                            title={LABEL[huruf]}
                                             className="border-l px-2 py-2 text-center text-xs font-medium"
                                         >
                                             {huruf}
@@ -161,7 +164,7 @@ export function RekapBulananKelas({ kelasId, bulan, bulanIni, rekap }: Props) {
                                                 <button
                                                     type="button"
                                                     disabled={!h.lewat}
-                                                    title={`${b.nama} — ${h.tanggal}`}
+                                                    title={`${b.nama} · ${h.nama} ${h.tgl}: ${huruf ? LABEL[huruf] : h.lewat ? 'tidak ada catatan' : 'belum terjadi'}`}
                                                     onClick={() =>
                                                         bukaTanggal(h.tanggal)
                                                     }
