@@ -289,6 +289,9 @@ class DashboardController extends Controller
         $checkins = Attendance::with(['student.classroom', 'student.parentProfile'])
             ->whereHas('student', fn ($q) => $q->where('school_id', $schoolId))
             ->where('type', AttendanceType::CheckIn)
+            // Izin/sakit yang diajukan untuk hari-hari ke depan sudah punya
+            // baris; tanpa batas ini mereka menyalip scan hari ini.
+            ->where('recorded_at', '<=', SchoolTime::now())
             ->orderByDesc('recorded_at')
             ->limit(10)
             ->get();
@@ -315,6 +318,7 @@ class DashboardController extends Controller
 
         $activities = Attendance::with('student')
             ->whereHas('student', fn ($q) => $q->where('school_id', $schoolId))
+            ->where('recorded_at', '<=', SchoolTime::now())
             ->orderByDesc('recorded_at')
             ->limit(20)
             ->get();

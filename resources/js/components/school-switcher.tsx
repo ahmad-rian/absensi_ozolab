@@ -26,7 +26,9 @@ export function SchoolSwitcher() {
         schools: SchoolItem[];
     };
 
-    if (!schools || !Array.isArray(schools) || schools.length <= 1) return null;
+    if (!schools || !Array.isArray(schools) || schools.length <= 1) {
+return null;
+}
 
     function switchSchool(schoolId: string) {
         setOpen(false);
@@ -40,9 +42,9 @@ export function SchoolSwitcher() {
             <PopoverTrigger asChild>
                 <SidebarMenuButton
                     size="lg"
-                    className="w-full border bg-sidebar-accent/50 data-[state=open]:bg-sidebar-accent"
+                    className="w-full border bg-sidebar-accent/50 data-[state=open]:bg-sidebar-accent group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent"
                 >
-                    <div className="bg-primary/10 text-primary flex size-8 items-center justify-center rounded-lg">
+                    <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg group-data-[collapsible=icon]:size-4 group-data-[collapsible=icon]:bg-transparent">
                         <School className="size-4" />
                     </div>
                     <div className="ml-1 grid flex-1 text-left text-sm leading-tight">

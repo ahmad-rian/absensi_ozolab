@@ -110,3 +110,26 @@ test('grafik tren kehadiran memuat angka hari ini, terlambat ikut hadir', functi
             )
         );
 });
+
+test('aktivitas dashboard tidak menampilkan izin untuk hari ke depan', function () {
+    $user = createAdminUser();
+    $siswa = Student::factory()->create(['school_id' => $user->school_id]);
+    absenMasukHariIni($siswa, AttendanceStatus::Hadir);
+    Attendance::factory()->create([
+        'student_id' => $siswa->id,
+        'attendance_date' => SchoolTime::today()->addDays(4),
+        'type' => AttendanceType::CheckIn,
+        'status' => AttendanceStatus::Sakit,
+        'recorded_at' => SchoolTime::now()->addDays(4),
+    ]);
+
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->reloadOnly('activityFeed,latestCheckins', fn ($reload) => $reload
+                ->has('activityFeed', 1)
+                ->where('activityFeed.0.status', AttendanceStatus::Hadir->value)
+                ->has('latestCheckins', 1)
+            )
+        );
+});
