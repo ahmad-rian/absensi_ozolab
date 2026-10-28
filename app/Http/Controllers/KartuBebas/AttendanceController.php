@@ -9,6 +9,7 @@ use App\Models\CardFormSubmission;
 use App\Models\CardScan;
 use App\Services\CardAttendanceService;
 use App\Services\CardParticipantService;
+use App\Services\DynamicCardFiles;
 use App\Services\RiwayatScan;
 use App\Support\FilterKolomPeserta;
 use App\Support\PesertaShortLink;
@@ -23,7 +24,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -150,20 +150,25 @@ class AttendanceController extends Controller
      * disk `public`, jadi tidak ada unduhan Drive yang bisa membuat permintaan
      * ini kehabisan waktu. PNG disimpan tanpa kompresi ulang — sudah padat.
      */
-    public function downloadCards(CardForm $cardForm): BinaryFileResponse|RedirectResponse
+    public function downloadCards(CardForm $cardForm, DynamicCardFiles $files): BinaryFileResponse|RedirectResponse
     {
-        $disk = Storage::disk('public');
         $path = tempnam(sys_get_temp_dir(), 'kartu-zip-');
         $zip = new ZipArchive;
         $zip->open($path, ZipArchive::OVERWRITE);
         $jumlah = 0;
+        $sementara = [];
 
-        $cardForm->submissions()->where('status', 'completed')->whereNotNull('file_path')->eachById(function (CardFormSubmission $participant) use ($disk, $zip, &$jumlah): void {
-            if (! $disk->exists($participant->file_path)) {
+        $cardForm->submissions()->where('status', 'completed')->whereNotNull('file_path')->eachById(function (CardFormSubmission $participant) use ($files, $zip, &$jumlah, &$sementara): void {
+            // Kartu yang sudah terbit di Drive tidak lagi disimpan lokal.
+            $berkas = $files->localPath($participant);
+            if (! $berkas) {
                 return;
             }
+            if ($berkas['temporary']) {
+                $sementara[] = $berkas['path'];
+            }
             $nama = (Str::slug($this->attendance->participantName($participant)) ?: 'peserta').'-'.substr($participant->id, -6).'.'.pathinfo($participant->file_path, PATHINFO_EXTENSION);
-            $zip->addFile($disk->path($participant->file_path), $nama);
+            $zip->addFile($berkas['path'], $nama);
             $zip->setCompressionName($nama, ZipArchive::CM_STORE);
             $jumlah++;
         });
@@ -171,11 +176,13 @@ class AttendanceController extends Controller
         if ($jumlah === 0) {
             $zip->close();
             @unlink($path);
+            array_map('unlink', $sementara);
             Inertia::flash('toast', ['type' => 'error', 'message' => 'Belum ada kartu yang selesai dibuat untuk layout ini.']);
 
             return back();
         }
         $zip->close();
+        array_map('unlink', $sementara);
 
         return response()->download($path, 'kartu-'.Str::slug($cardForm->name).'-'.SchoolTime::todayString().'.zip', ['Content-Type' => 'application/zip'])->deleteFileAfterSend();
     }

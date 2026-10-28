@@ -25,7 +25,7 @@ class CardGeneratorService
      *
      * @return array{path: string, html: string}
      */
-    public function generateCard(Student $student, SchoolCardLayout $layout, ?School $school = null): array
+    public function generateCard(Student $student, SchoolCardLayout $layout, ?School $school = null, ?string $outputPath = null): array
     {
         $school = $school ?? $student->school;
         $student->loadMissing(['classroom']);
@@ -58,7 +58,7 @@ class CardGeneratorService
         // ini dulu memakai `??` sementara jalur foto memakai `?:`, jadi NIS
         // bernilai string kosong menghasilkan `{slug}--osis.png` di sebelah
         // `{slug}-{ulid}-foto.png` dan tidak ada jalur baca yang menduganya.
-        $filename = sprintf(
+        $filename = $outputPath ?? sprintf(
             'cards/%s/%s%s.'.GambarCetak::EKSTENSI,
             $school->id,
             StudentDriveNaming::prefix($student),

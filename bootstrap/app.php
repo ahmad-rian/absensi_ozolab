@@ -173,4 +173,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Halaman dan ZIP album sekali unduh; dibuat ulang tiap kali diminta.
         $schedule->command('albums:prune')->dailyAt('02:40');
+
+        // Salinan lokal kartu & lembar pas foto yang versi terbarunya sudah di
+        // Drive. Dulu hanya manual, sehingga disk produksi menumpuk belasan GB.
+        $schedule->command('berkas:pindah-ke-drive --latest-only --jalankan')
+            ->dailyAt('03:00')
+            ->withoutOverlapping(120);
     })->create();

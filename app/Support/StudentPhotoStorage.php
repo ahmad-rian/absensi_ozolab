@@ -60,6 +60,17 @@ class StudentPhotoStorage
     }
 
     /**
+     * Buang satu foto beserta thumbnail turunannya.
+     *
+     * Ketiga jalur ganti foto dulu hanya membuang foto aslinya, sehingga
+     * `-kecil.jpg` milik foto lama tertinggal selamanya di disk.
+     */
+    public static function deleteWithThumb(string $photoPath): void
+    {
+        Storage::disk('public')->delete([$photoPath, self::thumbPath($photoPath)]);
+    }
+
+    /**
      * URL thumbnail kalau berkasnya ada, kalau tidak URL foto aslinya.
      *
      * Jatuh ke asli, bukan null: backfill berjalan bertahap di server yang

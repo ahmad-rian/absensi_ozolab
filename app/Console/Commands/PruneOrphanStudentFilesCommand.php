@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\CardGenerationLog;
+use App\Models\PhotoSheetBatch;
 use App\Models\Student;
+use App\Support\StudentPhotoStorage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
@@ -37,10 +39,23 @@ class PruneOrphanStudentFilesCommand extends Command
         // Semua jalur yang MASIH dipakai. withoutGlobalScopes + withTrashed
         // disengaja: siswa yang di-soft-delete masih memegang berkasnya sampai
         // dibuang lewat jalur penghapusan siswa, dan perintah ini bukan jalur itu.
-        $dipakai = Student::withoutGlobalScopes()
+        $foto = Student::withoutGlobalScopes()
             ->withTrashed()
             ->whereNotNull('photo_path')
-            ->pluck('photo_path')
+            ->pluck('photo_path');
+
+        $dipakai = $foto
+            // Thumbnail layar gerbang tidak punya kolom sendiri — ia turunan
+            // `photo_path`. Tanpa ini setiap `-kecil.jpg` terbaca yatim dan
+            // --force menghapus semua thumbnail gerbang yang masih dipakai.
+            ->merge($foto->map(fn (string $jalur) => StudentPhotoStorage::thumbPath($jalur)))
+            // PDF batch lembar foto dibuang `photo-sheets:prune` sesuai masa
+            // simpannya; perintah ini tidak boleh mendahuluinya.
+            ->merge(
+                PhotoSheetBatch::withoutGlobalScope('school')
+                    ->whereNotNull('file_path')
+                    ->pluck('file_path')
+            )
             ->merge(
                 CardGenerationLog::withoutGlobalScope('school')
                     ->whereNotNull('file_path')

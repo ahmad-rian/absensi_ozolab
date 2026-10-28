@@ -15,7 +15,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Throwable;
@@ -186,7 +185,7 @@ class StudentDrivePickerController extends Controller
         // Nama berkas lokal memuat 16 karakter acak, jadi yang lama tidak
         // tertimpa — ia tertinggal selamanya kalau tidak dibuang di sini.
         if ($fotoLama && $fotoLama !== $jalurBaru) {
-            Storage::disk('public')->delete($fotoLama);
+            StudentPhotoStorage::deleteWithThumb($fotoLama);
         }
 
         // Hasil pencarian otomatis yang tersimpan di cache menunjuk berkas

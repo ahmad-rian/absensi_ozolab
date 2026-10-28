@@ -7,6 +7,7 @@ use App\Models\CardFormSubmission;
 use App\Models\Program;
 use App\Models\SchoolFrame;
 use App\Services\CardAttendanceService;
+use App\Services\DynamicCardFiles;
 use App\Support\SchoolTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -134,9 +135,9 @@ class KartuController extends Controller
         return to_route('penyelenggara.kartu.edit', $program);
     }
 
-    public function zip(Program $program, CardAttendanceService $attendance): BinaryFileResponse|RedirectResponse
+    public function zip(Program $program, CardAttendanceService $attendance, DynamicCardFiles $files): BinaryFileResponse|RedirectResponse
     {
-        $disk = Storage::disk('public');
+        $sementara = [];
         $path = tempnam(sys_get_temp_dir(), 'kartu-zip-');
         $zip = new ZipArchive;
         $zip->open($path, ZipArchive::OVERWRITE);
@@ -146,12 +147,16 @@ class KartuController extends Controller
             ->whereNull('archived_at')
             ->where('status', 'completed')
             ->whereNotNull('file_path')
-            ->eachById(function (CardFormSubmission $peserta) use ($disk, $zip, $attendance, &$jumlah): void {
-                if (! $disk->exists($peserta->file_path)) {
+            ->eachById(function (CardFormSubmission $peserta) use ($files, $zip, $attendance, &$jumlah, &$sementara): void {
+                $berkas = $files->localPath($peserta);
+                if (! $berkas) {
                     return;
                 }
+                if ($berkas['temporary']) {
+                    $sementara[] = $berkas['path'];
+                }
                 $nama = (Str::slug($attendance->participantName($peserta)) ?: 'peserta').'-'.substr($peserta->id, -6).'.'.pathinfo($peserta->file_path, PATHINFO_EXTENSION);
-                $zip->addFile($disk->path($peserta->file_path), $nama);
+                $zip->addFile($berkas['path'], $nama);
                 $zip->setCompressionName($nama, ZipArchive::CM_STORE);
                 $jumlah++;
             });
@@ -159,11 +164,15 @@ class KartuController extends Controller
         if ($jumlah === 0) {
             $zip->close();
             @unlink($path);
+            array_map('unlink', $sementara);
             Inertia::flash('toast', ['type' => 'error', 'message' => 'Belum ada kartu yang selesai dibuat di program ini.']);
 
             return back();
         }
         $zip->close();
+        // Unduhan Drive sementara baru boleh dibuang setelah ZIP ditutup:
+        // ZipArchive membaca berkasnya saat close(), bukan saat addFile().
+        array_map('unlink', $sementara);
 
         return response()->download($path, 'kartu-'.Str::slug($program->name).'-'.SchoolTime::todayString().'.zip', ['Content-Type' => 'application/zip'])->deleteFileAfterSend();
     }

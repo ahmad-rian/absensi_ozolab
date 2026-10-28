@@ -75,7 +75,11 @@ class CardFormController extends Controller
         $form = CardForm::where('token', $token)->firstOrFail();
         abort_unless($submission->card_form_id === $form->id, 404);
 
-        $cardUrl = $submission->file_path ? Storage::disk('public')->url($submission->file_path) : $submission->drive_url;
+        // Salinan lokal dibuang setelah kartu terbit di Drive, jadi pakai URL
+        // lokal hanya selama berkasnya masih ada.
+        $cardUrl = $submission->file_path && Storage::disk('public')->exists($submission->file_path)
+            ? Storage::disk('public')->url($submission->file_path)
+            : $submission->drive_url;
 
         return response()->json([
             'status' => $submission->status,

@@ -9,12 +9,14 @@ use App\Models\SchoolCardLayout;
 use App\Models\Student;
 use App\Services\Berkas\BerkasKeluaran;
 use App\Services\CardGeneratorService;
+use App\Support\GambarCetak;
 use App\Support\SchoolTime;
 use Carbon\CarbonImmutable;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -133,8 +135,16 @@ class CardGenerationController extends Controller
         $layout = SchoolCardLayout::forSchool()->findOrFail($request->layout_id);
         $student = Student::forSchool()->with('classroom')->findOrFail($request->student_id);
 
-        $service = new CardGeneratorService;
-        $result = $service->generateCard($student, $layout);
+        $service = app(CardGeneratorService::class);
+        // Pratinjau tidak boleh menulis ke berkas kartu yang asli: kartu yang
+        // sudah dipindah ke Drive muncul lagi di disk dan ukurannya tidak lagi
+        // sama dengan Drive, sehingga tidak pernah dibersihkan. `temp/` di disk
+        // public dibuang `temp:clean` tiap jam.
+        $result = $service->generateCard(
+            $student,
+            $layout,
+            outputPath: 'temp/preview-'.Str::ulid().'.'.GambarCetak::EKSTENSI,
+        );
 
         return Inertia::render('admin/card-generation/preview', [
             'html' => $result['html'],

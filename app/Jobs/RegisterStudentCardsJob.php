@@ -187,7 +187,7 @@ class RegisterStudentCardsJob implements ShouldQueue
         $student->update(['photo_path' => $storagePath]);
 
         if ($fotoLama && $fotoLama !== $storagePath) {
-            Storage::disk('public')->delete($fotoLama);
+            StudentPhotoStorage::deleteWithThumb($fotoLama);
         }
     }
 

@@ -109,7 +109,7 @@ test('retryable render failures preserve output and final failure sets actionabl
     Storage::disk('public')->assertExists('old.png');
 });
 
-test('successful replacement retains new local output and removes only old generated output', function () {
+test('successful replacement drops the local copy once on Drive and removes only old generated output', function () {
     $record = participantRecord($this->layout, ['status' => 'processing', 'file_path' => 'old.png', 'drive_file_id' => 'old-drive', 'generation_token' => 'token']);
     Storage::disk('public')->put('old.png', 'old');
     Storage::disk('public')->put('new.png', 'new');
@@ -123,8 +123,10 @@ test('successful replacement retains new local output and removes only old gener
     $job->handle($generator);
     $job->handle($generator);
     expect($record->fresh()->status)->toBe('completed')->and($record->fresh()->file_path)->toBe('new.png')->and($record->fresh()->drive_file_id)->toBe('new-drive');
-    Storage::disk('public')->assertExists(['new.png', 'photo.png']);
-    Storage::disk('public')->assertMissing('old.png');
+    // Hasil kartu disimpan di Drive; salinan lokal kartu baru dibuang,
+    // foto peserta tetap.
+    Storage::disk('public')->assertExists('photo.png');
+    Storage::disk('public')->assertMissing(['old.png', 'new.png']);
 });
 
 test('stale job cannot render or mark a newer generation failed', function () {

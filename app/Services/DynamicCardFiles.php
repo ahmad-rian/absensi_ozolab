@@ -80,6 +80,43 @@ class DynamicCardFiles
         }
     }
 
+    /**
+     * Berkas kartu siap dibaca dari disk: salinan lokal kalau masih ada,
+     * kalau tidak diunduh dari Drive ke berkas sementara.
+     *
+     * Dipakai ZIP massal. Kartu yang sudah terbit di Drive tidak lagi
+     * disimpan lokal, jadi ZIP yang hanya membaca disk akan kosong.
+     *
+     * @return array{path: string, temporary: bool}|null
+     */
+    public function localPath(CardFormSubmission $participant): ?array
+    {
+        $disk = Storage::disk('public');
+        if ($participant->file_path && $disk->exists($participant->file_path)) {
+            return ['path' => $disk->path($participant->file_path), 'temporary' => false];
+        }
+        if (! $participant->drive_file_id) {
+            return null;
+        }
+        $path = tempnam(sys_get_temp_dir(), 'kartu-zip-item-');
+        try {
+            $drive = $this->drive($participant->cardForm);
+            if (! $drive) {
+                @unlink($path);
+
+                return null;
+            }
+            $drive->downloadFile($participant->drive_file_id, $path);
+        } catch (\Throwable $exception) {
+            @unlink($path);
+            Log::warning('Dynamic card Drive download for ZIP failed', ['submission_id' => $participant->id, 'error' => $exception->getMessage()]);
+
+            return null;
+        }
+
+        return ['path' => $path, 'temporary' => true];
+    }
+
     public function response(CardFormSubmission $participant, bool $download): BinaryFileResponse
     {
         $temporary = false;

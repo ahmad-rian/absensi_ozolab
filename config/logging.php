@@ -54,7 +54,9 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            // `daily` dengan masa simpan, bukan `single`: satu berkas yang tidak
+            // pernah dipangkas tumbuh tanpa batas di server bersama.
+            'channels' => explode(',', (string) env('LOG_STACK', 'daily')),
             'ignore_exceptions' => false,
         ],
 

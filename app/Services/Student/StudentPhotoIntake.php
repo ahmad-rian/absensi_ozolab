@@ -7,7 +7,6 @@ use App\Models\CardGenerationLog;
 use App\Models\Student;
 use App\Services\PhotoCropService;
 use App\Support\StudentPhotoStorage;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -61,7 +60,7 @@ class StudentPhotoIntake
 
         // Lihat catatan di kepala kelas: tanpa baris ini foto lama menumpuk.
         if ($fotoLama && $fotoLama !== $jalurBaru) {
-            Storage::disk('public')->delete($fotoLama);
+            StudentPhotoStorage::deleteWithThumb($fotoLama);
         }
 
         if ($siswa->school?->driveConfig?->is_active) {

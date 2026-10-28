@@ -81,6 +81,12 @@ class GenerateDynamicCardJob implements ShouldQueue
         if ($previous['drive'] !== $drive['drive_file_id']) {
             $files->deleteDrive($submission->cardForm, $previous['drive']);
         }
+        // Hasilnya disimpan di Drive; salinan lokal hanya memakan disk.
+        // `file_path` tetap diisi — jenis berkas dan nama unduhan dibaca
+        // darinya, dan semua jalur baca jatuh ke Drive bila berkasnya hilang.
+        if ($drive['drive_file_id']) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     public function failed(\Throwable $e): void
