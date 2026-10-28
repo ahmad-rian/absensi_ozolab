@@ -50,11 +50,11 @@ test('scan dalam jendela datang mencatat Hadir, setelah batas mencatat Terlambat
     scanRingan($program, app(CardAttendanceService::class)->qrToken($lain), '08:40')->assertOk()->assertJsonPath('student.status', 'TERLAMBAT');
 });
 
-test('scan ulang dalam jendela yang sama tidak mengubah apa pun', function () {
+test('scan ulang dalam jendela datang hanya masuk riwayat, jam datang tetap', function () {
     [$program, $peserta, $token] = programScan();
 
     scanRingan($program, $token, '08:10')->assertOk();
-    scanRingan($program, $token, '08:30')->assertOk()->assertJsonPath('message', fn ($m) => str_contains($m, 'Sudah tercatat'));
+    scanRingan($program, $token, '08:30')->assertOk()->assertJsonPath('message', fn ($m) => str_contains($m, 'Scan ke-2'));
 
     $kehadiran = Kehadiran::acrossPenyelenggara()->where('card_form_submission_id', $peserta->id)->get();
     expect($kehadiran)->toHaveCount(1)->and($kehadiran->first()->datang_at->format('H:i'))->toBe('08:10');

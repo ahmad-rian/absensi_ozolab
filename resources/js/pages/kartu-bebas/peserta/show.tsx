@@ -11,6 +11,8 @@ type BarisKehadiran = {
     status: string;
     masuk: string | null;
     pulang: string | null;
+    /** Jumlah scan hari itu (semua scan tercatat, tidak hanya masuk/pulang). */
+    scan: number;
     catatan: string | null;
 };
 
@@ -213,6 +215,9 @@ export default function ParticipantShow({
                                             <th className="py-2 pr-3 font-medium">
                                                 Pulang
                                             </th>
+                                            <th className="py-2 pr-3 font-medium">
+                                                Scan
+                                            </th>
                                             <th className="py-2 font-medium">
                                                 Catatan
                                             </th>
@@ -246,6 +251,11 @@ export default function ParticipantShow({
                                                 </td>
                                                 <td className="py-2 pr-3 tabular-nums">
                                                     {k.pulang ?? '—'}
+                                                </td>
+                                                <td className="py-2 pr-3 text-muted-foreground tabular-nums">
+                                                    {k.scan > 0
+                                                        ? `${k.scan}×`
+                                                        : '—'}
                                                 </td>
                                                 <td className="py-2 text-muted-foreground">
                                                     {k.catatan ?? '—'}

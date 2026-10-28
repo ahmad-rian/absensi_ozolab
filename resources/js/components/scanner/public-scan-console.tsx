@@ -96,7 +96,7 @@ type ScanResult = {
     success: boolean;
     message: string;
     student: ScanStudentResult | null;
-    /** Scan ulang yang tidak mengubah apa pun (jam sudah tercatat). */
+    /** Scan dobel dalam jeda singkat yang diabaikan server (baru saja tercatat). */
     duplikat?: boolean;
     /** Riwayat hari ini dari server, dikirim ulang setiap scan berhasil. */
     riwayat?: RiwayatServer[];

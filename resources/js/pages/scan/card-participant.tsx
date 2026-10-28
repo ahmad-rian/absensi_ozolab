@@ -48,7 +48,7 @@ export default function CardParticipantScanner({
                 scanUrl={scan.url({ token: layout.token, mode })}
                 riwayatUrl={riwayat.url({ token: layout.token })}
                 tagline={`Absensi peserta · ${mode === 'masuk' ? 'Masuk / Hadir' : 'Pulang'}`}
-                hint="Gunakan QR absensi peserta. Scan berulang dalam mode yang sama tidak mengubah jam yang sudah tercatat."
+                hint="Gunakan QR absensi peserta. Boleh scan berkali-kali: semua scan masuk riwayat, jam masuk tetap scan pertama, jam pulang ikut scan terakhir."
             />
         </>
     );

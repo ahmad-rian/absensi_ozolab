@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CardAttendance;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
+use App\Models\CardScan;
 use App\Services\CardParticipantService;
 use App\Services\DynamicCardFiles;
 use App\Support\FilterKolomPeserta;
@@ -71,18 +72,32 @@ class ParticipantController extends Controller
             'participant' => $this->payload($submission),
             // Riwayat kehadiran dari card_attendances — tabel yang sama dengan
             // yang ditulis scan, jadi selalu sinkron dengan halaman scan.
-            'kehadiran' => Inertia::defer(fn () => CardAttendance::query()
-                ->where('card_form_submission_id', $submission->id)
-                ->orderByDesc('attendance_date')
-                ->limit(90)
-                ->get()
-                ->map(fn (CardAttendance $a) => [
-                    'tanggal' => substr((string) $a->getRawOriginal('attendance_date'), 0, 10),
-                    'status' => $a->status,
-                    'masuk' => $a->check_in ? substr($a->check_in, 0, 5) : null,
-                    'pulang' => $a->check_out ? substr($a->check_out, 0, 5) : null,
-                    'catatan' => $a->note,
-                ])->values()),
+            'kehadiran' => Inertia::defer(function () use ($submission) {
+                // Jumlah scan per hari dari `card_scans`, satu query ber-indeks.
+                $scanPerHari = CardScan::query()
+                    ->where('card_form_submission_id', $submission->id)
+                    ->selectRaw('DATE(scanned_at) as tanggal, COUNT(*) as jumlah')
+                    ->groupByRaw('DATE(scanned_at)')
+                    ->pluck('jumlah', 'tanggal');
+
+                return CardAttendance::query()
+                    ->where('card_form_submission_id', $submission->id)
+                    ->orderByDesc('attendance_date')
+                    ->limit(90)
+                    ->get()
+                    ->map(function (CardAttendance $a) use ($scanPerHari): array {
+                        $tanggal = substr((string) $a->getRawOriginal('attendance_date'), 0, 10);
+
+                        return [
+                            'tanggal' => $tanggal,
+                            'status' => $a->status,
+                            'masuk' => $a->check_in ? substr($a->check_in, 0, 5) : null,
+                            'pulang' => $a->check_out ? substr($a->check_out, 0, 5) : null,
+                            'scan' => (int) ($scanPerHari[$tanggal] ?? 0),
+                            'catatan' => $a->note,
+                        ];
+                    })->values();
+            }),
         ]);
     }
 

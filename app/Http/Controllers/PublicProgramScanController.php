@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CardScan;
+use App\Models\Kehadiran;
 use App\Models\Program;
+use App\Models\Sesi;
 use App\Services\CardAttendanceService;
 use App\Services\Penyelenggara\KehadiranRecorder;
 use App\Services\RiwayatScan;
@@ -108,6 +111,7 @@ class PublicProgramScanController extends Controller
         }
 
         $kehadiran = $hasil['kehadiran'];
+        // Scan di antara jendela (mode scan) tampil sebagai "Datang": jam datangnya tetap.
         $pulang = $hasil['mode'] === KehadiranRecorder::MODE_PULANG;
         $label = $pulang ? 'Pulang' : 'Datang';
         $jam = ($pulang ? $kehadiran->pulang_at : $kehadiran->datang_at)?->format('H:i');
@@ -116,7 +120,7 @@ class PublicProgramScanController extends Controller
             'success' => true,
             'duplikat' => $hasil['duplikat'],
             'riwayat' => app(RiwayatScan::class)->program($program),
-            'message' => $hasil['duplikat'] ? "Sudah tercatat {$jam} · {$hasil['sesi']->name}." : "{$label} tercatat · {$hasil['sesi']->name}.",
+            'message' => $this->pesanScan($hasil, $label),
             'student' => [
                 'full_name' => $this->kartu->participantName($hasil['peserta']),
                 'nis' => null,
@@ -129,5 +133,26 @@ class PublicProgramScanController extends Controller
                 'time' => $jam,
             ],
         ]);
+    }
+
+    /**
+     * Pesan layar petugas. Scan berulang selalu diterima; hanya scan dobel
+     * dalam jeda singkat yang disebut "baru saja tercatat".
+     *
+     * @param  array{duplikat: bool, jenis: ?string, urutan: int, sesi: Sesi, kehadiran: Kehadiran}  $hasil
+     */
+    private function pesanScan(array $hasil, string $label): string
+    {
+        $sesi = $hasil['sesi']->name;
+        $datang = $hasil['kehadiran']->datang_at?->format('H:i');
+        $pulang = $hasil['kehadiran']->pulang_at?->format('H:i');
+
+        return match (true) {
+            $hasil['duplikat'] => "Baru saja tercatat · {$sesi}. Tunggu sebentar sebelum scan lagi.",
+            $hasil['jenis'] === CardScan::JENIS_DATANG => "Datang tercatat {$datang} · {$sesi}.",
+            $hasil['jenis'] === CardScan::JENIS_PULANG && $hasil['urutan'] > 2 => "Pulang diperbarui {$pulang} · scan ke-{$hasil['urutan']} · {$sesi}.",
+            $hasil['jenis'] === CardScan::JENIS_PULANG => "Pulang tercatat {$pulang} · {$sesi}.",
+            default => "Scan ke-{$hasil['urutan']} tercatat · datang {$datang} · {$sesi}.",
+        };
     }
 }

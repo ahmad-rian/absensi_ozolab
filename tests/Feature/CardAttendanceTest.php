@@ -42,14 +42,16 @@ test('public scanner opens without login and separate token never exposes report
     $this->getJson(route('kartu-bebas.laporan.index'))->assertUnauthorized();
 });
 
-test('scan masuk is idempotent and pulang requires explicit mode', function () {
+test('scan masuk berulang hanya dicatat di riwayat, pulang selalu jam scan terakhir', function () {
     $this->postJson(cardScanUrl($this->form), ['token' => $this->qr])->assertOk()->assertJsonPath('student.type', 'CHECK_IN')->assertJsonPath('student.time', '08:00:00');
     Carbon::setTestNow(Carbon::parse('2026-09-29 09:00:00', 'Asia/Jakarta'));
     $this->postJson(cardScanUrl($this->form), ['token' => $this->qr])->assertOk()->assertJsonPath('student.time', '08:00:00');
     expect(CardAttendance::count())->toBe(1)->and(CardAttendance::sole()->check_out)->toBeNull();
-    $this->postJson(cardScanUrl($this->form, 'pulang'), ['token' => $this->qr])->assertOk()->assertJsonPath('student.type', 'CHECK_OUT')->assertJsonPath('student.time', '09:00:00');
+    Carbon::setTestNow(Carbon::parse('2026-09-29 09:05:00', 'Asia/Jakarta'));
+    $this->postJson(cardScanUrl($this->form, 'pulang'), ['token' => $this->qr])->assertOk()->assertJsonPath('student.type', 'CHECK_OUT')->assertJsonPath('student.time', '09:05:00');
     Carbon::setTestNow(Carbon::parse('2026-09-29 10:00:00', 'Asia/Jakarta'));
-    $this->postJson(cardScanUrl($this->form, 'pulang'), ['token' => $this->qr])->assertOk()->assertJsonPath('student.time', '09:00:00');
+    $this->postJson(cardScanUrl($this->form, 'pulang'), ['token' => $this->qr])->assertOk()->assertJsonPath('student.time', '10:00:00');
+    expect(CardAttendance::sole()->check_in)->toBe('08:00:00');
 });
 
 test('pulang before masuk and invalid scan modes cannot create records', function () {
@@ -134,6 +136,7 @@ test('non super admin cannot manage attendance or download reports', function ()
 
 test('barcode gun yang mengubah huruf besar kecil tetap terbaca', function () {
     $this->postJson(cardScanUrl($this->form), ['token' => strtoupper($this->qr)])->assertOk();
+    Carbon::setTestNow(Carbon::parse('2026-09-29 08:05:00', 'Asia/Jakarta'));
     $this->postJson(cardScanUrl($this->form, 'pulang'), ['token' => ' '.strtolower($this->qr)."\n"])->assertOk();
     expect(CardAttendance::sole()->check_out)->not->toBeNull();
 });
@@ -266,7 +269,7 @@ test('halaman ringan peserta lewat alamat pendek, satu link, tanpa token penuh d
     $this->get('/p/'.substr($kode, 0, 6))->assertNotFound();
 });
 
-test('satu link ringan: scan pertama masuk, ulangan dalam 30 menit tetap masuk, sesudahnya pulang', function () {
+test('satu link ringan: scan pertama masuk, ulangan dalam 30 menit hanya riwayat, sesudahnya pulang diperbarui', function () {
     $kode = substr($this->form->scanner_token, 0, 8);
 
     $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertOk()
@@ -274,7 +277,7 @@ test('satu link ringan: scan pertama masuk, ulangan dalam 30 menit tetap masuk, 
 
     Carbon::setTestNow(Carbon::parse('2026-09-29 08:10:00', 'Asia/Jakarta'));
     $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertOk()
-        ->assertJsonPath('student.type', 'CHECK_IN')->assertJsonPath('message', 'Scan Masuk sudah tercatat hari ini.');
+        ->assertJsonPath('student.type', 'CHECK_IN')->assertJsonPath('message', 'Scan ke-2 hari ini tercatat · masuk 08:00.');
     expect(CardAttendance::sole()->check_out)->toBeNull();
 
     Carbon::setTestNow(Carbon::parse('2026-09-29 11:30:00', 'Asia/Jakarta'));
@@ -283,7 +286,7 @@ test('satu link ringan: scan pertama masuk, ulangan dalam 30 menit tetap masuk, 
 
     Carbon::setTestNow(Carbon::parse('2026-09-29 12:00:00', 'Asia/Jakarta'));
     $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertOk()
-        ->assertJsonPath('message', 'Scan Pulang sudah tercatat hari ini.')->assertJsonPath('student.time', '11:30:00');
+        ->assertJsonPath('message', 'Pulang diperbarui 12:00 · scan ke-4 hari ini.')->assertJsonPath('student.time', '12:00:00');
 
     $this->form->update(['is_active' => false]);
     $this->postJson('/p/'.$kode, ['token' => $this->qr])->assertNotFound()->assertJsonPath('success', false);

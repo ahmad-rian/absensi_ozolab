@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CardAttendance;
 use App\Models\CardForm;
 use App\Models\CardFormSubmission;
+use App\Models\CardScan;
 use App\Services\CardAttendanceService;
 use App\Services\CardParticipantService;
 use App\Services\RiwayatScan;
@@ -209,7 +210,7 @@ class AttendanceController extends Controller
             'program' => ['name' => $form->name, 'aktif' => (bool) $form->is_active],
             'scanUrl' => route('public.card-scanner.short.scan', $kode, false),
             'riwayatUrl' => route('public.card-scanner.short.riwayat', $kode, false),
-            'tagline' => 'Absensi peserta · scan pertama masuk, berikutnya pulang',
+            'tagline' => 'Absensi peserta · scan pertama masuk, scan terakhir pulang',
             'pesanMati' => 'Layout ini sedang dinonaktifkan.',
         ]);
     }
@@ -247,7 +248,7 @@ class AttendanceController extends Controller
             'pesanMati' => 'Layout ini sedang dinonaktifkan.',
             'featureEnabled' => true,
             'logoUrl' => null,
-            'petunjuk' => 'Tempelkan kartu atau tembak QR Code peserta — scan pertama masuk, berikutnya pulang',
+            'petunjuk' => 'Tempelkan kartu atau tembak QR Code peserta — boleh scan berkali-kali: scan pertama masuk, scan terakhir pulang',
             'scanUrl' => route('public.card-scanner.short.scan', $kode),
             'riwayatUrl' => route('public.card-scanner.short.riwayat', $kode),
             'kameraUrl' => route('public.card-scanner.short.kamera', $kode),
@@ -279,9 +280,10 @@ class AttendanceController extends Controller
         // Mode yang benar-benar dipakai: link ringan menyerahkannya ke layanan.
         $mode = $result['mode'];
         $label = $mode === 'pulang' ? 'Pulang' : 'Masuk';
+        $jam = substr((string) ($mode === 'pulang' ? $record->check_out : $record->check_in), 0, 5);
 
         return response()->json([
-            'success' => true, 'message' => $result['duplicate'] ? 'Scan '.$label.' sudah tercatat hari ini.' : 'Absensi '.$label.' tercatat.',
+            'success' => true, 'message' => $this->pesanScan($result, $label, $jam),
             'duplikat' => $result['duplicate'],
             // Riwayat dari database, supaya semua perangkat melihat daftar yang sama.
             'riwayat' => app(RiwayatScan::class)->hajiLama($form),
@@ -292,6 +294,23 @@ class AttendanceController extends Controller
                 'time' => $mode === 'pulang' ? $record->check_out : $record->check_in,
             ],
         ]);
+    }
+
+    /**
+     * Pesan layar petugas. Scan berulang selalu diterima; hanya scan dobel
+     * dalam jeda singkat yang disebut "baru saja tercatat".
+     *
+     * @param  array{duplicate: bool, jenis: ?string, urutan: int}  $result
+     */
+    private function pesanScan(array $result, string $label, string $jam): string
+    {
+        return match (true) {
+            $result['duplicate'] => 'Baru saja tercatat — tunggu sebentar sebelum scan lagi.',
+            $result['jenis'] === CardScan::JENIS_MASUK => "Masuk tercatat {$jam}.",
+            $result['jenis'] === CardScan::JENIS_PULANG && $result['urutan'] > 2 => "Pulang diperbarui {$jam} · scan ke-{$result['urutan']} hari ini.",
+            $result['jenis'] === CardScan::JENIS_PULANG => "Pulang tercatat {$jam}.",
+            default => "Scan ke-{$result['urutan']} hari ini tercatat · masuk {$jam}.",
+        };
     }
 
     public function report(Request $request): Response
