@@ -24,12 +24,13 @@ class MonitorSekolah
     /** Status yang menandakan siswa benar-benar datang. */
     private const STATUS_DATANG = [AttendanceStatus::Hadir->value, AttendanceStatus::Terlambat->value];
 
-    /** Urutan keadaan pada peringkat; yang paling butuh perhatian di atas. */
-    private const URUTAN = ['tanpa_absen' => 0, 'belum_mulai' => 1, 'berjalan' => 2, 'libur' => 3];
+    /** Rentang hitungan seberapa sering sekolah absen. */
+    public const RENTANG_HARI = 30;
 
     /**
      * @return array{
      *     tanggal: string,
+     *     rentang_hari: int,
      *     sekolah: list<array<string, mixed>>,
      *     ringkasan: array{total: int, tanpa_absen: int, berjalan: int, libur: int}
      * }
@@ -67,6 +68,18 @@ class MonitorSekolah
             ->groupBy('school_id')
             ->pluck('tanggal', 'school_id');
 
+        // Berapa hari (dalam rentang) sekolah punya absen masuk — dasar urutan:
+        // paling jarang di atas, paling sering di bawah.
+        $hariAktif = Attendance::withoutGlobalScopes()
+            ->whereIn('school_id', $ids)
+            ->where('type', AttendanceType::CheckIn->value)
+            ->whereIn('status', self::STATUS_DATANG)
+            ->whereDate('attendance_date', '>', $tanggal->copy()->subDays(self::RENTANG_HARI)->toDateString())
+            ->whereDate('attendance_date', '<=', $tgl)
+            ->selectRaw('school_id, count(distinct attendance_date) as hari')
+            ->groupBy('school_id')
+            ->pluck('hari', 'school_id');
+
         $jadwal = AttendanceSchedule::withoutGlobalScopes()
             ->whereIn('school_id', $ids)
             ->where('day_of_week', $tanggal->dayOfWeekIso)
@@ -80,13 +93,15 @@ class MonitorSekolah
             (int) ($siswa[$s->id] ?? 0),
             $masuk->get($s->id, collect()),
             $terakhir[$s->id] ?? null,
+            (int) ($hariAktif[$s->id] ?? 0),
             $jadwal->get($s->id, collect()),
         ));
 
         $peringkat = $baris
             ->sortBy([
-                fn (array $a, array $b) => self::URUTAN[$a['keadaan']] <=> self::URUTAN[$b['keadaan']],
-                fn (array $a, array $b) => $a['persen'] <=> $b['persen'],
+                fn (array $a, array $b) => $a['hari_aktif'] <=> $b['hari_aktif'],
+                // Sama jarangnya: yang paling lama tidak absen (atau belum pernah) di atas.
+                fn (array $a, array $b) => ($a['absen_terakhir'] ?? '') <=> ($b['absen_terakhir'] ?? ''),
                 fn (array $a, array $b) => strcasecmp($a['nama'], $b['nama']),
             ])
             ->values()
@@ -94,6 +109,7 @@ class MonitorSekolah
 
         return [
             'tanggal' => $tgl,
+            'rentang_hari' => self::RENTANG_HARI,
             'sekolah' => $peringkat->all(),
             'ringkasan' => [
                 'total' => $peringkat->count(),
@@ -109,7 +125,7 @@ class MonitorSekolah
      * @param  Collection<int, AttendanceSchedule>  $jadwal
      * @return array<string, mixed>
      */
-    private function baris(School $s, Carbon $tanggal, int $siswa, Collection $masuk, ?string $terakhir, Collection $jadwal): array
+    private function baris(School $s, Carbon $tanggal, int $siswa, Collection $masuk, ?string $terakhir, int $hariAktif, Collection $jadwal): array
     {
         $hitung = fn (array $status): int => (int) $masuk->filter(fn ($r) => in_array($this->nilaiStatus($r->status), $status, true))->sum('jumlah');
         $datang = $hitung(self::STATUS_DATANG);
@@ -125,6 +141,7 @@ class MonitorSekolah
             'persen' => $siswa > 0 ? round($datang / $siswa * 100, 1) : 0.0,
             'scan_terakhir' => $scanTerakhir ? Carbon::parse($scanTerakhir)->format('H:i') : null,
             'absen_terakhir' => $terakhir ? Carbon::parse($terakhir)->toDateString() : null,
+            'hari_aktif' => $hariAktif,
             'keadaan' => $this->keadaan($tanggal, (int) $masuk->sum('jumlah'), $jadwal),
         ];
     }

@@ -46,7 +46,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * @return array{totalStudents: int, presentToday: int, lateToday: int, attendanceRate: float, totalStudentsDelta: float, presentTodayDelta: float}
+     * @return array{totalStudents: int, presentToday: int, lateToday: int, attendanceRate: float, kehadiran: array{hari: float, minggu: float, bulan: float}, totalStudentsDelta: float, presentTodayDelta: float}
      */
     private function getStatCards(Carbon $today, int $totalActiveStudents): array
     {
@@ -75,19 +75,11 @@ class DashboardController extends Controller
             ->whereIn('status', self::STATUS_DATANG)
             ->count();
 
-        // Attendance rate for the last 30 days
-        $thirtyDaysAgo = $today->copy()->subDays(30);
-        $attendanceRateData = Attendance::whereHas('student', fn ($q) => $q->where('school_id', $schoolId))
-            ->where('type', AttendanceType::CheckIn)
-            ->where('attendance_date', '>=', $thirtyDaysAgo)
-            ->where('attendance_date', '<=', $today)
-            ->selectRaw('COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as hadir', self::STATUS_DATANG)
-            ->selectRaw('COUNT(*) as total')
-            ->first();
-
-        $attendanceRate = $attendanceRateData->total > 0
-            ? round(($attendanceRateData->hadir / $attendanceRateData->total) * 100, 1)
-            : 0;
+        $kehadiran = [
+            'hari' => $this->persenKehadiran($today, $today, $totalActiveStudents),
+            'minggu' => $this->persenKehadiran($today->copy()->subDays(6), $today, $totalActiveStudents),
+            'bulan' => $this->persenKehadiran($today->copy()->subDays(29), $today, $totalActiveStudents),
+        ];
 
         $presentTodayDelta = $presentYesterday > 0
             ? round((($presentToday - $presentYesterday) / $presentYesterday) * 100, 1)
@@ -97,10 +89,33 @@ class DashboardController extends Controller
             'totalStudents' => $totalActiveStudents,
             'presentToday' => $presentToday,
             'lateToday' => $lateToday,
-            'attendanceRate' => $attendanceRate,
+            'attendanceRate' => $kehadiran['bulan'],
+            'kehadiran' => $kehadiran,
             'totalStudentsDelta' => 0,
             'presentTodayDelta' => $presentTodayDelta,
         ];
+    }
+
+    /**
+     * Persen siswa datang (hadir + terlambat) dalam rentang tanggal.
+     *
+     * Penyebutnya siswa aktif × hari yang ada absennya, jadi siswa yang tidak
+     * tercatat sama sekali ikut terhitung tidak hadir, sedangkan hari libur
+     * (nol absen sekolah) tidak menurunkan angka.
+     */
+    private function persenKehadiran(Carbon $dari, Carbon $sampai, int $siswaAktif): float
+    {
+        $data = Attendance::whereHas('student', fn ($q) => $q->where('school_id', auth()->user()->school_id))
+            ->where('type', AttendanceType::CheckIn)
+            ->whereDate('attendance_date', '>=', $dari->toDateString())
+            ->whereDate('attendance_date', '<=', $sampai->toDateString())
+            ->selectRaw('COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as datang', self::STATUS_DATANG)
+            ->selectRaw('COUNT(DISTINCT attendance_date) as hari')
+            ->first();
+
+        $kemungkinan = $siswaAktif * (int) $data->hari;
+
+        return $kemungkinan > 0 ? min(100.0, round($data->datang / $kemungkinan * 100, 1)) : 0.0;
     }
 
     /**

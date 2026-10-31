@@ -24,6 +24,7 @@ type Baris = {
     persen: number;
     scan_terakhir: string | null;
     absen_terakhir: string | null;
+    hari_aktif: number;
     keadaan: Keadaan;
     peringkat: number;
 };
@@ -31,6 +32,7 @@ type Baris = {
 type Props = {
     monitor: {
         tanggal: string;
+        rentang_hari: number;
         sekolah: Baris[];
         ringkasan: {
             total: number;
@@ -81,8 +83,8 @@ function hariLalu(tanggal: string | null, acuan: string): string {
 }
 
 /**
- * Monitor super admin: semua sekolah aktif diberi peringkat — nomor 1 adalah
- * sekolah yang hari itu tidak ada absen sama sekali.
+ * Monitor super admin: semua sekolah aktif diurutkan dari yang paling jarang
+ * absen (atau belum pernah) di atas sampai yang paling sering di bawah.
  */
 export default function MonitorSekolah({ monitor, hariIni }: Props) {
     const lihatHariIni = monitor.tanggal === hariIni;
@@ -157,13 +159,22 @@ export default function MonitorSekolah({ monitor, hariIni }: Props) {
                 <TabelSekolah
                     baris={monitor.sekolah}
                     tanggal={monitor.tanggal}
+                    rentang={monitor.rentang_hari}
                 />
             </div>
         </>
     );
 }
 
-function TabelSekolah({ baris, tanggal }: { baris: Baris[]; tanggal: string }) {
+function TabelSekolah({
+    baris,
+    tanggal,
+    rentang,
+}: {
+    baris: Baris[];
+    tanggal: string;
+    rentang: number;
+}) {
     if (baris.length === 0) {
         return (
             <p className="text-sm text-muted-foreground">
@@ -179,7 +190,10 @@ function TabelSekolah({ baris, tanggal }: { baris: Baris[]; tanggal: string }) {
                     <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
                         <th className="w-10 px-3 py-2">#</th>
                         <th className="px-3 py-2">Sekolah</th>
-                        <th className="px-3 py-2">Keadaan</th>
+                        <th className="px-3 py-2">
+                            Absen {rentang} hari terakhir
+                        </th>
+                        <th className="px-3 py-2">Hari ini</th>
                         <th className="px-3 py-2 text-right">Hadir</th>
                         <th className="px-3 py-2 text-right">Izin/Sakit</th>
                         <th className="px-3 py-2 text-right">% Hadir</th>
@@ -205,6 +219,30 @@ function TabelSekolah({ baris, tanggal }: { baris: Baris[]; tanggal: string }) {
                                 <p className="text-xs text-muted-foreground tabular-nums">
                                     {b.siswa} siswa aktif
                                 </p>
+                            </td>
+                            <td className="px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+                                        <div
+                                            className={cn(
+                                                'h-full rounded-full',
+                                                b.hari_aktif === 0
+                                                    ? 'bg-red-500'
+                                                    : b.hari_aktif < rentang / 4
+                                                      ? 'bg-amber-500'
+                                                      : 'bg-green-600',
+                                            )}
+                                            style={{
+                                                width: `${Math.min(100, (b.hari_aktif / rentang) * 100)}%`,
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="text-xs tabular-nums">
+                                        {b.hari_aktif === 0
+                                            ? 'tidak pernah'
+                                            : `${b.hari_aktif} hari`}
+                                    </span>
+                                </div>
                             </td>
                             <td className="px-3 py-2">
                                 <Badge

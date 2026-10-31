@@ -52,29 +52,53 @@ test('admin sekolah tidak bisa membuka monitor', function () {
     $this->actingAs(createAdminUser())->get(route('admin.monitor'))->assertForbidden();
 });
 
-test('semua sekolah aktif masuk peringkat, nomor 1 sekolah tanpa absen sama sekali', function () {
+/**
+ * @param  iterable<int, array<string, mixed>>  $sekolah
+ * @return array<string, array<string, mixed>> baris per nama sekolah
+ */
+function barisMonitor(iterable $sekolah): array
+{
+    return collect($sekolah)->keyBy('nama')->all();
+}
+
+test('sekolah paling jarang absen di atas, paling sering di bawah', function () {
     $user = createSuperAdminUser();
-    $ramai = sekolahMonitor('SMP Ramai');
-    absenMonitor($ramai, 3);
-    $sepi = sekolahMonitor('SMP Sepi');
-    Student::factory()->count(2)->create(['school_id' => $sepi->id, 'is_active' => true]);
-    sekolahMonitor('SMP Libur', jadwal: false);
+    $sering = sekolahMonitor('SMP Sering');
+    foreach (['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29'] as $tgl) {
+        absenMonitor($sering, 1, $tgl);
+    }
+    $jarang = sekolahMonitor('SMP Jarang');
+    absenMonitor($jarang, 2, '2026-10-29');
+    sekolahMonitor('SMP Belum Pernah');
 
     $this->actingAs($user)->get(route('admin.monitor'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/monitor/index')
-            ->where('monitor.sekolah.0.nama', 'SMP Sepi')
-            ->where('monitor.sekolah.0.keadaan', 'tanpa_absen')
-            ->where('monitor.sekolah.0.peringkat', 1)
-            ->where('monitor.sekolah.1.nama', 'SMP Ramai')
-            ->where('monitor.sekolah.1.keadaan', 'berjalan')
-            ->where('monitor.sekolah.1.hadir', 3)
-            ->where('monitor.sekolah', fn ($sekolah) => collect($sekolah)->firstWhere('nama', 'SMP Libur')['keadaan'] === 'libur')
-            ->where('monitor.ringkasan.tanpa_absen', 1)
-            // Tanpa centang: sekolah milik akun super admin sendiri ikut juga.
+            ->where('monitor.sekolah', function ($sekolah) {
+                $urut = collect($sekolah)->pluck('nama')->values();
+                $baris = barisMonitor($sekolah);
+
+                return $urut->search('SMP Belum Pernah') < $urut->search('SMP Jarang')
+                    && $urut->search('SMP Jarang') < $urut->search('SMP Sering')
+                    && $urut->last() === 'SMP Sering'
+                    && $baris['SMP Sering']['hari_aktif'] === 4
+                    && $baris['SMP Jarang']['hari_aktif'] === 1
+                    && $baris['SMP Belum Pernah']['hari_aktif'] === 0
+                    && $baris['SMP Belum Pernah']['keadaan'] === 'tanpa_absen'
+                    && $baris['SMP Jarang']['keadaan'] === 'berjalan'
+                    && $baris['SMP Jarang']['hadir'] === 2;
+            })
             ->where('monitor.ringkasan.total', School::where('is_active', true)->count())
         );
+});
+
+test('sekolah tanpa jadwal hari itu ditandai libur', function () {
+    $user = createSuperAdminUser();
+    sekolahMonitor('SMP Libur', jadwal: false);
+
+    $this->actingAs($user)->get(route('admin.monitor'))
+        ->assertInertia(fn (Assert $page) => $page->where('monitor.sekolah', fn ($s) => barisMonitor($s)['SMP Libur']['keadaan'] === 'libur'));
 });
 
 test('sebelum jam masuk paling awal sekolah tanpa absen belum dinilai', function () {
@@ -83,7 +107,7 @@ test('sebelum jam masuk paling awal sekolah tanpa absen belum dinilai', function
     sekolahMonitor('SMP Pagi');
 
     $this->actingAs($user)->get(route('admin.monitor'))
-        ->assertInertia(fn (Assert $page) => $page->where('monitor.sekolah.0.keadaan', 'belum_mulai'));
+        ->assertInertia(fn (Assert $page) => $page->where('monitor.sekolah', fn ($s) => barisMonitor($s)['SMP Pagi']['keadaan'] === 'belum_mulai'));
 });
 
 test('absen terakhir menunjukkan tanggal sekolah terakhir kali absen', function () {
@@ -92,9 +116,8 @@ test('absen terakhir menunjukkan tanggal sekolah terakhir kali absen', function 
     absenMonitor($sekolah, 1, '2026-10-20');
 
     $this->actingAs($user)->get(route('admin.monitor'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('monitor.sekolah.0.absen_terakhir', '2026-10-20')
-            ->where('monitor.sekolah.0.keadaan', 'tanpa_absen'));
+        ->assertInertia(fn (Assert $page) => $page->where('monitor.sekolah', fn ($s) => barisMonitor($s)['SMP Lama']['absen_terakhir'] === '2026-10-20'
+            && barisMonitor($s)['SMP Lama']['keadaan'] === 'tanpa_absen'));
 });
 
 test('tanggal masa depan ditolak', function () {

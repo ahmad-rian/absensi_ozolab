@@ -133,3 +133,27 @@ test('aktivitas dashboard tidak menampilkan izin untuk hari ke depan', function 
             )
         );
 });
+
+test('kartu kehadiran punya persen hari ini, 7 hari, dan 30 hari', function () {
+    $this->travelTo(Carbon::parse('2026-10-29 03:00:00', 'UTC'));
+    $user = createAdminUser();
+    $siswa = Student::factory()->count(2)->create(['school_id' => $user->school_id]);
+    // Hari ini 1 dari 2 datang; 20 hari lalu keduanya datang.
+    absenMasukHariIni($siswa[0], AttendanceStatus::Terlambat);
+    foreach ($siswa as $s) {
+        Attendance::factory()->create([
+            'student_id' => $s->id, 'attendance_date' => SchoolTime::today()->subDays(20),
+            'type' => AttendanceType::CheckIn, 'status' => AttendanceStatus::Hadir,
+            'recorded_at' => SchoolTime::now()->subDays(20),
+        ]);
+    }
+
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('stats.kehadiran.hari', fn ($v) => (float) $v === 50.0)
+            ->where('stats.kehadiran.minggu', fn ($v) => (float) $v === 50.0)
+            // 3 datang dari 2 siswa x 2 hari ada absen.
+            ->where('stats.kehadiran.bulan', fn ($v) => (float) $v === 75.0)
+        );
+});

@@ -6,6 +6,8 @@ type StatCardProps = {
     delta?: number | null;
     deltaLabel?: string;
     hint?: string;
+    /** Kontrol kecil di bawah judul, mis. pilihan periode. */
+    aksi?: React.ReactNode;
     icon: React.ReactNode;
     color?: 'blue' | 'green' | 'amber' | 'red' | 'violet';
 };
@@ -48,6 +50,7 @@ export function StatCard({
     delta,
     deltaLabel,
     hint,
+    aksi,
     icon,
     color = 'blue',
 }: StatCardProps) {
@@ -71,6 +74,7 @@ export function StatCard({
                     {icon}
                 </div>
             </div>
+            {aksi && <div className="mt-1 pl-2">{aksi}</div>}
             <p className="pl-2 text-2xl font-bold tracking-tight text-foreground tabular-nums">
                 {value}
             </p>

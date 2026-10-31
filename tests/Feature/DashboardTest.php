@@ -32,6 +32,7 @@ test('dashboard returns stats props', function () {
             ->has('presentToday')
             ->has('lateToday')
             ->has('attendanceRate')
+            ->has('kehadiran')
             ->has('totalStudentsDelta')
             ->has('presentTodayDelta')
         )

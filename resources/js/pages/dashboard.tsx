@@ -6,6 +6,7 @@ import {
     UserX,
     Users,
 } from 'lucide-react';
+import { useState } from 'react';
 import { AttendanceStatusPie } from '@/components/dashboard/attendance-status-pie';
 import { AttendanceTrendChart } from '@/components/dashboard/attendance-trend-chart';
 import { ClassComparisonBar } from '@/components/dashboard/class-comparison-bar';
@@ -21,13 +22,23 @@ import { LatestCheckinsTable } from '@/components/dashboard/latest-checkins-tabl
 import { LiveActivityFeed } from '@/components/dashboard/live-activity-feed';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { WeeklyAreaChart } from '@/components/dashboard/weekly-area-chart';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
+
+type Periode = 'hari' | 'minggu' | 'bulan';
+
+const PERIODE: { nilai: Periode; label: string; keterangan: string }[] = [
+    { nilai: 'hari', label: 'Hari ini', keterangan: 'Hari ini' },
+    { nilai: 'minggu', label: '7 hari', keterangan: '7 hari terakhir' },
+    { nilai: 'bulan', label: '30 hari', keterangan: '30 hari terakhir' },
+];
 
 type Stats = {
     totalStudents: number;
     presentToday: number;
     lateToday: number;
     attendanceRate: number;
+    kehadiran: { hari: number; minggu: number; bulan: number };
     totalStudentsDelta: number;
     presentTodayDelta: number;
 };
@@ -91,6 +102,7 @@ export default function Dashboard({
     siswaTercepat,
     tidakHadir,
 }: DashboardProps) {
+    const [periode, setPeriode] = useState<Periode>('hari');
     const { currentSchool } = usePage().props as {
         currentSchool?: { name: string } | null;
     };
@@ -146,9 +158,34 @@ export default function Dashboard({
                         color="red"
                     />
                     <StatCard
-                        title="Kehadiran 30 Hari"
-                        value={`${stats.attendanceRate}%`}
-                        hint="Hadir + terlambat"
+                        title="Kehadiran"
+                        value={`${stats.kehadiran[periode]}%`}
+                        hint={`${PERIODE.find((p) => p.nilai === periode)?.keterangan} · hadir + terlambat`}
+                        aksi={
+                            <div
+                                role="tablist"
+                                aria-label="Periode kehadiran"
+                                className="inline-flex rounded-md bg-muted p-0.5 text-[11px]"
+                            >
+                                {PERIODE.map((p) => (
+                                    <button
+                                        key={p.nilai}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={periode === p.nilai}
+                                        onClick={() => setPeriode(p.nilai)}
+                                        className={cn(
+                                            'rounded px-1.5 py-0.5 font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                                            periode === p.nilai
+                                                ? 'bg-background text-foreground shadow-sm'
+                                                : 'text-muted-foreground hover:text-foreground',
+                                        )}
+                                    >
+                                        {p.label}
+                                    </button>
+                                ))}
+                            </div>
+                        }
                         icon={<Percent />}
                         color="violet"
                     />
