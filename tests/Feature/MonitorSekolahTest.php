@@ -6,6 +6,7 @@ use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
 use App\Models\School;
 use App\Models\Student;
+use App\Services\Monitor\MonitorSekolah;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -18,9 +19,9 @@ beforeEach(function () {
     $this->travelTo(Carbon::create(2026, 10, 29, 10, 0, 0, SchoolTime::timezone()));
 });
 
-function sekolahMonitor(string $nama, bool $jadwal = true): School
+function sekolahMonitor(string $nama, bool $jadwal = true, bool $dipantau = true): School
 {
-    $sekolah = School::factory()->create(['name' => $nama, 'is_active' => true]);
+    $sekolah = School::factory()->create(['name' => $nama, 'is_active' => true, 'settings' => [MonitorSekolah::SETTING_DIPANTAU => $dipantau]]);
 
     if ($jadwal) {
         AttendanceSchedule::factory()->create([
@@ -70,6 +71,7 @@ test('sekolah paling jarang absen di atas, paling sering di bawah', function () 
     $jarang = sekolahMonitor('SMP Jarang');
     absenMonitor($jarang, 2, '2026-10-29');
     sekolahMonitor('SMP Belum Pernah');
+    sekolahMonitor('SMP Tidak Dipantau', dipantau: false);
 
     $this->actingAs($user)->get(route('admin.monitor'))
         ->assertOk()
@@ -89,7 +91,10 @@ test('sekolah paling jarang absen di atas, paling sering di bawah', function () 
                     && $baris['SMP Jarang']['keadaan'] === 'berjalan'
                     && $baris['SMP Jarang']['hadir'] === 2;
             })
-            ->where('monitor.ringkasan.total', School::where('is_active', true)->count())
+            // Hanya sekolah yang dicentang yang diberi peringkat.
+            ->where('monitor.ringkasan.total', 3)
+            ->where('monitor.lainnya', fn ($lainnya) => collect($lainnya)->pluck('nama')->contains('SMP Tidak Dipantau')
+                && collect($lainnya)->every(fn ($b) => ! isset($b['peringkat'])))
         );
 });
 
@@ -118,6 +123,24 @@ test('absen terakhir menunjukkan tanggal sekolah terakhir kali absen', function 
     $this->actingAs($user)->get(route('admin.monitor'))
         ->assertInertia(fn (Assert $page) => $page->where('monitor.sekolah', fn ($s) => barisMonitor($s)['SMP Lama']['absen_terakhir'] === '2026-10-20'
             && barisMonitor($s)['SMP Lama']['keadaan'] === 'tanpa_absen'));
+});
+
+test('super admin bisa mencentang dan melepas sekolah dari pantauan', function () {
+    $user = createSuperAdminUser();
+    $sekolah = sekolahMonitor('SMP Baru', dipantau: false);
+
+    $this->actingAs($user)->post(route('admin.monitor.pantau', $sekolah), ['dipantau' => true])->assertRedirect();
+    expect($sekolah->fresh()->getSetting(MonitorSekolah::SETTING_DIPANTAU))->toBeTrue();
+
+    $this->actingAs($user)->post(route('admin.monitor.pantau', $sekolah), ['dipantau' => false])->assertRedirect();
+    expect($sekolah->fresh()->getSetting(MonitorSekolah::SETTING_DIPANTAU))->toBeFalse();
+});
+
+test('admin sekolah tidak bisa mengubah pantauan', function () {
+    $sekolah = sekolahMonitor('SMP X', dipantau: false);
+
+    $this->actingAs(createAdminUser())->post(route('admin.monitor.pantau', $sekolah), ['dipantau' => true])->assertForbidden();
+    expect($sekolah->fresh()->getSetting(MonitorSekolah::SETTING_DIPANTAU))->toBeFalse();
 });
 
 test('tanggal masa depan ditolak', function () {

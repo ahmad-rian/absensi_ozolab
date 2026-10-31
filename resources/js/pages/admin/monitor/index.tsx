@@ -6,9 +6,14 @@ import {
     Clock,
     School,
 } from 'lucide-react';
-import { index as monitorIndex } from '@/actions/App/Http/Controllers/Admin/MonitorController';
+import { useState } from 'react';
+import {
+    index as monitorIndex,
+    pantau,
+} from '@/actions/App/Http/Controllers/Admin/MonitorController';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +22,7 @@ type Keadaan = 'tanpa_absen' | 'belum_mulai' | 'berjalan' | 'libur';
 type Baris = {
     id: string;
     nama: string;
+    dipantau: boolean;
     siswa: number;
     hadir: number;
     terlambat: number;
@@ -26,7 +32,7 @@ type Baris = {
     absen_terakhir: string | null;
     hari_aktif: number;
     keadaan: Keadaan;
-    peringkat: number;
+    peringkat?: number;
 };
 
 type Props = {
@@ -34,6 +40,7 @@ type Props = {
         tanggal: string;
         rentang_hari: number;
         sekolah: Baris[];
+        lainnya: Baris[];
         ringkasan: {
             total: number;
             tanpa_absen: number;
@@ -83,11 +90,13 @@ function hariLalu(tanggal: string | null, acuan: string): string {
 }
 
 /**
- * Monitor super admin: semua sekolah aktif diurutkan dari yang paling jarang
- * absen (atau belum pernah) di atas sampai yang paling sering di bawah.
+ * Monitor super admin: sekolah yang dicentang "Pantau" diurutkan dari yang
+ * paling jarang absen (atau belum pernah) di atas sampai yang paling sering.
+ * Sekolah yang belum dicentang ada di bawah, tanpa peringkat.
  */
 export default function MonitorSekolah({ monitor, hariIni }: Props) {
     const lihatHariIni = monitor.tanggal === hariIni;
+    const [menyimpan, setMenyimpan] = useState<string | null>(null);
 
     // Hanya hari ini yang perlu disegarkan; tanggal lampau tidak berubah.
     usePoll(60_000, { only: ['monitor'] }, { autoStart: lihatHariIni });
@@ -97,6 +106,19 @@ export default function MonitorSekolah({ monitor, hariIni }: Props) {
             monitorIndex.url({ query: { tanggal } }),
             {},
             { preserveScroll: true },
+        );
+    }
+
+    function aturPantau(id: string, dipantau: boolean) {
+        router.post(
+            pantau.url(id),
+            { dipantau },
+            {
+                preserveScroll: true,
+                only: ['monitor', 'flash'],
+                onStart: () => setMenyimpan(id),
+                onFinish: () => setMenyimpan(null),
+            },
         );
     }
 
@@ -148,19 +170,58 @@ export default function MonitorSekolah({ monitor, hariIni }: Props) {
                         color="amber"
                     />
                     <StatCard
-                        title="Total Sekolah"
+                        title="Sekolah Dipantau"
                         value={monitor.ringkasan.total}
-                        hint="Semua sekolah aktif"
+                        hint="Centang di daftar bawah"
                         icon={<School />}
                         color="blue"
                     />
                 </div>
 
-                <TabelSekolah
-                    baris={monitor.sekolah}
-                    tanggal={monitor.tanggal}
-                    rentang={monitor.rentang_hari}
-                />
+                <section className="flex flex-col gap-3">
+                    <div>
+                        <h2 className="font-semibold">
+                            Peringkat sekolah dipantau
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            Paling atas: paling jarang absen dalam{' '}
+                            {monitor.rentang_hari} hari terakhir.
+                        </p>
+                    </div>
+                    {monitor.sekolah.length === 0 ? (
+                        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+                            Belum ada sekolah yang dipantau. Centang sekolah
+                            yang memakai absensi di daftar &ldquo;Sekolah
+                            lain&rdquo; di bawah.
+                        </p>
+                    ) : (
+                        <TabelSekolah
+                            baris={monitor.sekolah}
+                            tanggal={monitor.tanggal}
+                            rentang={monitor.rentang_hari}
+                            menyimpan={menyimpan}
+                            onPantau={aturPantau}
+                            berperingkat
+                        />
+                    )}
+                </section>
+
+                <section className="flex flex-col gap-3">
+                    <div>
+                        <h2 className="font-semibold">Sekolah lain</h2>
+                        <p className="text-sm text-muted-foreground">
+                            Tidak ikut peringkat. Centang sekolah yang sudah
+                            memakai absensi supaya ikut dipantau.
+                        </p>
+                    </div>
+                    <TabelSekolah
+                        baris={monitor.lainnya}
+                        tanggal={monitor.tanggal}
+                        rentang={monitor.rentang_hari}
+                        menyimpan={menyimpan}
+                        onPantau={aturPantau}
+                    />
+                </section>
             </div>
         </>
     );
@@ -170,15 +231,21 @@ function TabelSekolah({
     baris,
     tanggal,
     rentang,
+    menyimpan,
+    onPantau,
+    berperingkat = false,
 }: {
     baris: Baris[];
     tanggal: string;
     rentang: number;
+    menyimpan: string | null;
+    onPantau: (id: string, dipantau: boolean) => void;
+    berperingkat?: boolean;
 }) {
     if (baris.length === 0) {
         return (
             <p className="text-sm text-muted-foreground">
-                Belum ada sekolah aktif.
+                Semua sekolah aktif sudah dipantau.
             </p>
         );
     }
@@ -188,17 +255,18 @@ function TabelSekolah({
             <table className="w-full text-sm">
                 <thead>
                     <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
-                        <th className="w-10 px-3 py-2">#</th>
+                        <th className="w-12 px-3 py-2 text-center">Pantau</th>
+                        {berperingkat && <th className="w-10 px-2 py-2">#</th>}
                         <th className="px-3 py-2">Sekolah</th>
-                        <th className="px-3 py-2">
-                            Absen {rentang} hari terakhir
-                        </th>
                         <th className="px-3 py-2">Hari ini</th>
                         <th className="px-3 py-2 text-right">Hadir</th>
                         <th className="px-3 py-2 text-right">Izin/Sakit</th>
                         <th className="px-3 py-2 text-right">% Hadir</th>
                         <th className="px-3 py-2">Scan terakhir</th>
                         <th className="px-3 py-2">Absen terakhir</th>
+                        <th className="px-3 py-2">
+                            Absen {rentang} hari terakhir
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -207,42 +275,31 @@ function TabelSekolah({
                             key={b.id}
                             className={cn(
                                 'border-b last:border-0',
-                                b.keadaan === 'tanpa_absen' &&
+                                berperingkat &&
+                                    b.keadaan === 'tanpa_absen' &&
                                     'bg-red-50/60 dark:bg-red-950/20',
                             )}
                         >
-                            <td className="px-3 py-2 font-semibold tabular-nums">
-                                {b.peringkat}
+                            <td className="px-3 py-2 text-center">
+                                <Checkbox
+                                    checked={b.dipantau}
+                                    disabled={menyimpan === b.id}
+                                    aria-label={`Pantau ${b.nama}`}
+                                    onCheckedChange={(v) =>
+                                        onPantau(b.id, v === true)
+                                    }
+                                />
                             </td>
+                            {berperingkat && (
+                                <td className="px-2 py-2 font-semibold tabular-nums">
+                                    {b.peringkat}
+                                </td>
+                            )}
                             <td className="px-3 py-2">
                                 <p className="font-medium">{b.nama}</p>
                                 <p className="text-xs text-muted-foreground tabular-nums">
                                     {b.siswa} siswa aktif
                                 </p>
-                            </td>
-                            <td className="px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
-                                        <div
-                                            className={cn(
-                                                'h-full rounded-full',
-                                                b.hari_aktif === 0
-                                                    ? 'bg-red-500'
-                                                    : b.hari_aktif < rentang / 4
-                                                      ? 'bg-amber-500'
-                                                      : 'bg-green-600',
-                                            )}
-                                            style={{
-                                                width: `${Math.min(100, (b.hari_aktif / rentang) * 100)}%`,
-                                            }}
-                                        />
-                                    </div>
-                                    <span className="text-xs tabular-nums">
-                                        {b.hari_aktif === 0
-                                            ? 'tidak pernah'
-                                            : `${b.hari_aktif} hari`}
-                                    </span>
-                                </div>
                             </td>
                             <td className="px-3 py-2">
                                 <Badge
@@ -278,6 +335,30 @@ function TabelSekolah({
                             </td>
                             <td className="px-3 py-2 text-muted-foreground">
                                 {hariLalu(b.absen_terakhir, tanggal)}
+                            </td>
+                            <td className="px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+                                        <div
+                                            className={cn(
+                                                'h-full rounded-full',
+                                                b.hari_aktif === 0
+                                                    ? 'bg-red-500'
+                                                    : b.hari_aktif < rentang / 4
+                                                      ? 'bg-amber-500'
+                                                      : 'bg-green-600',
+                                            )}
+                                            style={{
+                                                width: `${Math.min(100, (b.hari_aktif / rentang) * 100)}%`,
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="text-xs tabular-nums">
+                                        {b.hari_aktif === 0
+                                            ? 'tidak pernah'
+                                            : `${b.hari_aktif} hari`}
+                                    </span>
+                                </div>
                             </td>
                         </tr>
                     ))}
