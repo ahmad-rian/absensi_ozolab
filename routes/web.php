@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\KunjunganPerpusController;
 use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\MonitorController;
 use App\Http\Controllers\Admin\NotificationGatewayController;
 use App\Http\Controllers\Admin\NotifikasiController;
 use App\Http\Controllers\Admin\OrangTuaController;
@@ -346,6 +347,12 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
 
     // Modul grup Sistem: lintas tenant, jadi `super-admin` wajib ikut — permission
     // saja tidak cukup karena global scope tidak menjaga apa pun di sini.
+    // Monitor lintas sekolah: halaman pertama super admin setelah login.
+    Route::middleware('super-admin')->group(function () {
+        Route::get('monitor', [MonitorController::class, 'index'])->name('admin.monitor');
+        Route::post('monitor/{school}/pantau', [MonitorController::class, 'pantau'])->name('admin.monitor.pantau');
+    });
+
     Route::middleware(['permission:semua-sekolah.access', 'super-admin'])->group(function () {
         Route::get('semua-sekolah', [SemuaSekolahController::class, 'index'])->name('admin.semua-sekolah');
     });

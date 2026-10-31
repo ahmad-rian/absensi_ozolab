@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    Activity,
     ArrowUpRight,
     BarChart3,
     Bell,
@@ -85,6 +86,8 @@ type NavSection = { label: string; items: GuardedNavItem[] };
 const STUDIO_PLACEHOLDER = 'studio:url';
 
 const overviewItems: GuardedNavItem[] = [
+    // Halaman pertama super admin setelah login (User::homeRoute).
+    { title: 'Monitor Sekolah', href: '/admin/monitor', icon: Activity, permission: '', superAdmin: true },
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid, permission: 'beranda.access' },
 ];
 

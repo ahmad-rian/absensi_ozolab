@@ -151,6 +151,10 @@ class User extends Authenticatable implements PasskeyUser
             return 'general.dashboard';
         }
 
+        if ($this->hasRole(UserRole::SuperAdmin)) {
+            return 'admin.monitor';
+        }
+
         return $this->hasRole(UserRole::OrangTua) ? 'orangtua.index' : 'dashboard';
     }
 
