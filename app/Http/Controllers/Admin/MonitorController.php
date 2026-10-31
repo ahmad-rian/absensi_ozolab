@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\School;
 use App\Services\Monitor\MonitorSekolah;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,19 +28,5 @@ class MonitorController extends Controller
             'monitor' => $monitor->untuk($tanggal),
             'hariIni' => SchoolTime::todayString(),
         ]);
-    }
-
-    /**
-     * Centang / lepas sekolah dari pantauan.
-     */
-    public function pantau(Request $request, School $school): RedirectResponse
-    {
-        $validated = $request->validate(['dipantau' => ['required', 'boolean']]);
-
-        $school->setSetting(MonitorSekolah::SETTING_DIPANTAU, (bool) $validated['dipantau']);
-
-        return back()->with('success', $validated['dipantau']
-            ? "{$school->name} masuk pantauan."
-            : "{$school->name} dikeluarkan dari pantauan.");
     }
 }

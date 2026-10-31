@@ -350,7 +350,6 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
     // Monitor lintas sekolah: halaman pertama super admin setelah login.
     Route::middleware('super-admin')->group(function () {
         Route::get('monitor', [MonitorController::class, 'index'])->name('admin.monitor');
-        Route::post('monitor/{school}/pantau', [MonitorController::class, 'pantau'])->name('admin.monitor.pantau');
     });
 
     Route::middleware(['permission:semua-sekolah.access', 'super-admin'])->group(function () {

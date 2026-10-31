@@ -4,16 +4,11 @@ import {
     CalendarOff,
     CheckCircle2,
     Clock,
-    Eye,
+    School,
 } from 'lucide-react';
-import { useState } from 'react';
-import {
-    index as monitorIndex,
-    pantau,
-} from '@/actions/App/Http/Controllers/Admin/MonitorController';
+import { index as monitorIndex } from '@/actions/App/Http/Controllers/Admin/MonitorController';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +17,6 @@ type Keadaan = 'tanpa_absen' | 'belum_mulai' | 'berjalan' | 'libur';
 type Baris = {
     id: string;
     nama: string;
-    dipantau: boolean;
     siswa: number;
     hadir: number;
     terlambat: number;
@@ -31,16 +25,15 @@ type Baris = {
     scan_terakhir: string | null;
     absen_terakhir: string | null;
     keadaan: Keadaan;
-    peringkat?: number;
+    peringkat: number;
 };
 
 type Props = {
     monitor: {
         tanggal: string;
-        dipantau: Baris[];
-        lainnya: Baris[];
+        sekolah: Baris[];
         ringkasan: {
-            dipantau: number;
+            total: number;
             tanpa_absen: number;
             berjalan: number;
             libur: number;
@@ -88,11 +81,10 @@ function hariLalu(tanggal: string | null, acuan: string): string {
 }
 
 /**
- * Monitor super admin: sekolah yang dicentang "dipantau" diberi peringkat —
- * nomor 1 adalah sekolah dipantau yang hari itu tidak ada absen sama sekali.
+ * Monitor super admin: semua sekolah aktif diberi peringkat — nomor 1 adalah
+ * sekolah yang hari itu tidak ada absen sama sekali.
  */
 export default function MonitorSekolah({ monitor, hariIni }: Props) {
-    const [menyimpan, setMenyimpan] = useState<string | null>(null);
     const lihatHariIni = monitor.tanggal === hariIni;
 
     // Hanya hari ini yang perlu disegarkan; tanggal lampau tidak berubah.
@@ -103,19 +95,6 @@ export default function MonitorSekolah({ monitor, hariIni }: Props) {
             monitorIndex.url({ query: { tanggal } }),
             {},
             { preserveScroll: true },
-        );
-    }
-
-    function aturPantau(id: string, dipantau: boolean) {
-        router.post(
-            pantau.url(id),
-            { dipantau },
-            {
-                preserveScroll: true,
-                only: ['monitor', 'flash'],
-                onStart: () => setMenyimpan(id),
-                onFinish: () => setMenyimpan(null),
-            },
         );
     }
 
@@ -148,7 +127,7 @@ export default function MonitorSekolah({ monitor, hariIni }: Props) {
                     <StatCard
                         title="Tidak Ada Absen"
                         value={monitor.ringkasan.tanpa_absen}
-                        hint="Sekolah dipantau, 0 absen"
+                        hint="Ada jadwal, 0 absen"
                         icon={<AlertOctagon />}
                         color="red"
                     />
@@ -167,72 +146,28 @@ export default function MonitorSekolah({ monitor, hariIni }: Props) {
                         color="amber"
                     />
                     <StatCard
-                        title="Sekolah Dipantau"
-                        value={monitor.ringkasan.dipantau}
-                        hint="Centang di daftar bawah"
-                        icon={<Eye />}
+                        title="Total Sekolah"
+                        value={monitor.ringkasan.total}
+                        hint="Semua sekolah aktif"
+                        icon={<School />}
                         color="blue"
                     />
                 </div>
 
-                <section className="flex flex-col gap-3">
-                    <h2 className="font-semibold">
-                        Peringkat sekolah dipantau
-                    </h2>
-                    {monitor.dipantau.length === 0 ? (
-                        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                            Belum ada sekolah yang dipantau. Centang sekolah
-                            yang memakai absensi di daftar &ldquo;Sekolah
-                            lain&rdquo; di bawah.
-                        </p>
-                    ) : (
-                        <TabelSekolah
-                            baris={monitor.dipantau}
-                            tanggal={monitor.tanggal}
-                            menyimpan={menyimpan}
-                            onPantau={aturPantau}
-                            berperingkat
-                        />
-                    )}
-                </section>
-
-                <section className="flex flex-col gap-3">
-                    <div>
-                        <h2 className="font-semibold">Sekolah lain</h2>
-                        <p className="text-sm text-muted-foreground">
-                            Tidak ikut peringkat. Centang sekolah yang sudah
-                            memakai absensi supaya ikut dipantau.
-                        </p>
-                    </div>
-                    <TabelSekolah
-                        baris={monitor.lainnya}
-                        tanggal={monitor.tanggal}
-                        menyimpan={menyimpan}
-                        onPantau={aturPantau}
-                    />
-                </section>
+                <TabelSekolah
+                    baris={monitor.sekolah}
+                    tanggal={monitor.tanggal}
+                />
             </div>
         </>
     );
 }
 
-function TabelSekolah({
-    baris,
-    tanggal,
-    menyimpan,
-    onPantau,
-    berperingkat = false,
-}: {
-    baris: Baris[];
-    tanggal: string;
-    menyimpan: string | null;
-    onPantau: (id: string, dipantau: boolean) => void;
-    berperingkat?: boolean;
-}) {
+function TabelSekolah({ baris, tanggal }: { baris: Baris[]; tanggal: string }) {
     if (baris.length === 0) {
         return (
             <p className="text-sm text-muted-foreground">
-                Semua sekolah aktif sudah dipantau.
+                Belum ada sekolah aktif.
             </p>
         );
     }
@@ -242,8 +177,7 @@ function TabelSekolah({
             <table className="w-full text-sm">
                 <thead>
                     <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
-                        <th className="w-12 px-3 py-2 text-center">Pantau</th>
-                        {berperingkat && <th className="w-10 px-2 py-2">#</th>}
+                        <th className="w-10 px-3 py-2">#</th>
                         <th className="px-3 py-2">Sekolah</th>
                         <th className="px-3 py-2">Keadaan</th>
                         <th className="px-3 py-2 text-right">Hadir</th>
@@ -259,26 +193,13 @@ function TabelSekolah({
                             key={b.id}
                             className={cn(
                                 'border-b last:border-0',
-                                berperingkat &&
-                                    b.keadaan === 'tanpa_absen' &&
+                                b.keadaan === 'tanpa_absen' &&
                                     'bg-red-50/60 dark:bg-red-950/20',
                             )}
                         >
-                            <td className="px-3 py-2 text-center">
-                                <Checkbox
-                                    checked={b.dipantau}
-                                    disabled={menyimpan === b.id}
-                                    aria-label={`Pantau ${b.nama}`}
-                                    onCheckedChange={(v) =>
-                                        onPantau(b.id, v === true)
-                                    }
-                                />
+                            <td className="px-3 py-2 font-semibold tabular-nums">
+                                {b.peringkat}
                             </td>
-                            {berperingkat && (
-                                <td className="px-2 py-2 font-semibold tabular-nums">
-                                    {b.peringkat}
-                                </td>
-                            )}
                             <td className="px-3 py-2">
                                 <p className="font-medium">{b.nama}</p>
                                 <p className="text-xs text-muted-foreground tabular-nums">

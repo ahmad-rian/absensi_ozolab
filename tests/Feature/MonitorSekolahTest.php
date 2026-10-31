@@ -6,7 +6,6 @@ use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
 use App\Models\School;
 use App\Models\Student;
-use App\Services\Monitor\MonitorSekolah;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -19,9 +18,9 @@ beforeEach(function () {
     $this->travelTo(Carbon::create(2026, 10, 29, 10, 0, 0, SchoolTime::timezone()));
 });
 
-function sekolahMonitor(string $nama, bool $dipantau, bool $jadwal = true): School
+function sekolahMonitor(string $nama, bool $jadwal = true): School
 {
-    $sekolah = School::factory()->create(['name' => $nama, 'is_active' => true, 'settings' => [MonitorSekolah::SETTING_DIPANTAU => $dipantau]]);
+    $sekolah = School::factory()->create(['name' => $nama, 'is_active' => true]);
 
     if ($jadwal) {
         AttendanceSchedule::factory()->create([
@@ -53,70 +52,49 @@ test('admin sekolah tidak bisa membuka monitor', function () {
     $this->actingAs(createAdminUser())->get(route('admin.monitor'))->assertForbidden();
 });
 
-test('peringkat 1 adalah sekolah dipantau yang tidak ada absen sama sekali', function () {
+test('semua sekolah aktif masuk peringkat, nomor 1 sekolah tanpa absen sama sekali', function () {
     $user = createSuperAdminUser();
-    $ramai = sekolahMonitor('SMP Ramai', true);
+    $ramai = sekolahMonitor('SMP Ramai');
     absenMonitor($ramai, 3);
-    $sepi = sekolahMonitor('SMP Sepi', true);
+    $sepi = sekolahMonitor('SMP Sepi');
     Student::factory()->count(2)->create(['school_id' => $sepi->id, 'is_active' => true]);
-    sekolahMonitor('SMP Libur', true, jadwal: false);
-    sekolahMonitor('SMP Tanpa Sistem', false);
+    sekolahMonitor('SMP Libur', jadwal: false);
 
     $this->actingAs($user)->get(route('admin.monitor'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/monitor/index')
-            ->where('monitor.dipantau.0.nama', 'SMP Sepi')
-            ->where('monitor.dipantau.0.keadaan', 'tanpa_absen')
-            ->where('monitor.dipantau.0.peringkat', 1)
-            ->where('monitor.dipantau.1.nama', 'SMP Ramai')
-            ->where('monitor.dipantau.1.keadaan', 'berjalan')
-            ->where('monitor.dipantau.1.hadir', 3)
-            ->where('monitor.dipantau.2.nama', 'SMP Libur')
-            ->where('monitor.dipantau.2.keadaan', 'libur')
+            ->where('monitor.sekolah.0.nama', 'SMP Sepi')
+            ->where('monitor.sekolah.0.keadaan', 'tanpa_absen')
+            ->where('monitor.sekolah.0.peringkat', 1)
+            ->where('monitor.sekolah.1.nama', 'SMP Ramai')
+            ->where('monitor.sekolah.1.keadaan', 'berjalan')
+            ->where('monitor.sekolah.1.hadir', 3)
+            ->where('monitor.sekolah', fn ($sekolah) => collect($sekolah)->firstWhere('nama', 'SMP Libur')['keadaan'] === 'libur')
             ->where('monitor.ringkasan.tanpa_absen', 1)
-            // Sekolah yang tidak dicentang tidak ikut peringkat walau 0 absen.
-            ->where('monitor.lainnya', fn ($lainnya) => collect($lainnya)->pluck('nama')->contains('SMP Tanpa Sistem')
-                && collect($lainnya)->every(fn ($b) => ! isset($b['peringkat'])))
+            // Tanpa centang: sekolah milik akun super admin sendiri ikut juga.
+            ->where('monitor.ringkasan.total', School::where('is_active', true)->count())
         );
 });
 
 test('sebelum jam masuk paling awal sekolah tanpa absen belum dinilai', function () {
     $this->travelTo(Carbon::create(2026, 10, 29, 5, 30, 0, SchoolTime::timezone()));
     $user = createSuperAdminUser();
-    sekolahMonitor('SMP Pagi', true);
+    sekolahMonitor('SMP Pagi');
 
     $this->actingAs($user)->get(route('admin.monitor'))
-        ->assertInertia(fn (Assert $page) => $page->where('monitor.dipantau.0.keadaan', 'belum_mulai'));
+        ->assertInertia(fn (Assert $page) => $page->where('monitor.sekolah.0.keadaan', 'belum_mulai'));
 });
 
 test('absen terakhir menunjukkan tanggal sekolah terakhir kali absen', function () {
     $user = createSuperAdminUser();
-    $sekolah = sekolahMonitor('SMP Lama', true);
+    $sekolah = sekolahMonitor('SMP Lama');
     absenMonitor($sekolah, 1, '2026-10-20');
 
     $this->actingAs($user)->get(route('admin.monitor'))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('monitor.dipantau.0.absen_terakhir', '2026-10-20')
-            ->where('monitor.dipantau.0.keadaan', 'tanpa_absen'));
-});
-
-test('super admin bisa mencentang dan melepas sekolah dari pantauan', function () {
-    $user = createSuperAdminUser();
-    $sekolah = sekolahMonitor('SMP Baru', false);
-
-    $this->actingAs($user)->post(route('admin.monitor.pantau', $sekolah), ['dipantau' => true])->assertRedirect();
-    expect($sekolah->fresh()->getSetting(MonitorSekolah::SETTING_DIPANTAU))->toBeTrue();
-
-    $this->actingAs($user)->post(route('admin.monitor.pantau', $sekolah), ['dipantau' => false])->assertRedirect();
-    expect($sekolah->fresh()->getSetting(MonitorSekolah::SETTING_DIPANTAU))->toBeFalse();
-});
-
-test('admin sekolah tidak bisa mengubah pantauan', function () {
-    $sekolah = sekolahMonitor('SMP X', false);
-
-    $this->actingAs(createAdminUser())->post(route('admin.monitor.pantau', $sekolah), ['dipantau' => true])->assertForbidden();
-    expect($sekolah->fresh()->getSetting(MonitorSekolah::SETTING_DIPANTAU))->toBeFalse();
+            ->where('monitor.sekolah.0.absen_terakhir', '2026-10-20')
+            ->where('monitor.sekolah.0.keadaan', 'tanpa_absen'));
 });
 
 test('tanggal masa depan ditolak', function () {

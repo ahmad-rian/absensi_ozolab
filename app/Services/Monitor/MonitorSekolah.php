@@ -14,19 +14,13 @@ use Illuminate\Support\Collection;
 
 /**
  * Pantauan lintas sekolah untuk super admin: sekolah mana yang hari itu tidak
- * ada absen sama sekali.
- *
- * Tidak semua sekolah memakai absensi, jadi hanya sekolah yang dicentang
- * "dipantau" yang diberi peringkat. Sekolah lain tetap terlihat di bawah
- * supaya bisa dicentang kapan saja.
+ * ada absen sama sekali. Semua sekolah aktif otomatis ikut peringkat.
  *
  * Seluruh angka diambil dengan beberapa query agregat (group by school_id),
  * bukan satu query per sekolah.
  */
 class MonitorSekolah
 {
-    public const SETTING_DIPANTAU = 'monitor_dipantau';
-
     /** Status yang menandakan siswa benar-benar datang. */
     private const STATUS_DATANG = [AttendanceStatus::Hadir->value, AttendanceStatus::Terlambat->value];
 
@@ -36,15 +30,14 @@ class MonitorSekolah
     /**
      * @return array{
      *     tanggal: string,
-     *     dipantau: list<array<string, mixed>>,
-     *     lainnya: list<array<string, mixed>>,
-     *     ringkasan: array{dipantau: int, tanpa_absen: int, berjalan: int, libur: int}
+     *     sekolah: list<array<string, mixed>>,
+     *     ringkasan: array{total: int, tanpa_absen: int, berjalan: int, libur: int}
      * }
      */
     public function untuk(Carbon $tanggal): array
     {
         $tgl = $tanggal->toDateString();
-        $sekolah = School::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'settings']);
+        $sekolah = School::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $ids = $sekolah->pluck('id');
 
         $siswa = Student::withoutGlobalScopes()
@@ -90,7 +83,7 @@ class MonitorSekolah
             $jadwal->get($s->id, collect()),
         ));
 
-        $dipantau = $baris->where('dipantau', true)
+        $peringkat = $baris
             ->sortBy([
                 fn (array $a, array $b) => self::URUTAN[$a['keadaan']] <=> self::URUTAN[$b['keadaan']],
                 fn (array $a, array $b) => $a['persen'] <=> $b['persen'],
@@ -101,13 +94,12 @@ class MonitorSekolah
 
         return [
             'tanggal' => $tgl,
-            'dipantau' => $dipantau->all(),
-            'lainnya' => $baris->where('dipantau', false)->values()->all(),
+            'sekolah' => $peringkat->all(),
             'ringkasan' => [
-                'dipantau' => $dipantau->count(),
-                'tanpa_absen' => $dipantau->where('keadaan', 'tanpa_absen')->count(),
-                'berjalan' => $dipantau->where('keadaan', 'berjalan')->count(),
-                'libur' => $dipantau->where('keadaan', 'libur')->count(),
+                'total' => $peringkat->count(),
+                'tanpa_absen' => $peringkat->where('keadaan', 'tanpa_absen')->count(),
+                'berjalan' => $peringkat->where('keadaan', 'berjalan')->count(),
+                'libur' => $peringkat->where('keadaan', 'libur')->count(),
             ],
         ];
     }
@@ -126,7 +118,6 @@ class MonitorSekolah
         return [
             'id' => $s->id,
             'nama' => $s->name,
-            'dipantau' => (bool) $s->getSetting(self::SETTING_DIPANTAU, false),
             'siswa' => $siswa,
             'hadir' => $datang,
             'terlambat' => $hitung([AttendanceStatus::Terlambat->value]),
