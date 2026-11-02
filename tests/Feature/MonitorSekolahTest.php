@@ -62,15 +62,17 @@ function barisMonitor(iterable $sekolah): array
     return collect($sekolah)->keyBy('nama')->all();
 }
 
-test('sekolah paling jarang absen di atas, paling sering di bawah', function () {
+test('urutan harian: persen hadir paling kecil di atas, tanpa absen di bawahnya, libur paling bawah', function () {
     $user = createSuperAdminUser();
-    $sering = sekolahMonitor('SMP Sering');
-    foreach (['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29'] as $tgl) {
-        absenMonitor($sering, 1, $tgl);
-    }
-    $jarang = sekolahMonitor('SMP Jarang');
-    absenMonitor($jarang, 2, '2026-10-29');
-    sekolahMonitor('SMP Belum Pernah');
+    // 1 dari 4 siswa datang = 25%.
+    $rendah = sekolahMonitor('SMP Rendah');
+    absenMonitor($rendah, 1);
+    Student::factory()->count(3)->create(['school_id' => $rendah->id, 'is_active' => true]);
+    // 2 dari 2 datang = 100%.
+    absenMonitor(sekolahMonitor('SMP Penuh'), 2);
+    $kosong = sekolahMonitor('SMP Kosong');
+    Student::factory()->count(2)->create(['school_id' => $kosong->id, 'is_active' => true]);
+    sekolahMonitor('SMP Libur', jadwal: false);
     sekolahMonitor('SMP Tidak Dipantau', dipantau: false);
 
     $this->actingAs($user)->get(route('admin.monitor'))
@@ -78,24 +80,30 @@ test('sekolah paling jarang absen di atas, paling sering di bawah', function () 
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/monitor/index')
             ->where('monitor.sekolah', function ($sekolah) {
-                $urut = collect($sekolah)->pluck('nama')->values();
+                $urut = collect($sekolah)->pluck('nama')->values()->all();
                 $baris = barisMonitor($sekolah);
 
-                return $urut->search('SMP Belum Pernah') < $urut->search('SMP Jarang')
-                    && $urut->search('SMP Jarang') < $urut->search('SMP Sering')
-                    && $urut->last() === 'SMP Sering'
-                    && $baris['SMP Sering']['hari_aktif'] === 4
-                    && $baris['SMP Jarang']['hari_aktif'] === 1
-                    && $baris['SMP Belum Pernah']['hari_aktif'] === 0
-                    && $baris['SMP Belum Pernah']['keadaan'] === 'tanpa_absen'
-                    && $baris['SMP Jarang']['keadaan'] === 'berjalan'
-                    && $baris['SMP Jarang']['hadir'] === 2;
+                return $urut === ['SMP Rendah', 'SMP Penuh', 'SMP Kosong', 'SMP Libur']
+                    && (float) $baris['SMP Rendah']['persen'] === 25.0
+                    && $baris['SMP Kosong']['keadaan'] === 'tanpa_absen'
+                    && $baris['SMP Rendah']['peringkat'] === 1;
             })
             // Hanya sekolah yang dicentang yang diberi peringkat.
-            ->where('monitor.ringkasan.total', 3)
+            ->where('monitor.ringkasan.total', 4)
             ->where('monitor.lainnya', fn ($lainnya) => collect($lainnya)->pluck('nama')->contains('SMP Tidak Dipantau')
                 && collect($lainnya)->every(fn ($b) => ! isset($b['peringkat'])))
         );
+});
+
+test('absen 30 hari terakhir tetap dihitung per sekolah', function () {
+    $user = createSuperAdminUser();
+    $sering = sekolahMonitor('SMP Sering');
+    foreach (['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29'] as $tgl) {
+        absenMonitor($sering, 1, $tgl);
+    }
+
+    $this->actingAs($user)->get(route('admin.monitor'))
+        ->assertInertia(fn (Assert $page) => $page->where('monitor.sekolah', fn ($s) => barisMonitor($s)['SMP Sering']['hari_aktif'] === 4));
 });
 
 test('sekolah tanpa jadwal hari itu ditandai libur', function () {
@@ -146,19 +154,4 @@ test('admin sekolah tidak bisa mengubah pantauan', function () {
 test('tanggal masa depan ditolak', function () {
     $this->actingAs(createSuperAdminUser())->get(route('admin.monitor', ['tanggal' => '2026-11-05']))
         ->assertSessionHasErrors('tanggal');
-});
-
-test('sekolah tanpa absen hari ini selalu di atas walau biasanya sering absen', function () {
-    $user = createSuperAdminUser();
-    $rajin = sekolahMonitor('SMP Rajin Tapi Hari Ini Kosong');
-    foreach (['2026-10-26', '2026-10-27', '2026-10-28'] as $tgl) {
-        absenMonitor($rajin, 1, $tgl);
-    }
-    absenMonitor(sekolahMonitor('SMP Ada Absen Hari Ini'), 1);
-    sekolahMonitor('SMP Libur Hari Ini', jadwal: false);
-
-    $this->actingAs($user)->get(route('admin.monitor'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('monitor.sekolah.0.nama', 'SMP Rajin Tapi Hari Ini Kosong')
-            ->where('monitor.sekolah.0.keadaan', 'tanpa_absen'));
 });

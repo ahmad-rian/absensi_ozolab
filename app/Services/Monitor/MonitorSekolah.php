@@ -30,6 +30,9 @@ class MonitorSekolah
     /** Status yang menandakan siswa benar-benar datang. */
     private const STATUS_DATANG = [AttendanceStatus::Hadir->value, AttendanceStatus::Terlambat->value];
 
+    /** Urutan keadaan hari itu pada peringkat. */
+    private const URUTAN_HARIAN = ['berjalan' => 0, 'tanpa_absen' => 1, 'belum_mulai' => 2, 'libur' => 3];
+
     /** Rentang hitungan seberapa sering sekolah absen. */
     public const RENTANG_HARI = 30;
 
@@ -106,11 +109,12 @@ class MonitorSekolah
 
         $peringkat = $baris->where('dipantau', true)
             ->sortBy([
-                // Merah (hari ini ada jadwal tapi nol absen) selalu paling atas.
-                fn (array $a, array $b) => ($b['keadaan'] === 'tanpa_absen') <=> ($a['keadaan'] === 'tanpa_absen'),
+                // Pantauan harian: sekolah yang sudah absen tapi persennya
+                // paling kecil di atas (kendala alat / absen kurang bagus),
+                // lalu yang belum ada absen, libur paling bawah.
+                fn (array $a, array $b) => self::URUTAN_HARIAN[$a['keadaan']] <=> self::URUTAN_HARIAN[$b['keadaan']],
+                fn (array $a, array $b) => $a['persen'] <=> $b['persen'],
                 fn (array $a, array $b) => $a['hari_aktif'] <=> $b['hari_aktif'],
-                // Sama jarangnya: yang paling lama tidak absen (atau belum pernah) di atas.
-                fn (array $a, array $b) => ($a['absen_terakhir'] ?? '') <=> ($b['absen_terakhir'] ?? ''),
                 fn (array $a, array $b) => strcasecmp($a['nama'], $b['nama']),
             ])
             ->values()
