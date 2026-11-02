@@ -106,6 +106,8 @@ class MonitorSekolah
 
         $peringkat = $baris->where('dipantau', true)
             ->sortBy([
+                // Merah (hari ini ada jadwal tapi nol absen) selalu paling atas.
+                fn (array $a, array $b) => ($b['keadaan'] === 'tanpa_absen') <=> ($a['keadaan'] === 'tanpa_absen'),
                 fn (array $a, array $b) => $a['hari_aktif'] <=> $b['hari_aktif'],
                 // Sama jarangnya: yang paling lama tidak absen (atau belum pernah) di atas.
                 fn (array $a, array $b) => ($a['absen_terakhir'] ?? '') <=> ($b['absen_terakhir'] ?? ''),

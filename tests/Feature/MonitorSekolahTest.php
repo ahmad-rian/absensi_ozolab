@@ -147,3 +147,18 @@ test('tanggal masa depan ditolak', function () {
     $this->actingAs(createSuperAdminUser())->get(route('admin.monitor', ['tanggal' => '2026-11-05']))
         ->assertSessionHasErrors('tanggal');
 });
+
+test('sekolah tanpa absen hari ini selalu di atas walau biasanya sering absen', function () {
+    $user = createSuperAdminUser();
+    $rajin = sekolahMonitor('SMP Rajin Tapi Hari Ini Kosong');
+    foreach (['2026-10-26', '2026-10-27', '2026-10-28'] as $tgl) {
+        absenMonitor($rajin, 1, $tgl);
+    }
+    absenMonitor(sekolahMonitor('SMP Ada Absen Hari Ini'), 1);
+    sekolahMonitor('SMP Libur Hari Ini', jadwal: false);
+
+    $this->actingAs($user)->get(route('admin.monitor'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('monitor.sekolah.0.nama', 'SMP Rajin Tapi Hari Ini Kosong')
+            ->where('monitor.sekolah.0.keadaan', 'tanpa_absen'));
+});

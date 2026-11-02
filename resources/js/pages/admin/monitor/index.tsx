@@ -184,7 +184,8 @@ export default function MonitorSekolah({ monitor, hariIni }: Props) {
                             Peringkat sekolah dipantau
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            Paling atas: paling jarang absen dalam{' '}
+                            Paling atas: sekolah yang hari ini tidak ada absen,
+                            lalu yang paling jarang absen dalam{' '}
                             {monitor.rentang_hari} hari terakhir.
                         </p>
                     </div>
