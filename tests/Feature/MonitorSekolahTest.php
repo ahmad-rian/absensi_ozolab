@@ -62,7 +62,7 @@ function barisMonitor(iterable $sekolah): array
     return collect($sekolah)->keyBy('nama')->all();
 }
 
-test('urutan harian: persen hadir paling kecil di atas, tanpa absen di bawahnya, libur paling bawah', function () {
+test('urutan harian: tanpa absen paling atas, lalu persen hadir paling kecil, libur paling bawah', function () {
     $user = createSuperAdminUser();
     // 1 dari 4 siswa datang = 25%.
     $rendah = sekolahMonitor('SMP Rendah');
@@ -83,10 +83,10 @@ test('urutan harian: persen hadir paling kecil di atas, tanpa absen di bawahnya,
                 $urut = collect($sekolah)->pluck('nama')->values()->all();
                 $baris = barisMonitor($sekolah);
 
-                return $urut === ['SMP Rendah', 'SMP Penuh', 'SMP Kosong', 'SMP Libur']
+                return $urut === ['SMP Kosong', 'SMP Rendah', 'SMP Penuh', 'SMP Libur']
                     && (float) $baris['SMP Rendah']['persen'] === 25.0
                     && $baris['SMP Kosong']['keadaan'] === 'tanpa_absen'
-                    && $baris['SMP Rendah']['peringkat'] === 1;
+                    && $baris['SMP Kosong']['peringkat'] === 1;
             })
             // Hanya sekolah yang dicentang yang diberi peringkat.
             ->where('monitor.ringkasan.total', 4)

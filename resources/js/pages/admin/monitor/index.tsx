@@ -90,8 +90,8 @@ function hariLalu(tanggal: string | null, acuan: string): string {
 }
 
 /**
- * Monitor super admin: sekolah yang dicentang "Pantau" diurutkan dari % hadir
- * hari itu paling kecil; sekolah tanpa absen di bawahnya, libur paling bawah.
+ * Monitor super admin: sekolah yang dicentang "Pantau" — tanpa absen paling
+ * atas, lalu dari % hadir hari itu paling kecil, libur paling bawah.
  * Sekolah yang belum dicentang ada di bawah, tanpa peringkat.
  */
 export default function MonitorSekolah({ monitor, hariIni }: Props) {
@@ -184,9 +184,8 @@ export default function MonitorSekolah({ monitor, hariIni }: Props) {
                             Peringkat sekolah dipantau
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            Diurutkan dari % hadir hari itu paling kecil. Di
-                            bawahnya sekolah yang belum ada absen, lalu yang
-                            libur.
+                            Paling atas sekolah yang hari ini tidak ada absen,
+                            lalu dari % hadir paling kecil. Libur paling bawah.
                         </p>
                     </div>
                     {monitor.sekolah.length === 0 ? (

@@ -31,7 +31,7 @@ class MonitorSekolah
     private const STATUS_DATANG = [AttendanceStatus::Hadir->value, AttendanceStatus::Terlambat->value];
 
     /** Urutan keadaan hari itu pada peringkat. */
-    private const URUTAN_HARIAN = ['berjalan' => 0, 'tanpa_absen' => 1, 'belum_mulai' => 2, 'libur' => 3];
+    private const URUTAN_HARIAN = ['tanpa_absen' => 0, 'berjalan' => 1, 'belum_mulai' => 2, 'libur' => 3];
 
     /** Rentang hitungan seberapa sering sekolah absen. */
     public const RENTANG_HARI = 30;
@@ -109,9 +109,9 @@ class MonitorSekolah
 
         $peringkat = $baris->where('dipantau', true)
             ->sortBy([
-                // Pantauan harian: sekolah yang sudah absen tapi persennya
-                // paling kecil di atas (kendala alat / absen kurang bagus),
-                // lalu yang belum ada absen, libur paling bawah.
+                // Pantauan harian: yang tidak ada absen sama sekali paling atas,
+                // lalu yang sudah absen dari persen terkecil (kendala alat /
+                // absen kurang bagus), libur paling bawah.
                 fn (array $a, array $b) => self::URUTAN_HARIAN[$a['keadaan']] <=> self::URUTAN_HARIAN[$b['keadaan']],
                 fn (array $a, array $b) => $a['persen'] <=> $b['persen'],
                 fn (array $a, array $b) => $a['hari_aktif'] <=> $b['hari_aktif'],
