@@ -36,6 +36,27 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentRegistrationController extends Controller
 {
+    /** Nomor induk: huruf/angka, boleh titik atau tanda hubung di tengah. */
+    private const POLA_NOMOR = '/^[\pL\pN][\pL\pN.\-]*$/u';
+
+    /**
+     * Buang spasi dan karakter tak terlihat yang sering ikut dari keyboard HP
+     * atau hasil salin-tempel (spasi tak-putus, zero-width), supaya "17390"
+     * yang terlihat benar tidak ditolak karena karakter yang tidak kelihatan.
+     */
+    private function rapikanNomor(Request $request): void
+    {
+        $rapi = [];
+
+        foreach (['nis', 'nisn', 'no_absen'] as $kolom) {
+            if (is_string($request->input($kolom))) {
+                $rapi[$kolom] = preg_replace('/[\s\x{00A0}\x{200B}-\x{200D}\x{2060}\x{FEFF}]+/u', '', $request->input($kolom));
+            }
+        }
+
+        $request->merge($rapi);
+    }
+
     /**
      * Logo yang dipajang di kepala formulir pendaftaran.
      *
@@ -130,6 +151,8 @@ class StudentRegistrationController extends Controller
      */
     public function storeQuick(Request $request): JsonResponse
     {
+        $this->rapikanNomor($request);
+
         $validated = $request->validate([
             'school_id' => ['required', 'exists:schools,id', new SchoolFeatureEnabled(SchoolFeature::PendaftaranPublik)],
             'full_name' => ['required', 'string', 'max:255', "regex:/^[\p{L}\p{N} .,'\-]+$/u"],
@@ -143,6 +166,7 @@ class StudentRegistrationController extends Controller
             'classroom_id.required' => 'Pilih kelas terlebih dahulu.',
             'classroom_id.exists' => 'Kelas tidak ditemukan di sekolah ini.',
             'no_absen.required' => 'No. absen wajib diisi.',
+            'no_absen.alpha_num' => 'No. absen hanya boleh berisi angka dan/atau huruf.',
             'photo_drive_filename.required' => 'Nama file foto wajib diisi.',
         ]);
 
@@ -274,6 +298,8 @@ class StudentRegistrationController extends Controller
 
     public function store(Request $request, ParentProfileService $parentProfileService, QrTokenGenerator $qrGenerator): JsonResponse|RedirectResponse
     {
+        $this->rapikanNomor($request);
+
         /*
             Kolom sandi di form ini bermakna ganda: pendaftar baru MEMBUAT sandi,
             sedangkan orang tua yang sudah punya akun (mendaftarkan anak kedua)
@@ -305,9 +331,12 @@ class StudentRegistrationController extends Controller
             // global yang dipakai sebelumnya menolak NISN yang ternyata dipegang
             // siswa sekolah LAIN — operator lalu mencari di sekolahnya sendiri
             // dan tidak menemukan apa pun, jadi pesannya mustahil ditindaklanjuti.
-            'nis' => ['nullable', 'string', 'max:50', 'alpha_num', $this->uniquePerSchool('nis', $request->school_id)],
+            // Huruf saja, angka saja, atau campuran — plus titik dan tanda
+            // hubung yang lazim di NIS. Tetap tanpa spasi/simbol lain karena
+            // ikut masuk export CSV dan header HTTP.
+            'nis' => ['nullable', 'string', 'max:50', 'regex:'.self::POLA_NOMOR, $this->uniquePerSchool('nis', $request->school_id)],
             'no_absen' => ['required', 'string', 'max:10', 'alpha_num'],
-            'nisn' => ['required', 'string', 'max:20', 'alpha_num', $this->uniquePerSchool('nisn', $request->school_id)],
+            'nisn' => ['required', 'string', 'max:20', 'regex:'.self::POLA_NOMOR, $this->uniquePerSchool('nisn', $request->school_id)],
             'gender' => ['required', Rule::enum(Gender::class)],
             'religion' => ['required', Rule::enum(Religion::class)],
             'classroom_id' => ['required', Rule::exists('classrooms', 'id')->where('school_id', $request->school_id)],
@@ -340,8 +369,13 @@ class StudentRegistrationController extends Controller
             'school_id.exists' => 'Sekolah tidak ditemukan.',
             'full_name.required' => 'Nama lengkap wajib diisi.',
             'nis.unique' => 'NIS sudah terdaftar. Gunakan NIS lain atau kosongkan untuk auto-generate.',
+            'nis.regex' => 'NIS hanya boleh berisi angka dan/atau huruf (boleh titik atau tanda hubung).',
+            'nis.max' => 'NIS maksimal 50 karakter.',
             'no_absen.required' => 'No. absen wajib diisi.',
+            'no_absen.alpha_num' => 'No. absen hanya boleh berisi angka dan/atau huruf.',
             'nisn.required' => 'NISN wajib diisi.',
+            'nisn.regex' => 'NISN hanya boleh berisi angka dan/atau huruf.',
+            'nisn.max' => 'NISN maksimal 20 karakter.',
             'nisn.unique' => 'NISN sudah terdaftar. Periksa kembali NISN siswa.',
             'gender.required' => 'Pilih jenis kelamin.',
             'religion.required' => 'Pilih agama.',

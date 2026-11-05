@@ -153,6 +153,8 @@ class MonitorSekolah
             'hadir' => $datang,
             'terlambat' => $hitung([AttendanceStatus::Terlambat->value]),
             'izin_sakit' => $hitung([AttendanceStatus::Izin->value, AttendanceStatus::Sakit->value]),
+            // Siswa aktif yang tidak datang hari itu (izin/sakit/alpa/tanpa catatan).
+            'tidak_hadir' => max(0, $siswa - $datang),
             'persen' => $siswa > 0 ? round($datang / $siswa * 100, 1) : 0.0,
             'scan_terakhir' => $scanTerakhir ? Carbon::parse($scanTerakhir)->format('H:i') : null,
             'absen_terakhir' => $terakhir ? Carbon::parse($terakhir)->toDateString() : null,

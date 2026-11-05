@@ -85,6 +85,7 @@ test('urutan harian: tanpa absen paling atas, lalu persen hadir paling kecil, li
 
                 return $urut === ['SMP Kosong', 'SMP Rendah', 'SMP Penuh', 'SMP Libur']
                     && (float) $baris['SMP Rendah']['persen'] === 25.0
+                    && $baris['SMP Rendah']['tidak_hadir'] === 3
                     && $baris['SMP Kosong']['keadaan'] === 'tanpa_absen'
                     && $baris['SMP Kosong']['peringkat'] === 1;
             })

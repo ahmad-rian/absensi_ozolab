@@ -27,6 +27,7 @@ type Baris = {
     hadir: number;
     terlambat: number;
     izin_sakit: number;
+    tidak_hadir: number;
     persen: number;
     scan_terakhir: string | null;
     absen_terakhir: string | null;
@@ -260,7 +261,7 @@ function TabelSekolah({
                         <th className="px-3 py-2">Sekolah</th>
                         <th className="px-3 py-2">Hari ini</th>
                         <th className="px-3 py-2 text-right">Hadir</th>
-                        <th className="px-3 py-2 text-right">Izin/Sakit</th>
+                        <th className="px-3 py-2 text-right">Tidak hadir</th>
                         <th className="px-3 py-2 text-right">% Hadir</th>
                         <th className="px-3 py-2">Scan terakhir</th>
                         <th className="px-3 py-2">Absen terakhir</th>
@@ -318,7 +319,12 @@ function TabelSekolah({
                                 )}
                             </td>
                             <td className="px-3 py-2 text-right tabular-nums">
-                                {b.izin_sakit}
+                                {b.keadaan === 'libur' ? '-' : b.tidak_hadir}
+                                {b.izin_sakit > 0 && (
+                                    <span className="ml-1 text-xs text-muted-foreground">
+                                        ({b.izin_sakit} izin/sakit)
+                                    </span>
+                                )}
                             </td>
                             <td className="px-3 py-2 text-right font-medium tabular-nums">
                                 {b.persen}%

@@ -278,3 +278,30 @@ test('logo yang diunggah lewat pengaturan tampil di kepala formulir pendaftaran'
     $this->get('/daftar')->assertInertia(fn ($page) => $page
         ->where('schools', fn ($schools) => collect($schools)->firstWhere('id', $school->id)['logo_path'] === 'logos/sekolah.png'));
 });
+
+test('nis angka saja dengan spasi tak terlihat dari keyboard hp tetap diterima', function () {
+    $school = School::factory()->create(['is_active' => true]);
+    $classroom = Classroom::factory()->create(['school_id' => $school->id]);
+
+    // Spasi tak-putus + zero-width yang tidak terlihat di layar.
+    registerStudent($school, $classroom, ['nis' => "17390\u{00A0}\u{200B}", 'nisn' => ' 0126805095 '])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    expect(Student::where('school_id', $school->id)->where('nis', '17390')->where('nisn', '0126805095')->exists())->toBeTrue();
+});
+
+test('nis boleh huruf saja, campuran, titik, atau tanda hubung', function (string $nis) {
+    $school = School::factory()->create(['is_active' => true]);
+    $classroom = Classroom::factory()->create(['school_id' => $school->id]);
+
+    registerStudent($school, $classroom, ['nis' => $nis])->assertOk()->assertJson(['success' => true]);
+})->with(['ABCDE', '17390A', '1739.045', '2025-001']);
+
+test('nis dengan simbol lain ditolak dengan pesan bahasa indonesia', function () {
+    $school = School::factory()->create(['is_active' => true]);
+    $classroom = Classroom::factory()->create(['school_id' => $school->id]);
+
+    registerStudent($school, $classroom, ['nis' => '17390<x>'])
+        ->assertSessionHasErrors(['nis' => 'NIS hanya boleh berisi angka dan/atau huruf (boleh titik atau tanda hubung).']);
+});
