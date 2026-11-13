@@ -207,6 +207,7 @@ class DashboardController extends Controller
         $schoolId = auth()->user()->school_id;
 
         $classrooms = Classroom::forSchool()
+            ->tahunAktif()
             ->with(['students' => fn ($q) => $q->where('is_active', true)])
             ->orderBy('name')
             ->get();

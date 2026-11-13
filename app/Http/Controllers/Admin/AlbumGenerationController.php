@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -25,6 +26,7 @@ class AlbumGenerationController extends Controller
             ->get(['id', 'name', 'paper_size', 'orientation', 'columns', 'rows']);
 
         $classrooms = Classroom::forSchool()
+            ->tahunAktif()
             ->orderBy('name')
             ->get(['id', 'name']);
 
@@ -55,7 +57,7 @@ class AlbumGenerationController extends Controller
     {
         $validated = $request->validate([
             'layout_id' => ['required', 'exists:school_album_layouts,id'],
-            'classroom_id' => ['nullable', 'exists:classrooms,id'],
+            'classroom_id' => ['nullable', Rule::exists('classrooms', 'id')->where('school_id', auth()->user()->school_id)],
             'student_ids' => ['nullable', 'string'],
         ]);
 

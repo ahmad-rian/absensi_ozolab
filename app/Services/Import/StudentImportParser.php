@@ -474,6 +474,9 @@ class StudentImportParser
         Classroom::query()
             ->withoutGlobalScope('school')
             ->where('school_id', $schoolId)
+            // Nama kelas dibuat ulang tiap tahun ajaran; tanpa batas ini setiap
+            // baris berkelas ditolak "lebih dari satu" begitu tahun baru dibuat.
+            ->tahunAktif()
             ->get(['id', 'name'])
             ->each(function (Classroom $classroom) use (&$index): void {
                 $index[$this->normalizeName($classroom->name)][] = $classroom->id;

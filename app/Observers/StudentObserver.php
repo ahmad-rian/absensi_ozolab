@@ -5,9 +5,10 @@ namespace App\Observers;
 use App\Jobs\SyncStudentDriveFolderJob;
 use App\Models\CardGenerationLog;
 use App\Models\Student;
+use App\Services\Student\RiwayatKelas;
 
 /**
- * Menjaga Drive tetap sejalan dengan baris siswa.
+ * Menjaga Drive dan riwayat kelas tetap sejalan dengan baris siswa.
  *
  * Letak folder Drive seorang siswa diturunkan dari kelas, NIS, dan namanya. Ketiga
  * nilai itu berubah lewat banyak jalur — form admin, impor, kenaikan kelas
@@ -30,8 +31,25 @@ class StudentObserver
      */
     private const DRIVE_FILE_COLUMNS = ['nis', 'full_name'];
 
+    /**
+     * Siswa baru langsung punya riwayat kelas di tahun ajaran berjalan.
+     */
+    public function created(Student $student): void
+    {
+        if ($student->classroom_id) {
+            app(RiwayatKelas::class)->catat($student, $student->classroom_id);
+        }
+    }
+
     public function updated(Student $student): void
     {
+        // Riwayat kelas ikut dari jalur mana pun kelasnya berubah (form admin,
+        // impor, kenaikan kelas). RiwayatKelas idempoten, jadi layar kenaikan
+        // yang sudah mencatat lebih dulu tidak tercatat dua kali.
+        if ($student->wasChanged('classroom_id') && $student->classroom_id) {
+            app(RiwayatKelas::class)->catat($student, $student->classroom_id, $student->getOriginal('classroom_id'));
+        }
+
         if (! $student->wasChanged(self::DRIVE_PATH_COLUMNS)) {
             return;
         }

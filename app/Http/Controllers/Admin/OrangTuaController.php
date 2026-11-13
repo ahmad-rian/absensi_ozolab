@@ -54,7 +54,7 @@ class OrangTuaController extends Controller
 
         return Inertia::render('admin/orang-tua/index', [
             'parents' => $parents,
-            'classrooms' => Classroom::forSchool()->orderBy('name')->get(['id', 'name']),
+            'classrooms' => Classroom::forSchool()->tahunAktif()->orderBy('name')->get(['id', 'name']),
             'telegramActive' => $telegramActive,
             'filters' => [
                 'search' => $search,

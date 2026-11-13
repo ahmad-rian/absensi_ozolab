@@ -11,6 +11,7 @@ use App\Models\School;
 use App\Models\Setting;
 use App\Models\Student;
 use App\Services\Student\StudentStatsBuilder;
+use App\Support\AnggotaKelas;
 use App\Support\KelompokKelas;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
@@ -49,7 +50,7 @@ class LaporanController extends Controller
             'total_tidak_hadir' => $reportData->sum('izin') + $reportData->sum('sakit') + $reportData->sum('alpa'),
         ];
 
-        $classrooms = Classroom::forSchool()->orderBy('name')->get(['id', 'name', 'grade_level']);
+        $classrooms = Classroom::forSchool()->tahunAktif($classroomId)->orderBy('name')->get(['id', 'name', 'grade_level']);
 
         return Inertia::render('admin/laporan/index', [
             'reportData' => $reportData->values(),
@@ -157,10 +158,16 @@ class LaporanController extends Controller
         $classroom = $classroom === 'all' ? null : $classroom;
         $stats = app(StudentStatsBuilder::class);
 
+        // Kelas tahun ajaran lama: siswanya sudah naik kelas, jadi anggotanya
+        // dibaca dari riwayat kelas dan nama kelas di laporan tetap kelas itu.
+        $kelas = $classroom ? Classroom::withoutGlobalScope('school')->where('school_id', $school)->whereKey($classroom)->first() : null;
+        $kelasLama = $kelas && AnggotaKelas::kelasLama($kelas) ? $kelas : null;
+
         return Student::where('school_id', $school)
-            ->when($classroom, fn ($q) => $q->where('classroom_id', $classroom))
+            ->when($classroom && ! $kelasLama, fn ($q) => $q->where('classroom_id', $classroom))
+            ->when($kelasLama, fn ($q) => $q->whereIn('id', AnggotaKelas::query($kelasLama)->select('id')))
             ->when($angkatan, fn ($q) => $q->whereHas('classroom', fn ($k) => $k->where('grade_level', $angkatan)))
-            ->with(['school', 'classroom'])->orderBy('full_name')->get()->map(function ($student) use ($stats, $start, $end, $kind): array {
+            ->with(['school', 'classroom'])->orderBy('full_name')->get()->map(function ($student) use ($stats, $start, $end, $kind, $kelasLama): array {
                 $attendance = $stats->attendanceFor($student, $start, $end)['summary'];
                 $prayers = [];
                 foreach ($this->availableKinds() as $slug => $label) {
@@ -172,7 +179,7 @@ class LaporanController extends Controller
                 $summary = $sekolah ? $attendance : $prayers[$kind];
 
                 return [
-                    'student_id' => $student->id, 'nis' => $student->nis, 'full_name' => $student->full_name, 'classroom_name' => $student->classroom?->name ?? '-',
+                    'student_id' => $student->id, 'nis' => $student->nis, 'full_name' => $student->full_name, 'classroom_name' => $kelasLama?->name ?? $student->classroom?->name ?? '-',
                     // Terlambat tetap datang ke sekolah, jadi ikut dihitung Hadir;
                     // kolom Terlambat tinggal keterangan berapa di antaranya telat.
                     'hadir' => $summary['hadir'] + ($sekolah ? ($summary['terlambat'] ?? 0) : 0), 'terlambat' => $summary['terlambat'] ?? 0, 'izin' => $summary['izin'] ?? 0, 'sakit' => $summary['sakit'] ?? 0,

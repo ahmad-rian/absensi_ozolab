@@ -2,12 +2,15 @@
 
 use App\Http\Controllers\Admin\ClassPromotionController;
 use App\Models\AcademicYear;
+use App\Models\AttendanceSchedule;
 use App\Models\Classroom;
 use App\Models\Student;
 use App\Models\StudentClassHistory;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
+use OpenSpout\Reader\XLSX\Reader;
+use Spatie\Activitylog\Models\Activity;
 
 /**
  * Route kenaikan kelas belum ada di routes/web.php (didaftarkan terpisah).
@@ -428,4 +431,252 @@ it('menolak kunci staging milik sekolah lain', function () {
         ->assertForbidden();
 
     expect($student->fresh()->classroom_id)->toBe($oldClass->id);
+});
+
+it('menyediakan template terisi siswa aktif berikut sheet kelas tujuan', function () {
+    ['user' => $user, 'old_class' => $oldClass] = makePromotionSchool();
+
+    Student::factory()->create([
+        'school_id' => $user->school_id, 'classroom_id' => $oldClass->id,
+        'nisn' => '0071234567', 'nis' => '1001', 'full_name' => 'Ani Template', 'is_active' => true,
+    ]);
+    Student::factory()->create([
+        'school_id' => $user->school_id, 'classroom_id' => $oldClass->id,
+        'nisn' => '0079999999', 'full_name' => 'Sudah Lulus', 'is_active' => false,
+    ]);
+
+    $response = $this->actingAs($user)->get(route('admin.kelas.kenaikan.template'));
+
+    $response->assertOk();
+    $rows = xlsxRows($response);
+
+    expect($rows)->toHaveCount(2)
+        ->and($rows[0])->toBe(['NISN', 'NIS', 'Nama', 'Kelas Sekarang', 'Kelas Baru'])
+        // NISN berawalan nol harus bertahan supaya bisa diunggah balik apa adanya.
+        ->and(array_slice($rows[1], 0, 4))->toBe(['0071234567', '1001', 'ANI TEMPLATE', '7A']);
+
+    // Sheet kedua: kelas tahun ajaran aktif + LULUS, tanpa kelas tahun lama.
+    $reader = new Reader;
+    $reader->open($response->baseResponse->getFile()->getPathname());
+    $tujuan = [];
+    foreach ($reader->getSheetIterator() as $index => $sheet) {
+        if ($index === 2) {
+            foreach ($sheet->getRowIterator() as $row) {
+                $tujuan[] = (string) $row->toArray()[0];
+            }
+        }
+    }
+    $reader->close();
+
+    expect($tujuan)->toContain('8A')->toContain('LULUS')->not->toContain('7A');
+});
+
+it('template yang diunduh bisa diunggah balik setelah kolom kelas baru diisi', function () {
+    ['user' => $user, 'old_class' => $oldClass, 'new_class' => $newClass] = makePromotionSchool();
+
+    $student = Student::factory()->create([
+        'school_id' => $user->school_id, 'classroom_id' => $oldClass->id, 'nisn' => '0071234567', 'nis' => '1001',
+    ]);
+
+    // Judul kolom persis seperti template; "Kelas Sekarang" tidak boleh terbaca sebagai kelas tujuan.
+    $key = uploadPromotionFile($user, [
+        ['NISN', 'NIS', 'Nama', 'Kelas Sekarang', 'Kelas Baru'],
+        ['0071234567', '1001', 'Siapa Saja', '7A', '8A'],
+    ]);
+
+    $this->actingAs($user)->post(route('admin.kelas.kenaikan.apply', ['key' => $key]))->assertRedirect();
+
+    expect($student->fresh()->classroom_id)->toBe($newClass->id);
+});
+
+it('meluluskan siswa yang kelas barunya ditulis LULUS', function () {
+    ['user' => $user, 'last_year' => $lastYear, 'old_class' => $oldClass] = makePromotionSchool();
+
+    $student = Student::factory()->create([
+        'school_id' => $user->school_id, 'classroom_id' => $oldClass->id, 'nisn' => '3333333333', 'is_active' => true,
+    ]);
+    $history = makeCurrentHistory($student, $oldClass, $lastYear);
+
+    $key = uploadPromotionFile($user, [
+        ['nisn', 'kelas baru'],
+        ['3333333333', 'lulus'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.kelas.kenaikan.review', ['key' => $key]))
+        ->assertInertia(fn ($page) => $page
+            ->where('preview.summary.graduate', 1)
+            ->where('preview.rows.0.action', 'graduate')
+            ->where('preview.rows.0.to_classroom', 'LULUS'));
+
+    $this->actingAs($user)->post(route('admin.kelas.kenaikan.apply', ['key' => $key]))->assertRedirect();
+
+    $student->refresh();
+
+    expect($student->is_active)->toBeFalse()
+        // Kelas terakhir tetap, supaya rekap kelas itu utuh.
+        ->and($student->classroom_id)->toBe($oldClass->id)
+        ->and($history->fresh()->is_current)->toBeFalse();
+});
+
+it('mencocokkan lewat NIS bila kolom NISN baris itu kosong', function () {
+    ['user' => $user, 'old_class' => $oldClass, 'new_class' => $newClass] = makePromotionSchool();
+
+    $tanpaNisn = Student::factory()->create([
+        'school_id' => $user->school_id, 'classroom_id' => $oldClass->id, 'nisn' => null, 'nis' => '5005',
+    ]);
+
+    $key = uploadPromotionFile($user, [
+        ['nisn', 'nis', 'kelas baru'],
+        ['', '5005', '8A'],
+        ['', '9999', '8A'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.kelas.kenaikan.review', ['key' => $key]))
+        ->assertInertia(fn ($page) => $page
+            ->where('preview.summary.promote', 1)
+            ->where('preview.summary.reject', 1)
+            ->where('preview.rows.1.reason', 'NIS 9999 tidak terdaftar di sekolah ini.'));
+
+    $this->actingAs($user)->post(route('admin.kelas.kenaikan.apply', ['key' => $key]))->assertRedirect();
+
+    expect($tanpaNisn->fresh()->classroom_id)->toBe($newClass->id);
+});
+
+it('menolak siswa yang muncul dua kali lewat NISN dan NIS', function () {
+    ['user' => $user, 'old_class' => $oldClass] = makePromotionSchool();
+
+    Student::factory()->create([
+        'school_id' => $user->school_id, 'classroom_id' => $oldClass->id, 'nisn' => '4444444444', 'nis' => '4004', 'full_name' => 'Dobel',
+    ]);
+
+    $key = uploadPromotionFile($user, [
+        ['nisn', 'nis', 'kelas baru'],
+        ['4444444444', '', '8A'],
+        ['', '4004', 'LULUS'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('admin.kelas.kenaikan.review', ['key' => $key]))
+        ->assertInertia(fn ($page) => $page
+            ->where('preview.summary.promote', 1)
+            ->where('preview.summary.graduate', 0)
+            ->where('preview.rows.1.action', 'reject'));
+});
+
+it('menambal riwayat tahun lama untuk siswa yang belum punya riwayat', function () {
+    ['user' => $user, 'last_year' => $lastYear, 'active_year' => $activeYear, 'old_class' => $oldClass, 'new_class' => $newClass] = makePromotionSchool();
+
+    // Tanpa makeCurrentHistory: siswa yang didaftarkan setelah backfill migrasi.
+    $student = Student::factory()->create([
+        'school_id' => $user->school_id, 'classroom_id' => $oldClass->id, 'nisn' => '5555555555',
+    ]);
+
+    $key = uploadPromotionFile($user, [['nisn', 'kelas baru'], ['5555555555', '8A']]);
+    $this->actingAs($user)->post(route('admin.kelas.kenaikan.apply', ['key' => $key]))->assertRedirect();
+
+    $riwayat = StudentClassHistory::withoutGlobalScope('school')->where('student_id', $student->id)->get()->keyBy('academic_year_id');
+
+    expect($riwayat)->toHaveCount(2)
+        ->and($riwayat[$lastYear->id]->classroom_id)->toBe($oldClass->id)
+        ->and($riwayat[$lastYear->id]->is_current)->toBeFalse()
+        ->and($riwayat[$activeYear->id]->classroom_id)->toBe($newClass->id)
+        ->and($riwayat[$activeYear->id]->is_current)->toBeTrue();
+});
+
+it('mencatat log dan menyediakan unduhan baris ditolak setelah diterapkan', function () {
+    ['user' => $user, 'old_class' => $oldClass] = makePromotionSchool();
+
+    Student::factory()->create(['school_id' => $user->school_id, 'classroom_id' => $oldClass->id, 'nisn' => '6666666666']);
+    Student::factory()->create(['school_id' => $user->school_id, 'classroom_id' => $oldClass->id, 'nisn' => '6666666667', 'full_name' => 'Tertinggal', 'is_active' => true]);
+
+    $key = uploadPromotionFile($user, [
+        ['nisn', 'kelas baru'],
+        ['6666666666', '8A'],
+        ['0000000000', '8A'],
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('admin.kelas.kenaikan.apply', ['key' => $key]))
+        ->assertRedirect(route('admin.kelas.kenaikan.hasil', ['key' => $key]));
+
+    $this->actingAs($user)
+        ->get(route('admin.kelas.kenaikan.hasil', ['key' => $key]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('hasil.summary.promoted', 1)
+            ->where('hasil.summary.rejected', 1)
+            ->where('hasil.summary.missing', 1));
+
+    $ditolak = xlsxRows($this->actingAs($user)->get(route('admin.kelas.kenaikan.unduh', ['key' => $key, 'jenis' => 'ditolak']))->assertOk());
+    $tidakAda = xlsxRows($this->actingAs($user)->get(route('admin.kelas.kenaikan.unduh', ['key' => $key, 'jenis' => 'tidak-ada']))->assertOk());
+
+    expect($ditolak)->toHaveCount(2)
+        ->and($ditolak[1][0])->toBe('0000000000')
+        ->and($ditolak[1][5])->toContain('tidak terdaftar')
+        ->and($tidakAda)->toHaveCount(2)
+        ->and($tidakAda[1][2])->toBe('TERTINGGAL');
+
+    $log = Activity::query()->where('description', 'kenaikan kelas')->latest('id')->first();
+
+    expect($log)->not->toBeNull()
+        ->and($log->causer_id)->toBe($user->id)
+        ->and($log->properties['promoted'])->toBe(1);
+
+    // Kunci hasil milik sekolah lain ditolak.
+    $this->actingAs(createAdminUser())
+        ->get(route('admin.kelas.kenaikan.unduh', ['key' => $key, 'jenis' => 'ditolak']))
+        ->assertForbidden();
+});
+
+it('menyalin jadwal khusus kelas dari kelas bernama sama di tahun sebelumnya', function () {
+    ['user' => $user, 'last_year' => $lastYear, 'old_class' => $oldClass, 'new_class' => $newClass] = makePromotionSchool();
+
+    $delapanALama = Classroom::factory()->create([
+        'school_id' => $user->school_id, 'academic_year_id' => $lastYear->id, 'name' => '8A', 'grade_level' => 8,
+    ]);
+    AttendanceSchedule::factory()->create([
+        'school_id' => $user->school_id, 'classroom_id' => $delapanALama->id, 'day_of_week' => 6,
+        'check_in_start' => '06:30:00', 'is_active' => true,
+    ]);
+
+    Student::factory()->create(['school_id' => $user->school_id, 'classroom_id' => $oldClass->id, 'nisn' => '7777777777']);
+
+    $terapkan = function () use ($user): void {
+        $key = uploadPromotionFile($user, [['nisn', 'kelas baru'], ['7777777777', '8A']]);
+        $this->actingAs($user)->post(route('admin.kelas.kenaikan.apply', ['key' => $key]))->assertRedirect();
+    };
+
+    $terapkan();
+    // Diterapkan dua kali: jadwal tidak boleh dobel.
+    $terapkan();
+
+    $jadwal = AttendanceSchedule::withoutGlobalScope('school')->where('classroom_id', $newClass->id)->get();
+
+    expect($jadwal)->toHaveCount(1)
+        ->and($jadwal[0]->day_of_week)->toBe(6)
+        ->and($jadwal[0]->timeOf('check_in_start'))->toBe('06:30:00');
+});
+
+it('mencatat riwayat saat kelas siswa diubah di luar layar kenaikan kelas', function () {
+    ['user' => $user, 'last_year' => $lastYear, 'active_year' => $activeYear, 'old_class' => $oldClass, 'new_class' => $newClass] = makePromotionSchool();
+
+    $student = Student::factory()->create(['school_id' => $user->school_id, 'classroom_id' => $oldClass->id]);
+
+    // Jalur edit manual / impor: hanya menyimpan model.
+    $student->update(['classroom_id' => $newClass->id]);
+
+    $riwayat = StudentClassHistory::withoutGlobalScope('school')->where('student_id', $student->id)->get()->keyBy('academic_year_id');
+
+    expect($riwayat[$activeYear->id]->classroom_id)->toBe($newClass->id)
+        ->and($riwayat[$activeYear->id]->is_current)->toBeTrue()
+        ->and($riwayat[$lastYear->id]->classroom_id)->toBe($oldClass->id)
+        ->and($riwayat[$lastYear->id]->is_current)->toBeFalse();
+
+    // Pindah ke kelas tahun lama bukan kenaikan kelas: riwayat tidak disentuh.
+    $student->update(['classroom_id' => $oldClass->id]);
+
+    expect(StudentClassHistory::withoutGlobalScope('school')->where('student_id', $student->id)->where('is_current', true)->value('classroom_id'))
+        ->toBe($newClass->id);
 });

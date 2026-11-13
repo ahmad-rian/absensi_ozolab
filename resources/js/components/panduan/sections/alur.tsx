@@ -113,10 +113,12 @@ export function KenaikanKelas() {
             <Steps>
                 <li>Pastikan tahun ajaran baru sudah aktif dan kelas tujuannya sudah dibuat.</li>
                 <li>
-                    Buka <Menu>Kenaikan Kelas</Menu>, unggah berkasnya.
+                    Buka <Menu>Kenaikan Kelas</Menu>, unduh templatenya (sudah berisi semua siswa aktif), isi kolom{' '}
+                    <b>Kelas Baru</b>. Siswa kelas akhir ditulis <b>LULUS</b>.
                 </li>
+                <li>Unggah berkasnya.</li>
                 <li>
-                    Periksa review: <b>akan diubah</b>, <b>tidak ada di berkas</b>, dan <b>ditolak</b>.
+                    Periksa review: <b>naik kelas</b>, <b>lulus</b>, <b>tidak ada di berkas</b>, dan <b>ditolak</b>.
                 </li>
                 <li>Tekan Terapkan.</li>
             </Steps>

@@ -57,6 +57,7 @@ class StudioController extends Controller
             ->findOrFail($school);
 
         $kelas = Classroom::where('school_id', $sekolah->id)
+            ->tahunAktif()
             ->withCount(['students' => fn ($q) => $q->where('is_active', true)])
             ->orderBy('grade_level')
             ->orderBy('name')

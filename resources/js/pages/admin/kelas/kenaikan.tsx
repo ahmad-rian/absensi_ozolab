@@ -3,7 +3,9 @@ import {
     AlertTriangle,
     ArrowUpRight,
     CheckCircle2,
+    Download,
     FileSpreadsheet,
+    GraduationCap,
     Upload,
     UserMinus,
     XCircle,
@@ -29,11 +31,12 @@ import { dashboard } from '@/routes';
 
 type PromotionRow = {
     row_number: number;
-    action: 'promote' | 'reject';
+    action: 'promote' | 'graduate' | 'reject';
     reason: string | null;
     student_id: string | null;
     student_name: string | null;
     nisn: string;
+    nis?: string;
     from_classroom: string | null;
     to_classroom: string;
     classroom_id: string | null;
@@ -53,21 +56,38 @@ type Preview = {
     missing: MissingStudent[];
     summary: {
         promote: number;
+        graduate?: number;
         reject: number;
         missing: number;
         total: number;
     };
 };
 
+type Hasil = {
+    key: string;
+    filename: string;
+    summary: {
+        promoted: number;
+        graduated: number;
+        failed: number;
+        rejected: number;
+        missing: number;
+        schedules_copied: number;
+    };
+    failures: PromotionRow[];
+};
+
 type PageProps = {
     academic_year: { id: string; name: string } | null;
     preview: Preview | null;
+    hasil: Hasil | null;
     errors: Record<string, string>;
 };
 
 export default function KenaikanKelas({
     academic_year,
     preview,
+    hasil,
     errors,
 }: PageProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,8 +97,13 @@ export default function KenaikanKelas({
 
     const promoteRows =
         preview?.rows.filter((row) => row.action === 'promote') ?? [];
+    const graduateRows =
+        preview?.rows.filter((row) => row.action === 'graduate') ?? [];
     const rejectRows =
         preview?.rows.filter((row) => row.action === 'reject') ?? [];
+    const jumlahDiterapkan = promoteRows.length + graduateRows.length;
+    const unduh = (key: string, jenis: 'ditolak' | 'tidak-ada') =>
+        `/admin/kelas/kenaikan/${key}/unduh/${jenis}`;
     const missingRows = preview?.missing ?? [];
 
     function handleUpload(e: FormEvent) {
@@ -128,7 +153,7 @@ export default function KenaikanKelas({
                         Kenaikan Kelas
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Unggah berkas berisi NISN dan kelas baru, periksa
+                        Unduh template, isi kolom Kelas Baru, unggah, periksa
                         hasilnya, lalu terapkan.
                     </p>
                 </div>
@@ -138,8 +163,8 @@ export default function KenaikanKelas({
                         <AlertTriangle className="size-4" />
                         <AlertTitle>Belum ada tahun ajaran aktif</AlertTitle>
                         <AlertDescription>
-                            Aktifkan dulu tahun ajaran berjalan di halaman Kelas
-                            sebelum menaikkan kelas siswa.
+                            Aktifkan dulu tahun ajaran berjalan di Pengaturan →
+                            tab Umum sebelum menaikkan kelas siswa.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -166,26 +191,164 @@ export default function KenaikanKelas({
                                         setFile(e.target.files?.[0] ?? null)
                                     }
                                 />
-                                <p className="text-sm text-muted-foreground">
-                                    Kolom yang dibaca hanya{' '}
-                                    <strong>NISN</strong> dan{' '}
-                                    <strong>Kelas Baru</strong> (boleh ditulis
-                                    "kelas", "rombel", atau "kelas tujuan").
-                                    Kelas tujuan harus sudah ada di tahun ajaran{' '}
-                                    {academic_year?.name ?? 'aktif'}.
-                                </p>
+                                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                                    <li>
+                                        Template sudah berisi semua siswa aktif.
+                                        Cukup isi kolom{' '}
+                                        <strong>Kelas Baru</strong>.
+                                    </li>
+                                    <li>
+                                        Kelas tujuan harus sudah dibuat di tahun
+                                        ajaran {academic_year?.name ?? 'aktif'}.
+                                        Daftarnya ada di sheet kedua template.
+                                    </li>
+                                    <li>
+                                        Siswa kelas akhir: tulis{' '}
+                                        <strong>LULUS</strong>. Siswanya
+                                        dinonaktifkan, riwayat absensinya tetap
+                                        ada.
+                                    </li>
+                                    <li>
+                                        Siswa dicocokkan lewat{' '}
+                                        <strong>NISN</strong>. Kalau NISN-nya
+                                        kosong, dipakai <strong>NIS</strong>.
+                                    </li>
+                                </ul>
                                 <InputError message={errors.file} />
                             </div>
-                            <Button
-                                type="submit"
-                                disabled={!file || uploading || !academic_year}
-                            >
-                                <Upload />
-                                {uploading ? 'Memeriksa…' : 'Periksa Berkas'}
-                            </Button>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    type="submit"
+                                    disabled={
+                                        !file || uploading || !academic_year
+                                    }
+                                >
+                                    <Upload />
+                                    {uploading
+                                        ? 'Memeriksa…'
+                                        : 'Periksa Berkas'}
+                                </Button>
+                                <Button type="button" variant="outline" asChild>
+                                    <a href="/admin/kelas/kenaikan/template">
+                                        <Download />
+                                        Unduh Template Excel
+                                    </a>
+                                </Button>
+                            </div>
                         </form>
                     </CardContent>
                 </Card>
+
+                {hasil && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <CheckCircle2 className="size-4" />
+                                Hasil penerapan — {hasil.filename}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-wrap gap-2">
+                                <Badge variant="secondary">
+                                    {hasil.summary.promoted} naik kelas
+                                </Badge>
+                                <Badge variant="secondary">
+                                    {hasil.summary.graduated} lulus
+                                </Badge>
+                                <Badge
+                                    variant={
+                                        hasil.summary.failed > 0
+                                            ? 'destructive'
+                                            : 'secondary'
+                                    }
+                                >
+                                    {hasil.summary.failed} gagal diproses
+                                </Badge>
+                                <Badge variant="secondary">
+                                    {hasil.summary.rejected} baris ditolak
+                                </Badge>
+                                <Badge variant="secondary">
+                                    {hasil.summary.missing} tidak ada di berkas
+                                </Badge>
+                            </div>
+                            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                                {hasil.summary.schedules_copied > 0 && (
+                                    <li>
+                                        {hasil.summary.schedules_copied} jadwal
+                                        khusus kelas disalin dari kelas bernama
+                                        sama di tahun sebelumnya.
+                                    </li>
+                                )}
+                                <li>
+                                    Folder Google Drive siswa dipindahkan ke
+                                    kelas barunya di latar belakang.
+                                </li>
+                                <li>
+                                    Kartu yang sudah dicetak masih memuat kelas
+                                    lama sampai dibuat ulang.
+                                </li>
+                            </ul>
+                            <div className="flex flex-wrap gap-2">
+                                {hasil.summary.failed + hasil.summary.rejected >
+                                    0 && (
+                                    <Button variant="outline" asChild>
+                                        <a href={unduh(hasil.key, 'ditolak')}>
+                                            <Download />
+                                            Unduh baris gagal &amp; ditolak
+                                        </a>
+                                    </Button>
+                                )}
+                                {hasil.summary.missing > 0 && (
+                                    <Button variant="outline" asChild>
+                                        <a href={unduh(hasil.key, 'tidak-ada')}>
+                                            <Download />
+                                            Unduh siswa yang tidak ada di berkas
+                                        </a>
+                                    </Button>
+                                )}
+                            </div>
+                            {hasil.failures.length > 0 && (
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Baris</TableHead>
+                                                <TableHead>Nama</TableHead>
+                                                <TableHead>
+                                                    Kelas Baru
+                                                </TableHead>
+                                                <TableHead>
+                                                    Kenapa gagal
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {hasil.failures.map((row) => (
+                                                <TableRow
+                                                    key={`gagal-${row.row_number}`}
+                                                >
+                                                    <TableCell>
+                                                        {row.row_number}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {row.student_name ??
+                                                            '—'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {row.to_classroom}
+                                                    </TableCell>
+                                                    <TableCell className="text-destructive">
+                                                        {row.reason}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {preview && (
                     <>
@@ -195,7 +358,10 @@ export default function KenaikanKelas({
                                     {preview.filename}
                                 </Badge>
                                 <Badge variant="secondary">
-                                    {preview.summary.promote} akan diubah
+                                    {preview.summary.promote} naik kelas
+                                </Badge>
+                                <Badge variant="secondary">
+                                    {graduateRows.length} lulus
                                 </Badge>
                                 <Badge variant="secondary">
                                     {preview.summary.missing} tidak ada di
@@ -207,14 +373,12 @@ export default function KenaikanKelas({
                             </div>
                             <Button
                                 onClick={handleApply}
-                                disabled={
-                                    applying || preview.summary.promote === 0
-                                }
+                                disabled={applying || jumlahDiterapkan === 0}
                             >
                                 <ArrowUpRight />
                                 {applying
                                     ? 'Menerapkan…'
-                                    : `Naikkan ${preview.summary.promote} Siswa`}
+                                    : `Terapkan untuk ${jumlahDiterapkan} Siswa`}
                             </Button>
                         </div>
 
@@ -222,7 +386,7 @@ export default function KenaikanKelas({
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
                                     <CheckCircle2 className="size-4" />
-                                    Akan diubah ({promoteRows.length})
+                                    Naik kelas ({promoteRows.length})
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -256,7 +420,8 @@ export default function KenaikanKelas({
                                                             {row.row_number}
                                                         </TableCell>
                                                         <TableCell>
-                                                            {row.nisn}
+                                                            {row.nisn ||
+                                                                `NIS ${row.nis ?? ''}`}
                                                         </TableCell>
                                                         <TableCell>
                                                             {row.student_name}
@@ -277,6 +442,60 @@ export default function KenaikanKelas({
                             </CardContent>
                         </Card>
 
+                        {graduateRows.length > 0 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-base">
+                                        <GraduationCap className="size-4" />
+                                        Lulus ({graduateRows.length})
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <p className="text-sm text-muted-foreground">
+                                        Siswa berikut akan{' '}
+                                        <strong>dinonaktifkan</strong>. Riwayat
+                                        absensinya tetap ada, dan bisa
+                                        diaktifkan lagi dari menu Siswa.
+                                    </p>
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Baris</TableHead>
+                                                    <TableHead>NISN</TableHead>
+                                                    <TableHead>Nama</TableHead>
+                                                    <TableHead>
+                                                        Kelas Terakhir
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {graduateRows.map((row) => (
+                                                    <TableRow
+                                                        key={`lulus-${row.row_number}`}
+                                                    >
+                                                        <TableCell>
+                                                            {row.row_number}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {row.nisn || '—'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {row.student_name}
+                                                        </TableCell>
+                                                        <TableCell className="text-muted-foreground">
+                                                            {row.from_classroom ??
+                                                                '—'}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base">
@@ -288,9 +507,22 @@ export default function KenaikanKelas({
                                 <p className="text-sm text-muted-foreground">
                                     Kelas siswa berikut{' '}
                                     <strong>tidak diubah</strong>. Periksa
-                                    apakah memang sengaja dilewati (mis. lulus
-                                    atau pindah) atau berkasnya kurang lengkap.
+                                    apakah memang sengaja dilewati atau
+                                    berkasnya kurang lengkap.
                                 </p>
+                                {missingRows.length > 0 && (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <a
+                                            href={unduh(
+                                                preview.key,
+                                                'tidak-ada',
+                                            )}
+                                        >
+                                            <Download />
+                                            Unduh daftar ini
+                                        </a>
+                                    </Button>
+                                )}
                                 {missingRows.length === 0 ? (
                                     <p className="text-sm text-muted-foreground">
                                         Semua siswa aktif ada di berkas.
@@ -339,7 +571,15 @@ export default function KenaikanKelas({
                                     Ditolak ({rejectRows.length})
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="space-y-4">
+                                {rejectRows.length > 0 && (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <a href={unduh(preview.key, 'ditolak')}>
+                                            <Download />
+                                            Unduh baris ditolak
+                                        </a>
+                                    </Button>
+                                )}
                                 {rejectRows.length === 0 ? (
                                     <p className="text-sm text-muted-foreground">
                                         Tidak ada baris yang ditolak.
@@ -351,6 +591,7 @@ export default function KenaikanKelas({
                                                 <TableRow>
                                                     <TableHead>Baris</TableHead>
                                                     <TableHead>NISN</TableHead>
+                                                    <TableHead>Nama</TableHead>
                                                     <TableHead>
                                                         Kelas Baru
                                                     </TableHead>
@@ -368,7 +609,13 @@ export default function KenaikanKelas({
                                                             {row.row_number}
                                                         </TableCell>
                                                         <TableCell>
-                                                            {row.nisn || '—'}
+                                                            {row.nisn ||
+                                                                row.nis ||
+                                                                '—'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {row.student_name ??
+                                                                '—'}
                                                         </TableCell>
                                                         <TableCell>
                                                             {row.to_classroom ||

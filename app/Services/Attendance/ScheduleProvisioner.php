@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Models\AttendanceSchedule;
+use App\Models\Classroom;
 
 /**
  * Satu-satunya sumber jadwal absensi default.
@@ -79,5 +80,62 @@ class ScheduleProvisioner
         }
 
         return ['created' => $created, 'updated' => $updated];
+    }
+
+    /**
+     * Salin jadwal khusus kelas dari kelas bernama sama di tahun ajaran lain.
+     *
+     * Dipakai saat kenaikan kelas: "8A" tahun ini mewarisi jadwal "8A" tahun
+     * lalu, supaya siswa yang baru naik tidak diam-diam jatuh ke jadwal umum.
+     * Kelas yang sudah punya jadwal sendiri tidak disentuh.
+     *
+     * @return int jumlah baris jadwal yang disalin
+     */
+    public function salinDariKelas(Classroom $tujuan): int
+    {
+        $punyaSendiri = AttendanceSchedule::withoutGlobalScope('school')
+            ->where('classroom_id', $tujuan->id)
+            ->exists();
+
+        if ($punyaSendiri) {
+            return 0;
+        }
+
+        $nama = mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $tujuan->name)));
+
+        $sumber = Classroom::withoutGlobalScope('school')
+            ->where('school_id', $tujuan->school_id)
+            ->where('academic_year_id', '!=', $tujuan->academic_year_id)
+            ->whereIn('id', AttendanceSchedule::withoutGlobalScope('school')->whereNotNull('classroom_id')->select('classroom_id'))
+            ->with(['academicYear' => fn ($q) => $q->withoutGlobalScope('school')])
+            ->get()
+            ->filter(fn (Classroom $k): bool => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $k->name))) === $nama)
+            // Tahun ajaran paling baru yang menang.
+            ->sortByDesc(fn (Classroom $k) => (string) $k->academicYear?->start_date)
+            ->first();
+
+        if (! $sumber) {
+            return 0;
+        }
+
+        $jadwal = AttendanceSchedule::withoutGlobalScope('school')
+            ->where('classroom_id', $sumber->id)
+            ->get();
+
+        foreach ($jadwal as $baris) {
+            AttendanceSchedule::withoutGlobalScope('school')->create([
+                'school_id' => $tujuan->school_id,
+                'classroom_id' => $tujuan->id,
+                'day_of_week' => $baris->day_of_week,
+                'check_in_start' => $baris->check_in_start,
+                'check_in_end' => $baris->check_in_end,
+                'late_threshold' => $baris->late_threshold,
+                'check_out_start' => $baris->check_out_start,
+                'check_out_end' => $baris->check_out_end,
+                'is_active' => $baris->is_active,
+            ]);
+        }
+
+        return $jadwal->count();
     }
 }

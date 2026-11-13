@@ -2,6 +2,7 @@
 
 use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
+use App\Models\AcademicYear;
 use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
 use App\Models\Classroom;
@@ -9,6 +10,7 @@ use App\Models\PoinSiswa;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\Attendance\DaftarKetidakhadiran;
 use App\Services\Poin\SapuanPoin;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
@@ -211,4 +213,85 @@ test('rekap bulanan berisi hari sekolah dari jadwal dan huruf status per siswa',
                 ->where('rekap.baris.0.persen', fn ($p) => (float) $p === 18.2)
             )
         );
+});
+
+/**
+ * Sekolah dengan kelas 7A tahun lalu dan 8A tahun aktif; satu siswa sudah
+ * naik dari 7A ke 8A (riwayatnya tercatat lewat observer).
+ *
+ * @return array{0: User, 1: Classroom, 2: Classroom, 3: Student}
+ */
+function akNaikKelas(): array
+{
+    [$school, $admin] = akKelas();
+    $lama = AcademicYear::factory()->create(['school_id' => $school->id, 'is_active' => false, 'start_date' => '2025-07-15']);
+    $aktif = AcademicYear::factory()->active()->create(['school_id' => $school->id, 'start_date' => '2026-07-15']);
+    $kelasLama = Classroom::factory()->create(['school_id' => $school->id, 'academic_year_id' => $lama->id, 'name' => '7A']);
+    $kelasBaru = Classroom::factory()->create(['school_id' => $school->id, 'academic_year_id' => $aktif->id, 'name' => '8A']);
+
+    $siswa = akSiswa($kelasLama);
+    $siswa->update(['classroom_id' => $kelasBaru->id]);
+
+    return [$admin, $kelasLama, $kelasBaru, $siswa];
+}
+
+test('kelas tahun lalu tetap menampilkan anggotanya setelah siswa naik kelas', function () {
+    [$admin, $kelasLama, $kelasBaru, $siswa] = akNaikKelas();
+    // Lulusan (nonaktif) kelas lama juga tetap anggota kelas itu.
+    $lulus = akSiswa($kelasLama);
+    $lulus->update(['is_active' => false]);
+
+    Attendance::factory()->create([
+        'school_id' => $siswa->school_id, 'student_id' => $siswa->id, 'attendance_date' => '2026-06-10',
+        'type' => AttendanceType::CheckIn, 'status' => AttendanceStatus::Sakit, 'recorded_at' => '2026-06-10 07:00:00',
+    ]);
+
+    $this->actingAs($admin)->get(route('admin.absensi.kelas', [$kelasLama, 'tanggal' => '2026-06-10', 'bulan' => '2026-06']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('siswa', 2)
+            ->where('siswa', fn ($daftar) => collect($daftar)->firstWhere('id', $siswa->id)['status'] === 'SAKIT')
+            ->loadDeferredProps('rekap', fn (Assert $reload) => $reload
+                ->has('rekap.baris', 2)
+                ->where('rekap.baris', fn ($baris) => collect($baris)->firstWhere('id', $siswa->id)['status']['2026-06-10'] === 'S')));
+
+    // Kelas barunya tetap berisi siswa itu sebagai anggota berjalan.
+    $this->actingAs($admin)->get(route('admin.absensi.kelas', $kelasBaru))
+        ->assertInertia(fn (Assert $page) => $page->has('siswa', 1)->where('siswa.0.id', $siswa->id));
+});
+
+test('absen tahun lalu bisa dikoreksi dari halaman kelas lamanya', function () {
+    [$admin, $kelasLama, , $siswa] = akNaikKelas();
+
+    $this->actingAs($admin)->post(route('admin.absensi.kelas.simpan', $kelasLama), [
+        'tanggal' => '2026-06-10',
+        'baris' => [['student_id' => $siswa->id, 'status' => 'IZIN']],
+    ])->assertSessionHasNoErrors();
+
+    expect(Attendance::withoutGlobalScopes()->where('student_id', $siswa->id)->whereDate('attendance_date', '2026-06-10')->value('status'))
+        ->toBe(AttendanceStatus::Izin);
+});
+
+test('laporan untuk kelas tahun lalu memakai anggota dari riwayat kelas', function () {
+    [$admin, $kelasLama, , $siswa] = akNaikKelas();
+
+    $this->actingAs($admin)->get(route('admin.laporan', ['classroom_id' => $kelasLama->id, 'start_date' => '2026-06-01', 'end_date' => '2026-06-30']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('reportData', 1)
+            ->where('reportData.0.student_id', $siswa->id)
+            ->where('reportData.0.classroom_name', '7A'));
+});
+
+test('jadwal khusus kelas tahun lalu tidak ikut hitungan ketidakhadiran', function () {
+    [, $kelasLama, $kelasBaru] = akNaikKelas();
+    $school = School::find($kelasLama->school_id);
+    // Kamis.
+    $jadwalLama = AttendanceSchedule::factory()->create(['school_id' => $school->id, 'classroom_id' => $kelasLama->id, 'day_of_week' => 4]);
+    $jadwalBaru = AttendanceSchedule::factory()->create(['school_id' => $school->id, 'classroom_id' => $kelasBaru->id, 'day_of_week' => 4]);
+    $umum = AttendanceSchedule::factory()->create(['school_id' => $school->id, 'classroom_id' => null, 'day_of_week' => 4]);
+
+    $ids = app(DaftarKetidakhadiran::class)->jadwal($school, SchoolTime::today())->pluck('id');
+
+    expect($ids)->toContain($jadwalBaru->id)->toContain($umum->id)->not->toContain($jadwalLama->id);
 });

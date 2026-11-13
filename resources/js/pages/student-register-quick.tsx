@@ -17,15 +17,17 @@ import { Spinner } from '@/components/ui/spinner';
 /**
  * Pendaftaran pendek untuk sesi foto sekolah.
  *
- * Empat isian, satu halaman, tanpa wizard: nama, nomor foto, kelas, nomor absen.
+ * Satu halaman tanpa wizard: nama, kelas, nomor absen — plus NIS dan nomor foto
+ * yang boleh dilewati.
  * Di depan antrean yang tersedia cuma daftar hadir dan nomor fotonya, dan form
  * panjang di `/daftar` menagih NIS/NISN, tempat & tanggal lahir, alamat, serta
  * seluruh data orang tua sebelum mau menyimpan.
  *
  * Yang sengaja TIDAK ada di sini, dan alasannya:
  *
- * - **NIS/NISN.** Tidak ditanya. `students.nis` tetap diisi otomatis oleh server
- *   karena kolomnya NOT NULL dan unik per sekolah; admin bisa menimpanya nanti.
+ * - **NISN.** Tidak ditanya. NIS opsional (supaya barcode bisa langsung
+ *   dicetak); kalau dikosongkan server mengisinya otomatis karena kolomnya
+ *   NOT NULL dan unik per sekolah, dan admin bisa menimpanya nanti.
  * - **Token QR.** Tidak diterbitkan. Siswa dari sini belum bisa absen sampai
  *   datanya dilengkapi lewat admin.
  * - **Kartu & lembar pas foto.** Tidak dirender, tidak ada yang diunggah ke
@@ -48,6 +50,7 @@ type FormData = {
     full_name: string;
     classroom_id: string;
     no_absen: string;
+    nis: string;
     photo_drive_filename: string;
     photo_key: string;
 };
@@ -56,6 +59,7 @@ type Saved = {
     full_name: string;
     classroom: string | null;
     no_absen: string | null;
+    nis?: string | null;
     photo_drive_filename: string | null;
 };
 
@@ -64,6 +68,7 @@ const INITIAL: FormData = {
     full_name: '',
     classroom_id: '',
     no_absen: '',
+    nis: '',
     photo_drive_filename: '',
     photo_key: '',
 };
@@ -203,6 +208,7 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
                     ...prev,
                     full_name: '',
                     no_absen: '',
+                    nis: '',
                     photo_drive_filename: '',
                     photo_key: '',
                 }));
@@ -218,11 +224,12 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
     }
 
     const selectedSchool = schools.find((s) => String(s.id) === data.school_id);
+    // Nomor foto boleh dilewati; kalau diisi, fotonya harus sudah ketemu dulu.
+    const fotoDiisi = data.photo_drive_filename.trim() !== '';
     const canSubmit =
         !submitting &&
         Boolean(data.school_id && data.full_name.trim() && data.classroom_id && data.no_absen.trim()) &&
-        Boolean(data.photo_key) &&
-        photoReady;
+        (!fotoDiisi || (Boolean(data.photo_key) && photoReady));
 
     return (
         <RegistrationShell title="Pendaftaran Data Siswa">
@@ -318,9 +325,21 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="photo_drive_filename" required>
-                                No. Foto (nama file di Google Drive)
-                            </Label>
+                            <Label htmlFor="nis">NIS (opsional)</Label>
+                            <Input
+                                id="nis"
+                                value={data.nis}
+                                onChange={(e) => set('nis', e.target.value)}
+                                inputMode="text"
+                                autoComplete="off"
+                                className="h-11"
+                            />
+                            <p className="text-muted-foreground text-xs">Diisi supaya barcode bisa langsung dicetak.</p>
+                            <InputError message={errors.nis} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="photo_drive_filename">No. Foto (nama file di Google Drive, opsional)</Label>
                             <div className="relative">
                                 <Input
                                     id="photo_drive_filename"
@@ -342,7 +361,8 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
                                 )}
                             </div>
                             <p className="text-muted-foreground text-xs">
-                                Ketik nomor/nama filenya — fotonya muncul otomatis di bawah.
+                                Ketik nomor/nama filenya — fotonya muncul otomatis di bawah. Boleh dilewati kalau belum
+                                difoto.
                             </p>
                             <InputError message={errors.photo_drive_filename} />
                             {previewError && (
@@ -400,7 +420,12 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
                             {saved.full_name} tersimpan.
                         </p>
                         <p className="mt-1 text-xs text-green-800 dark:text-green-200">
-                            {[saved.classroom, saved.no_absen && `absen ${saved.no_absen}`, saved.photo_drive_filename]
+                            {[
+                                saved.classroom,
+                                saved.no_absen && `absen ${saved.no_absen}`,
+                                saved.nis && `NIS ${saved.nis}`,
+                                saved.photo_drive_filename,
+                            ]
                                 .filter(Boolean)
                                 .join(' · ')}
                         </p>

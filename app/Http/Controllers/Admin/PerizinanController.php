@@ -68,7 +68,7 @@ class PerizinanController extends Controller
                 'disetujui' => (int) ($hitung[PengajuanIzin::DISETUJUI] ?? 0),
                 'ditolak' => (int) ($hitung[PengajuanIzin::DITOLAK] ?? 0),
             ],
-            'classrooms' => Classroom::query()->orderBy('name')->get(['id', 'name']),
+            'classrooms' => Classroom::query()->tahunAktif($request->kelas)->orderBy('name')->get(['id', 'name']),
             'filters' => ['status' => $status, 'kelas' => $request->kelas ?? '', 'q' => $request->q ?? ''],
             'linkPublik' => route('izin.index'),
         ]);

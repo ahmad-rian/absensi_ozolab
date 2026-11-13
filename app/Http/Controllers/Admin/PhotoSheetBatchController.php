@@ -41,7 +41,7 @@ class PhotoSheetBatchController extends Controller
                 'has_photo' => (bool) $student->photo_path,
                 'photo_url' => $student->photo_path ? Storage::disk('public')->url($student->photo_path) : null,
             ]),
-            'classrooms' => Classroom::forSchool()->orderBy('name')->get(['id', 'name']),
+            'classrooms' => Classroom::forSchool()->tahunAktif()->orderBy('name')->get(['id', 'name']),
             // Geometri ikut dikirim supaya pratinjau di layar memakai angka yang
             // sama dengan yang dipakai merender PDF, bukan salinan yang bisa
             // diam-diam berbeda.

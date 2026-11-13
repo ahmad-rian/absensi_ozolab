@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
 use App\Models\Classroom;
 use App\Models\Student;
+use App\Support\AnggotaKelas;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -54,9 +55,8 @@ class RekapBulananKelas
             ])
             ->values();
 
-        $siswa = Student::query()
-            ->where('classroom_id', $classroom->id)
-            ->where('is_active', true)
+        // Kelas tahun ajaran lama dibaca dari riwayat kelas (lihat AnggotaKelas).
+        $siswa = AnggotaKelas::query($classroom)
             ->orderBy('full_name')
             ->get(['id', 'nis', 'full_name']);
 

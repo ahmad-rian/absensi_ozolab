@@ -61,17 +61,39 @@ test('four fields are enough', function () {
         ->and($student->photo_drive_filename)->toBe('FIC_0008.JPG');
 });
 
-test('no NIS or NISN is asked for, and sending them changes nothing', function () {
+test('NISN is not asked for, and an empty NIS is filled by the server', function () {
     // Kolom `nis` NOT NULL dan unik per sekolah, jadi server tetap harus
-    // mengisinya — tapi angka yang dikirim klien tidak boleh dipakai, kalau tidak
-    // tautan publik ini bisa dipakai menabrak nomor induk siswa yang sudah ada.
-    postQuick(['nis' => '13384', 'nisn' => '0071234567'])->assertOk();
+    // mengisinya ketika dikosongkan. NISN tidak pernah diterima dari form ini.
+    postQuick(['nis' => '', 'nisn' => '0071234567'])->assertOk();
 
     $student = registeredStudent();
 
-    expect($student->nis)->not->toBe('13384')
-        ->and($student->nis)->not->toBeEmpty()
+    expect($student->nis)->not->toBeEmpty()
         ->and($student->nisn)->toBeNull();
+});
+
+test('NIS yang diisi tersimpan supaya barcode bisa langsung dicetak', function () {
+    postQuick(['nis' => " 13384\u{200B}"])->assertOk()->assertJsonPath('student.nis', '13384');
+
+    expect(registeredStudent()->nis)->toBe('13384');
+});
+
+test('NIS yang sudah dipakai di sekolah yang sama ditolak', function () {
+    Student::factory()->create(['school_id' => $this->school->id, 'classroom_id' => $this->classroom->id, 'nis' => '13384']);
+
+    postQuick(['nis' => '13384'])
+        ->assertStatus(422)
+        ->assertJsonPath('errors.nis.0', 'NIS sudah terdaftar di sekolah ini.');
+
+    expect(registeredStudent())->toBeNull();
+    Queue::assertNothingPushed();
+});
+
+test('NIS yang sama di sekolah lain tidak menghalangi', function () {
+    $lain = School::factory()->create(['is_active' => true]);
+    Student::factory()->create(['school_id' => $lain->id, 'classroom_id' => Classroom::factory()->create(['school_id' => $lain->id])->id, 'nis' => '13384']);
+
+    postQuick(['nis' => '13384'])->assertOk();
 });
 
 test('no QR token is issued', function () {
@@ -123,8 +145,17 @@ test('the name is required', function () {
     Queue::assertNothingPushed();
 });
 
-test('the photo number is required — it is the whole point of the form', function () {
-    postQuick(['photo_drive_filename' => ''])->assertStatus(422)->assertJsonValidationErrors('photo_drive_filename');
+test('nomor foto boleh dilewati dan tidak ada job yang diantrekan', function () {
+    postQuick(['photo_drive_filename' => ''])->assertOk()->assertJson(['success' => true]);
+
+    expect(registeredStudent()->photo_drive_filename)->toBeNull();
+    Queue::assertNothingPushed();
+});
+
+test('dengan nomor foto, job foto tetap diantrekan', function () {
+    postQuick(['photo_drive_filename' => 'FIC_0009.JPG'])->assertOk();
+
+    Queue::assertPushed(RegisterStudentCardsJob::class, 1);
 });
 
 test('the absence number is required', function () {

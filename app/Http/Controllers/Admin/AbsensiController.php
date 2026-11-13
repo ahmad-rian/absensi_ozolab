@@ -46,7 +46,7 @@ class AbsensiController extends Controller
 
         $attendances = $query->paginate(20)->withQueryString();
 
-        $classrooms = Classroom::forSchool()->orderBy('name')->get(['id', 'name']);
+        $classrooms = Classroom::forSchool()->tahunAktif($request->query('classroom_id'))->orderBy('name')->get(['id', 'name']);
 
         $students = Student::forSchool()
             ->where('is_active', true)

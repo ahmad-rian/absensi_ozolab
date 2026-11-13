@@ -7,7 +7,6 @@ use App\Actions\Fortify\ResetUserPassword;
 use App\Enums\ParentRelation;
 use App\Http\Controllers\Auth\ResetLangsungController;
 use App\Http\Responses\RoleLoginResponse;
-use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\School;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -77,22 +76,21 @@ class FortifyServiceProvider extends ServiceProvider
         ]));
 
         Fortify::registerView(function (Request $request) {
-            $activeYear = AcademicYear::where('is_active', true)->first();
             $schools = School::where('is_active', true)->get(['id', 'name', 'slug']);
 
-            $classrooms = collect();
-            if ($activeYear) {
-                $query = Classroom::where('academic_year_id', $activeYear->id)->orderBy('name');
+            // Tahun aktif dinilai PER SEKOLAH (scope tahunAktif berkorelasi ke
+            // sekolah kelasnya). Versi lama mengambil satu tahun aktif pertama
+            // dari sekolah mana pun, sehingga sekolah lain kehilangan kelasnya.
+            $query = Classroom::query()->withoutGlobalScope('school')->tahunAktif()->orderBy('name');
 
-                if ($request->query('school')) {
-                    $school = School::where('slug', $request->query('school'))->first();
-                    if ($school) {
-                        $query->where('school_id', $school->id);
-                    }
+            if ($request->query('school')) {
+                $school = School::where('slug', $request->query('school'))->first();
+                if ($school) {
+                    $query->where('school_id', $school->id);
                 }
-
-                $classrooms = $query->get(['id', 'name', 'grade_level', 'school_id']);
             }
+
+            $classrooms = $query->get(['id', 'name', 'grade_level', 'school_id']);
 
             return Inertia::render('auth/register', [
                 'passwordRules' => Password::defaults()->toPasswordRulesString(),

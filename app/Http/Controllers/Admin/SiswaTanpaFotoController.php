@@ -56,7 +56,7 @@ class SiswaTanpaFotoController extends Controller
         return Inertia::render('admin/siswa-tanpa-foto/index', [
             'siswa' => $siswa,
             'ringkasan' => $this->ringkasan($kelas),
-            'classrooms' => Classroom::query()->orderBy('name')->get(['id', 'name']),
+            'classrooms' => Classroom::query()->tahunAktif($kelas)->orderBy('name')->get(['id', 'name']),
             'filters' => ['kelas' => $kelas, 'q' => $cari],
             'schoolId' => auth()->user()->school_id,
         ]);

@@ -50,7 +50,7 @@ class PoinController extends Controller
             'siswa' => $siswa,
             'ringkasan' => $rekap->ringkasanLevel($setup),
             'setup' => $setup->toArray(),
-            'classrooms' => Classroom::query()->orderBy('name')->get(['id', 'name']),
+            'classrooms' => Classroom::query()->tahunAktif($request->kelas)->orderBy('name')->get(['id', 'name']),
             'filters' => ['kelas' => $request->kelas ?? '', 'q' => $request->q ?? '', 'level' => $level],
             'bolehKelola' => $this->bolehKelola($request),
         ]);
@@ -77,7 +77,7 @@ class PoinController extends Controller
 
         return Inertia::render('admin/poin/riwayat', [
             'poin' => $poin,
-            'classrooms' => Classroom::query()->orderBy('name')->get(['id', 'name']),
+            'classrooms' => Classroom::query()->tahunAktif($request->kelas)->orderBy('name')->get(['id', 'name']),
             'filters' => ['sumber' => $sumber, 'kelas' => $request->kelas ?? '', 'q' => $request->q ?? '', 'dari' => $dari ?? '', 'sampai' => $sampai ?? ''],
             'bolehKelola' => $this->bolehKelola($request),
         ]);

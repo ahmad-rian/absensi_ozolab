@@ -53,7 +53,7 @@ class SiswaController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $classrooms = Classroom::forSchool()->orderBy('name')->get(['id', 'name']);
+        $classrooms = Classroom::forSchool()->tahunAktif($request->classroom_id)->orderBy('name')->get(['id', 'name']);
 
         return Inertia::render('admin/siswa/index', [
             'students' => $students,
@@ -330,7 +330,7 @@ class SiswaController extends Controller
 
     public function create(): Response
     {
-        $classrooms = Classroom::forSchool()->orderBy('name')->get(['id', 'name']);
+        $classrooms = Classroom::forSchool()->tahunAktif()->orderBy('name')->get(['id', 'name']);
         $parentProfiles = ParentProfile::forSchool()
             ->with('user:id,name')
             ->get(['id', 'user_id', 'school_id']);
@@ -384,7 +384,9 @@ class SiswaController extends Controller
 
     public function edit(Student $siswa): Response
     {
-        $classrooms = Classroom::forSchool()->orderBy('name')->get(['id', 'name']);
+        // Kelas yang sedang ditempati ikut walau milik tahun lama, supaya form
+        // edit tidak diam-diam mengosongkan kelas siswa yang belum dinaikkan.
+        $classrooms = Classroom::forSchool()->tahunAktif($siswa->classroom_id)->orderBy('name')->get(['id', 'name']);
         $parentProfiles = ParentProfile::forSchool()
             ->with('user:id,name')
             ->get(['id', 'user_id', 'school_id']);

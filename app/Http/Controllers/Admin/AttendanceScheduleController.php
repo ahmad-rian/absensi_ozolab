@@ -22,7 +22,10 @@ class AttendanceScheduleController extends Controller
             ->orderByRaw('classroom_id IS NOT NULL')
             ->get();
 
+        // Kelas tahun lama yang masih punya jadwal tetap tampil supaya
+        // jadwalnya bisa dibuka dan dirapikan.
         $classrooms = Classroom::forSchool()
+            ->tahunAktif($schedules->pluck('classroom_id')->filter()->unique()->values()->all())
             ->orderBy('name')
             ->get(['id', 'name']);
 

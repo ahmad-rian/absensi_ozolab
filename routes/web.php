@@ -383,7 +383,11 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
         // Wajib sebelum resource supaya `kelas/{classroom}` tidak menelannya.
         Route::get('kelas/kenaikan', [ClassPromotionController::class, 'index'])->name('admin.kelas.kenaikan');
         Route::post('kelas/kenaikan', [ClassPromotionController::class, 'upload'])->name('admin.kelas.kenaikan.upload');
+        // Wajib sebelum `{key}` supaya "template" tidak dibaca sebagai kunci.
+        Route::get('kelas/kenaikan/template', [ClassPromotionController::class, 'template'])->name('admin.kelas.kenaikan.template');
         Route::get('kelas/kenaikan/{key}', [ClassPromotionController::class, 'review'])->name('admin.kelas.kenaikan.review');
+        Route::get('kelas/kenaikan/{key}/hasil', [ClassPromotionController::class, 'hasil'])->name('admin.kelas.kenaikan.hasil');
+        Route::get('kelas/kenaikan/{key}/unduh/{jenis}', [ClassPromotionController::class, 'unduh'])->name('admin.kelas.kenaikan.unduh');
         Route::post('kelas/kenaikan/{key}/apply', [ClassPromotionController::class, 'apply'])->name('admin.kelas.kenaikan.apply');
 
         Route::resource('kelas', KelasController::class)->except(['show', 'create', 'edit'])->parameter('kelas', 'classroom');

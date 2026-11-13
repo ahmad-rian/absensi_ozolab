@@ -49,7 +49,7 @@ class KunjunganPerpusController extends Controller
 
         return Inertia::render('admin/kunjungan-perpus/index', [
             'visits' => $visits,
-            'classrooms' => Classroom::forSchool()->orderBy('name')->get(['id', 'name']),
+            'classrooms' => Classroom::forSchool()->tahunAktif($request->query('classroom_id'))->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'search' => $request->query('search', ''),
                 'classroom_id' => $request->query('classroom_id', ''),

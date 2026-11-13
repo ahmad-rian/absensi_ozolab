@@ -12,6 +12,7 @@ use App\Models\School;
 use App\Models\Student;
 use App\Services\Attendance\RekapBulananKelas;
 use App\Services\Poin\SapuanPoin;
+use App\Support\AnggotaKelas;
 use App\Support\SchoolFeatures;
 use App\Support\SchoolTime;
 use Carbon\Carbon;
@@ -27,6 +28,8 @@ use Inertia\Response;
  * siswa (hadir, terlambat, izin, sakit, alpa) dalam satu layar.
  *
  * Kelas di-bind lewat global scope sekolah, jadi kelas sekolah lain = 404.
+ * Anggota kelas diambil lewat AnggotaKelas: kelas tahun ajaran lama memakai
+ * riwayat kelas, bukan penunjuk kelas berjalan.
  */
 class AbsensiKelasController extends Controller
 {
@@ -42,13 +45,13 @@ class AbsensiKelasController extends Controller
         $absen = Attendance::query()
             ->whereDate('attendance_date', $tanggal)
             ->where('type', AttendanceType::CheckIn->value)
-            ->whereIn('student_id', Student::query()->where('classroom_id', $classroom->id)->select('id'))
+            ->whereIn('student_id', AnggotaKelas::query($classroom, hanyaAktif: false)->select('id'))
             ->get(['student_id', 'status', 'notes', 'recorded_by', 'recorded_at'])
             ->keyBy('student_id');
 
-        $siswa = Student::query()
-            ->where('classroom_id', $classroom->id)
-            ->where('is_active', true)
+        // Kelas tahun ajaran lama: anggotanya dari riwayat kelas, supaya absen
+        // tahun lalu tetap bisa dilihat dan dikoreksi setelah kenaikan kelas.
+        $siswa = AnggotaKelas::query($classroom)
             ->orderBy('full_name')
             ->get(['id', 'nis', 'nisn', 'full_name'])
             ->map(function (Student $student) use ($absen): array {
@@ -74,7 +77,7 @@ class AbsensiKelasController extends Controller
                 'grade_level' => $classroom->grade_level,
                 'wali' => $classroom->homeroomTeacher?->name,
             ],
-            'daftarKelas' => Classroom::query()->orderBy('name')->get(['id', 'name']),
+            'daftarKelas' => Classroom::query()->tahunAktif($classroom->id)->orderBy('name')->get(['id', 'name']),
             'tanggal' => $tanggal,
             'bulan' => $bulan,
             'tab' => $tab,
@@ -97,8 +100,7 @@ class AbsensiKelasController extends Controller
 
         $ids = collect($validated['baris'])->pluck('student_id');
 
-        $siswa = Student::query()
-            ->where('classroom_id', $classroom->id)
+        $siswa = AnggotaKelas::query($classroom, hanyaAktif: false)
             ->whereIn('id', $ids)
             ->pluck('school_id', 'id');
 

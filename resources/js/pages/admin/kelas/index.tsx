@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { ClipboardCheck, Edit, GraduationCap, Plus, Trash2, Users } from 'lucide-react';
+import { ChevronDown, ClipboardCheck, Edit, GraduationCap, Plus, Trash2, Users } from 'lucide-react';
 import type { FormEvent} from 'react';
 import { useEffect, useState } from 'react';
 import { show as absenKelas } from '@/actions/App/Http/Controllers/Admin/AbsensiKelasController';
@@ -54,7 +54,37 @@ const GRADE_LEVELS = Array.from({ length: 12 }, (_, i) => ({
 
 const PARALLELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c) => ({ value: c, label: c }));
 
+type KelompokTahun = { id: string; nama: string; aktif: boolean; terbuka: boolean; kelas: Classroom[] };
+
+/**
+ * Kelas dikelompokkan per tahun ajaran: nama kelas ("7A") berulang tiap tahun,
+ * jadi tanpa pengelompokan kartu kembar tidak terbedakan. Urutan mengikuti
+ * `academic_years` dari server (aktif dulu, lalu terbaru). Tahun lama dilipat
+ * tetapi tetap bisa dibuka — rekap absensinya masih ada di "Buka Kelas".
+ */
+function kelompokkanPerTahun(classrooms: Classroom[], tahun: PageProps['academic_years']): KelompokTahun[] {
+    const adaAktif = tahun.some((t) => t.is_active);
+    const kelompok = tahun
+        .map((t) => ({
+            id: t.id,
+            nama: t.name,
+            aktif: t.is_active,
+            terbuka: t.is_active,
+            kelas: classrooms.filter((c) => c.academic_year_id === t.id),
+        }))
+        .filter((k) => k.kelas.length > 0);
+    const yatim = classrooms.filter((c) => !tahun.some((t) => t.id === c.academic_year_id));
+
+    if (yatim.length > 0) {
+        kelompok.push({ id: 'tanpa-tahun', nama: '-', aktif: false, terbuka: false, kelas: yatim });
+    }
+
+    // Tanpa tahun aktif (atau hanya satu kelompok) tidak ada yang perlu dilipat.
+    return kelompok.map((k, i) => ({ ...k, terbuka: k.terbuka || kelompok.length === 1 || (!adaAktif && i === 0) }));
+}
+
 export default function KelasIndex({ classrooms, academic_years }: PageProps) {
+    const kelompokTahun = kelompokkanPerTahun(classrooms, academic_years);
     const { auth, features } = usePage().props as unknown as {
         auth: { user: { roles?: string[]; permissions?: string[] } | null };
         features?: Record<string, boolean>;
@@ -195,8 +225,21 @@ return;
                         <p className="text-muted-foreground text-sm">Belum ada data kelas.</p>
                     </div>
                 ) : (
+                    <div className="flex flex-col gap-6">
+                    {kelompokTahun.map((kelompok) => (
+                    <details key={kelompok.id} open={kelompok.terbuka || undefined} className="group/tahun">
+                        <summary className="hover:bg-muted/50 mb-3 flex cursor-pointer list-none items-center gap-2 rounded-lg px-1 py-1.5">
+                            <ChevronDown className="text-muted-foreground size-4 shrink-0 -rotate-90 transition-transform group-open/tahun:rotate-0" />
+                            <span className="font-semibold">Tahun Ajaran {kelompok.nama}</span>
+                            {kelompok.aktif ? (
+                                <Badge>Aktif</Badge>
+                            ) : (
+                                <Badge variant="outline">Tahun lalu</Badge>
+                            )}
+                            <span className="text-muted-foreground text-sm">{kelompok.kelas.length} kelas</span>
+                        </summary>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {classrooms.map((classroom) => (
+                        {kelompok.kelas.map((classroom) => (
                             <Card key={classroom.id} className="group relative cursor-pointer transition-shadow hover:shadow-md">
                                 <CardHeader className="pb-2">
                                     <div className="flex items-start justify-between">
@@ -264,6 +307,9 @@ return;
                                 </CardFooter>
                             </Card>
                         ))}
+                    </div>
+                    </details>
+                    ))}
                     </div>
                 )}
             </div>

@@ -286,6 +286,7 @@ class GenerateKartuMassalController extends Controller
     {
         return Classroom::withoutGlobalScope('school')
             ->where('school_id', $schoolId)
+            ->tahunAktif()
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (Classroom $c) => ['id' => $c->id, 'name' => $c->name])

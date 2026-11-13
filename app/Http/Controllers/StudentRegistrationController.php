@@ -83,6 +83,7 @@ class StudentRegistrationController extends Controller
             ->values();
 
         $classrooms = Classroom::whereIn('school_id', $schools->pluck('id'))
+            ->tahunAktif()
             ->orderBy('name')
             ->get(['id', 'school_id', 'name', 'grade_level']);
 
@@ -123,6 +124,7 @@ class StudentRegistrationController extends Controller
             ->values();
 
         $classrooms = Classroom::whereIn('school_id', $schools->pluck('id'))
+            ->tahunAktif()
             ->orderBy('name')
             ->get(['id', 'school_id', 'name', 'grade_level']);
 
@@ -140,10 +142,10 @@ class StudentRegistrationController extends Controller
     /**
      * Simpan pendaftaran pendek.
      *
-     * Empat isian, dan hanya itu: nama, nomor foto, kelas, nomor absen. Tidak ada
-     * NIS/NISN yang ditanyakan, tidak ada token QR yang diterbitkan, dan tidak
-     * ada kartu yang dirender — form ini murni mencatat siapa yang difoto dan
-     * dengan nomor berapa.
+     * Isian wajibnya tiga: nama, kelas, nomor absen. NIS dan nomor foto boleh
+     * dilewati — NIS diisi supaya barcode siswa bisa langsung dicetak, nomor
+     * foto diisi kalau siswanya sudah difoto. Tidak ada token QR yang
+     * diterbitkan di sini dan tidak ada kartu yang dirender.
      *
      * Aturan validasinya terpisah dari `store()` — bukan `store()` yang
      * dilonggarkan — supaya form panjang tetap menagih semua yang selama ini
@@ -158,28 +160,33 @@ class StudentRegistrationController extends Controller
             'full_name' => ['required', 'string', 'max:255', "regex:/^[\p{L}\p{N} .,'\-]+$/u"],
             'classroom_id' => ['required', Rule::exists('classrooms', 'id')->where('school_id', $request->school_id)],
             'no_absen' => ['required', 'string', 'max:10', 'alpha_num'],
-            'photo_drive_filename' => ['required', 'string', 'max:500'],
+            'nis' => ['nullable', 'string', 'max:50', 'regex:'.self::POLA_NOMOR, $this->uniquePerSchool('nis', $request->school_id)],
+            'photo_drive_filename' => ['nullable', 'string', 'max:500'],
             'photo_key' => ['nullable', 'string', 'alpha_num', 'size:32'],
         ], [
             'school_id.required' => 'Pilih sekolah terlebih dahulu.',
             'full_name.required' => 'Nama lengkap wajib diisi.',
+            'nis.regex' => 'NIS hanya boleh berisi angka dan/atau huruf (boleh titik atau tanda hubung).',
+            'nis.unique' => 'NIS sudah terdaftar di sekolah ini.',
+            'nis.max' => 'NIS maksimal 50 karakter.',
             'classroom_id.required' => 'Pilih kelas terlebih dahulu.',
             'classroom_id.exists' => 'Kelas tidak ditemukan di sekolah ini.',
             'no_absen.required' => 'No. absen wajib diisi.',
             'no_absen.alpha_num' => 'No. absen hanya boleh berisi angka dan/atau huruf.',
-            'photo_drive_filename.required' => 'Nama file foto wajib diisi.',
         ]);
+
+        $nomorFoto = filled($validated['photo_drive_filename'] ?? null) ? trim($validated['photo_drive_filename']) : null;
 
         $student = Student::create([
             'school_id' => $validated['school_id'],
             'full_name' => $validated['full_name'],
             // `students.nis` NOT NULL dan unik per sekolah, jadi ia harus berisi
-            // sesuatu meski tidak ditanyakan. Pola yang sama dipakai `/daftar`
+            // sesuatu meski dikosongkan. Pola yang sama dipakai `/daftar`
             // ketika pendaftar mengosongkan kolomnya; admin bisa menimpanya nanti.
-            'nis' => $this->placeholderNis(),
+            'nis' => filled($validated['nis'] ?? null) ? $validated['nis'] : $this->placeholderNis(),
             'classroom_id' => $validated['classroom_id'],
             'no_absen' => $validated['no_absen'],
-            'photo_drive_filename' => $validated['photo_drive_filename'],
+            'photo_drive_filename' => $nomorFoto,
             'is_active' => true,
         ]);
 
@@ -190,13 +197,16 @@ class StudentRegistrationController extends Controller
         // Hanya fotonya. `generateCards: false` menghentikan job sebelum kartu,
         // lembar pas foto, dan unggahan Drive — pendaftaran cepat tidak
         // menghasilkan berkas apa pun, cuma menambatkan foto ke siswanya.
-        RegisterStudentCardsJob::dispatch(
-            studentId: $student->id,
-            photoFilename: $validated['photo_drive_filename'],
-            photoTemp: $previewPath,
-            generateCards: false,
-            outputs: [RegisterStudentCardsJob::OUTPUT_PHOTO],
-        );
+        // Tanpa nomor foto tidak ada yang perlu ditambatkan.
+        if ($nomorFoto !== null) {
+            RegisterStudentCardsJob::dispatch(
+                studentId: $student->id,
+                photoFilename: $nomorFoto,
+                photoTemp: $previewPath,
+                generateCards: false,
+                outputs: [RegisterStudentCardsJob::OUTPUT_PHOTO],
+            );
+        }
 
         $student->load('classroom');
 
@@ -208,6 +218,7 @@ class StudentRegistrationController extends Controller
                 'full_name' => $student->full_name,
                 'classroom' => $student->classroom?->name,
                 'no_absen' => $student->no_absen,
+                'nis' => filled($validated['nis'] ?? null) ? $student->nis : null,
                 'photo_drive_filename' => $student->photo_drive_filename,
             ],
         ]);

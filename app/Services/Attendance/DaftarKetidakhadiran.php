@@ -4,8 +4,10 @@ namespace App\Services\Attendance;
 
 use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
+use App\Models\AcademicYear;
 use App\Models\Attendance;
 use App\Models\AttendanceSchedule;
+use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Student;
 use App\Support\SchoolTime;
@@ -22,16 +24,31 @@ use Illuminate\Database\Eloquent\Collection;
 class DaftarKetidakhadiran
 {
     /**
-     * Jadwal aktif sekolah untuk hari yang dinilai. Kosong = bukan hari sekolah.
+     * Jadwal aktif sekolah untuk hari yang dinilai: jadwal umum + jadwal kelas
+     * tahun ajaran berjalan. Kosong = bukan hari sekolah.
      *
      * @return Collection<int, AttendanceSchedule>
      */
     public function jadwal(School $school, Carbon $date): Collection
     {
+        // Jadwal khusus kelas tahun ajaran LAMA tidak ikut: siswanya sudah naik
+        // kelas, dan jam jadwal itu masih bisa menggeser kapan jendela dianggap
+        // tutup. Sekolah tanpa tahun ajaran aktif tidak punya kelas lama.
+        $tahunAktif = AcademicYear::withoutGlobalScope('school')
+            ->where('school_id', $school->id)
+            ->where('is_active', true)
+            ->pluck('id');
+
         return AttendanceSchedule::withoutGlobalScope('school')
             ->where('school_id', $school->id)
             ->where('day_of_week', $date->dayOfWeekIso)
             ->where('is_active', true)
+            ->when($tahunAktif->isNotEmpty(), fn ($q) => $q->where(fn ($w) => $w
+                ->whereNull('classroom_id')
+                ->orWhereIn('classroom_id', Classroom::withoutGlobalScope('school')
+                    ->where('school_id', $school->id)
+                    ->whereIn('academic_year_id', $tahunAktif)
+                    ->select('id'))))
             ->get();
     }
 

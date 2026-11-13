@@ -52,7 +52,7 @@ class RfidCardController extends Controller
 
         return Inertia::render('admin/rfid-cards/index', [
             'students' => $students,
-            'classrooms' => Classroom::forSchool()->orderBy('name')->get(['id', 'name']),
+            'classrooms' => Classroom::forSchool()->tahunAktif($request->classroom_id)->orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'search' => $request->search ?? '',
                 'classroom_id' => $request->classroom_id ?? '',
