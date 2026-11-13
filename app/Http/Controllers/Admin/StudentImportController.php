@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Gender;
 use App\Http\Controllers\Controller;
 use App\Jobs\ApplyStudentImportJob;
 use App\Models\Classroom;
+use App\Models\ParentProfile;
 use App\Models\Student;
 use App\Models\StudentImportJob;
 use App\Services\Import\StudentImportParser;
+use App\Support\NisSementara;
 use App\Support\SchoolTime;
 use App\Support\XlsxDownload;
 use Illuminate\Http\RedirectResponse;
@@ -37,6 +40,9 @@ class StudentImportController extends Controller
         'Tempat Lahir', 'Tanggal Lahir', 'Alamat', 'Nama Orang Tua', 'No HP', 'Email Orang Tua',
     ];
 
+    /** Kolom kunci pada unduhan data siswa; dikenali parser sebagai `student_id`. */
+    private const KOLOM_ID = 'ID Sistem';
+
     /** @var list<list<string>> */
     private const TEMPLATE_SAMPLE_ROWS = [
         ['0071234567', '2025001', 'Ahmad Fauzi', '7A', 'L', 'Islam', '1', 'Bandung', '12/03/2012', 'Jl. Merdeka No. 10', 'Budi Santoso', '081234567890', 'budi@example.com'],
@@ -48,6 +54,7 @@ class StudentImportController extends Controller
         return Inertia::render('admin/siswa/import', [
             'jobs' => $this->recentJobs(),
             'preview' => null,
+            'classrooms' => $this->pilihanKelas(),
         ]);
     }
 
@@ -65,6 +72,71 @@ class StudentImportController extends Controller
             'template-impor-siswa.xlsx',
             self::TEMPLATE_HEADER,
             self::TEMPLATE_SAMPLE_ROWS,
+        );
+    }
+
+    /**
+     * Data siswa yang sudah ada, dalam format impor, untuk dilengkapi lalu
+     * diunggah ulang.
+     *
+     * Kolom pertama `ID Sistem` membuat unggahan ulang selalu jatuh ke siswa
+     * yang sama — termasuk siswa pendaftaran cepat yang belum punya NISN dan
+     * NIS-nya masih sementara. Tanpa kolom itu mereka tidak bisa dicocokkan dan
+     * akan terbuat ganda.
+     */
+    public function data(Request $request): BinaryFileResponse
+    {
+        $schoolId = $this->currentSchoolId();
+        $kelasDiminta = $request->query('classroom_id');
+
+        // Kelas divalidasi terhadap sekolah ini; id asing diabaikan, bukan
+        // dipakai menyaring.
+        $kelas = is_string($kelasDiminta) && $kelasDiminta !== ''
+            ? Classroom::query()->withoutGlobalScope('school')->where('school_id', $schoolId)->find($kelasDiminta)
+            : null;
+
+        $namaKelas = Classroom::query()->withoutGlobalScope('school')->where('school_id', $schoolId)->pluck('name', 'id');
+        $emailOrtu = ParentProfile::query()->withoutGlobalScope('school')->where('school_id', $schoolId)->pluck('email', 'id');
+
+        $rows = Student::query()
+            ->withoutGlobalScope('school')
+            ->where('school_id', $schoolId)
+            ->where('is_active', true)
+            ->when($kelas, fn ($q) => $q->where('classroom_id', $kelas->id))
+            ->orderBy('full_name')
+            ->get()
+            ->sortBy(fn (Student $s): string => (string) ($namaKelas[$s->classroom_id] ?? ''), SORT_NATURAL)
+            ->values()
+            ->map(fn (Student $s): array => [
+                (string) $s->id,
+                (string) $s->nisn,
+                // NIS sementara dikosongkan: sel kosong saat diunggah ulang
+                // berarti "biarkan nilai lama", jadi aman walau tebakannya keliru.
+                NisSementara::tampak($s->nis) ? '' : (string) $s->nis,
+                (string) $s->full_name,
+                (string) ($namaKelas[$s->classroom_id] ?? ''),
+                match ($s->gender) {
+                    Gender::LakiLaki => 'L',
+                    Gender::Perempuan => 'P',
+                    default => '',
+                },
+                (string) ($s->religion?->label() ?? ''),
+                (string) $s->no_absen,
+                (string) $s->birth_place,
+                (string) ($s->birth_date?->format('d/m/Y') ?? ''),
+                (string) $s->address,
+                (string) $s->parent_name,
+                (string) $s->parent_phone,
+                (string) ($s->parent_profile_id ? ($emailOrtu[$s->parent_profile_id] ?? '') : ''),
+            ])
+            ->all();
+
+        $akhiran = $kelas ? '-'.Str::slug($kelas->name) : '';
+
+        return XlsxDownload::make(
+            'data-siswa'.$akhiran.'-'.SchoolTime::now()->format('Y-m-d').'.xlsx',
+            [self::KOLOM_ID, ...self::TEMPLATE_HEADER],
+            $rows,
         );
     }
 
@@ -110,6 +182,7 @@ class StudentImportController extends Controller
 
         return Inertia::render('admin/siswa/import', [
             'jobs' => $this->recentJobs(),
+            'classrooms' => $this->pilihanKelas(),
             'preview' => [
                 'key' => $key,
                 'filename' => $staging['filename'],
@@ -128,7 +201,9 @@ class StudentImportController extends Controller
             'created_by' => auth()->id(),
             'filename' => $staging['filename'],
             'status' => StudentImportJob::STATUS_PENDING,
-            'total_rows' => count($staging['rows']),
+            // Baris "tidak berubah" tidak diterapkan, jadi tidak ikut dihitung:
+            // dibuat + diperbarui + gagal harus tetap sama dengan totalnya.
+            'total_rows' => count(array_filter($staging['rows'], static fn (array $row): bool => $row['action'] !== 'unchanged')),
         ]);
 
         // Baris dititipkan lewat cache, bukan payload queue: 5.000 baris terlalu
@@ -166,6 +241,16 @@ class StudentImportController extends Controller
         return $staging;
     }
 
+    /**
+     * @return list<array{id: string, name: string}>
+     */
+    private function pilihanKelas(): array
+    {
+        return Classroom::forSchool()->tahunAktif()->orderBy('name')->get(['id', 'name'])
+            ->map(fn (Classroom $k): array => ['id' => $k->id, 'name' => $k->name])
+            ->all();
+    }
+
     private function currentSchoolId(): string
     {
         $schoolId = auth()->user()?->school_id;
@@ -177,7 +262,7 @@ class StudentImportController extends Controller
 
     /**
      * @param  list<array{row_number: int, action: string, reason: ?string, student_id: ?string, data: array<string, mixed>}>  $rows
-     * @return array{create: list<array<string, mixed>>, update: list<array<string, mixed>>, reject: list<array<string, mixed>>}
+     * @return array{create: list<array<string, mixed>>, update: list<array<string, mixed>>, unchanged: list<array<string, mixed>>, reject: list<array<string, mixed>>}
      */
     private function groupRows(array $rows): array
     {
@@ -188,7 +273,7 @@ class StudentImportController extends Controller
             ? collect()
             : Student::forSchool()->whereIn('id', $studentIds)->pluck('full_name', 'id');
 
-        $groups = ['create' => [], 'update' => [], 'reject' => []];
+        $groups = ['create' => [], 'update' => [], 'unchanged' => [], 'reject' => []];
 
         foreach ($rows as $row) {
             $data = $row['data'];
@@ -202,6 +287,7 @@ class StudentImportController extends Controller
                 'classroom_name' => $classroomId ? ($classroomNames[$classroomId] ?? null) : null,
                 'existing_name' => $row['student_id'] ? ($studentNames[$row['student_id']] ?? null) : null,
                 'reason' => $row['reason'],
+                'changes' => $row['changes'] ?? [],
             ];
         }
 

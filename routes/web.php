@@ -307,6 +307,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
         // Wajib sebelum resource: `siswa/{siswa}` akan menelan `siswa/import`.
         Route::get('siswa/import', [StudentImportController::class, 'index'])->name('admin.siswa.import');
         Route::get('siswa/import/template', [StudentImportController::class, 'template'])->name('admin.siswa.import.template');
+        Route::get('siswa/import/data', [StudentImportController::class, 'data'])->name('admin.siswa.import.data');
         Route::post('siswa/import', [StudentImportController::class, 'upload'])->name('admin.siswa.import.upload');
         Route::get('siswa/import/{key}', [StudentImportController::class, 'review'])->name('admin.siswa.import.review');
         Route::post('siswa/import/{key}/apply', [StudentImportController::class, 'apply'])->name('admin.siswa.import.apply');

@@ -163,3 +163,39 @@ it('menandai impor gagal saat data pratinjau sudah kedaluwarsa', function () {
 
     expect($importJob->fresh()->status)->toBe(StudentImportJob::STATUS_FAILED);
 });
+
+it('melewati baris tidak berubah tanpa menghitungnya sebagai pembaruan', function () {
+    $school = School::factory()->create();
+    $classroom = Classroom::factory()->create(['school_id' => $school->id, 'name' => '7A']);
+    $student = Student::factory()->create(['school_id' => $school->id, 'classroom_id' => $classroom->id, 'full_name' => 'Tetap Sama']);
+    $sebelum = $student->fresh()->updated_at;
+
+    $this->travel(5)->minutes();
+
+    $result = app(StudentImportApplier::class)->apply([
+        importRow(2, 'unchanged', ['full_name' => 'Nama Lain Yang Tidak Boleh Tertulis'], $student->id),
+    ], $school->id);
+
+    expect($result)->toMatchArray(['created' => 0, 'updated' => 0, 'failed' => 0])
+        ->and($student->fresh()->full_name)->toBe('TETAP SAMA')
+        ->and($student->fresh()->updated_at->eq($sebelum))->toBeTrue();
+});
+
+it('menautkan akun orang tua saat nama dan nomor HP dilengkapi tanpa mengubah nama akun yang sudah ada', function () {
+    $school = School::factory()->create();
+    $classroom = Classroom::factory()->create(['school_id' => $school->id, 'name' => '7A']);
+    $kakak = Student::factory()->create(['school_id' => $school->id, 'classroom_id' => $classroom->id]);
+    $adik = Student::factory()->create(['school_id' => $school->id, 'classroom_id' => $classroom->id, 'parent_name' => null, 'parent_phone' => null]);
+
+    $applier = app(StudentImportApplier::class);
+    $applier->apply([importRow(2, 'update', ['parent_name' => 'Budi Santoso', 'parent_phone' => '081200000001'], $kakak->id)], $school->id);
+    $akun = $kakak->fresh()->parentProfile->user;
+    $namaAkun = $akun->name;
+
+    $applier->apply([importRow(2, 'update', ['parent_name' => 'Pak Budi S.', 'parent_phone' => '081200000001'], $adik->id)], $school->id);
+
+    expect($adik->fresh()->parent_profile_id)->toBe($kakak->fresh()->parent_profile_id)
+        ->and($adik->fresh()->parent_name)->toBe('PAK BUDI S.')
+        // Nama akun login orang tua sengaja tidak ikut berubah.
+        ->and($akun->fresh()->name)->toBe($namaAkun);
+});

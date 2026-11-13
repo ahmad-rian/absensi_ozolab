@@ -2,6 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     CheckCircle2,
+    CircleSlash,
     Download,
     FileSpreadsheet,
     History,
@@ -43,15 +44,23 @@ type PreviewRow = {
     classroom_name: string | null;
     existing_name: string | null;
     reason: string | null;
+    changes: { kolom: string; lama: string; baru: string }[];
 };
 
 type Preview = {
     key: string;
     filename: string;
-    summary: { create: number; update: number; reject: number; total: number };
+    summary: {
+        create: number;
+        update: number;
+        unchanged: number;
+        reject: number;
+        total: number;
+    };
     groups: {
         create: PreviewRow[];
         update: PreviewRow[];
+        unchanged: PreviewRow[];
         reject: PreviewRow[];
     };
 };
@@ -72,6 +81,7 @@ type ImportJob = {
 type Props = {
     jobs: ImportJob[];
     preview: Preview | null;
+    classrooms: { id: string; name: string }[];
     errors: Record<string, string>;
 };
 
@@ -117,8 +127,15 @@ const groupConfig = [
         key: 'update' as const,
         title: 'Akan diperbarui',
         description:
-            'Cocok dengan siswa lama. Kolom kosong di berkas dibiarkan apa adanya.',
+            'Cocok dengan siswa lama. Hanya kolom yang tertulis di bawah yang ditimpa; kolom kosong di berkas tidak menghapus data lama.',
         icon: <RefreshCw className="size-4 text-blue-600" />,
+    },
+    {
+        key: 'unchanged' as const,
+        title: 'Tidak berubah',
+        description:
+            'Cocok dengan siswa lama dan isinya sama persis. Baris ini dilewati.',
+        icon: <CircleSlash className="size-4 text-muted-foreground" />,
     },
     {
         key: 'reject' as const,
@@ -129,8 +146,37 @@ const groupConfig = [
     },
 ];
 
-export default function SiswaImport({ jobs, preview, errors }: Props) {
+/** Kolom yang akan ditimpa pada satu siswa: nilai lama → nilai baru. */
+function DaftarPerubahan({ row }: { row: PreviewRow }) {
+    if (row.changes.length === 0) {
+        return <>Menimpa data {row.existing_name ?? 'siswa terkait'}</>;
+    }
+
+    return (
+        <ul className="space-y-0.5">
+            {row.changes.map((c) => (
+                <li key={c.kolom}>
+                    <span className="font-medium text-foreground">
+                        {c.kolom}:
+                    </span>{' '}
+                    <span className={c.lama ? 'line-through' : 'italic'}>
+                        {c.lama || '(kosong)'}
+                    </span>{' '}
+                    → <span className="text-foreground">{c.baru}</span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+export default function SiswaImport({
+    jobs,
+    preview,
+    classrooms,
+    errors,
+}: Props) {
     const [file, setFile] = useState<File | null>(null);
+    const [kelasUnduh, setKelasUnduh] = useState('');
     const [uploading, setUploading] = useState(false);
     const [applying, setApplying] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -226,7 +272,8 @@ export default function SiswaImport({ jobs, preview, errors }: Props) {
                         </CardTitle>
                         <CardDescription>
                             Format .xlsx atau .csv, maksimal 5 MB dan 5.000
-                            baris. Siswa dicocokkan lewat NISN, lalu NIS.
+                            baris. Siswa dicocokkan lewat ID Sistem (bila ada),
+                            lalu NISN, lalu NIS.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -274,6 +321,44 @@ export default function SiswaImport({ jobs, preview, errors }: Props) {
                                 </Button>
                             </div>
                         </form>
+
+                        <div className="mt-6 flex flex-col gap-2 border-t pt-4">
+                            <p className="text-sm font-medium">
+                                Melengkapi data siswa yang sudah ada?
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Unduh datanya, isi kolom yang masih kosong
+                                (misalnya Nama Orang Tua dan No HP), lalu unggah
+                                lagi di atas. Jangan ubah kolom ID Sistem —
+                                kolom itu yang memastikan data masuk ke siswa
+                                yang sama, bukan membuat siswa baru.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <select
+                                    aria-label="Kelas yang diunduh"
+                                    className="h-9 rounded-md border bg-background px-2 text-sm"
+                                    value={kelasUnduh}
+                                    onChange={(e) =>
+                                        setKelasUnduh(e.target.value)
+                                    }
+                                >
+                                    <option value="">Semua kelas</option>
+                                    {classrooms.map((k) => (
+                                        <option key={k.id} value={k.id}>
+                                            Kelas {k.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <Button type="button" variant="outline" asChild>
+                                    <a
+                                        href={`/admin/siswa/import/data${kelasUnduh ? `?classroom_id=${kelasUnduh}` : ''}`}
+                                    >
+                                        <Download className="size-4" /> Unduh
+                                        Data Siswa (untuk dilengkapi)
+                                    </a>
+                                </Button>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -287,6 +372,7 @@ export default function SiswaImport({ jobs, preview, errors }: Props) {
                                 {preview.summary.total} baris terbaca —{' '}
                                 {preview.summary.create} dibuat,{' '}
                                 {preview.summary.update} diperbarui,{' '}
+                                {preview.summary.unchanged} tidak berubah,{' '}
                                 {preview.summary.reject} ditolak. Belum ada yang
                                 tersimpan sampai kamu menekan Terapkan.
                             </CardDescription>
@@ -368,12 +454,21 @@ export default function SiswaImport({ jobs, preview, errors }: Props) {
                                                                 </TableCell>
                                                                 <TableCell className="text-xs text-muted-foreground">
                                                                     {group.key ===
-                                                                    'reject'
-                                                                        ? row.reason
-                                                                        : group.key ===
-                                                                            'update'
-                                                                          ? `Menimpa data ${row.existing_name ?? 'siswa terkait'}`
-                                                                          : 'Siswa baru'}
+                                                                    'reject' ? (
+                                                                        row.reason
+                                                                    ) : group.key ===
+                                                                      'update' ? (
+                                                                        <DaftarPerubahan
+                                                                            row={
+                                                                                row
+                                                                            }
+                                                                        />
+                                                                    ) : group.key ===
+                                                                      'unchanged' ? (
+                                                                        'Sama dengan data sekarang'
+                                                                    ) : (
+                                                                        'Siswa baru'
+                                                                    )}
                                                                 </TableCell>
                                                             </TableRow>
                                                         ))}

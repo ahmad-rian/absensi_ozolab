@@ -5,8 +5,11 @@ use App\Models\Classroom;
 use App\Models\Student;
 use App\Models\StudentImportJob;
 use App\Models\User;
+use App\Support\NisSementara;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 
 /**
  * Berkas contoh berisi satu baris tiap kelompok: siswa baru, siswa lama yang
@@ -124,4 +127,145 @@ test('berkas dengan header tak dikenali ditolak dengan pesan', function () {
         ])
         ->assertRedirect()
         ->assertSessionHasErrors('file');
+});
+
+/**
+ * Tulis ulang baris hasil unduhan menjadi berkas xlsx untuk diunggah lagi —
+ * meniru operator yang melengkapi datanya di Excel.
+ *
+ * @param  array<int, array<int, string>>  $rows
+ */
+function unggahUlangData(User $admin, array $rows): string
+{
+    $path = sys_get_temp_dir().'/unggah-ulang-'.uniqid().'.xlsx';
+    $writer = new Writer;
+    $writer->openToFile($path);
+
+    foreach ($rows as $row) {
+        $writer->addRow(Row::fromValues($row));
+    }
+
+    $writer->close();
+
+    $response = test()->actingAs($admin)->post(route('admin.siswa.import.upload'), [
+        'file' => new UploadedFile($path, 'data-siswa.xlsx', null, null, true),
+    ]);
+    $response->assertRedirect();
+
+    return (string) $response->headers->get('Location');
+}
+
+test('unduh data siswa berisi ID Sistem, mengosongkan NIS sementara, dan hanya sekolah ini', function () {
+    $admin = createAdminUser();
+    $kelas = Classroom::factory()->create(['school_id' => $admin->school_id, 'name' => '7A']);
+    $lain = Classroom::factory()->create(['school_id' => $admin->school_id, 'name' => '7B']);
+    $asli = Student::factory()->create([
+        'school_id' => $admin->school_id, 'classroom_id' => $kelas->id,
+        'nisn' => '0071234567', 'nis' => '17390', 'full_name' => 'Galuh Aryani', 'is_active' => true,
+    ]);
+    $cepat = Student::factory()->create([
+        'school_id' => $admin->school_id, 'classroom_id' => $kelas->id,
+        'nisn' => null, 'nis' => NisSementara::buat(), 'full_name' => 'Tanpa Nomor', 'is_active' => true,
+    ]);
+    Student::factory()->create(['school_id' => $admin->school_id, 'classroom_id' => $lain->id, 'full_name' => 'Kelas Lain', 'is_active' => true]);
+    Student::factory()->create(['full_name' => 'Sekolah Lain', 'is_active' => true]);
+
+    $rows = xlsxRows($this->actingAs($admin)->get(route('admin.siswa.import.data', ['classroom_id' => $kelas->id]))->assertOk());
+    $perId = collect($rows)->skip(1)->keyBy(0);
+
+    expect(array_slice($rows[0], 0, 5))->toBe(['ID Sistem', 'NISN', 'NIS', 'Nama', 'Kelas'])
+        ->and($perId)->toHaveCount(2)
+        ->and($perId[$asli->id][1])->toBe('0071234567')
+        ->and($perId[$asli->id][2])->toBe('17390')
+        ->and($perId[$asli->id][4])->toBe('7A')
+        ->and($perId[$cepat->id][2])->toBe('');
+
+    // Tanpa filter: semua kelas sekolah ini, tetap tanpa sekolah lain.
+    $semua = collect(xlsxRows($this->actingAs($admin)->get(route('admin.siswa.import.data'))))->skip(1)->pluck(3);
+    expect($semua)->toContain('KELAS LAIN')->not->toContain('SEKOLAH LAIN');
+
+    // Id kelas milik sekolah lain diabaikan, bukan dipakai menyaring.
+    $asing = Classroom::factory()->create();
+    $this->actingAs($admin)->get(route('admin.siswa.import.data', ['classroom_id' => $asing->id]))->assertOk();
+});
+
+test('unduh, lengkapi nama orang tua, unggah ulang: siswa yang sama diperbarui tanpa duplikat', function () {
+    $admin = createAdminUser();
+    $kelas = Classroom::factory()->create(['school_id' => $admin->school_id, 'name' => '7A']);
+    $siswa = Student::factory()->create([
+        'school_id' => $admin->school_id, 'classroom_id' => $kelas->id, 'is_active' => true,
+        'nisn' => '0071234567', 'nis' => '17390', 'full_name' => 'Galuh Aryani',
+        'birth_place' => 'Purwokerto', 'address' => 'Jl. Lama 1', 'parent_name' => null, 'parent_phone' => null,
+    ]);
+    $utuh = Student::factory()->create([
+        'school_id' => $admin->school_id, 'classroom_id' => $kelas->id, 'is_active' => true,
+        'nisn' => '0071234568', 'nis' => '17391', 'full_name' => 'Tidak Disentuh',
+    ]);
+
+    $rows = xlsxRows($this->actingAs($admin)->get(route('admin.siswa.import.data')));
+    $header = $rows[0];
+    $kolom = array_flip($header);
+
+    foreach ($rows as $i => $row) {
+        if ($i > 0 && $row[0] === $siswa->id) {
+            $rows[$i][$kolom['Nama Orang Tua']] = 'Budi Santoso';
+            $rows[$i][$kolom['No HP']] = '081234567890';
+            // Dikosongkan operator: tidak boleh menghapus data lama.
+            $rows[$i][$kolom['Alamat']] = '';
+        }
+    }
+
+    $reviewUrl = unggahUlangData($admin, $rows);
+
+    $this->actingAs($admin)->get($reviewUrl)->assertOk()->assertInertia(fn ($page) => $page
+        ->where('preview.summary.create', 0)
+        ->where('preview.summary.update', 1)
+        ->where('preview.summary.unchanged', 1)
+        ->where('preview.summary.reject', 0)
+        ->where('preview.groups.unchanged.0.existing_name', 'TIDAK DISENTUH')
+        ->where('preview.groups.update.0.changes', fn ($changes) => collect($changes)->pluck('kolom')->sort()->values()->all() === ['Nama Orang Tua', 'No HP']
+            && collect($changes)->firstWhere('kolom', 'Nama Orang Tua')['lama'] === ''
+            && collect($changes)->firstWhere('kolom', 'Nama Orang Tua')['baru'] === 'Budi Santoso')
+    );
+
+    $jumlahAwal = Student::withoutGlobalScopes()->where('school_id', $admin->school_id)->count();
+
+    $this->actingAs($admin)->post(route('admin.siswa.import.apply', ['key' => basename($reviewUrl)]))->assertRedirect();
+
+    $siswa->refresh();
+    $job = StudentImportJob::query()->withoutGlobalScope('school')->latest()->first();
+
+    expect(Student::withoutGlobalScopes()->where('school_id', $admin->school_id)->count())->toBe($jumlahAwal)
+        ->and($siswa->parent_name)->toBe('BUDI SANTOSO')
+        ->and($siswa->parent_phone)->toBe('081234567890')
+        ->and($siswa->parent_profile_id)->not->toBeNull()
+        ->and($siswa->address)->toBe('Jl. Lama 1')
+        ->and($siswa->birth_place)->toBe('Purwokerto')
+        ->and($siswa->nis)->toBe('17390')
+        ->and($utuh->fresh()->updated_at->eq($utuh->updated_at))->toBeTrue()
+        // Baris tidak berubah tidak dihitung: total = diperbarui saja.
+        ->and($job->total_rows)->toBe(1)
+        ->and($job->updated_count)->toBe(1)
+        ->and($job->created_count)->toBe(0);
+});
+
+test('siswa pendaftaran cepat dilengkapi NISN dan NIS lewat ID Sistem tanpa terbuat ganda', function () {
+    $admin = createAdminUser();
+    $kelas = Classroom::factory()->create(['school_id' => $admin->school_id, 'name' => '7A']);
+    $cepat = Student::factory()->create([
+        'school_id' => $admin->school_id, 'classroom_id' => $kelas->id, 'is_active' => true,
+        'nisn' => null, 'nis' => NisSementara::buat(), 'full_name' => 'Ardian Yusuf',
+    ]);
+
+    $rows = xlsxRows($this->actingAs($admin)->get(route('admin.siswa.import.data')));
+    $kolom = array_flip($rows[0]);
+    $rows[1][$kolom['NISN']] = '0136394963';
+    $rows[1][$kolom['NIS']] = '17312';
+
+    $reviewUrl = unggahUlangData($admin, $rows);
+    $this->actingAs($admin)->post(route('admin.siswa.import.apply', ['key' => basename($reviewUrl)]))->assertRedirect();
+
+    expect(Student::withoutGlobalScopes()->where('school_id', $admin->school_id)->count())->toBe(1)
+        ->and($cepat->fresh()->nisn)->toBe('0136394963')
+        ->and($cepat->fresh()->nis)->toBe('17312');
 });

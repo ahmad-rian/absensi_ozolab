@@ -5,6 +5,7 @@ namespace App\Services\Import;
 use App\Enums\Gender;
 use App\Enums\Religion;
 use App\Models\Classroom;
+use App\Models\ParentProfile;
 use App\Models\Student;
 use App\Services\Import\Concerns\ReadsSpreadsheetRows;
 use Illuminate\Support\Carbon;
@@ -33,6 +34,31 @@ class StudentImportParser
 
     private const ACTION_REJECT = 'reject';
 
+    /** Cocok dengan siswa lama tetapi tidak ada satu kolom pun yang berbeda. */
+    private const ACTION_UNCHANGED = 'unchanged';
+
+    /**
+     * Kolom yang dibandingkan untuk pratinjau perubahan: kolom data => judul
+     * kolom di template, supaya operator mengenalinya dari berkasnya sendiri.
+     *
+     * @var array<string, string>
+     */
+    private const LABEL_KOLOM = [
+        'nisn' => 'NISN',
+        'nis' => 'NIS',
+        'full_name' => 'Nama',
+        'classroom_id' => 'Kelas',
+        'gender' => 'JK',
+        'religion' => 'Agama',
+        'no_absen' => 'No Absen',
+        'birth_place' => 'Tempat Lahir',
+        'birth_date' => 'Tanggal Lahir',
+        'address' => 'Alamat',
+        'parent_name' => 'Nama Orang Tua',
+        'parent_phone' => 'No HP',
+        'parent_email' => 'Email Orang Tua',
+    ];
+
     /**
      * Kolom tujuan => daftar judul kolom yang diterima, sudah dinormalkan
      * (huruf kecil, spasi/underscore/strip dibuang).
@@ -40,6 +66,9 @@ class StudentImportParser
      * @var array<string, list<string>>
      */
     private const FIELD_SYNONYMS = [
+        // Diisi oleh "Unduh Data Siswa": kunci pasti untuk siswa yang belum
+        // punya NISN/NIS asli (mis. dari pendaftaran cepat).
+        'student_id' => ['idsistem'],
         'nisn' => ['nisn'],
         'nis' => ['nis', 'nomorinduk'],
         'full_name' => ['nama', 'namalengkap', 'fullname', 'namasiswa'],
@@ -93,8 +122,8 @@ class StudentImportParser
 
     /**
      * @return array{
-     *     rows: list<array{row_number: int, action: string, reason: ?string, student_id: ?string, data: array<string, mixed>}>,
-     *     summary: array{create: int, update: int, reject: int, total: int}
+     *     rows: list<array{row_number: int, action: string, reason: ?string, student_id: ?string, data: array<string, mixed>, changes?: list<array{kolom: string, lama: string, baru: string}>}>,
+     *     summary: array{create: int, update: int, unchanged: int, reject: int, total: int}
      * }
      *
      * @throws RuntimeException Jika format berkas, header, atau jumlah barisnya tidak bisa diproses.
@@ -102,7 +131,8 @@ class StudentImportParser
     public function parse(string $path, string $extension, string $schoolId): array
     {
         $classrooms = $this->classroomIndex($schoolId);
-        [$studentsByNisn, $studentsByNis] = $this->studentIndexes($schoolId);
+        [$studentsByNisn, $studentsByNis, $studentsById] = $this->studentIndexes($schoolId);
+        $classroomNames = $this->classroomNames($schoolId);
 
         $columns = null;
         $rows = [];
@@ -112,6 +142,7 @@ class StudentImportParser
         // saling menimpa diam-diam kalau dibiarkan lolos.
         $seenNisn = [];
         $seenNis = [];
+        $seenId = [];
 
         $reader = $this->readerFor($path, $extension);
         $reader->open($path);
@@ -146,6 +177,9 @@ class StudentImportParser
                         $studentsByNis,
                         $seenNisn,
                         $seenNis,
+                        $studentsById,
+                        $classroomNames,
+                        $seenId,
                     );
                 }
 
@@ -163,6 +197,7 @@ class StudentImportParser
         $summary = [
             self::ACTION_CREATE => 0,
             self::ACTION_UPDATE => 0,
+            self::ACTION_UNCHANGED => 0,
             self::ACTION_REJECT => 0,
         ];
 
@@ -183,7 +218,10 @@ class StudentImportParser
      * @param  array<string, list<array{id: string, full_name: string}>>  $studentsByNis
      * @param  array<string, int>  $seenNisn
      * @param  array<string, int>  $seenNis
-     * @return array{row_number: int, action: string, reason: ?string, student_id: ?string, data: array<string, mixed>}
+     * @param  array<string, array<string, mixed>>  $studentsById  id => potret data siswa saat ini
+     * @param  array<string, string>  $classroomNames  id kelas => nama
+     * @param  array<string, int>  $seenId
+     * @return array{row_number: int, action: string, reason: ?string, student_id: ?string, data: array<string, mixed>, changes?: list<array{kolom: string, lama: string, baru: string}>}
      */
     private function buildRow(
         int $rowNumber,
@@ -193,6 +231,9 @@ class StudentImportParser
         array $studentsByNis,
         array &$seenNisn,
         array &$seenNis,
+        array $studentsById = [],
+        array $classroomNames = [],
+        array &$seenId = [],
     ): array {
         $data = [];
 
@@ -276,6 +317,37 @@ class StudentImportParser
             $seenNis[$nis] = $rowNumber;
         }
 
+        // ID Sistem (dari "Unduh Data Siswa") adalah kunci paling pasti: ia
+        // tetap menunjuk siswa yang sama walau NISN/NIS-nya baru diisi sekarang.
+        $idSistem = $fields['student_id'] ?? '';
+
+        if ($idSistem !== '') {
+            if (isset($seenId[$idSistem])) {
+                return $this->reject($rowNumber, 'ID Sistem ini sudah dipakai di baris '.$seenId[$idSistem].' pada berkas yang sama.');
+            }
+
+            $seenId[$idSistem] = $rowNumber;
+
+            $current = $studentsById[$idSistem] ?? null;
+
+            if ($current === null) {
+                return $this->reject($rowNumber, 'ID Sistem tidak dikenali di sekolah ini. Unduh ulang data siswa lalu isi tanpa mengubah kolom ID Sistem, atau kosongkan kolom itu untuk siswa baru.');
+            }
+
+            foreach ([['NISN', $nisn, $studentsByNisn], ['NIS', $nis, $studentsByNis]] as [$label, $value, $index]) {
+                $pemilikLain = array_values(array_filter(
+                    $value === '' ? [] : ($index[$value] ?? []),
+                    static fn (array $student): bool => $student['id'] !== $idSistem,
+                ));
+
+                if ($pemilikLain !== []) {
+                    return $this->reject($rowNumber, $label.' '.$value.' sudah dipakai siswa lain ('.$pemilikLain[0]['full_name'].'). Perbaiki nomornya.');
+                }
+            }
+
+            return $this->perbarui($rowNumber, $current, $data, $classroomNames);
+        }
+
         // Pencocokan EKSAK: NISN dulu, lalu NIS. Nama tidak pernah dipakai
         // untuk mencocokkan — dua siswa bisa saja senama.
         $candidates = [];
@@ -294,13 +366,9 @@ class StudentImportParser
         }
 
         if (count($candidates) === 1) {
-            return [
-                'row_number' => $rowNumber,
-                'action' => self::ACTION_UPDATE,
-                'reason' => null,
-                'student_id' => $candidates[0]['id'],
-                'data' => $data,
-            ];
+            $current = $studentsById[$candidates[0]['id']] ?? ['id' => $candidates[0]['id']];
+
+            return $this->perbarui($rowNumber, $current, $data, $classroomNames);
         }
 
         $missing = [];
@@ -353,6 +421,110 @@ class StudentImportParser
     }
 
     /**
+     * Baris yang cocok dengan siswa lama: bandingkan dengan data sekarang supaya
+     * pratinjau bisa memperlihatkan persis kolom mana yang akan ditimpa.
+     *
+     * Kolom kosong di berkas tidak pernah masuk `$data`, jadi tidak pernah
+     * dihitung sebagai perubahan — sama dengan aturan di StudentImportApplier.
+     *
+     * @param  array<string, mixed>  $current
+     * @param  array<string, mixed>  $data
+     * @param  array<string, string>  $classroomNames
+     * @return array{row_number: int, action: string, reason: ?string, student_id: ?string, data: array<string, mixed>, changes: list<array{kolom: string, lama: string, baru: string}>}
+     */
+    private function perbarui(int $rowNumber, array $current, array $data, array $classroomNames): array
+    {
+        // Nama kelas dibuat ulang tiap tahun ajaran. Siswa yang masih duduk di
+        // "7A" tahun lalu tidak boleh diam-diam terseret ke "7A" tahun aktif
+        // hanya karena berkasnya menyebut nama yang sama; itu urusan Kenaikan Kelas.
+        $kelasBaru = $data['classroom_id'] ?? null;
+        $kelasLama = $current['classroom_id'] ?? null;
+
+        if ($kelasBaru !== null && $kelasLama !== null && $kelasBaru !== $kelasLama
+            && $this->normalizeName($classroomNames[$kelasBaru] ?? '') === $this->normalizeName($classroomNames[$kelasLama] ?? '')) {
+            unset($data['classroom_id']);
+        }
+
+        $changes = [];
+
+        foreach (self::LABEL_KOLOM as $field => $label) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+
+            $lama = $current[$field] ?? null;
+            $baru = $data[$field];
+
+            if ($this->kunciBanding($field, $lama) === $this->kunciBanding($field, $baru)) {
+                continue;
+            }
+
+            $changes[] = [
+                'kolom' => $label,
+                'lama' => $this->tampilan($field, $lama, $classroomNames),
+                'baru' => $this->tampilan($field, $baru, $classroomNames),
+            ];
+        }
+
+        return [
+            'row_number' => $rowNumber,
+            'action' => $changes === [] ? self::ACTION_UNCHANGED : self::ACTION_UPDATE,
+            'reason' => null,
+            'student_id' => (string) $current['id'],
+            'data' => $data,
+            'changes' => $changes,
+        ];
+    }
+
+    /**
+     * Bentuk nilai untuk dibandingkan: beda huruf besar-kecil pada nama, atau
+     * `+62` lawan `08` pada nomor HP, bukan perubahan.
+     */
+    private function kunciBanding(string $field, mixed $value): string
+    {
+        $value = trim((string) ($value ?? ''));
+
+        return match ($field) {
+            // Keduanya disimpan huruf besar oleh mutator Student.
+            'full_name', 'parent_name' => mb_strtoupper($value),
+            'parent_phone' => $value === '' ? '' : $this->normalizePhone($value),
+            'parent_email' => mb_strtolower($value),
+            default => $value,
+        };
+    }
+
+    /**
+     * Nilai seperti yang ditulis operator di berkas, bukan bentuk simpanannya.
+     *
+     * @param  array<string, string>  $classroomNames
+     */
+    private function tampilan(string $field, mixed $value, array $classroomNames): string
+    {
+        $value = trim((string) ($value ?? ''));
+
+        if ($value === '') {
+            return '';
+        }
+
+        return match ($field) {
+            'classroom_id' => $classroomNames[$value] ?? '(kelas tidak dikenal)',
+            'gender' => Gender::tryFrom($value) === Gender::LakiLaki ? 'L' : (Gender::tryFrom($value) === Gender::Perempuan ? 'P' : $value),
+            'religion' => Religion::tryFrom($value)?->label() ?? $value,
+            'birth_date' => $this->tanggalTampil($value),
+            default => $value,
+        };
+    }
+
+    private function tanggalTampil(string $value): string
+    {
+        try {
+            return Carbon::createFromFormat('!Y-m-d', $value)->format('d/m/Y');
+        } catch (\Throwable) {
+            return $value;
+        }
+    }
+
+    /**
      * @return array{row_number: int, action: string, reason: ?string, student_id: ?string, data: array<string, mixed>}
      */
     private function reject(int $rowNumber, string $reason): array
@@ -392,7 +564,7 @@ class StudentImportParser
             }
         }
 
-        $identifiers = array_intersect(['nisn', 'nis', 'full_name'], $columns);
+        $identifiers = array_intersect(['student_id', 'nisn', 'nis', 'full_name'], $columns);
 
         if ($identifiers === []) {
             throw new RuntimeException('Header tidak dikenali. Minimal harus ada kolom NISN, NIS, atau Nama.');
@@ -486,18 +658,39 @@ class StudentImportParser
     }
 
     /**
-     * @return array{0: array<string, list<array{id: string, full_name: string}>>, 1: array<string, list<array{id: string, full_name: string}>>}
+     * @return array<string, string> id kelas => nama, seluruh tahun ajaran
+     */
+    private function classroomNames(string $schoolId): array
+    {
+        return Classroom::query()
+            ->withoutGlobalScope('school')
+            ->where('school_id', $schoolId)
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    /**
+     * @return array{0: array<string, list<array{id: string, full_name: string}>>, 1: array<string, list<array{id: string, full_name: string}>>, 2: array<string, array<string, mixed>>}
      */
     private function studentIndexes(string $schoolId): array
     {
         $byNisn = [];
         $byNis = [];
+        $byId = [];
+
+        $emailOrtu = ParentProfile::query()
+            ->withoutGlobalScope('school')
+            ->where('school_id', $schoolId)
+            ->pluck('email', 'id');
 
         Student::query()
             ->withoutGlobalScope('school')
             ->where('school_id', $schoolId)
-            ->get(['id', 'nis', 'nisn', 'full_name'])
-            ->each(function (Student $student) use (&$byNisn, &$byNis): void {
+            ->get([
+                'id', 'nis', 'nisn', 'full_name', 'classroom_id', 'gender', 'religion', 'no_absen',
+                'birth_place', 'birth_date', 'address', 'parent_name', 'parent_phone', 'parent_profile_id',
+            ])
+            ->each(function (Student $student) use (&$byNisn, &$byNis, &$byId, $emailOrtu): void {
                 $entry = ['id' => $student->id, 'full_name' => (string) $student->full_name];
 
                 if (($nisn = trim((string) $student->nisn)) !== '') {
@@ -507,8 +700,25 @@ class StudentImportParser
                 if (($nis = trim((string) $student->nis)) !== '') {
                     $byNis[$nis][] = $entry;
                 }
+
+                $byId[$student->id] = [
+                    'id' => $student->id,
+                    'nisn' => $student->nisn,
+                    'nis' => $student->nis,
+                    'full_name' => $student->full_name,
+                    'classroom_id' => $student->classroom_id,
+                    'gender' => $student->gender?->value,
+                    'religion' => $student->religion?->value,
+                    'no_absen' => $student->no_absen,
+                    'birth_place' => $student->birth_place,
+                    'birth_date' => $student->birth_date?->format('Y-m-d'),
+                    'address' => $student->address,
+                    'parent_name' => $student->parent_name,
+                    'parent_phone' => $student->parent_phone,
+                    'parent_email' => $student->parent_profile_id ? ($emailOrtu[$student->parent_profile_id] ?? null) : null,
+                ];
             });
 
-        return [$byNisn, $byNis];
+        return [$byNisn, $byNis, $byId];
     }
 }

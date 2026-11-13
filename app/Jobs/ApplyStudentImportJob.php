@@ -53,7 +53,8 @@ class ApplyStudentImportJob implements ShouldQueue
 
         $importJob->update([
             'status' => StudentImportJob::STATUS_PROCESSING,
-            'total_rows' => count($rows),
+            // Baris "tidak berubah" tidak diterapkan, jadi tidak ikut total.
+            'total_rows' => count(array_filter($rows, static fn (array $row): bool => $row['action'] !== 'unchanged')),
         ]);
 
         $result = $applier->apply($rows, $importJob->school_id);

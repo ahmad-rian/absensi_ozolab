@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AcademicYear;
 use App\Models\Classroom;
 use App\Models\School;
 use App\Models\Student;
@@ -352,4 +353,126 @@ it('membolehkan NIS bekas siswa yang sudah dihapus', function () {
 
     expect($result['summary']['create'])->toBe(1)
         ->and($result['summary']['reject'])->toBe(0);
+});
+
+/**
+ * CSV yang memuat id siswa (acak tiap run) ditulis ke direktori sementara,
+ * bukan direktori fixture yang ikut ter-commit — alasannya sama dengan XLSX.
+ *
+ * @param  list<list<string>>  $rows
+ */
+function writeImportCsvSementara(string $name, array $rows): string
+{
+    $path = sys_get_temp_dir().'/import-'.$name.'-'.uniqid().'.csv';
+    $handle = fopen($path, 'w');
+
+    foreach ($rows as $row) {
+        fputcsv($handle, $row, ',', '"', '\\');
+    }
+
+    fclose($handle);
+
+    return $path;
+}
+
+it('mencocokkan lewat ID Sistem walau siswa belum punya NISN', function () {
+    [$school, $classroom] = makeImportSchool();
+    $student = Student::factory()->create([
+        'school_id' => $school->id, 'classroom_id' => $classroom->id,
+        'nisn' => null, 'nis' => '202612345678', 'full_name' => 'Tanpa Nomor', 'parent_name' => null,
+    ]);
+
+    $path = writeImportCsvSementara('id-sistem', [
+        ['ID Sistem', 'NISN', 'NIS', 'Nama', 'Nama Orang Tua'],
+        [$student->id, '0136394963', '', 'Tanpa Nomor', 'Budi'],
+    ]);
+
+    $row = $this->parser->parse($path, 'csv', $school->id)['rows'][0];
+
+    expect($row['action'])->toBe('update')
+        ->and($row['student_id'])->toBe($student->id)
+        ->and(collect($row['changes'])->pluck('kolom')->all())->toBe(['NISN', 'Nama Orang Tua'])
+        // Sel NIS kosong: nilai lama dibiarkan, bukan perubahan.
+        ->and($row['data'])->not->toHaveKey('nis');
+});
+
+it('menandai baris yang isinya sama persis sebagai tidak berubah', function () {
+    [$school, $classroom] = makeImportSchool();
+    $student = Student::factory()->create([
+        'school_id' => $school->id, 'classroom_id' => $classroom->id,
+        'nisn' => '9988776655', 'nis' => '2025010', 'full_name' => 'Siti Aminah',
+        'gender' => 'PEREMPUAN', 'parent_phone' => '081234567890',
+    ]);
+
+    $path = writeImportCsvSementara('tidak-berubah', [
+        ['ID Sistem', 'NISN', 'NIS', 'Nama', 'Kelas', 'JK', 'No HP'],
+        // Beda huruf besar-kecil dan +62 lawan 08 bukan perubahan.
+        [$student->id, '9988776655', '2025010', 'siti aminah', '7A', 'P', '+6281234567890'],
+    ]);
+
+    $result = $this->parser->parse($path, 'csv', $school->id);
+
+    expect($result['rows'][0]['action'])->toBe('unchanged')
+        ->and($result['rows'][0]['changes'])->toBe([])
+        ->and($result['summary']['unchanged'])->toBe(1)
+        ->and($result['summary']['update'])->toBe(0);
+});
+
+it('menolak ID Sistem yang tidak dikenal atau milik sekolah lain', function () {
+    [$school] = makeImportSchool();
+    [$lain, $kelasLain] = makeImportSchool();
+    $asing = Student::factory()->create(['school_id' => $lain->id, 'classroom_id' => $kelasLain->id]);
+
+    $path = writeImportCsvSementara('id-asing', [
+        ['ID Sistem', 'Nama'],
+        [$asing->id, 'Nama Baru'],
+        ['01zzzzzzzzzzzzzzzzzzzzzzzz', 'Ngawur'],
+    ]);
+
+    $rows = $this->parser->parse($path, 'csv', $school->id)['rows'];
+
+    expect($rows[0]['action'])->toBe('reject')
+        ->and($rows[0]['reason'])->toContain('ID Sistem tidak dikenali')
+        ->and($rows[0]['student_id'])->toBeNull()
+        ->and($rows[1]['action'])->toBe('reject');
+});
+
+it('menolak ID Sistem ganda dan NISN yang sudah dipakai siswa lain', function () {
+    [$school, $classroom] = makeImportSchool();
+    $a = Student::factory()->create(['school_id' => $school->id, 'classroom_id' => $classroom->id, 'nisn' => '1111111111', 'nis' => '101']);
+    $b = Student::factory()->create(['school_id' => $school->id, 'classroom_id' => $classroom->id, 'nisn' => '2222222222', 'nis' => '102', 'full_name' => 'Pemilik Asli']);
+
+    $path = writeImportCsvSementara('id-bentrok', [
+        ['ID Sistem', 'NISN', 'Nama'],
+        [$a->id, '2222222222', 'Mencoba Menimpa'],
+        [$b->id, '', 'Baris Pertama'],
+        [$b->id, '', 'Baris Kedua'],
+    ]);
+
+    $rows = $this->parser->parse($path, 'csv', $school->id)['rows'];
+
+    expect($rows[0]['action'])->toBe('reject')
+        ->and($rows[0]['reason'])->toContain('sudah dipakai siswa lain (PEMILIK ASLI)')
+        ->and($rows[1]['action'])->toBe('update')
+        ->and($rows[2]['action'])->toBe('reject')
+        ->and($rows[2]['reason'])->toContain('sudah dipakai di baris');
+});
+
+it('tidak menyeret siswa kelas tahun lalu ke kelas bernama sama di tahun aktif', function () {
+    $school = School::factory()->create();
+    $lama = AcademicYear::factory()->create(['school_id' => $school->id, 'is_active' => false]);
+    $aktif = AcademicYear::factory()->create(['school_id' => $school->id, 'is_active' => true]);
+    $kelasLama = Classroom::factory()->create(['school_id' => $school->id, 'academic_year_id' => $lama->id, 'name' => '7A']);
+    Classroom::factory()->create(['school_id' => $school->id, 'academic_year_id' => $aktif->id, 'name' => '7A']);
+    $student = Student::factory()->create(['school_id' => $school->id, 'classroom_id' => $kelasLama->id, 'nisn' => '3333333333', 'full_name' => 'Masih Di Kelas Lama']);
+
+    $path = writeImportCsvSementara('kelas-kembar', [
+        ['ID Sistem', 'Nama', 'Kelas'],
+        [$student->id, 'Masih Di Kelas Lama', '7A'],
+    ]);
+
+    $row = $this->parser->parse($path, 'csv', $school->id)['rows'][0];
+
+    expect($row['action'])->toBe('unchanged')
+        ->and($row['data'])->not->toHaveKey('classroom_id');
 });

@@ -19,6 +19,7 @@ use App\Services\GoogleDriveService;
 use App\Services\ParentProfileService;
 use App\Services\PhotoCropService;
 use App\Support\AturanSandi;
+use App\Support\NisSementara;
 use App\Support\SchoolFeatures;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -227,7 +228,7 @@ class StudentRegistrationController extends Controller
     /** NIS sementara untuk siswa yang mendaftar tanpa nomor induk. */
     private function placeholderNis(): string
     {
-        return now()->format('Y').str_pad((string) random_int(1, 99999999), 8, '0', STR_PAD_LEFT);
+        return NisSementara::buat();
     }
 
     /**

@@ -50,6 +50,12 @@ class StudentImportApplier
                 continue;
             }
 
+            // Cocok dengan siswa lama tapi tidak ada yang berbeda: tidak ada
+            // yang perlu ditulis, dan tidak dihitung sebagai pembaruan.
+            if ($row['action'] === 'unchanged') {
+                continue;
+            }
+
             $actionable[] = $row;
         }
 
@@ -137,6 +143,11 @@ class StudentImportApplier
         $student->save();
     }
 
+    /**
+     * Nama orang tua yang dibetulkan lewat berkas hanya mengubah
+     * `students.parent_name`. Nama akun login orang tua (`users.name`) sengaja
+     * tidak ikut disentuh — lihat catatan pada Student::parentName().
+     */
     private function linkParent(Student $student, string $schoolId, ?string $email): void
     {
         if (! $student->parent_phone || ! $student->parent_name) {
