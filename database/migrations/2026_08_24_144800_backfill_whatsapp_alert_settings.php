@@ -15,7 +15,7 @@ return new class extends Migration
      *
      * Setelah migrasi ini, WA "anak Anda hadir" berhenti untuk semua sekolah dan
      * digantikan sapuan `attendance:notify-absence`. Email dan Telegram tidak
-     * disentuh sama sekali — keduanya tetap tunduk pada `notify_on_check_in` dan
+     * disentuh sama sekali - keduanya tetap tunduk pada `notify_on_check_in` dan
      * `notify_on_check_out` seperti sebelumnya.
      */
     private const DEFAULTS = [

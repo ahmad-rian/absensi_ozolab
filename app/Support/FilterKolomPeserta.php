@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Filter daftar peserta per kolom data (mis. per kecamatan — padanan "per
+ * Filter daftar peserta per kolom data (mis. per kecamatan - padanan "per
  * kelas" pada siswa). Kolom yang bisa difilter: bertipe pilihan, bertipe
  * kecamatan, atau kolom data lama yang kunci/labelnya memuat "kecamatan".
  *

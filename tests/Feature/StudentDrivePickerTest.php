@@ -12,8 +12,8 @@ use Mockery\MockInterface;
  | Memilih pas foto dengan melihat isi folder Drive.
  |
  | Yang paling penting di berkas ini bukan fitur melihatnya, melainkan
- | gerbangnya. SATU akun OAuth melayani SELURUH sekolah — itu keputusan lama
- | yang tidak bisa dibalik murah — sehingga id Drive apa pun yang datang dari
+ | gerbangnya. SATU akun OAuth melayani SELURUH sekolah - itu keputusan lama
+ | yang tidak bisa dibalik murah - sehingga id Drive apa pun yang datang dari
  | klien dan tidak diperiksa berarti isi folder sekolah lain bisa dibaca, dan
  | foto anak dari sekolah lain bisa dipasang ke siswa di sini.
  */
@@ -36,7 +36,7 @@ beforeEach(function () {
 });
 
 /**
- * Pasang klien Drive palsu lewat locator — sambungan yang sama dipakai
+ * Pasang klien Drive palsu lewat locator - sambungan yang sama dipakai
  * controller, jadi tidak ada API Google yang benar-benar ditembak.
  */
 function pakaiDrivePalsu(GoogleDriveService $drive): void
@@ -162,7 +162,7 @@ test('berkas yang dipilih jadi pas foto, berikut id dan namanya', function () {
     expect($siswa->photo_path)->not->toBeNull()
         // Kedua kolom ini yang membuat "ambil ulang dari Drive" di lain hari
         // menunjuk berkas yang benar-benar dipilih admin, bukan hasil tebakan
-        // nama — dan penurunan-dari-nama itu sumber seluruh kelas bug folder
+        // nama - dan penurunan-dari-nama itu sumber seluruh kelas bug folder
         // yatim yang sudah pernah dibereskan sekali.
         ->and($siswa->photo_drive_file_id)->toBe('g1')
         ->and($siswa->photo_drive_filename)->toBe('FIC_0008.JPG');
@@ -177,7 +177,7 @@ test('berkas yang dipilih jadi pas foto, berikut id dan namanya', function () {
 
 test('foto lama dibuang saat diganti dari Drive', function () {
     // Nama berkas lokal memuat 16 karakter acak, jadi yang lama TIDAK tertimpa
-    // — ia tertinggal selamanya kalau tidak dibuang. Disk penuh sudah pernah
+    // - ia tertinggal selamanya kalau tidak dibuang. Disk penuh sudah pernah
     // menjatuhkan server ini.
     Storage::disk('public')->put('photos/students/lama.png', 'x');
     $this->student->forceFill(['photo_path' => 'photos/students/lama.png'])->saveQuietly();

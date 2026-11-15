@@ -43,7 +43,7 @@ const KELAS_SELECT = 'h-9 rounded-md border bg-background px-2 text-sm';
 
 /**
  * Form pola sesi untuk tambah dan ubah. Saat mengubah, admin ditanya apakah
- * sesi hari ini ikut berubah — sesi hari ini yang sudah ada kehadirannya
+ * sesi hari ini ikut berubah - sesi hari ini yang sudah ada kehadirannya
  * hanya disentuh bila dijawab ya.
  */
 export function PolaForm({ program, grups, pola, onSelesai }: Props) {

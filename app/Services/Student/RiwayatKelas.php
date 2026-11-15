@@ -23,7 +23,7 @@ class RiwayatKelas
      * lama bukan kenaikan kelas dan tidak boleh membuka riwayat "berjalan" di
      * tahun yang sudah lewat. Sekolah tanpa tahun aktif tidak dicatat sama sekali.
      *
-     * `$kelasLamaId` dipakai menambal riwayat tahun sebelumnya bila belum ada —
+     * `$kelasLamaId` dipakai menambal riwayat tahun sebelumnya bila belum ada -
      * siswa yang didaftarkan setelah backfill migrasi tidak punya baris riwayat,
      * dan tanpa tambalan ini keanggotaan kelas lamanya hilang saat naik kelas.
      */

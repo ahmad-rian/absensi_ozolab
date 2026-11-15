@@ -105,7 +105,7 @@ type Classroom = {
  * lama hanya mengakui empat di antaranya, sehingga form ubah tidak punya cara
  * membaca NIK, pekerjaan, alamat, dan kota yang sebenarnya sudah ada di prop.
  *
- * `relation_label` bukan kolom — ia ditempelkan controller dari enum.
+ * `relation_label` bukan kolom - ia ditempelkan controller dari enum.
  */
 type ParentProfile = ParentProfileModel & { relation_label?: string };
 
@@ -168,7 +168,7 @@ type DrivePhotoFile = {
 
 type DrivePhoto = {
     feature_enabled: boolean;
-    /** null berarti sudah dicari tapi tidak ketemu — beda dari prop yang belum ada. */
+    /** null berarti sudah dicari tapi tidak ketemu - beda dari prop yang belum ada. */
     file: DrivePhotoFile | null;
     expected_file_name: string;
     expected_folder: string;
@@ -193,24 +193,24 @@ type PageProps = {
     photoSheets: PhotoSheet[];
     photoSheetTemplates: PhotoSheetTemplate[];
     cards: GeneratedCard[];
-    /** Ada kartu yang sedang dirender — `cards` sendiri hanya berisi yang selesai. */
+    /** Ada kartu yang sedang dirender - `cards` sendiri hanya berisi yang selesai. */
     cardsProcessing: boolean;
     filters: RangeFilters;
-    /** Ditunda — tab absensi paling sering dibuka, jadi dihangatkan lebih dulu. */
+    /** Ditunda - tab absensi paling sering dibuka, jadi dihangatkan lebih dulu. */
     attendance?: AttendanceStats;
-    /** Opsional — hanya diambil saat tab jenisnya benar-benar dibuka. */
+    /** Opsional - hanya diambil saat tab jenisnya benar-benar dibuka. */
     prayerDhuha?: PrayerStats;
     prayerDzuhur?: PrayerStats;
-    /** Ditunda — riwayat absensi sekolah per hari, berhalaman lewat `riwayat_page`. */
+    /** Ditunda - riwayat absensi sekolah per hari, berhalaman lewat `riwayat_page`. */
     riwayatAbsensi?: Halaman<RiwayatSekolahRow>;
-    /** Opsional — ikut dimuat saat tab sholatnya dibuka, berhalaman lewat `riwayat_sholat_page`. */
+    /** Opsional - ikut dimuat saat tab sholatnya dibuka, berhalaman lewat `riwayat_sholat_page`. */
     riwayatDhuha?: Halaman<RiwayatSholatRow>;
     riwayatDzuhur?: Halaman<RiwayatSholatRow>;
-    /** Opsional — menembak API Drive, jadi baru diminta saat tombolnya ditekan. */
+    /** Opsional - menembak API Drive, jadi baru diminta saat tombolnya ditekan. */
     drivePhoto?: DrivePhoto;
-    /** Sekolah memakai fitur poin pelanggaran — menentukan ada tidaknya tab Poin. */
+    /** Sekolah memakai fitur poin pelanggaran - menentukan ada tidaknya tab Poin. */
     fiturPoin: boolean;
-    /** Opsional — dimuat saat tab Poin dibuka. */
+    /** Opsional - dimuat saat tab Poin dibuka. */
     poin?: PoinSiswaPayload | null;
 };
 
@@ -245,7 +245,7 @@ const sheetStatusConfig: Record<string, { label: string; className: string }> =
  * Yang menentukan hijau adalah `uploaded`, bukan `status`: unggahan yang gagal
  * dulu tetap tercatat selesai, sehingga status saja bisa menipu. `completed`
  * tanpa berkas Drive berarti fotonya tersimpan di server sementara integrasi
- * Drive sekolahnya mati — itu bukan kegagalan, jadi tidak diberi warna merah.
+ * Drive sekolahnya mati - itu bukan kegagalan, jadi tidak diberi warna merah.
  */
 function photoStatusBadge(status: PhotoStatus | null): {
     label: string;
@@ -375,7 +375,7 @@ export default function SiswaShow({
     const namaSholat = useNamaSholat();
 
     // Tab jenis sholat yang dimatikan sekolah disembunyikan sepenuhnya, bukan
-    // ditampilkan lalu kosong — flag-nya ada di prop non-defer supaya tidak
+    // ditampilkan lalu kosong - flag-nya ada di prop non-defer supaya tidak
     // ada kedip panel kosong sebelum payload statistiknya tiba.
     const prayerTabs = [
         {
@@ -566,7 +566,7 @@ export default function SiswaShow({
     }
 
     // Hasil pencarian ditahan di server selama beberapa jam, jadi mencari ulang
-    // harus membuang cache-nya dulu — kalau tidak, foto yang baru diunggah ke
+    // harus membuang cache-nya dulu - kalau tidak, foto yang baru diunggah ke
     // Drive tetap dilaporkan tidak ada.
     function researchDrivePhoto() {
         setDrivePhotoLoading(true);
@@ -853,7 +853,7 @@ export default function SiswaShow({
                                 {fotoDiganti && (
                                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200 print:hidden">
                                         Pas foto sudah diganti. Kartu digital
-                                        yang sudah ada masih memakai foto lama —
+                                        yang sudah ada masih memakai foto lama -
                                         tekan <b>Generate Ulang Kartu</b> kalau
                                         ingin ikut diperbarui.
                                     </div>
@@ -927,7 +927,7 @@ export default function SiswaShow({
                                                             href={`/admin/siswa/${student.id}/edit`}
                                                             className="text-primary underline print:hidden"
                                                         >
-                                                            Belum tertaut —
+                                                            Belum tertaut -
                                                             hubungkan orang tua
                                                         </Link>
                                                     )
@@ -990,7 +990,7 @@ export default function SiswaShow({
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex flex-col items-center gap-4">
-                                            {/* QR Frame — this div is the only thing visible when printing */}
+                                            {/* QR Frame - this div is the only thing visible when printing */}
                                             <div className="print-area rounded-xl border-2 border-dashed border-gray-300 bg-white p-6 print:border-solid print:border-gray-800">
                                                 <div
                                                     className="mx-auto w-full max-w-[250px] [&>svg]:h-auto [&>svg]:w-full"
@@ -1037,7 +1037,7 @@ export default function SiswaShow({
                                     </CardContent>
                                 </Card>
 
-                                {/* Pas foto asli di Drive — dicari saat diminta, tidak disimpan di DB */}
+                                {/* Pas foto asli di Drive - dicari saat diminta, tidak disimpan di DB */}
                                 <Card className="print:hidden">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-base">
@@ -1050,7 +1050,7 @@ export default function SiswaShow({
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
-                                        {/* Dibaca dari riwayat generate, bukan dari Drive —
+                                        {/* Dibaca dari riwayat generate, bukan dari Drive -
                                     memukul API Drive di tiap kunjungan halaman
                                     terlalu mahal. Pencarian sungguhannya ada di
                                     tombol "Cari di Drive" di bawah. */}
@@ -1268,7 +1268,7 @@ export default function SiswaShow({
                                                 Generate
                                             </Button>
                                             {/* Lembar 4R bawaan, sama dengan yang keluar saat
-                                        siswa mendaftar — tanpa memilih template lagi. */}
+                                        siswa mendaftar - tanpa memilih template lagi. */}
                                             <Button
                                                 variant="outline"
                                                 className="w-full"
@@ -1383,7 +1383,7 @@ export default function SiswaShow({
                                     </CardContent>
                                 </Card>
 
-                                {/* Kartu Digital — tautan langsung ke berkas di Google Drive */}
+                                {/* Kartu Digital - tautan langsung ke berkas di Google Drive */}
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2">
@@ -1966,13 +1966,13 @@ function attendanceTiles(attendance?: AttendanceStats): TileSpec[] {
     return [
         {
             label: 'Hadir',
-            value: attendance?.summary.hadir ?? '—',
+            value: attendance?.summary.hadir ?? '-',
             icon: UserCheck,
             tone: 'green',
         },
         {
             label: 'Terlambat',
-            value: attendance?.summary.terlambat ?? '—',
+            value: attendance?.summary.terlambat ?? '-',
             icon: AlarmClock,
             tone: 'amber',
         },
@@ -1983,7 +1983,7 @@ function attendanceTiles(attendance?: AttendanceStats): TileSpec[] {
                   attendance.summary.izin +
                   attendance.summary.sakit +
                   attendance.summary.tanpa_keterangan
-                : '—',
+                : '-',
             icon: UserX,
             tone: 'red',
             hint: attendance
@@ -1992,7 +1992,7 @@ function attendanceTiles(attendance?: AttendanceStats): TileSpec[] {
         },
         {
             label: 'Kehadiran',
-            value: attendance?.summary.rate ?? '—',
+            value: attendance?.summary.rate ?? '-',
             suffix: '%',
             icon: Percent,
             tone: 'blue',
@@ -2056,25 +2056,25 @@ function PrayerPanel({
     const tiles: TileSpec[] = [
         {
             label: 'Ikut Sholat',
-            value: detail?.summary.hadir ?? '—',
+            value: detail?.summary.hadir ?? '-',
             icon: MoonStar,
             tone: 'green',
         },
         {
             label: 'Tidak Ikut',
-            value: detail?.summary.tidak_hadir ?? '—',
+            value: detail?.summary.tidak_hadir ?? '-',
             icon: UserX,
             tone: 'red',
         },
         {
             label: 'Hari Efektif',
-            value: detail?.summary.effective_days ?? '—',
+            value: detail?.summary.effective_days ?? '-',
             icon: CalendarDays,
             tone: 'slate',
         },
         {
             label: 'Kehadiran',
-            value: detail?.summary.rate ?? '—',
+            value: detail?.summary.rate ?? '-',
             suffix: '%',
             icon: Percent,
             tone: 'blue',

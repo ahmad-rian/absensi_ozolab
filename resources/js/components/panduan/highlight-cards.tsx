@@ -6,7 +6,7 @@ export type Highlight = {
     description: string;
 };
 
-/** Tiga sorotan singkat di awal topik — untuk menangkap gambaran sebelum membaca detailnya. */
+/** Tiga sorotan singkat di awal topik - untuk menangkap gambaran sebelum membaca detailnya. */
 export function HighlightCards({ items }: { items: Highlight[] }) {
     return (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

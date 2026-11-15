@@ -1,6 +1,6 @@
 # Feature Specification: Portal Wali
 
-**Feature Branch**: `007-portal-wali` (langsung di `main`) · **Created**: 2026-10-14 · **Status**: Draft — implementasi setelah spec 001–005
+**Feature Branch**: `007-portal-wali` (langsung di `main`) · **Created**: 2026-10-14 · **Status**: Draft - implementasi setelah spec 001–005
 
 **Input**: User description: "Wali login melihat riwayat hadir anggota keluarganya; satu akun untuk banyak peserta; halaman kartu digital publik tanpa data sensitif."
 
@@ -23,7 +23,7 @@ Anak Bu Siti login dan melihat riwayat kehadiran ibunya per hari dan per sesi.
 **Acceptance Scenarios**:
 
 1. **Given** tautan kartu digital peserta, **When** dibuka tanpa login, **Then** tampil nama, foto,
-   program, dan QR — tanpa telepon, alamat, atau data skema lain.
+   program, dan QR - tanpa telepon, alamat, atau data skema lain.
 
 ### Edge Cases
 

@@ -32,7 +32,7 @@ class StudentPhotoStorage
     public const THUMB_QUALITY = 80;
 
     /**
-     * `schools.id` dan `students.id` keduanya ULID — dulu diformat dengan `%d`
+     * `schools.id` dan `students.id` keduanya ULID - dulu diformat dengan `%d`
      * sehingga runtuh jadi `1` dan seluruh sekolah menulis ke folder yang sama.
      * Komponen acak membuat nama berkas tidak bisa ditebak dari nama siswa.
      */
@@ -44,7 +44,7 @@ class StudentPhotoStorage
     }
 
     /**
-     * Letak thumbnail milik satu foto — diturunkan, bukan disimpan di kolom.
+     * Letak thumbnail milik satu foto - diturunkan, bukan disimpan di kolom.
      *
      * Sengaja tanpa kolom database: thumbnail adalah turunan murni dari
      * `photo_path`, dan kolom kedua berarti ada dua kebenaran yang bisa

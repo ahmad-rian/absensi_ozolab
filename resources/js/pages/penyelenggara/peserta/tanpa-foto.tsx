@@ -195,7 +195,7 @@ export default function PesertaTanpaFoto({
                                                     {p.full_name}
                                                 </td>
                                                 <td className="p-3 text-muted-foreground">
-                                                    {p.classroom ?? '—'}
+                                                    {p.classroom ?? '-'}
                                                 </td>
                                                 <td className="p-3">
                                                     <div className="flex justify-end gap-2">

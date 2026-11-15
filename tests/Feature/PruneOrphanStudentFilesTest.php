@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Penyapu berkas yatim. Disk penuh sudah pernah menjatuhkan server ini, jadi
  * perintah yang salah sasaran akan menjatuhkannya lagi dengan cara yang lebih
- * sulit dipulihkan — karena itu menghapus harus diminta eksplisit.
+ * sulit dipulihkan - karena itu menghapus harus diminta eksplisit.
  */
 test('tanpa --force tidak ada berkas yang hilang', function () {
     Storage::fake('public');

@@ -70,7 +70,7 @@ class ParticipantController extends Controller
     {
         return Inertia::render('kartu-bebas/peserta/show', [
             'participant' => $this->payload($submission),
-            // Riwayat kehadiran dari card_attendances — tabel yang sama dengan
+            // Riwayat kehadiran dari card_attendances - tabel yang sama dengan
             // yang ditulis scan, jadi selalu sinkron dengan halaman scan.
             'kehadiran' => Inertia::defer(function () use ($submission) {
                 // Jumlah scan per hari dari `card_scans`, satu query ber-indeks.

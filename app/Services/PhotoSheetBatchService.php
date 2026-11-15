@@ -13,7 +13,7 @@ use Spatie\Browsershot\Browsershot;
  * Menyusun satu berkas PDF berisi beberapa lembar pas foto, di mana satu lembar
  * bisa dibagi ke beberapa siswa dengan jumlah cetak berbeda.
  *
- * Ukuran kertas dan kapasitas slot tidak didefinisikan ulang di sini — semuanya
+ * Ukuran kertas dan kapasitas slot tidak didefinisikan ulang di sini - semuanya
  * dibaca dari PhotoSheetGeneratorService::TEMPLATES supaya lembar per-siswa dan
  * lembar batch tidak pernah berbeda ukuran.
  */
@@ -96,7 +96,7 @@ class PhotoSheetBatchService
         $items = $batch->items ?? [];
         $pages = self::paginate($items, $capacity);
 
-        // Satu data URI per siswa, dipakai ulang di semua slotnya — foto studio
+        // Satu data URI per siswa, dipakai ulang di semua slotnya - foto studio
         // berukuran ratusan KB, dan satu batch bisa memuat puluhan slot.
         $photos = $this->photoDataUris($batch, $items);
 

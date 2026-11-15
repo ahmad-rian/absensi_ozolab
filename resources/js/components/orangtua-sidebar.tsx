@@ -59,7 +59,7 @@ type Anak = {
  * Anak yang aktif ikut di setiap tautan menu.
  *
  * Tanpa ini, berpindah dari Absensi ke Sholat akan diam-diam kembali ke anak
- * pertama — cacat yang hanya terasa oleh keluarga dengan lebih dari satu anak,
+ * pertama - cacat yang hanya terasa oleh keluarga dengan lebih dari satu anak,
  * yaitu keluarga yang paling membutuhkan pemilihnya bekerja.
  */
 function withAnak(url: string, anak: string | null): string {
@@ -202,7 +202,7 @@ export function OrangtuaSidebar() {
 
 /**
  * Hanya muncul kalau anaknya lebih dari satu. Untuk satu anak pemilih ini
- * tidak memilih apa pun — ia cuma kotak yang harus dilewati.
+ * tidak memilih apa pun - ia cuma kotak yang harus dilewati.
  */
 function PemilihAnak({
     daftar,
@@ -239,7 +239,7 @@ function PemilihAnak({
                                 {aktif?.name ?? 'Pilih anak'}
                             </span>
                             <span className="block truncate text-xs text-muted-foreground">
-                                {aktif?.classroom ?? '—'}
+                                {aktif?.classroom ?? '-'}
                             </span>
                         </span>
                     </span>
@@ -273,7 +273,7 @@ function PemilihAnak({
                                             {anak.name}
                                         </span>
                                         <span className="block truncate text-xs text-muted-foreground">
-                                            {anak.classroom ?? '—'}
+                                            {anak.classroom ?? '-'}
                                         </span>
                                     </span>
                                 </CommandItem>

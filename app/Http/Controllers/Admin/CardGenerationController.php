@@ -86,7 +86,7 @@ class CardGenerationController extends Controller
      *
      * Batas harinya sendiri dihitung di jam sekolah: "hari ini" bagi operator
      * berakhir tengah malam WIB, bukan tengah malam UTC yang jatuh pukul 07.00
-     * pagi. `whereDate()` akan melakukan persis kesalahan itu — ia membandingkan
+     * pagi. `whereDate()` akan melakukan persis kesalahan itu - ia membandingkan
      * tanggal UTC yang tersimpan, sehingga generate sore hari terhitung besok.
      *
      * @param  array{range: string, start_date: string, end_date: string, ...}  $filters
@@ -166,7 +166,7 @@ class CardGenerationController extends Controller
 
         $layout = SchoolCardLayout::forSchool()->findOrFail($validated['layout_id']);
 
-        // Resolve student list — always scoped by school
+        // Resolve student list - always scoped by school
         $query = Student::forSchool();
 
         $studentIds = $validated['student_ids'] ?? [];

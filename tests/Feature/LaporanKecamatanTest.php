@@ -137,7 +137,7 @@ test('laporan program per kecamatan: ringkasan dan sheet per kecamatan, sesi lib
     ]))->assertOk());
 
     expect(array_keys($sheets))->toBe(['Ringkasan per Kecamatan', 'Kembaran', 'Sumbang'])
-        // Kembaran: 2 peserta, 1 hadir + 1 belum — sesi libur tidak ikut.
+        // Kembaran: 2 peserta, 1 hadir + 1 belum - sesi libur tidak ikut.
         ->and($sheets['Ringkasan per Kecamatan'][1])->toBe(['Kembaran', '2', '1', '0', '0', '0', '0', '1'])
         ->and(collect($sheets['Kembaran'])->pluck(0)->all())->toContain('Siti', 'Rudi');
 

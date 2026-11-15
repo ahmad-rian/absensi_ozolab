@@ -43,7 +43,7 @@ return [
     ],
 
     /*
-     * Tyas Studio — aplikasi jepret + crop di subdomain sendiri.
+     * Tyas Studio - aplikasi jepret + crop di subdomain sendiri.
      * Dipakai hanya untuk membuat tautan; aplikasi ini tidak pernah
      * memanggilnya balik.
      */

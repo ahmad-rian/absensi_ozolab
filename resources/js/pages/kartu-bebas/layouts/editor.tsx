@@ -93,7 +93,7 @@ function elementForField(field: FormField, index: number, existing?: AnyElement)
     };
 }
 
-// Sync elements to the current field list — add new, drop removed, keep positions.
+// Sync elements to the current field list - add new, drop removed, keep positions.
 export function syncElements(fields: FormField[], prev: Elements): Elements {
     const next: Elements = Object.fromEntries(
         Object.entries(prev).filter(([, el]) => el.type === 'qr' || (el.type === 'photo' && el.standalone)).map(([id, el]) => [id, {
@@ -399,7 +399,7 @@ id += '_';
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-base text-indigo-700 dark:text-indigo-400">
                                     <Eye className="size-4" /> Desain Kartu
-                                    <span className="text-muted-foreground text-xs font-normal">— seret elemen untuk mengatur posisi</span>
+                                    <span className="text-muted-foreground text-xs font-normal">- seret elemen untuk mengatur posisi</span>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>

@@ -8,7 +8,7 @@ use App\Services\Import\Concerns\ReadsSpreadsheetRows;
 use App\Support\KecamatanBarlingmascakep;
 
 /**
- * Baca berkas impor peserta dan cocokkan ke skema kategori — persis, tanpa tebakan.
+ * Baca berkas impor peserta dan cocokkan ke skema kategori - persis, tanpa tebakan.
  *
  * Header dicocokkan dengan label atau kode kolom (abaikan huruf besar/spasi);
  * kolom "Grup" dicocokkan dengan nama grup program secara persis.

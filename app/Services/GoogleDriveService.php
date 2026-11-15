@@ -29,7 +29,7 @@ class GoogleDriveService
      *
      * `thumbnailBytes()` menembak URL thumbnail yang berada DI LUAR API Drive
      * (`lh3.googleusercontent.com`), jadi ia butuh klien HTTP yang sudah
-     * memasang token — bukan `files->get()`.
+     * memasang token - bukan `files->get()`.
      */
     private GoogleClient $client;
 
@@ -57,7 +57,7 @@ class GoogleDriveService
     }
 
     /**
-     * Build Google Client — prefers OAuth2 refresh token (user quota), falls back to Service Account.
+     * Build Google Client - prefers OAuth2 refresh token (user quota), falls back to Service Account.
      */
     private function buildClient(SchoolDriveConfig $config): GoogleClient
     {
@@ -146,7 +146,7 @@ class GoogleDriveService
     /**
      * Root folder milik platform (Drive Ozolab) yang menampung folder semua sekolah.
      *
-     * Hanya Super Admin yang boleh mengubahnya — sekolah tidak pernah menyentuh
+     * Hanya Super Admin yang boleh mengubahnya - sekolah tidak pernah menyentuh
      * folder ini, mereka cuma dapat subfolder di dalamnya.
      */
     public static function platformRootFolderId(): ?string
@@ -263,7 +263,7 @@ class GoogleDriveService
             'supportsAllDrives' => true,
         ]);
 
-        // Hanya untuk berkas baru — kepemilikan berkas lama sudah diatur saat
+        // Hanya untuk berkas baru - kepemilikan berkas lama sudah diatur saat
         // ia pertama kali dibuat.
         $this->transferOwnershipIfConfigured($created->getId());
 
@@ -371,7 +371,7 @@ class GoogleDriveService
     {
         $folderId = $folderId ?: $this->config->root_folder_id;
 
-        // Tanpa folder yang jelas, jangan pernah jatuh ke 'root' — itu menyapu
+        // Tanpa folder yang jelas, jangan pernah jatuh ke 'root' - itu menyapu
         // seluruh Drive dan membuat pencarian bisa dipakai sebagai enumerator.
         if (! $folderId) {
             return [];
@@ -382,7 +382,7 @@ class GoogleDriveService
         $escapedName = str_replace(['\\', "'"], ['\\\\', "\\'"], $name);
 
         $result = $this->drive->files->listFiles([
-            // Nama persis, bukan `name contains` — prefix matching membuat satu
+            // Nama persis, bukan `name contains` - prefix matching membuat satu
             // huruf cukup untuk memanen berkas orang lain.
             'q' => "'{$folderId}' in parents and name = '{$escapedName}' and trashed = false",
             'pageSize' => 5,
@@ -432,7 +432,7 @@ class GoogleDriveService
         $stem = pathinfo($name, PATHINFO_FILENAME);
 
         // Di bawah ambang ini `contains` menjaring terlalu banyak untuk disebut
-        // pencarian — dan itulah bentuk penyalahgunaan yang ingin dihindari.
+        // pencarian - dan itulah bentuk penyalahgunaan yang ingin dihindari.
         if (mb_strlen($stem) < self::PHOTO_SEARCH_MIN_LENGTH) {
             return [];
         }
@@ -623,7 +623,7 @@ class GoogleDriveService
         // Backslash ikut di-escape, sama seperti findFolder() dan
         // findFileByName(). Sebelumnya hanya apostrof yang ditangani di sini,
         // sehingga nama berisi backslash menghasilkan query berbeda antara
-        // jalur baca dan jalur tulis — dan jalur tulis membuat folder kedua.
+        // jalur baca dan jalur tulis - dan jalur tulis membuat folder kedua.
         $escapedName = self::escapeForQuery($name);
 
         $result = $this->drive->files->listFiles([
@@ -747,7 +747,7 @@ class GoogleDriveService
      * Ganti nama berkas/folder tanpa menyentuh isinya.
      *
      * Folder siswa dinamai `{NIS} - {Nama}`. Ketika salah satunya berubah, folder
-     * itu harus ikut berganti nama — kalau tidak, generate berikutnya membuat
+     * itu harus ikut berganti nama - kalau tidak, generate berikutnya membuat
      * folder KEDUA dan berkas lama tertinggal di folder yang tidak dilihat siapa
      * pun.
      */
@@ -773,7 +773,7 @@ class GoogleDriveService
      * Buang berkas ke sampah Drive, bukan hapus permanen.
      *
      * Dipakai `drive:bersihkan-duplikat`. Sampah Drive menyimpan berkas 30 hari,
-     * jadi salah sasaran masih bisa dipulihkan sendiri oleh pemilik Drive —
+     * jadi salah sasaran masih bisa dipulihkan sendiri oleh pemilik Drive -
      * `delete()` tidak memberi kesempatan itu.
      */
     public function trashFile(string $fileId): void
@@ -816,7 +816,7 @@ class GoogleDriveService
         do {
             // Folder IKUT, dan itu disengaja. Dulu ia disaring keluar, sehingga
             // folder yang dibuang ke sampah tidak pernah muncul di sini dan
-            // `drive:pulihkan-sampah` tidak bisa mengembalikannya sama sekali —
+            // `drive:pulihkan-sampah` tidak bisa mengembalikannya sama sekali -
             // janji "pulih 30 hari" jadi hanya berlaku lewat UI Drive manual.
             // Sejak menghapus siswa membuang FOLDER-nya, itu tidak cukup.
             $result = $this->drive->files->listFiles([
@@ -875,8 +875,8 @@ class GoogleDriveService
      *
      * `studentFolderId()` menurunkan letak folder dari nama kelas dan nama
      * siswa, dan membuat foldernya begitu namanya tidak ketemu. Nama itu
-     * bergeser karena hal-hal biasa — kelas diganti nama, siswa naik kelas, NIS
-     * diisi belakangan — dan setiap pergeseran melahirkan folder KEDUA. Hasil
+     * bergeser karena hal-hal biasa - kelas diganti nama, siswa naik kelas, NIS
+     * diisi belakangan - dan setiap pergeseran melahirkan folder KEDUA. Hasil
      * generate berikutnya mendarat di sana dan folder berisi kartu serta pas
      * foto sebelumnya menjadi yatim: utuh di Drive, tapi tidak bisa ditemukan
      * kode mana pun lagi.
@@ -893,7 +893,7 @@ class GoogleDriveService
         // Dikunci per siswa: generate massal menjalankan job kartu depan,
         // kartu belakang, dan foto siswa yang sama bersamaan di beberapa
         // worker. Tanpa kunci, masing-masing melihat "belum ada folder" dan
-        // membuat folder sendiri — dua folder bernama sama, isi terbelah.
+        // membuat folder sendiri - dua folder bernama sama, isi terbelah.
         return Cache::lock('drive-folder-siswa:'.$student->id, 120)->block(90, fn (): ?string => $this->resolveStudentFolderTerkunci($student));
     }
 
@@ -915,7 +915,7 @@ class GoogleDriveService
 
         // Disimpan di sini, bukan di pemanggil. Dulu hanya RegisterStudentCardsJob
         // yang ingat menyimpannya, sementara CardGeneratorService dan
-        // GeneratePhotoSheetJob tidak — dan keduanya menurunkan ulang letak
+        // GeneratePhotoSheetJob tidak - dan keduanya menurunkan ulang letak
         // folder dari nama, jadi setiap kali nama siswa dibetulkan mereka
         // membangun folder KEDUA. saveQuietly supaya observer tidak ikut menyala
         // dan mengantrekan job sinkronisasi pada setiap generate.
@@ -931,7 +931,7 @@ class GoogleDriveService
     /**
      * Tulis satu hasil generate milik siswa, menimpa yang sudah ada.
      *
-     * Ini pintu satu-satunya untuk kartu, lembar pas foto, dan foto siswa —
+     * Ini pintu satu-satunya untuk kartu, lembar pas foto, dan foto siswa -
      * berkas yang punya "jenis keluaran" dan hanya boleh ada satu per jenis per
      * folder. `uploadFile()` tidak dipakai karena ia mencocokkan nama PERSIS,
      * sementara nama berkas memuat nama dan NIS siswa: begitu salah satunya
@@ -939,9 +939,9 @@ class GoogleDriveService
      * sama. Itulah kenapa folder yang isinya 4 berubah jadi 6.
      *
      * Isi folder dibaca sekali, lalu diputuskan berurutan:
-     *   1. id yang sudah tercatat — pegangan paling kuat, tidak ikut berubah
+     *   1. id yang sudah tercatat - pegangan paling kuat, tidak ikut berubah
      *      saat berkasnya diganti nama atau dipindah;
-     *   2. nama yang persis sama — perilaku lama;
+     *   2. nama yang persis sama - perilaku lama;
      *   3. berkas berjenis sama yang namanya sudah basi;
      *   4. belum ada apa-apa, buat baru.
      *
@@ -1036,7 +1036,7 @@ class GoogleDriveService
      * Folder tujuan semua hasil generate milik satu siswa:
      * `{Root Platform}/{Sekolah}/{Kelas}/{NIS - Nama}`.
      *
-     * Album foto tidak lewat sini — album dibuat per sekolah per batch.
+     * Album foto tidak lewat sini - album dibuat per sekolah per batch.
      */
     public function studentFolderId(Student $student): ?string
     {
@@ -1079,7 +1079,7 @@ class GoogleDriveService
     }
 
     /**
-     * Root sekolah apa adanya — tidak membuat folder, tidak menulis root_folder_id.
+     * Root sekolah apa adanya - tidak membuat folder, tidak menulis root_folder_id.
      *
      * Public supaya `drive:audit-siswa` bisa turun satu level demi satu level dan
      * menyebut mana yang hilang: root sekolah, folder kelas, atau folder siswa.
@@ -1136,7 +1136,7 @@ class GoogleDriveService
      * Semua folder siswa di sekolah ini: root → folder kelas → folder siswa.
      *
      * Dipakai perintah perawatan yang harus menyusuri seluruh sekolah sekaligus,
-     * dan hanya sekali per sekolah — bukan sekali per siswa.
+     * dan hanya sekali per sekolah - bukan sekali per siswa.
      *
      * @return array<int, array{id: string, name: string}>
      */
@@ -1156,7 +1156,7 @@ class GoogleDriveService
                 $hasil[] = $siswa;
             }
 
-            // (kelas selesai, total kelas) — perintah perawatan memakainya untuk bar progres.
+            // (kelas selesai, total kelas) - perintah perawatan memakainya untuk bar progres.
             if ($kemajuan) {
                 $kemajuan($urutan + 1, count($semuaKelas));
             }
@@ -1169,7 +1169,7 @@ class GoogleDriveService
      * Seluruh berkas non-folder di Drive ini, dikelompokkan menurut induknya.
      *
      * Satu sapuan berhalaman, bukan satu panggilan per folder. Perintah yang
-     * menyusuri ribuan folder siswa jadi belasan panggilan API, bukan ribuan —
+     * menyusuri ribuan folder siswa jadi belasan panggilan API, bukan ribuan -
      * dan Drive tidak menyediakan pencarian rekursif, jadi mengelompokkan
      * sendiri di PHP satu-satunya cara.
      *
@@ -1233,7 +1233,7 @@ class GoogleDriveService
     }
 
     /**
-     * Satu folder berikut induknya — untuk penjelajah folder di halaman admin.
+     * Satu folder berikut induknya - untuk penjelajah folder di halaman admin.
      *
      * `fileById()` tidak cukup karena ia tidak mengambil `parents`, dan tanpa
      * induk penjelajahnya tidak punya tombol "naik satu tingkat".
@@ -1266,7 +1266,7 @@ class GoogleDriveService
      * Berkas/folder ini benar-benar milik sekolah ini?
      *
      * Satu akun OAuth melayani SEMUA sekolah, jadi id Drive apa pun yang datang
-     * dari klien bisa dibaca kalau tidak dibatasi — termasuk berkas sekolah
+     * dari klien bisa dibaca kalau tidak dibatasi - termasuk berkas sekolah
      * lain. Ini gerbang untuk setiap endpoint yang menerima id Drive dari luar.
      * Root sekolahnya sendiri ikut dihitung "di dalam"; `isInsideFolder()` hanya
      * menelusuri ke atas dan tidak pernah mencocokkan dirinya sendiri.
@@ -1285,7 +1285,7 @@ class GoogleDriveService
     /**
      * Isi folder untuk penjelajah admin: gambar berikut penanda thumbnail.
      *
-     * Dipisah dari `imagesInFolder()` yang dipakai jalur pencocokan otomatis —
+     * Dipisah dari `imagesInFolder()` yang dipakai jalur pencocokan otomatis -
      * bentuk larik di sana ikut dibaca `pickPhotoCandidate()`, dan menambah
      * kolom ke sana berarti menyentuh jalur yang sudah teruji demi keperluan
      * tampilan.
@@ -1388,7 +1388,7 @@ class GoogleDriveService
      *
      * Sengaja tidak menerima kata kunci: pemanggilnya sudah memegang folder milik
      * satu siswa, jadi pencocokan nama dikerjakan di PHP lewat pickPhotoCandidate()
-     * dan pencarian tidak pernah keluar dari folder itu — beda dengan
+     * dan pencarian tidak pernah keluar dari folder itu - beda dengan
      * findPhotoByName() yang boleh menyapu seluruh root platform.
      *
      * @return array<int, array{id: string, name: string, modifiedTime: string|null}>
@@ -1424,7 +1424,7 @@ class GoogleDriveService
     /**
      * Awalan nama untuk semua berkas yang sistem tulis sendiri ke folder siswa.
      *
-     * Aturannya hidup di `StudentDriveNaming::prefix()` — dulu tiga penulis
+     * Aturannya hidup di `StudentDriveNaming::prefix()` - dulu tiga penulis
      * menyusunnya sendiri dengan sprintf yang "sama", dan ternyata tidak: dua di
      * antaranya memakai `??` alih-alih `?:`, sehingga NIS bernilai string kosong
      * menghasilkan dua bentuk nama berbeda di folder yang sama.

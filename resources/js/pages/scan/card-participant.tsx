@@ -14,7 +14,7 @@ export default function CardParticipantScanner({
 
     return (
         <>
-            <Head title={`Scan peserta — ${layout.name}`} />
+            <Head title={`Scan peserta - ${layout.name}`} />
             <div
                 className="flex justify-center gap-3 bg-slate-950 p-3 text-white"
                 aria-label="Mode absensi"

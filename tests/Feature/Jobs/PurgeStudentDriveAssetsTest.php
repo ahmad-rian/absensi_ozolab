@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
  * Job ini membuang berkas sungguhan, jadi yang diuji bukan hanya "apakah jalan"
  * melainkan "apakah ia menahan diri pada saat yang tepat".
  *
- * Jalur Drive-nya tidak bisa dipalsukan tanpa memalsukan seluruh klien Google —
+ * Jalur Drive-nya tidak bisa dipalsukan tanpa memalsukan seluruh klien Google -
  * `GoogleDriveService` membangun kliennya sendiri di konstruktor. Jadi seperti
  * `CleanDriveDuplicatesCommand::duplikat()` dan `StudentDriveNaming::tindakan()`,
  * keputusannya diuji sebagai fungsi murni, dan pemakaian primitifnya dijaga
@@ -82,7 +82,7 @@ test('folder yang masih dipakai siswa aktif lain tidak boleh dibuang', function 
 
 /**
  * Kalau siswa yang di-soft-delete ikut dihitung, folder tidak akan pernah bisa
- * dibuang sama sekali — siswa yang barusan dihapus itu sendiri masih punya baris
+ * dibuang sama sekali - siswa yang barusan dihapus itu sendiri masih punya baris
  * yang menunjuk ke sana.
  */
 test('siswa yang sudah terhapus tidak menahan pembuangan', function () {

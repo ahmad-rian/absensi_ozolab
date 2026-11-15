@@ -83,7 +83,7 @@ export default function GeneralKategori({
                             Kategori
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            Jenis kegiatan tiap penyelenggara — haji/umroh,
+                            Jenis kegiatan tiap penyelenggara - haji/umroh,
                             pelatihan, pengajian, kantor, event. Kategori yang
                             sudah punya program diarsip, bukan dihapus.
                         </p>
@@ -148,7 +148,7 @@ export default function GeneralKategori({
                                             )}
                                         </td>
                                         <td className="p-3 text-muted-foreground">
-                                            {k.penyelenggara.name ?? '—'}
+                                            {k.penyelenggara.name ?? '-'}
                                         </td>
                                         <td className="p-3 text-muted-foreground">
                                             {k.istilah_peserta} ·{' '}

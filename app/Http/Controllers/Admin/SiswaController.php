@@ -107,7 +107,7 @@ class SiswaController extends Controller
             'photoSheets' => $photoSheets,
             'photoSheetTemplates' => $photoSheetTemplates,
             'cards' => $this->generatedCards($siswa),
-            // Kartu yang masih dirender tidak muncul di `cards` — daftar itu hanya
+            // Kartu yang masih dirender tidak muncul di `cards` - daftar itu hanya
             // berisi yang sudah selesai supaya tautan lama tetap bisa dibuka
             // selama yang baru dibuat. Tanpa penanda ini tombol "generate ulang"
             // tidak memberi tanda apa pun bahwa ia berhasil ditekan.
@@ -143,7 +143,7 @@ class SiswaController extends Controller
                 fn () => $riwayat->sholat($siswa, $range['start'], $range['end'], PrayerType::Dzuhur, $this->halaman($request, RiwayatAbsensi::PARAM_SHOLAT)),
             ),
             // Menembak API Drive dua kali, jadi baru dijalankan ketika operator
-            // benar-benar menekan tombolnya — bukan di setiap kunjungan halaman.
+            // benar-benar menekan tombolnya - bukan di setiap kunjungan halaman.
             'drivePhoto' => Inertia::optional(fn () => $this->drivePhotoPayload($siswa, $locator)),
             // Tab Poin hanya ada bila sekolahnya memakai fitur poin; isinya
             // baru dihitung saat tab dibuka.
@@ -191,7 +191,7 @@ class SiswaController extends Controller
     /**
      * Keadaan pas foto siswa di Drive, untuk penanda di halaman detail.
      *
-     * Dibaca dari riwayat generate, bukan dari Drive — memukul API Drive di
+     * Dibaca dari riwayat generate, bukan dari Drive - memukul API Drive di
      * setiap kunjungan halaman terlalu mahal, dan itu sebabnya `drivePhoto`
      * dibuat opsional. Yang menentukan `berhasil` adalah `drive_file_id`, bukan
      * status log: unggahan yang gagal dulu tetap tercatat `completed` dan tidak
@@ -243,7 +243,7 @@ class SiswaController extends Controller
     }
 
     /**
-     * Cari ulang pas foto di Drive setelah operator menaruhnya di sana — tanpa ini
+     * Cari ulang pas foto di Drive setelah operator menaruhnya di sana - tanpa ini
      * hasil "tidak ketemu" bertahan sampai cache-nya kedaluwarsa.
      */
     public function refreshDrivePhoto(Student $siswa, StudentDrivePhotoLocator $locator): RedirectResponse
@@ -297,7 +297,7 @@ class SiswaController extends Controller
 
             // Tautannya diambil dari generate SUKSES terakhir, statusnya dari
             // baris terbaru. Kartu yang sudah jadi harus tetap bisa dibuka
-            // selagi versi barunya masih dirender — dan tetap bisa dibuka
+            // selagi versi barunya masih dirender - dan tetap bisa dibuka
             // kalau render barunya gagal.
             $sukses = $perJenis->firstWhere('status', 'completed');
 
@@ -411,7 +411,7 @@ class SiswaController extends Controller
     /**
      * Kemajuan pembuatan kartu terakhir milik siswa ini.
      *
-     * Diambil dari batch, bukan dihitung ulang di sini — layar generate massal
+     * Diambil dari batch, bukan dihitung ulang di sini - layar generate massal
      * membaca sumber yang sama, jadi tidak ada dua cara menghitung persen yang
      * bisa menyimpang. Null berarti siswa ini belum pernah masuk satu batch pun.
      *
@@ -470,7 +470,7 @@ class SiswaController extends Controller
         // satu siswa dan hal pertama yang ingin dilakukannya adalah memeriksa
         // hasilnya. Daftar memaksanya mencari ulang siswa yang sama.
         //
-        // `store()` sengaja tetap ke daftar — setelah menambah satu siswa,
+        // `store()` sengaja tetap ke daftar - setelah menambah satu siswa,
         // yang biasanya menyusul adalah menambah siswa berikutnya.
         return to_route('admin.siswa.show', $siswa);
     }
@@ -479,7 +479,7 @@ class SiswaController extends Controller
      * Ganti pas foto siswa dari halaman detailnya.
      *
      * Sampai sekarang foto siswa hanya bisa datang dari Drive lewat nama berkas
-     * yang diketik operator — kalau fotonya salah atau memang tidak ada di
+     * yang diketik operator - kalau fotonya salah atau memang tidak ada di
      * sana, tidak ada jalan keluar dari dalam aplikasi.
      *
      * Kartu digital dan lembar cetak TIDAK ikut dibuat ulang; keduanya tetap di
@@ -491,8 +491,8 @@ class SiswaController extends Controller
         $aturan = StudentPhotoIntake::aturanUnggah();
         $request->validate($aturan['rules'], $aturan['messages'], $aturan['attributes']);
 
-        // Seluruh urutannya — crop, tulis, buang foto lama, catat dan antrekan
-        // sinkronisasi Drive — hidup di servisnya, dipakai bersama layar
+        // Seluruh urutannya - crop, tulis, buang foto lama, catat dan antrekan
+        // sinkronisasi Drive - hidup di servisnya, dipakai bersama layar
         // generate massal. Lihat catatan di kepala StudentPhotoIntake.
         $intake->store($siswa, $request->file('photo')->getRealPath());
 
@@ -505,7 +505,7 @@ class SiswaController extends Controller
     {
         // Diantrekan SEBELUM dihapus: bahannya (folder Drive, foto, kartu)
         // dibaca dari baris yang masih utuh. Guru boleh menghapus siswa, tapi
-        // berkas Drive-nya tidak ikut dibuang — lihat StudentAssetPurge.
+        // berkas Drive-nya tidak ikut dibuang - lihat StudentAssetPurge.
         StudentAssetPurge::queue($siswa, auth()->user());
 
         $siswa->delete();

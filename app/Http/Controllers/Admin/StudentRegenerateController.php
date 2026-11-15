@@ -14,7 +14,7 @@ use Inertia\Inertia;
  * Menghasilkan ulang satu keluaran milik seorang siswa.
  *
  * Sampai sekarang satu-satunya cara memperbaiki kartu yang salah adalah lewat
- * layar generate massal, yang meminta layout dan daftar siswa — canggung ketika
+ * layar generate massal, yang meminta layout dan daftar siswa - canggung ketika
  * yang bermasalah cuma satu anak yang sedang dibuka.
  *
  * Dipisah per keluaran, bukan satu tombol "generate ulang semuanya": merender
@@ -34,7 +34,7 @@ class StudentRegenerateController extends Controller
             'school_id' => $siswa->school_id,
             'created_by' => auth()->id(),
             // Satu baris log per layout aktif. Kalau sekolah ini belum punya
-            // satu pun, job membuatkan dua bawaan — jadi dua adalah lantainya,
+            // satu pun, job membuatkan dua bawaan - jadi dua adalah lantainya,
             // bukan tebakan.
             'total' => max(2, SchoolCardLayout::where('school_id', $siswa->school_id)
                 ->where('is_active', true)
@@ -73,7 +73,7 @@ class StudentRegenerateController extends Controller
      * Ambil ulang foto dari Drive memakai nama berkas yang tersimpan saat daftar.
      *
      * Nama itu baru disimpan sejak migrasi `add_drive_identifiers_to_students_table`;
-     * siswa lama belum punya, dan tidak ada gunanya menebak — katakan saja.
+     * siswa lama belum punya, dan tidak ada gunanya menebak - katakan saja.
      */
     public function photo(Student $siswa): RedirectResponse
     {

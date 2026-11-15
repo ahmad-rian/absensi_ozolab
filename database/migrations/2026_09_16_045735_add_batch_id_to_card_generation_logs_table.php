@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('card_generation_logs', function (Blueprint $table) {
-            // Null untuk semua baris yang lahir di luar generate massal —
+            // Null untuk semua baris yang lahir di luar generate massal -
             // pendaftaran, tombol per siswa, dan seluruh riwayat lama.
             $table->foreignUlid('card_generation_batch_id')
                 ->nullable()

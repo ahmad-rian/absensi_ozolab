@@ -13,7 +13,7 @@ use Carbon\CarbonImmutable;
  * Sesi yang berlaku untuk satu peserta pada satu waktu (spec 003 FR-007).
  *
  * Lintas tenant secara sengaja: dipakai rute scan publik yang tidak punya
- * konteks penyelenggara — batasnya adalah program milik peserta itu sendiri.
+ * konteks penyelenggara - batasnya adalah program milik peserta itu sendiri.
  */
 class SesiResolver
 {
@@ -48,7 +48,7 @@ class SesiResolver
     }
 
     /**
-     * Grup peserta beserta semua leluhurnya — sesi untuk Kloter 12 berlaku bagi
+     * Grup peserta beserta semua leluhurnya - sesi untuk Kloter 12 berlaku bagi
      * jamaah di Rombongan 3 (anak Kloter 12).
      *
      * @return array<int, string>

@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
  * alih-alih menimpanya. Kartu dan lembar pas foto ikut menumpuk setiap kali nama
  * atau NIS siswa dibetulkan, karena nama berkasnya diturunkan dari keduanya.
  *
- * Memperbaiki kodenya tidak mengembalikan ruang yang sudah termakan — itu tugas
+ * Memperbaiki kodenya tidak mengembalikan ruang yang sudah termakan - itu tugas
  * perintah ini.
  */
 class PruneOrphanStudentFilesCommand extends Command
@@ -45,7 +45,7 @@ class PruneOrphanStudentFilesCommand extends Command
             ->pluck('photo_path');
 
         $dipakai = $foto
-            // Thumbnail layar gerbang tidak punya kolom sendiri — ia turunan
+            // Thumbnail layar gerbang tidak punya kolom sendiri - ia turunan
             // `photo_path`. Tanpa ini setiap `-kecil.jpg` terbaca yatim dan
             // --force menghapus semua thumbnail gerbang yang masih dipakai.
             ->merge($foto->map(fn (string $jalur) => StudentPhotoStorage::thumbPath($jalur)))

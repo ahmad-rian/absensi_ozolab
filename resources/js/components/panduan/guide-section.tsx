@@ -19,7 +19,7 @@ export function Para({ children }: { children: ReactNode }) {
     return <p className="text-sm leading-relaxed">{children}</p>;
 }
 
-/** Catatan biasa — informasi tambahan yang berguna tapi tidak genting. */
+/** Catatan biasa - informasi tambahan yang berguna tapi tidak genting. */
 export function Note({ children }: { children: ReactNode }) {
     return (
         <div className="bg-muted/50 flex gap-2.5 rounded-lg border p-3">
@@ -29,7 +29,7 @@ export function Note({ children }: { children: ReactNode }) {
     );
 }
 
-/** Jebakan — hal yang kalau terlewat menimbulkan kerugian nyata. */
+/** Jebakan - hal yang kalau terlewat menimbulkan kerugian nyata. */
 export function Pitfall({ children }: { children: ReactNode }) {
     return (
         <div className="border-destructive/30 bg-destructive/10 text-destructive flex gap-2.5 rounded-lg border p-3">
@@ -39,7 +39,7 @@ export function Pitfall({ children }: { children: ReactNode }) {
     );
 }
 
-/** Kiat — cara yang lebih cepat atau lebih aman. */
+/** Kiat - cara yang lebih cepat atau lebih aman. */
 export function Tip({ children }: { children: ReactNode }) {
     return (
         <div className="flex gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-emerald-700 dark:text-emerald-300">

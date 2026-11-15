@@ -91,7 +91,7 @@ class Penyelenggara extends Model
      */
     /**
      * Admin Penyelenggara yang masih aktif. Setiap penyelenggara wajib punya
-     * minimal satu — dijaga di Tim penyelenggara dan Pengguna general.
+     * minimal satu - dijaga di Tim penyelenggara dan Pengguna general.
      */
     public function jumlahAdminAktif(): int
     {

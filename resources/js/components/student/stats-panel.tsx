@@ -140,7 +140,7 @@ export function StatsPanel({
             </div>
 
             {/* Tab sholat tidak punya perbandingan kelas maupun tren bulanan,
-                jadi kartu Runtun berdiri sendiri — satu kolom, bukan setengah
+                jadi kartu Runtun berdiri sendiri - satu kolom, bukan setengah
                 layar kosong di sebelahnya. */}
             <div className={cn('grid gap-6', comparison && 'lg:grid-cols-2')}>
                 <StreakCard streaks={streaks} />

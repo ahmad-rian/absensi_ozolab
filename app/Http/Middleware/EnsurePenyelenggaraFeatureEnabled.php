@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Tolak rute yang fiturnya dimatikan untuk penyelenggara aktif.
  *
- * Super admin TIDAK menembus — ia harus melihat penyelenggara persis seperti
+ * Super admin TIDAK menembus - ia harus melihat penyelenggara persis seperti
  * penggunanya (pola EnsureFeatureEnabled).
  */
 class EnsurePenyelenggaraFeatureEnabled

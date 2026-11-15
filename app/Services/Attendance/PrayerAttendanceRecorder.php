@@ -14,7 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
- * Absen sholat berjamaah — sekali check-in per siswa per hari PER JENIS sholat,
+ * Absen sholat berjamaah - sekali check-in per siswa per hari PER JENIS sholat,
  * di dalam jendela yang diatur per sekolah (Dhuha default 07:30–09:00, Dzuhur
  * default 11:00–13:00).
  *

@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  * Peringkat siswa yang rata-rata datang paling awal: absen pagi, sholat
  * Dhuha, dan sholat Dzuhur, untuk 1, 2, dan 3 bulan terakhir.
  *
- * Jam diambil dari `recorded_at` lewat {@see JamDinding} — kolom itu sudah
+ * Jam diambil dari `recorded_at` lewat {@see JamDinding} - kolom itu sudah
  * berisi jam dinding Jakarta, jadi tidak dikonversi zona lagi. Rata-rata
  * dihitung di PHP, bukan SQL: ekstraksi jam berbeda antara MySQL (produksi)
  * dan SQLite (tes). Hasilnya jam "HH:MM", sama dengan jam di bagian lain UI.

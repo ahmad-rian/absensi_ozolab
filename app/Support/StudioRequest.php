@@ -13,7 +13,7 @@ use RuntimeException;
  *
  * Ada supaya penyaringan sekolah punya SATU bentuk yang bisa dicari dengan
  * grep. Global scope `school` mati di jalur bertoken, jadi penyaringan yang
- * terlewat tidak akan menghasilkan galat — ia menghasilkan kebocoran yang diam.
+ * terlewat tidak akan menghasilkan galat - ia menghasilkan kebocoran yang diam.
  */
 class StudioRequest
 {

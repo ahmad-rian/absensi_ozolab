@@ -43,7 +43,7 @@ class PublicIzinController extends Controller
     /** Pencarian siswa per satu kali lolos captcha. */
     private const MAKS_CARI = 30;
 
-    /** Jeda minimum antara lolos captcha dan kirim — manusia butuh waktu mengisi. */
+    /** Jeda minimum antara lolos captcha dan kirim - manusia butuh waktu mengisi. */
     private const MIN_DETIK_ISI = 5;
 
     /** Pengajuan publik per siswa per hari. */

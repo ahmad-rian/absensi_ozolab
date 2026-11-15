@@ -8,7 +8,7 @@ use Carbon\Carbon;
 /**
  * Setup poin pelanggaran satu sekolah, dibaca dari `schools.settings`.
  *
- * Semua angka milik sekolah — aplikasi hanya membawa bawaan yang masuk akal
+ * Semua angka milik sekolah - aplikasi hanya membawa bawaan yang masuk akal
  * supaya fitur langsung bisa dipakai setelah dinyalakan.
  */
 class PoinSettings

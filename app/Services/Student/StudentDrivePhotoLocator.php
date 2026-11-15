@@ -20,7 +20,7 @@ use Throwable;
  *
  * 1. Pencarian tidak pernah keluar dari folder siswa yang bersangkutan. Menjaring
  *    berdasarkan NIS di seluruh Drive akan membuat NIS sekolah lain ikut tertangkap.
- * 2. Tidak ada folder yang dibuat dan tidak ada izin berbagi yang diubah — ini
+ * 2. Tidak ada folder yang dibuat dan tidak ada izin berbagi yang diubah - ini
  *    jalur baca yang jalan tiap kali halaman siswa dibuka.
  */
 class StudentDrivePhotoLocator
@@ -108,8 +108,8 @@ class StudentDrivePhotoLocator
              | Id yang tersimpan lebih dulu.
              |
              | Jalur di bawah menyusun ulang nama folder dari kelas dan `{NIS} -
-             | {Nama}`. Ketiganya berubah — naik kelas, NIS diperbaiki, nama
-             | diseragamkan huruf besar — dan begitu berubah, pencarian menunjuk
+             | {Nama}`. Ketiganya berubah - naik kelas, NIS diperbaiki, nama
+             | diseragamkan huruf besar - dan begitu berubah, pencarian menunjuk
              | folder lain: foto siswa "hilang" dan tautannya seolah berganti
              | sendiri. Id berkas Drive tidak ikut berubah.
              */
@@ -173,7 +173,7 @@ class StudentDrivePhotoLocator
      * `photo_drive_filename` duluan: itu nama yang benar-benar diketik operator
      * saat mendaftar, jadi ia menunjuk berkas aslinya. Lalu nama baku, karena itu
      * yang ditulis sistem sendiri. Lalu NIS dan nama lengkap, untuk berkas yang
-     * diunggah manual dengan nama yang mengikuti siswanya — perbandingannya tetap
+     * diunggah manual dengan nama yang mengikuti siswanya - perbandingannya tetap
      * persis (tanpa ekstensi), jadi kartu dan lembar pas foto di folder itu tidak
      * ikut terambil.
      *
@@ -212,13 +212,13 @@ class StudentDrivePhotoLocator
      * Pas foto, kartu, dan lembar 4R semuanya lahir dengan awalan
      * `{slug nama}-{nis}-` (lihat GoogleDriveService::studentFilePrefix). Apa pun
      * yang tersisa setelah awalan itu dibuang adalah berkas yang ditaruh manusia
-     * — dan foto asli memang datang dengan nama keluaran kamera seperti
+     * - dan foto asli memang datang dengan nama keluaran kamera seperti
      * `FIC_0008.JPG`, bukan nama siswanya. Tanpa jaring ini seluruh foto yang
      * belum pernah lewat jalur generate terbaca sebagai "tidak ada".
      *
      * Hanya diambil bila tersisa PERSIS satu. Dua gambar asing berarti dua sesi
      * foto atau salah taruh, dan memilih salah satunya berisiko memasang wajah
-     * anak lain di kartunya — persis keluhan yang sedang diperbaiki.
+     * anak lain di kartunya - persis keluhan yang sedang diperbaiki.
      *
      * @param  array<int, array{id: string, name: string, modifiedTime?: string|null}>  $images
      * @return array{id: string, name: string}|null
@@ -243,13 +243,13 @@ class StudentDrivePhotoLocator
      * Klien Drive untuk satu sekolah, dibangun sekali saja.
      *
      * Konstruktor GoogleDriveService memanggil fetchAccessTokenWithRefreshToken()
-     * — satu HTTP round-trip ke OAuth Google. Tanpa memoisasi ini, memeriksa satu
+     * - satu HTTP round-trip ke OAuth Google. Tanpa memoisasi ini, memeriksa satu
      * sekolah berisi 600 siswa berarti 600 penyegaran token, dan `folderCache`
      * milik klien lahir kosong tiap kali sehingga folder kelas yang sama dicari
      * ulang untuk setiap siswa di dalamnya.
      *
      * Public karena `drive:audit-siswa` memakai klien yang sama untuk menelusuri
-     * folder per level — dua klien untuk satu sekolah berarti dua cache folder
+     * folder per level - dua klien untuk satu sekolah berarti dua cache folder
      * yang saling tidak tahu.
      */
     public function driveFor(SchoolDriveConfig $config): GoogleDriveService

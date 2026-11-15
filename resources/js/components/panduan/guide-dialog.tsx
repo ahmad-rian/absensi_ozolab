@@ -16,7 +16,7 @@ import { panduan } from '@/routes/admin';
 type Props = {
     title: string;
     description?: string;
-    /** Id topik di guide-registry — dipakai tautan "Buka panduan lengkap". */
+    /** Id topik di guide-registry - dipakai tautan "Buka panduan lengkap". */
     topik: string;
     children: ReactNode;
 };

@@ -6,7 +6,7 @@ use App\Models\PenyelenggaraInvitation;
 use App\Models\Program;
 use App\Models\Student;
 
-test('undangan milik penyelenggara lain tidak bisa disentuh — 404 identik dengan id acak', function () {
+test('undangan milik penyelenggara lain tidak bisa disentuh - 404 identik dengan id acak', function () {
     $userA = createPenyelenggaraUser();
     $b = Penyelenggara::factory()->create();
     $milikB = PenyelenggaraInvitation::factory()->create(['penyelenggara_id' => $b->id]);

@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * Saklar fitur per penyelenggara — status langganan tenant, bukan otorisasi.
+ * Saklar fitur per penyelenggara - status langganan tenant, bukan otorisasi.
  *
  * Pola sama dengan SchoolFeature, tetapi disimpan di `penyelenggaras.settings`
  * dan sumbunya terpisah supaya fitur sekolah dan penyelenggara tidak pernah

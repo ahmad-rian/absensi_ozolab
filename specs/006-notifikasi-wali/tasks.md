@@ -1,4 +1,4 @@
-# Tasks: Notifikasi Wali (006) — direncanakan
+# Tasks: Notifikasi Wali (006) - direncanakan
 
 - [ ] T001 Tes: scan Hadir → 1 pesan antre ke nomor wali; saklar kategori mati → tidak ada; duplikat scan → tidak kirim ulang; kuota habis → log "melebihi kuota"; antrean sekolah tidak tertunda
 - [ ] T002 Migrasi `penyelenggara_notification_logs` (tenant, kanal, tujuan, status, alasan)

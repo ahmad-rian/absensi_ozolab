@@ -55,7 +55,7 @@ type PageProps = {
 };
 
 // Sentinel untuk "semua kelas". Radix Select menolak SelectItem bernilai string
-// kosong, jadi tidak ada pilihan selain nilai semu — pola yang sama dipakai
+// kosong, jadi tidak ada pilihan selain nilai semu - pola yang sama dipakai
 // halaman daftar siswa.
 const SEMUA = 'all';
 
@@ -85,7 +85,7 @@ export default function GenerateKartuMassal({
         Indeks baris yang modalnya dibuka; null berarti tertutup.
 
         Dipakai juga sebagai `key` komponen modal, sehingga tiap pembukaan
-        adalah mount baru — di situlah modal menyalin daftar antreannya.
+        adalah mount baru - di situlah modal menyalin daftar antreannya.
     */
     const [barisFoto, setBarisFoto] = useState<number | null>(null);
 
@@ -212,7 +212,7 @@ export default function GenerateKartuMassal({
                                         <p className="mt-0.5 text-sm text-muted-foreground">
                                             {siap
                                                 ? 'Semua siap. Pas foto 4R dan kartu OSIS bisa dibuat sekarang.'
-                                                : `${kurang} siswa belum punya pas foto. Kartu tanpa foto tetap jadi — dengan kotak kosong di tempat wajahnya — jadi generate ditahan sampai semuanya lengkap.`}
+                                                : `${kurang} siswa belum punya pas foto. Kartu tanpa foto tetap jadi - dengan kotak kosong di tempat wajahnya - jadi generate ditahan sampai semuanya lengkap.`}
                                         </p>
                                     </div>
                                 </div>
@@ -239,16 +239,16 @@ export default function GenerateKartuMassal({
                                                             {s.full_name}
                                                         </TableCell>
                                                         <TableCell className="tabular-nums">
-                                                            {s.nis ?? '—'}
+                                                            {s.nis ?? '-'}
                                                         </TableCell>
                                                         <TableCell>
-                                                            {s.classroom ?? '—'}
+                                                            {s.classroom ?? '-'}
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             {/*
                                                             Modal di tempat, bukan tautan ke halaman edit.
 
-                                                            Tautan lama tidak sekadar lambat — ia 404 untuk
+                                                            Tautan lama tidak sekadar lambat - ia 404 untuk
                                                             sekolah yang tidak sedang aktif di sesi, yaitu
                                                             keadaan normal layar lintas sekolah ini. Lihat
                                                             GenerateKartuMassalController::unggahFoto.

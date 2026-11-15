@@ -111,7 +111,7 @@ class DriveConfigController extends Controller
     }
 
     /**
-     * OAuth2 callback — shows the authorization code for the artisan command.
+     * OAuth2 callback - shows the authorization code for the artisan command.
      */
     public function oauthCallback(Request $request): \Illuminate\Http\Response
     {

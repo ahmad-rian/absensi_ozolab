@@ -18,7 +18,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 /*
  * Poin pelanggaran siswa: otomatis dari terlambat / tidak hadir (angka per
  * sekolah) plus catatan manual guru BK. Waktu dibekukan Kamis 15 Okt 2026
- * 15:00 WIB — jendela terlambat (08:00) dan pulang (13:00) sudah tutup.
+ * 15:00 WIB - jendela terlambat (08:00) dan pulang (13:00) sudah tutup.
  */
 beforeEach(fn () => $this->travelTo(Carbon::create(2026, 10, 15, 15, 0, 0, SchoolTime::timezone())));
 

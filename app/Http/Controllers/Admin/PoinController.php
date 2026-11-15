@@ -19,7 +19,7 @@ use Inertia\Response;
 
 /**
  * Poin pelanggaran siswa. Melihat cukup `poin.access` (Guru), mencatat,
- * menghapus, dan mengatur butuh `poin-kelola.access` (Admin / guru BK) — dijaga
+ * menghapus, dan mengatur butuh `poin-kelola.access` (Admin / guru BK) - dijaga
  * di rute. Binding `{poin}` tersaring scope sekolah, jadi milik sekolah lain 404.
  */
 class PoinController extends Controller

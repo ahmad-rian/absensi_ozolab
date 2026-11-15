@@ -39,8 +39,8 @@ class ScheduleProvisioner
 
     /**
      * Pastikan sekolah punya jadwal global (classroom_id null) untuk tiap hari
-     * kerja. Dengan `$force`, jam pada seluruh jadwal sekolah itu — termasuk
-     * jadwal per kelas — ikut diseragamkan ke nilai default.
+     * kerja. Dengan `$force`, jam pada seluruh jadwal sekolah itu - termasuk
+     * jadwal per kelas - ikut diseragamkan ke nilai default.
      *
      * @return array{created: int, updated: int}
      */

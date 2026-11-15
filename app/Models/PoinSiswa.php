@@ -10,7 +10,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 /**
- * Satu catatan poin pelanggaran. `tanggal` sengaja tanpa cast `date` — dibaca
+ * Satu catatan poin pelanggaran. `tanggal` sengaja tanpa cast `date` - dibaca
  * sebagai string Y-m-d supaya perbandingan sama di MySQL dan SQLite.
  *
  * Nilai poin disalin saat dicatat: mengubah setup sekolah tidak menulis ulang

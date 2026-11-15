@@ -65,7 +65,7 @@ test('jejak Drive juga terbaca dari riwayat generate kartu', function () {
 
 /**
  * Penjaga biaya. Tanpa penyaring jejak Drive, satu kenaikan kelas seangkatan
- * mengantrekan ratusan job yang seluruhnya tidak menemukan apa-apa — di antrean
+ * mengantrekan ratusan job yang seluruhnya tidak menemukan apa-apa - di antrean
  * yang dipakai bersama puluhan situs lain.
  */
 test('siswa yang belum pernah menghasilkan berkas tidak mengantrekan apa pun', function () {

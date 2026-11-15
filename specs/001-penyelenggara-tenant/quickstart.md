@@ -2,10 +2,10 @@
 
 Prasyarat: `composer install`, `npm install`, DB tes SQLite.
 
-1. `php artisan migrate` — muncul tabel `penyelenggaras`, `penyelenggara_invitations`, kolom
+1. `php artisan migrate` - muncul tabel `penyelenggaras`, `penyelenggara_invitations`, kolom
    `users.penyelenggara_id`; tidak ada perubahan pada `card_*`/`attendances` (cek `git diff database/`).
-2. `php artisan db:seed --class=RolePermissionSeeder` — role ADMIN_PENYELENGGARA & PENDAMPING ada.
-3. Tes: `php artisan test --compact --filter=Penyelenggara` — mencakup:
+2. `php artisan db:seed --class=RolePermissionSeeder` - role ADMIN_PENYELENGGARA & PENDAMPING ada.
+3. Tes: `php artisan test --compact --filter=Penyelenggara` - mencakup:
    - CRUD super admin + slug unik (US1)
    - undangan: kirim, terima, kedaluwarsa, dipakai ulang (US1, FR-002)
    - isolasi A↔B → 404 identik; penyelenggara → /admin/siswa ditolak; sekolah → /penyelenggara ditolak;

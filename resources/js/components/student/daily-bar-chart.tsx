@@ -28,7 +28,7 @@ export const PRAYER_SERIES: DailySeries[] = [
 
 /**
  * Menggantikan attendance-daily-chart dan prayer-daily-chart yang dulu terpisah
- * padahal hanya berbeda judul dan daftar seri — dengan tiga jenis absen,
+ * padahal hanya berbeda judul dan daftar seri - dengan tiga jenis absen,
  * perbedaan kecil di antara salinannya sudah pasti menjadi permanen.
  */
 export function DailyBarChart({

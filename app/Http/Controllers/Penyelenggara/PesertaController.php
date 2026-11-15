@@ -53,7 +53,7 @@ class PesertaController extends Controller
             'kolom' => collect($kategori?->visibleFields() ?? [])->reject(fn ($f) => $f['type'] === 'photo')->take(4)->values(),
             'peserta' => $query->paginate(50)->withQueryString()->through(fn (CardFormSubmission $p) => [
                 'id' => $p->id,
-                'nama' => $p->data['nama'] ?? '—',
+                'nama' => $p->data['nama'] ?? '-',
                 'data' => $p->data,
                 'grups' => $p->grups->pluck('name'),
                 'status' => $p->status,

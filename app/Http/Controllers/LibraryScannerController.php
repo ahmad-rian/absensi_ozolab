@@ -19,7 +19,7 @@ use Inertia\Response;
 /**
  * Scan kunjungan perpustakaan.
  *
- * Satu tap membuka kunjungan, tap berikutnya menutupnya — petugas tidak memilih
+ * Satu tap membuka kunjungan, tap berikutnya menutupnya - petugas tidak memilih
  * mode. Yang memutuskan masuk atau keluar adalah recorder, dari keadaan kunjungan
  * siswa itu hari ini.
  */
@@ -61,7 +61,7 @@ class LibraryScannerController extends Controller
         $student = $this->studentLookup->findByQrToken($request->token, $school->id);
 
         // Kartu perpustakaan tercetak memakai QR, tapi kartu RFID yang sudah
-        // didaftarkan juga berlaku di sini — pola yang sama dengan gerbang, dan
+        // didaftarkan juga berlaku di sini - pola yang sama dengan gerbang, dan
         // hanya dicoba saat fiturnya menyala.
         if (! $student && SchoolFeatures::for($school)->enabled(SchoolFeature::AbsensiRfid)) {
             $student = $this->studentLookup->findByRfidUid($request->token, $school->id);
@@ -92,7 +92,7 @@ class LibraryScannerController extends Controller
                 'classroom' => $student->classroom?->name,
                 // Thumbnail kalau ada, foto asli kalau belum. Aslinya PNG 1600 px
                 // berukuran megabita sementara layar gerbang menggambarnya di
-                // kotak 96×128 px — jalur absensi sekolah sudah dibereskan
+                // kotak 96×128 px - jalur absensi sekolah sudah dibereskan
                 // lebih dulu, dua gerbang ini terlewat.
                 'photo_url' => StudentPhotoStorage::displayUrl($student->photo_path),
                 'status' => $keluar ? $this->durationLabel($visit?->durationMinutes()) : 'Masuk',

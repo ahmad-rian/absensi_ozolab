@@ -22,7 +22,7 @@ class AttendanceRecorder
 
     /**
      * Catat absensi. Jika `$type` null, tipe ditentukan server dari jendela
-     * waktu pada jadwal — client tidak pernah boleh memutuskan masuk/pulang.
+     * waktu pada jadwal - client tidak pernah boleh memutuskan masuk/pulang.
      *
      * @return array{success: bool, attendance: ?Attendance, message: string}
      */

@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PhotoSheetBatchController extends Controller
 {
-    /** Batas atas satu batch — Chrome merender semua lembar dalam satu proses. */
+    /** Batas atas satu batch - Chrome merender semua lembar dalam satu proses. */
     private const MAX_PAGES = 30;
 
     public function index(): Response

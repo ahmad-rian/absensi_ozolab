@@ -52,7 +52,7 @@ class ImpersonationController extends Controller
     }
 
     /**
-     * Kembali ke akun asli. Sengaja tidak butuh permission apa pun — user yang
+     * Kembali ke akun asli. Sengaja tidak butuh permission apa pun - user yang
      * sedang disamar tidak memilikinya.
      */
     public function destroy(Request $request): RedirectResponse

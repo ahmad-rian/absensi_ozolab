@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-/** Bilangan acak yang selalu sama untuk benih yang sama — sobekan tidak berubah tiap render. */
+/** Bilangan acak yang selalu sama untuk benih yang sama - sobekan tidak berubah tiap render. */
 function acak(benih: number): () => number {
     let s = benih;
 

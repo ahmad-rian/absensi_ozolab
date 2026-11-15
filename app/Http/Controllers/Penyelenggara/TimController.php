@@ -133,7 +133,7 @@ class TimController extends Controller
 
     /**
      * Akun milik penyelenggara aktif. User tidak memakai trait penyelenggara
-     * (guard memuatnya lintas tenant), jadi batasnya ditegakkan di sini —
+     * (guard memuatnya lintas tenant), jadi batasnya ditegakkan di sini -
      * akun penyelenggara lain → 404, sama dengan tidak ada.
      */
     private function anggota(Penyelenggara $penyelenggara)

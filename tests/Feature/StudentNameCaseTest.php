@@ -11,7 +11,7 @@ use App\Services\Import\StudentImportApplier;
  * Kapitalisasinya masuk campur dari impor tiap sekolah dan ikut terbawa ke
  * album serta PDF laporan. Diseragamkan lewat mutator di `Student`, bukan di
  * tiap controller: ada delapan jalur tulis nama dan semuanya lewat
- * mass-assignment atau `fill()`, jadi satu mutator menangkap semuanya —
+ * mass-assignment atau `fill()`, jadi satu mutator menangkap semuanya -
  * termasuk jalur baru yang belum ada.
  */
 beforeEach(function () {

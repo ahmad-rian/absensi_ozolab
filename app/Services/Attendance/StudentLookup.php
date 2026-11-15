@@ -43,7 +43,7 @@ class StudentLookup
         }
 
         // Percobaan kedua untuk bacaan yang kotor. Pembaca kartu di lapangan
-        // terbukti menyisipkan karakter sampah — insiden RFID di deployment ini
+        // terbukti menyisipkan karakter sampah - insiden RFID di deployment ini
         // menghasilkan UID berakhiran huruf `T` dan `P` yang tidak pernah
         // dikirim kartunya.
         //
@@ -52,7 +52,7 @@ class StudentLookup
         // menghapus titik pemisah dan merusak tokennya. Yang dilakukan di sini
         // adalah menarik token BERBENTUK SAH dari bacaan berisik, lalu tetap
         // mencocokkannya PERSIS. Tidak ada LIKE, tidak ada awalan, tidak ada
-        // kemiripan — bacaan yang bukan token utuh tetap ditolak.
+        // kemiripan - bacaan yang bukan token utuh tetap ditolak.
         $bersih = self::extractQrToken($token);
 
         if ($bersih === null || $bersih === $token) {
@@ -80,7 +80,7 @@ class StudentLookup
      * NISN polos, hanya untuk sekolah yang menyalakan saklarnya.
      *
      * Sampah non-digit di tepi bacaan dibuang (gun yang menambah karakter),
-     * tetapi isinya tetap harus tepat 10 digit — tidak ada awalan atau LIKE.
+     * tetapi isinya tetap harus tepat 10 digit - tidak ada awalan atau LIKE.
      * NISN ganda di satu sekolah ditolak, bukan ditebak siswa yang mana.
      */
     private function cocokkanNisn(string $bacaan, string $schoolId): ?Student
@@ -125,8 +125,8 @@ class StudentLookup
     /**
      * UID kartu RFID, dinormalkan ke huruf besar tanpa pemisah.
      *
-     * Pembaca kartu mengetikkan UID dalam bentuk yang berbeda-beda — ada yang
-     * memakai titik dua, ada yang huruf kecil — sedangkan yang tersimpan satu
+     * Pembaca kartu mengetikkan UID dalam bentuk yang berbeda-beda - ada yang
+     * memakai titik dua, ada yang huruf kecil - sedangkan yang tersimpan satu
      * bentuk saja. Normalisasi yang sama dipakai saat pendaftaran kartu.
      */
     public function findByRfidUid(string $uid, string $schoolId): ?Student

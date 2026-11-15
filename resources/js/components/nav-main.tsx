@@ -110,7 +110,7 @@ export function NavGroup({ label, items }: NavGroupProps) {
  *
  * Grup yang salah satu anaknya sedang aktif otomatis terbuka, dan status
  * buka/tutup diingat di localStorage. Saat sidebar diciutkan jadi ikon,
- * grup dirender datar — `SidebarGroupLabel` menyembunyikan diri di mode itu,
+ * grup dirender datar - `SidebarGroupLabel` menyembunyikan diri di mode itu,
  * jadi trigger-nya tidak akan bisa diklik.
  */
 export function NavCollapsibleGroup({ label, items }: NavGroupProps) {
@@ -132,7 +132,7 @@ export function NavCollapsibleGroup({ label, items }: NavGroupProps) {
         try {
             window.localStorage.setItem(storageKey, next ? '1' : '0');
         } catch {
-            /* localStorage bisa ditolak di mode privat — abaikan */
+            /* localStorage bisa ditolak di mode privat - abaikan */
         }
     }
 

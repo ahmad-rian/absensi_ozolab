@@ -16,7 +16,7 @@ class StudentApiController extends Controller
     ) {}
 
     /**
-     * GET /api/students — List students with optional filters.
+     * GET /api/students - List students with optional filters.
      */
     public function index(Request $request): JsonResponse
     {
@@ -49,7 +49,7 @@ class StudentApiController extends Controller
     }
 
     /**
-     * GET /api/students/{student} — Single student with full data + QR SVG.
+     * GET /api/students/{student} - Single student with full data + QR SVG.
      */
     public function show(Student $student): JsonResponse
     {
@@ -60,7 +60,7 @@ class StudentApiController extends Controller
             'nis' => $student->nis,
             'nisn' => $student->nisn,
             'full_name' => $student->full_name,
-            // Boleh kosong sejak `/quick-regis` ada — form itu tidak menanyakan
+            // Boleh kosong sejak `/quick-regis` ada - form itu tidak menanyakan
             // jenis kelamin, dan menurunkan nilainya tanpa penjagaan akan
             // meruntuhkan endpoint ini untuk siswa yang mendaftar lewat sana.
             'gender' => $student->gender?->value,
@@ -100,7 +100,7 @@ class StudentApiController extends Controller
     }
 
     /**
-     * GET /api/students/{student}/qr — QR Code SVG only.
+     * GET /api/students/{student}/qr - QR Code SVG only.
      */
     public function qr(Student $student): JsonResponse
     {
@@ -113,7 +113,7 @@ class StudentApiController extends Controller
     }
 
     /**
-     * GET /api/students/by-nis/{nis} — Lookup by NIS.
+     * GET /api/students/by-nis/{nis} - Lookup by NIS.
      */
     public function byNis(string $nis): JsonResponse
     {
@@ -127,7 +127,7 @@ class StudentApiController extends Controller
     }
 
     /**
-     * GET /api/students/by-qr/{token} — Lookup by QR token.
+     * GET /api/students/by-qr/{token} - Lookup by QR token.
      */
     public function byQr(string $token): JsonResponse
     {
@@ -141,7 +141,7 @@ class StudentApiController extends Controller
     }
 
     /**
-     * GET /api/schools — List active schools.
+     * GET /api/schools - List active schools.
      */
     public function schools(Request $request): JsonResponse
     {
@@ -158,7 +158,7 @@ class StudentApiController extends Controller
     }
 
     /**
-     * GET /api/schools/{school}/students — All students of a school.
+     * GET /api/schools/{school}/students - All students of a school.
      */
     public function schoolStudents(Request $request, School $school): JsonResponse
     {

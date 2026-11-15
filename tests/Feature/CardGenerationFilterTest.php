@@ -11,7 +11,7 @@ use Carbon\CarbonImmutable;
  | malam WIB.
  |
  | Dua hal yang dijaga di sini pernah salah bersamaan dan terlihat sama dari luar
- | — "waktunya aneh". Yang pertama adalah tampilan: `created_at` diisi Eloquent
+ | - "waktunya aneh". Yang pertama adalah tampilan: `created_at` diisi Eloquent
  | pada `config('app.timezone')` yang di aplikasi ini UTC, jadi memformatnya
  | langsung membuat kartu pukul 08.41 WIB muncul sebagai "01:41". Yang kedua
  | adalah query: `whereDate()` membandingkan tanggal UTC yang tersimpan, sehingga
@@ -22,7 +22,7 @@ beforeEach(function () {
     $this->admin = createAdminUser();
     $this->schoolId = $this->admin->school_id;
     // Namanya dipatok, tidak diacak faker: test pencarian di bawah mencari
-    // "BUDI", dan faker Indonesia cukup sering mengeluarkan nama itu — siswa ini
+    // "BUDI", dan faker Indonesia cukup sering mengeluarkan nama itu - siswa ini
     // ikut cocok dan hitungannya meleset tanpa ada yang berubah di kodenya.
     $this->student = Student::factory()->create([
         'school_id' => $this->schoolId,
@@ -95,7 +95,7 @@ test('today stops at midnight WIB, not at midnight UTC', function () {
 
 test('a custom range covers both of its end days in full', function () {
     // Batas yang dibulatkan ke tengah malam UTC akan memotong jam sore di hari
-    // terakhir — persis rentang yang paling sering dipilih operator.
+    // terakhir - persis rentang yang paling sering dipilih operator.
     logAtWib($this->schoolId, $this->student, $this->layout->id, '2026-08-10 00:05:00');
     logAtWib($this->schoolId, $this->student, $this->layout->id, '2026-08-12 22:50:00');
     logAtWib($this->schoolId, $this->student, $this->layout->id, '2026-08-13 09:00:00');

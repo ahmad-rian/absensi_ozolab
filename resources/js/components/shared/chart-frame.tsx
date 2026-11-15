@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 /**
  * Nilai `--card` di Tailwind 4 sudah lengkap, jadi TIDAK boleh dibungkus
  * `hsl()`. Komponen dashboard lama masih membungkusnya dan menghasilkan warna
- * yang tidak valid — impor konstanta ini alih-alih menyalin ulang objeknya.
+ * yang tidak valid - impor konstanta ini alih-alih menyalin ulang objeknya.
  */
 export const TOOLTIP_STYLE = {
     backgroundColor: 'var(--card)',

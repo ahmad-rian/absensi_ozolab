@@ -8,7 +8,7 @@ use Illuminate\Validation\Rule;
 /**
  * Alamat pendek menuju halaman scan ringan: `/g/{kode}`.
  *
- * Perangkat gerbangnya box Android TV, dan alamatnya diketik dengan remote —
+ * Perangkat gerbangnya box Android TV, dan alamatnya diketik dengan remote -
  * `/scan/{40 karakter}/ringan` tidak masuk akal untuk itu.
  *
  * Dua bentuk kode, keduanya berlaku bersamaan:
@@ -22,7 +22,7 @@ use Illuminate\Validation\Rule;
  *
  * Cadangan berbasis token punya sifat yang memang diinginkan: memutar ulang
  * `scanner_token` otomatis mematikan alamat pendeknya juga. Alias yang dinamai
- * sendiri TIDAK ikut mati — itu memang gunanya, dan mencabutnya dilakukan dengan
+ * sendiri TIDAK ikut mati - itu memang gunanya, dan mencabutnya dilakukan dengan
  * mengosongkan kolomnya.
  */
 class ScannerShortLink
@@ -31,7 +31,7 @@ class ScannerShortLink
     public const PANJANG = 8;
 
     /**
-     * Kode yang berlaku untuk sekolah ini — alias kalau ada, potongan token
+     * Kode yang berlaku untuk sekolah ini - alias kalau ada, potongan token
      * kalau belum pernah diatur.
      */
     public static function codeFor(School $school): string
@@ -43,7 +43,7 @@ class ScannerShortLink
      * Sekolah pemilik kode, atau null kalau tidak ada / ambigu.
      *
      * Bentuknya dikunci lebih dulu. Tanpa itu, `_` dan `%` dari pemakai menjadi
-     * wildcard LIKE dan `/g/________` cocok dengan token sekolah mana pun —
+     * wildcard LIKE dan `/g/________` cocok dengan token sekolah mana pun -
      * operator mendarat di gerbang sekolah lain.
      */
     public static function resolve(string $kode): ?School

@@ -12,10 +12,10 @@ return new class extends Migration
      * Menambah dimensi jenis sholat (Dhuha / Dzuhur).
      *
      * Seluruh baris lama lahir dari scanner Dzuhur, jadi kolom baru diberi
-     * default 'DZUHUR' — ADD COLUMN dengan default konstan langsung mengisi
+     * default 'DZUHUR' - ADD COLUMN dengan default konstan langsung mengisi
      * semua baris lama di MySQL 8 maupun SQLite. Itulah backfill-nya.
      *
-     * PERINGATAN: `down()` bersifat MERUSAK — unique lama tidak bisa dipasang
+     * PERINGATAN: `down()` bersifat MERUSAK - unique lama tidak bisa dipasang
      * ulang selama masih ada baris Dhuha di tanggal yang sama, jadi baris
      * Dhuha dihapus. Jangan menjalankan `migrate:rollback` di produksi tanpa
      * backup tabel `prayer_attendances`.

@@ -259,7 +259,7 @@ export default function GeneralPengguna({
                                                 </td>
                                                 <td className="p-3 text-muted-foreground">
                                                     {u.penyelenggara.name ??
-                                                        '—'}
+                                                        '-'}
                                                 </td>
                                                 <td className="p-3">
                                                     {PERAN[u.role ?? ''] ??

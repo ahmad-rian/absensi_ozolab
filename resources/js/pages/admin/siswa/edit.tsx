@@ -154,7 +154,7 @@ export default function SiswaEdit({ student, classrooms, parentProfiles, driveAk
                     Pas foto ditaruh DI ATAS form data.
 
                     Alur barunya menjadikan halaman ini satu-satunya tempat pas
-                    foto dipasang — pendaftar tidak lagi menentukannya — dan
+                    foto dipasang - pendaftar tidak lagi menentukannya - dan
                     kartu OSIS tidak bisa dibuat sebelum fotonya ada. Menaruhnya
                     di bawah dua belas isian teks berarti pekerjaan utama
                     halaman ini tersembunyi di balik gulungan.
@@ -243,7 +243,7 @@ export default function SiswaEdit({ student, classrooms, parentProfiles, driveAk
 
                             {!student.photo_url && (
                                 <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                                    Pasang pas fotonya dulu — kartu dan lembar 4R keduanya dibuat dari foto itu.
+                                    Pasang pas fotonya dulu - kartu dan lembar 4R keduanya dibuat dari foto itu.
                                 </p>
                             )}
 
@@ -367,7 +367,7 @@ export default function SiswaEdit({ student, classrooms, parentProfiles, driveAk
                                     {errors.classroom_id && <p className="text-sm text-destructive">{errors.classroom_id}</p>}
                                 </div>
 
-                                {/* Orang Tua — Searchable */}
+                                {/* Orang Tua - Searchable */}
                                 <div className="grid gap-2">
                                     <Label>Orang Tua / Wali</Label>
                                     <Popover open={parentOpen} onOpenChange={setParentOpen}>

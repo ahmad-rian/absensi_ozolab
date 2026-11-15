@@ -11,7 +11,7 @@ export default defineConfig({
      * Target diturunkan dari bawaan Vite, dan ini bukan pilihan gaya.
      *
      * Bawaan `baseline-widely-available` berarti chrome111 / safari16.4 /
-     * ios16.4. Peramban yang lebih tua tidak "berjalan lebih lambat" — ia
+     * ios16.4. Peramban yang lebih tua tidak "berjalan lebih lambat" - ia
      * GAGAL MEM-PARSE berkasnya dan menampilkan halaman putih tanpa satu pun
      * pesan, karena galat sintaks terjadi sebelum ada kode yang sempat jalan.
      *
@@ -23,8 +23,8 @@ export default defineConfig({
      * chrome87 (2020) dan safari14 (iOS 14) menutup hampir semua perangkat
      * yang masih dipakai. Biayanya beberapa kilobita.
      *
-     * Ini hanya mengatur SINTAKS, bukan API. Yang dipakai halaman scan —
-     * fetch, AudioContext, speechSynthesis, mediaDevices — semuanya sudah ada
+     * Ini hanya mengatur SINTAKS, bukan API. Yang dipakai halaman scan -
+     * fetch, AudioContext, speechSynthesis, mediaDevices - semuanya sudah ada
      * jauh sebelum itu.
      */
     build: {

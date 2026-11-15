@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Batas tenant penyelenggara — FAIL-CLOSED.
+ * Batas tenant penyelenggara - FAIL-CLOSED.
  *
  * Berbeda dari BelongsToSchool yang tidak memfilter apa pun saat konteksnya
  * kosong: di sini konteks kosong berarti nol baris. Konteks dibaca dari
@@ -49,7 +49,7 @@ trait BelongsToPenyelenggara
     }
 
     /**
-     * Lepas batas penyelenggara — hanya untuk operasi lintas tenant yang disengaja.
+     * Lepas batas penyelenggara - hanya untuk operasi lintas tenant yang disengaja.
      *
      * @param  Builder<static>  $query
      * @return Builder<static>

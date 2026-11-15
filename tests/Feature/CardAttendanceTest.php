@@ -305,7 +305,7 @@ test('kartu lama berisi No Porsi menyebut pemiliknya tanpa mencatat kehadiran', 
 
     $this->postJson(cardScanUrl($this->form), ['token' => ' 1100621603 '])
         ->assertUnprocessable()
-        ->assertJsonPath('message', 'Kartu lama milik Siti Mutmainah — belum dicetak ulang. Ambil kartu baru dari panitia.');
+        ->assertJsonPath('message', 'Kartu lama milik Siti Mutmainah - belum dicetak ulang. Ambil kartu baru dari panitia.');
 
     expect(CardAttendance::count())->toBe(0);
     $this->actingAs(createSuperAdminUser())->get(route('kartu-bebas.absensi.index', ['layout' => $this->form->id]))

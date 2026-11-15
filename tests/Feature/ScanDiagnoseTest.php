@@ -5,7 +5,7 @@ use App\Models\Student;
 
 /**
  * Perintah diagnosa menggantikan kerja menyusun query tinker satu per satu
- * setiap kali ada laporan "kartu tidak dikenali". Baca saja — tidak boleh
+ * setiap kali ada laporan "kartu tidak dikenali". Baca saja - tidak boleh
  * mengubah apa pun.
  */
 test('ringkasan sekolah menyebut siswa aktif yang belum punya token', function () {
@@ -52,7 +52,7 @@ test('--nis menemukan siswa yang berada di sekolah lain', function () {
     Student::factory()->create(['school_id' => $lain->id, 'nis' => '55502']);
 
     $this->artisan('scan:diagnosa', ['--sekolah' => 'sma-uji', '--nis' => '55502'])
-        ->expectsOutputToContain('BEDA — SMA SEBELAH')
+        ->expectsOutputToContain('BEDA - SMA SEBELAH')
         ->assertSuccessful();
 });
 

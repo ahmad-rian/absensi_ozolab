@@ -56,7 +56,7 @@ class RingkasanKehadiran
             $s = $status[$p->id] ?? 'BELUM';
             $counts[$s]++;
             if ($s === 'BELUM') {
-                $belum[] = ['id' => $p->id, 'nama' => $p->data['nama'] ?? '—', 'grups' => $p->grups->pluck('name')->implode(', ')];
+                $belum[] = ['id' => $p->id, 'nama' => $p->data['nama'] ?? '-', 'grups' => $p->grups->pluck('name')->implode(', ')];
             }
         }
 
@@ -117,7 +117,7 @@ class RingkasanKehadiran
     }
 
     /**
-     * Rata-rata menit datang setelah jendela dibuka — kecil = cepat (P3).
+     * Rata-rata menit datang setelah jendela dibuka - kecil = cepat (P3).
      *
      * @return array<int, array{nama: string, rata_menit: float, hari: int}>
      */
@@ -143,7 +143,7 @@ class RingkasanKehadiran
                 $menit = $rows->map(fn ($r) => JamDinding::menit($r->datang_at) - JamDinding::menit($r->datang_mulai));
 
                 return [
-                    'nama' => $peserta[$id]['nama'] ?? '—',
+                    'nama' => $peserta[$id]['nama'] ?? '-',
                     'rata_menit' => round($menit->avg(), 1),
                     'rata_jam' => JamDinding::rataRata($rows->pluck('datang_at')),
                     'hari' => $rows->count(),

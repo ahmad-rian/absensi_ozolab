@@ -51,14 +51,14 @@ class AppServiceProvider extends ServiceProvider
      * Limiter bawaan `throttle:120,1` berkunci IP untuk pengunjung anonim, dan
      * satu sekolah keluar lewat satu IP publik. Tiga gerbang pada jam
      * kedatangan pagi melewati 120 scan per menit dengan mudah, dan yang
-     * terjadi adalah 429 — di layar gerbang itu tampak persis seperti
+     * terjadi adalah 429 - di layar gerbang itu tampak persis seperti
      * "kadang berhenti merespons", tanpa satu pun petunjuk kenapa.
      *
      * Pola yang sama pernah menggigit dari arah lain: `auto_ban.sh` dulu
      * menganggap satu sekolah yang mendaftarkan ratusan siswa sebagai DDoS.
      * Satuan yang benar untuk aplikasi ini memang sekolah, bukan IP.
      *
-     * Batasnya tetap ada — endpoint ini publik. Yang berhenti adalah membagi
+     * Batasnya tetap ada - endpoint ini publik. Yang berhenti adalah membagi
      * satu kuota dengan seluruh perangkat di gedung yang sama. Kunci cadangan
      * ke IP menjaga permintaan yang sekolahnya tidak terbaca tetap terbatas.
      */
@@ -72,7 +72,7 @@ class AppServiceProvider extends ServiceProvider
                 daftar prioritas middleware, jadi limiter berjalan sebelum
                 binding sempat mengubah token jadi objek School. Versi pertama
                 menulis `->route('school')?->id`, yang pada string menghasilkan
-                null tanpa error — lalu diam-diam jatuh ke kunci IP, yaitu
+                null tanpa error - lalu diam-diam jatuh ke kunci IP, yaitu
                 persis perilaku yang hendak dibuang. Tesnya yang menangkap.
 
                 Token itu sendiri sudah mengidentifikasi sekolah secara unik,
@@ -108,7 +108,7 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * SUPER_ADMIN lolos semua gate, jadi tidak perlu sinkron ulang tiap kali
-     * modul baru ditambahkan — dan tidak mungkin mengunci dirinya sendiri.
+     * modul baru ditambahkan - dan tidak mungkin mengunci dirinya sendiri.
      */
     protected function configureAuthorization(): void
     {

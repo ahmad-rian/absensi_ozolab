@@ -4,7 +4,7 @@
  * Penjaga tingkat sumber untuk konsol scan.
  *
  * Konsol dulu memasang kunci menyeluruh 1800 ms setiap habis scan, dan timernya
- * baru mulai SETELAH respons server tiba — jeda nyatanya round-trip + 1,8 detik,
+ * baru mulai SETELAH respons server tiba - jeda nyatanya round-trip + 1,8 detik,
  * berlaku juga untuk kartu yang berbeda. Itu yang membuat antrean di gerbang
  * tersendat. Penggantinya menahan hanya kartu yang sama.
  */
@@ -20,7 +20,7 @@ test('konsol scan tidak lagi mengunci seluruh scan setelah satu kartu', function
 
 /**
  * Buffer barcode gun memakai timer diam yang direset tiap tombol. Pada 150 ms,
- * satu keystroke yang tertunda saat React render membuang buffer di tengah UID —
+ * satu keystroke yang tertunda saat React render membuang buffer di tengah UID -
  * sisanya terkirim sebagai token potong dan ditolak server. Itu penjelasan
  * "kadang jadi kadang tidak" di perangkat lemot.
  */
@@ -38,7 +38,7 @@ test('jeda antar-karakter cukup longgar untuk perangkat lemot', function () {
 /**
  * Elemen input tidak punya timer dan tidak bisa terpotong; buffer bisa. Kalau
  * buffer yang dimenangkan saat keduanya terisi, satu keystroke yang tertunda di
- * perangkat lemot mengirim token separuh — dan gerbang menolak kartu yang sah.
+ * perangkat lemot mengirim token separuh - dan gerbang menolak kartu yang sah.
  */
 test('kotak isian jadi sumber utama, bukan sekadar yang lebih panjang', function () {
     $konsol = file_get_contents(resource_path('js/components/scanner/public-scan-console.tsx'));
@@ -69,7 +69,7 @@ test('kegagalan menyebutkan berapa karakter yang terbaca', function () {
  * tertunda memotong UID di tengah, sisanya terkirim sebagai token cacat, dan
  * gerbang menjawab "Kartu atau QR Code tidak dikenali" untuk kartu yang sah.
  *
- * Sekarang buffer dikirim, bukan dibuang — sekaligus melayani pembaca RFID yang
+ * Sekarang buffer dikirim, bukan dibuang - sekaligus melayani pembaca RFID yang
  * tidak mengirim Enter sama sekali.
  */
 test('buffer yang menganggur dikirim, bukan dibuang', function () {
@@ -85,7 +85,7 @@ test('buffer yang menganggur dikirim, bukan dibuang', function () {
 
 /**
  * html5-qrcode 2.3.8 melempar kalau resume() dipanggil saat state bukan PAUSED.
- * Sekali gagal, kameranya beku selamanya — dan penjedaan itu cuma penghematan
+ * Sekali gagal, kameranya beku selamanya - dan penjedaan itu cuma penghematan
  * CPU, bukan kebutuhan.
  */
 test('kamera tidak pernah dijeda-lanjutkan sendiri', function () {

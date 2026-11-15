@@ -63,7 +63,7 @@ export default function StudentRegisterResult({ student, queued }: Props) {
                     }
                 }
             } catch {
-                // transient network error — keep polling
+                // transient network error - keep polling
             } finally {
                 inFlight = false;
             }
@@ -84,7 +84,7 @@ export default function StudentRegisterResult({ student, queued }: Props) {
 
     return (
         <>
-            <Head title={`Hasil Pendaftaran — ${student.full_name}`} />
+            <Head title={`Hasil Pendaftaran - ${student.full_name}`} />
             <div className="relative isolate flex min-h-dvh flex-col">
                 <LatarLangit tetap />
 
@@ -94,7 +94,7 @@ export default function StudentRegisterResult({ student, queued }: Props) {
                             <CheckCircle2 className="mx-auto mb-4 size-16 text-green-600 dark:text-green-400" />
                             <h2 className="mb-2 text-center text-2xl font-bold text-green-800 dark:text-green-200">Pendaftaran Berhasil!</h2>
                             <p className="mb-6 text-center text-green-700 dark:text-green-300">
-                                Data siswa berhasil didaftarkan. Simpan halaman ini — link bisa dibuka lagi kapan pun untuk unduh foto & kartu.
+                                Data siswa berhasil didaftarkan. Simpan halaman ini - link bisa dibuka lagi kapan pun untuk unduh foto & kartu.
                             </p>
 
                             {/* Student info */}
@@ -219,7 +219,7 @@ function ResultTile({ item }: { item: StatusItem }) {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            // clipboard unavailable — ignore
+            // clipboard unavailable - ignore
         }
     }
 

@@ -2,15 +2,15 @@
     Konsol scan versi ringan.
 
     Sengaja TIDAK memakai Vite, React, Inertia, maupun Tailwind. Perangkat
-    sasarannya box Android TV di gerbang, yang browsernya kerap Chrome 80-100 —
+    sasarannya box Android TV di gerbang, yang browsernya kerap Chrome 80-100 -
     di bawah Chrome 111 yang dibutuhkan oklch() pada resources/css/app.css, jadi
     seluruh variabel warna aplikasi utama gagal diparse di sana.
 
     Aturan yang harus dijaga saat menyunting berkas ini:
     - warna hex saja, tanpa oklch()/color-mix()
-    - tanpa aspect-ratio (Chrome 88+) — pakai piksel eksplisit
-    - tanpa gap pada flexbox (Chrome 84+) — pakai margin
-    - JS tanpa optional chaining (?.) dan nullish coalescing (??) — Chrome 80+
+    - tanpa aspect-ratio (Chrome 88+) - pakai piksel eksplisit
+    - tanpa gap pada flexbox (Chrome 84+) - pakai margin
+    - JS tanpa optional chaining (?.) dan nullish coalescing (??) - Chrome 80+
     - tanpa kamera: html5-qrcode beban CPU terberat, dan box TV tidak punya kamera
 
     Endpoint POST-nya memakai rute public.scanner.scan yang sudah ada, jadi tidak
@@ -49,15 +49,15 @@
         /*
             Dua keluarga huruf, keduanya font SISTEM.
 
-            Halaman ini dilarang menarik berkas dari luar — itu seluruh alasan
+            Halaman ini dilarang menarik berkas dari luar - itu seluruh alasan
             keberadaannya, dan ada tes yang menjaganya. Jadi tidak ada webfont;
             yang bisa diperbaiki adalah MEMILIH font sistem yang benar alih-alih
             jatuh ke bawaan.
 
             Jam dulu memakai "Courier New", dan itu yang membuatnya terlihat
             tua: ia font mesin tik 1955 yang kebetulan ada di semua komputer.
-            Sekarang jam memakai grotesk sistem — Roboto di Android TV, Segoe
-            UI di Windows, SF di Apple — dengan angka selebar sama dan spasi
+            Sekarang jam memakai grotesk sistem - Roboto di Android TV, Segoe
+            UI di Windows, SF di Apple - dengan angka selebar sama dan spasi
             yang dirapatkan. Itu bentuk yang sama dengan jam di ponsel mereka
             sendiri.
 
@@ -74,7 +74,7 @@
             `height` yang dipatok, bukan `min-height`: yang kedua membiarkan
             halaman tumbuh begitu riwayat scan bertambah, dan setelah delapan
             kartu ditempel kotak isian terdorong keluar pandangan. Di gerbang
-            tidak ada yang menggulir — tidak ada tetikus, dan remote TV tidak
+            tidak ada yang menggulir - tidak ada tetikus, dan remote TV tidak
             bisa.
 
             Konsekuensinya tiap bagian harus sanggup menyusut; `min-height: 0`
@@ -155,7 +155,7 @@
         /*
             Tiga banding satu, MENDATAR.
 
-            Kiri untuk absen, kanan untuk riwayat — bukan bertumpuk. Di layar
+            Kiri untuk absen, kanan untuk riwayat - bukan bertumpuk. Di layar
             gerbang yang lebar, menumpuk riwayat di bawah membuang seluruh
             ruang kosong di samping hasil scan, sementara riwayatnya sendiri
             cuma kebagian beberapa baris.
@@ -191,7 +191,7 @@
         .stage.bad { border-color: #ef4444; }
 
         /* Tombol pindah ke halaman kamera. Halaman ringan sengaja tanpa kamera
-           (box TV), jadi di HP — iPhone terutama — tanpa tombol ini tidak ada
+           (box TV), jadi di HP - iPhone terutama - tanpa tombol ini tidak ada
            cara memindai sama sekali. Tampil hanya di layar sentuh. */
         .kamera {
             display: none;
@@ -217,7 +217,7 @@
             display: flex;
             /* Kolom, bukan baris: sejak baris jendela sholat ikut di sini,
                `row` menaruhnya di SAMPING ajakan menempel kartu alih-alih di
-               bawahnya. `gap` tidak dipakai — Chrome lama di box Android TV
+               bawahnya. `gap` tidak dipakai - Chrome lama di box Android TV
                belum mengenalnya pada flexbox. */
             flex-direction: column;
             align-items: center;
@@ -232,7 +232,7 @@
             Pita status: satu bidang warna selebar panel.
 
             Inilah yang terbaca dari seberang lorong. Lencana kecil di sudut
-            tidak cukup — operator berdiri beberapa meter dari layar dan yang
+            tidak cukup - operator berdiri beberapa meter dari layar dan yang
             perlu ia tahu cuma satu hal, kartu ini diterima atau tidak.
         */
         .pita {
@@ -345,7 +345,7 @@
         /*
             Seperempat sisanya: siapa saja yang barusan scan.
 
-            Berpanel sendiri, bukan daftar telanjang — operator memakainya
+            Berpanel sendiri, bukan daftar telanjang - operator memakainya
             untuk memastikan kartu yang barusan ditempel memang tercatat, dan
             batas panelnya yang memisahkan itu dari hasil scan di atasnya.
             Yang terbaru di atas; begitu ruang habis, yang terpotong dari bawah
@@ -396,7 +396,7 @@
         /*
             Dua baris, bukan satu.
 
-            Kolomnya cuma seperempat layar — sekitar 290px di TV 1080p — dan
+            Kolomnya cuma seperempat layar - sekitar 290px di TV 1080p - dan
             nama berikut jam pada satu baris menyisakan begitu sedikit ruang
             sampai "Muhammad Rizky Ramadhan" terpotong jadi "Muhammad Riz…".
             Nama mendapat barisnya sendiri; kelas dan jam turun ke bawahnya.
@@ -424,7 +424,7 @@
         /*
             Layar sempit: ponsel dan tablet kecil.
 
-            Tautan pendeknya memang dibuka di HP — operator mengeceknya dari
+            Tautan pendeknya memang dibuka di HP - operator mengeceknya dari
             sana. Tanpa ambang ini nama sekolah membungkus lalu menabrak jam,
             dan jamnya terpotong di tepi kanan.
         */
@@ -483,7 +483,7 @@
             Layar PENDEK, bukan sempit: ponsel yang diputar mendatar, dan box
             TV yang menyetel keluarannya ke 720p lalu di-overscan.
 
-            Foto kembali berdampingan dengan nama — menumpuknya butuh tinggi
+            Foto kembali berdampingan dengan nama - menumpuknya butuh tinggi
             yang justru sedang tidak ada.
         */
         @media (max-height: 560px) {
@@ -518,7 +518,7 @@
             .log { margin-top: 7px; }
             .log .kepala { padding: 4px 12px; }
             /* Layar pendek TAPI lebar (ponsel mendatar): dua kolom justru
-               menolong — tingginya yang langka, bukan lebarnya. */
+               menolong - tingginya yang langka, bukan lebarnya. */
             @media (min-width: 640px) {
                 .badan { flex-direction: row; }
                 .log { margin-left: 10px; margin-top: 0; }
@@ -612,7 +612,7 @@
 
             var SCAN_URL = @json($scanUrl);
             /* Riwayat bersama dari server (halaman peserta Haji/program). Gerbang
-               sekolah tidak mengirimnya — daftar lokal lama tetap dipakai. */
+               sekolah tidak mengirimnya - daftar lokal lama tetap dipakai. */
             var RIWAYAT_URL = @json($riwayatUrl ?? null);
 
             /* Layar sentuh tanpa mouse (HP/tablet): tampilkan tombol kamera.
@@ -638,7 +638,7 @@
             var MACHINE_MS_PER_KEY = 50;
 
             /* Bunyi dan suara bisa dimatikan lewat ?diam=1 untuk gerbang
-               yang ramai — mesin TTS Android jauh lebih berat daripada
+               yang ramai - mesin TTS Android jauh lebih berat daripada
                halamannya sendiri. */
             var DIAM = /[?&]diam=1\b/.test(window.location.search);
 
@@ -734,7 +734,7 @@
                 Inisial dari nama, maksimal dua huruf.
 
                 Dipakai saat pas fotonya belum ada. Sebelumnya di sini ada
-                emoji orang — hiasan yang tidak memberi tahu apa pun. Dua huruf
+                emoji orang - hiasan yang tidak memberi tahu apa pun. Dua huruf
                 masih memberi tahu siapa yang barusan lewat.
             */
             function inisial(nama) {
@@ -779,7 +779,7 @@
                         Berkas fotonya hilang dari disk: tampilkan inisial, bukan
                         ikon gambar rusak bawaan peramban.
 
-                        Bukan kasus karangan — `photo_path` bisa menunjuk berkas
+                        Bukan kasus karangan - `photo_path` bisa menunjuk berkas
                         yang sudah tidak ada, dan yang terlihat operator selama
                         ini cuma kotak abu berlogo sobek di tengah layar gerbang.
                     */
@@ -800,7 +800,7 @@
                     stage.className = 'stage bad';
                     /* Bentuk bacaan ikut ditampilkan saat gagal. Operator memegang
                        kartunya: kalau tertulis "terbaca 18 karakter" padahal
-                       tokennya 35, bacaan terpotongnya kelihatan saat itu juga —
+                       tokennya 35, bacaan terpotongnya kelihatan saat itu juga -
                        tanpa perlu membuka server. */
                     var jejak = terakhir
                         ? '<div class="probe">terbaca ' + terakhir.len + ' karakter &middot; ' +
@@ -828,7 +828,7 @@
 
                     Panelnya sekarang seperempat layar dan memotong sendiri
                     apa yang tidak muat lewat `overflow: hidden`, jadi batas
-                    ini cuma menahan memori — bukan lagi yang menentukan
+                    ini cuma menahan memori - bukan lagi yang menentukan
                     berapa baris terlihat. Di TV 1080p muat sekitar sepuluh.
                 */
                 entries = entries.slice(0, 12);
@@ -1020,7 +1020,7 @@
             });
             document.addEventListener('click', grabFocus);
 
-            /* Layar jangan tidur. Box lama tidak punya API ini — abaikan diam-diam. */
+            /* Layar jangan tidur. Box lama tidak punya API ini - abaikan diam-diam. */
             if (navigator.wakeLock && navigator.wakeLock.request) {
                 try {
                     navigator.wakeLock.request('screen').catch(function () {});

@@ -14,8 +14,8 @@ use Mockery\MockInterface;
  | Tautan Drive seorang siswa harus berhenti bergeser.
  |
  | Letak foto siswa selama ini diturunkan ulang setiap kali dari jalur folder
- | `{Sekolah}/{Kelas}/{NIS - Nama}`. Ketiga nilai itu berubah — naik kelas, NIS
- | diperbaiki, nama diseragamkan huruf besar — dan begitu berubah, pencarian
+ | `{Sekolah}/{Kelas}/{NIS - Nama}`. Ketiga nilai itu berubah - naik kelas, NIS
+ | diperbaiki, nama diseragamkan huruf besar - dan begitu berubah, pencarian
  | menunjuk folder lain. Operator melihatnya sebagai "foto anaknya hilang" dan
  | "URL gdrive ganti sendiri". Id berkas Drive tidak ikut berubah, jadi ia yang
  | disimpan.
@@ -36,7 +36,7 @@ beforeEach(function () {
  * Locator yang memakai klien Drive palsu, bukan API Google.
  *
  * Menimpa buildDrive(), bukan driveFor(), supaya memoisasi klien per sekolah
- * ikut dijalani seperti di produksi — dan bisa dihitung lewat `$built`.
+ * ikut dijalani seperti di produksi - dan bisa dihitung lewat `$built`.
  */
 function locatorUsing(GoogleDriveService $drive): StudentDrivePhotoLocator
 {
@@ -72,7 +72,7 @@ test('a stored file id is used instead of rebuilding the folder path', function 
     $drive = mock(GoogleDriveService::class, function (MockInterface $mock) {
         $mock->shouldReceive('fileById')->once()->with('berkas-tetap')
             ->andReturn(['id' => 'berkas-tetap', 'name' => 'rian-123-foto.png']);
-        // Jalur nama folder tidak boleh disentuh sama sekali — itulah jalur yang
+        // Jalur nama folder tidak boleh disentuh sama sekali - itulah jalur yang
         // bergeser setiap kali siswa naik kelas.
         $mock->shouldNotReceive('findStudentFolderId');
         $mock->shouldNotReceive('imagesInFolder');
@@ -170,7 +170,7 @@ test('a camera-named photo is found once the system files are set aside', functi
 
 test('two loose images are never guessed between', function () {
     // Dua foto asing berarti dua sesi atau salah taruh. Memilih salah satunya
-    // berisiko memasang wajah anak lain di kartunya — persis keluhan yang sedang
+    // berisiko memasang wajah anak lain di kartunya - persis keluhan yang sedang
     // diperbaiki, jadi lebih baik dilaporkan tidak ketemu.
     activeDriveConfig($this->schoolId);
 

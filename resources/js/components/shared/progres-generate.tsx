@@ -56,7 +56,7 @@ export function ProgresGenerate({ progres, label, unit = 'kartu' }: { progres: P
             </div>
 
             <p className="text-muted-foreground text-xs">
-                {status === 'processing' && 'Boleh ditinggal — kemajuannya tersimpan di server dan tetap benar kalau halaman ini dibuka lagi.'}
+                {status === 'processing' && 'Boleh ditinggal - kemajuannya tersimpan di server dan tetap benar kalau halaman ini dibuka lagi.'}
                 {status === 'completed' && `${selesai} ${unit} selesai dibuat.`}
                 {status === 'failed' && `${selesai} ${unit} selesai, ${gagal} gagal. Buka Riwayat Kartu untuk melihat sebabnya.`}
             </p>

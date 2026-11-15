@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Satu kejadian sesi pada satu tanggal, dengan SALINAN jendela waktunya —
+ * Satu kejadian sesi pada satu tanggal, dengan SALINAN jendela waktunya -
  * mengubah pola tidak mengubah penilaian kehadiran yang sudah lewat.
  */
 class Sesi extends Model
@@ -44,7 +44,7 @@ class Sesi extends Model
 
     /**
      * Lintas konteks dengan sengaja: dipanggil juga dari console (sinkron
-     * harian) yang tidak punya konteks penyelenggara — lewat relasi, scope
+     * harian) yang tidak punya konteks penyelenggara - lewat relasi, scope
      * fail-closed membuatnya selalu false dan sesi berkehadiran ikut terhapus.
      */
     public function punyaKehadiran(): bool

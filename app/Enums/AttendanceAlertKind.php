@@ -9,7 +9,7 @@ namespace App\Enums;
  * AttendanceStatus menjawab "apa yang tercatat", enum ini menjawab "apa yang
  * dikabarkan". `IZIN` dan `SAKIT` adalah ketidakhadiran berizin dan tidak
  * pernah jadi peringatan, sementara `ALPA` di sini juga mencakup siswa yang
- * sama sekali tidak punya baris absensi — keadaan yang tidak bisa diwakili
+ * sama sekali tidak punya baris absensi - keadaan yang tidak bisa diwakili
  * satu pun nilai AttendanceStatus.
  */
 enum AttendanceAlertKind: string

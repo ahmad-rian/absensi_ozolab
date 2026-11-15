@@ -11,7 +11,7 @@ use Google\Service\Drive\Resource\Files as DriveFiles;
 /**
  * Nama berkas Drive memuat nama dan NIS siswa. Begitu salah satunya dibetulkan,
  * pencarian berbasis nama meleset dan `uploadFile()` membuat berkas KEDUA di
- * folder yang sama — folder yang tadinya berisi 4 berkas jadi 6, dan itulah
+ * folder yang sama - folder yang tadinya berisi 4 berkas jadi 6, dan itulah
  * keluhan yang memicu perbaikan ini.
  *
  * Klien Drive dipasang lewat refleksi karena konstruktornya membangun sendiri

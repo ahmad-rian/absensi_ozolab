@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Sebelum ini tidak ada satu pun jalur mengunggah foto siswa dari browser —
+ * Sebelum ini tidak ada satu pun jalur mengunggah foto siswa dari browser -
  * foto selalu ditarik dari Drive lewat nama berkas yang diketik operator.
  */
 beforeEach(function () {
@@ -49,7 +49,7 @@ test('foto terunggah tersimpan dan tercatat di baris siswa', function () {
 /**
  * Nama berkasnya memuat 16 karakter acak, jadi unggahan baru TIDAK menimpa yang
  * lama. Tanpa pembuangan eksplisit, tiap penggantian foto meninggalkan satu
- * berkas yatim selamanya — disk penuh sudah pernah menjatuhkan server ini.
+ * berkas yatim selamanya - disk penuh sudah pernah menjatuhkan server ini.
  */
 test('foto lama dibuang dari disk, tidak ditinggalkan sebagai berkas yatim', function () {
     Storage::disk('public')->put('photos/students/lama.png', 'foto lama');
@@ -63,7 +63,7 @@ test('foto lama dibuang dari disk, tidak ditinggalkan sebagai berkas yatim', fun
 
 /**
  * Berkas yang lolos aturan `image`/`mimes` tapi isinya bukan gambar yang bisa
- * dibaca — mis. gambar terpotong, atau skrip yang dinamai `.jpg`. Dulu ini
+ * dibaca - mis. gambar terpotong, atau skrip yang dinamai `.jpg`. Dulu ini
  * membuat `PhotoCropService` melempar dan operator mendapat galat 500.
  */
 test('berkas yang tidak bisa dibaca sebagai gambar ditolak dengan pesan, bukan galat 500', function () {
@@ -112,7 +112,7 @@ test('Drive aktif: riwayat processing dibuat dan job sinkron diantrekan', functi
 
 /**
  * Tanpa Drive, fotonya tetap berguna di server. Yang tidak boleh terjadi adalah
- * baris `processing` menggantung — lencana di halaman siswa akan berputar
+ * baris `processing` menggantung - lencana di halaman siswa akan berputar
  * selamanya karena polling-nya hanya berhenti saat status berubah.
  */
 test('Drive tidak aktif: foto tetap tersimpan tanpa riwayat menggantung', function () {
@@ -145,8 +145,8 @@ test('siswa sekolah lain tidak bisa diganti fotonya', function () {
  * Pembeda ganti-isi versus tumpuk. `replaceStudentOutput()` memakai
  * `uploadType: media` sehingga id dan tautan Drive-nya bertahan; `uploadFile()`
  * hanya cocok nama persis dan akan membuat berkas kedua di folder yang sama
- * begitu nama siswanya berubah. Kliennya tidak bisa dipalsukan —
- * `GoogleDriveService` membangunnya di konstruktor — jadi dijaga di tingkat sumber.
+ * begitu nama siswanya berubah. Kliennya tidak bisa dipalsukan -
+ * `GoogleDriveService` membangunnya di konstruktor - jadi dijaga di tingkat sumber.
  */
 test('job sinkron mengganti isi berkas, bukan mengunggah berkas baru', function () {
     $sumber = file_get_contents(

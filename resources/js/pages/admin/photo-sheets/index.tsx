@@ -60,7 +60,7 @@ type TemplateItem = {
 type OrderItem = { student_id: string; quantity: number };
 
 /**
- * Cerminan PhotoSheetBatchService::paginate() di PHP — service itu yang jadi
+ * Cerminan PhotoSheetBatchService::paginate() di PHP - service itu yang jadi
  * sumber kebenaran saat merender PDF; ini hanya untuk pratinjau di layar.
  * Kalau aturan penyusunan slot berubah, dua-duanya harus ikut berubah.
  */
@@ -231,7 +231,7 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
     }, [hasProcessing]);
 
     function handleGenerate() {
-        // `router.post` — bukan useForm — karena isinya dirakit dari keranjang,
+        // `router.post` - bukan useForm - karena isinya dirakit dari keranjang,
         // bukan dari state form yang statis.
         setFormError('');
 
@@ -247,7 +247,7 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                     setPreviewOpen(false);
                 },
                 onError: (errors) => {
-                    // Kegagalan validasi tidak boleh diam — sebelumnya tombol
+                    // Kegagalan validasi tidak boleh diam - sebelumnya tombol
                     // tampak tidak melakukan apa-apa saat pesanan ditolak.
                     setFormError(Object.values(errors)[0] ?? 'Gagal membuat lembar. Periksa pilihan siswa.');
                 },
@@ -529,7 +529,7 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                     </Card>
                 </div>
 
-                {/* Pratinjau lembar — simulasi susunan slot sebelum kertas dipakai */}
+                {/* Pratinjau lembar - simulasi susunan slot sebelum kertas dipakai */}
                 <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
                     <DialogContent className="max-w-3xl">
                         <DialogHeader>
@@ -543,7 +543,7 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                             <Alert variant="destructive">
                                 <AlertTriangle className="size-4" />
                                 <AlertDescription>
-                                    {missingPhotos} siswa fotonya tidak ditemukan di server — slotnya akan tercetak kosong.
+                                    {missingPhotos} siswa fotonya tidak ditemukan di server - slotnya akan tercetak kosong.
                                 </AlertDescription>
                             </Alert>
                         )}
@@ -584,7 +584,7 @@ export default function PhotoSheetsIndex({ students, classrooms, templates, maxP
                                                             alt={student.full_name}
                                                             className="size-full object-cover"
                                                         />
-                                                        {/* Nama hanya penanda di layar — cetakannya tetap polos. */}
+                                                        {/* Nama hanya penanda di layar - cetakannya tetap polos. */}
                                                         <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1 text-center text-[9px] leading-tight text-white">
                                                             {student.full_name}
                                                         </span>

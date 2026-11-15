@@ -75,7 +75,7 @@ export default function KartuBebasDataIndex({ datasets }: { datasets: Dataset[] 
                                                 href={`/kartu-bebas/layouts/create?dataset=${dataset.id}`}
                                                 className="text-xs text-indigo-600 underline dark:text-indigo-400"
                                             >
-                                                Belum ada layout aktif — buat layout dari format ini
+                                                Belum ada layout aktif - buat layout dari format ini
                                             </Link>
                                         ) : (
                                             <>

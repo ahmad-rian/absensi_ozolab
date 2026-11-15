@@ -357,7 +357,7 @@ export function TabelCatatan({ recent }: { recent: Catatan[] }) {
                                     <LencanaStatus label={baris.status_label} />
                                 </td>
                                 <td className="px-4 py-3 whitespace-nowrap tabular-nums">
-                                    {baris.time ?? '—'}
+                                    {baris.time ?? '-'}
                                 </td>
                             </tr>
                         ))}

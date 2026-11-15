@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Data Perizinan: sekolah meninjau pengajuan izin/sakit dari orang tua.
- * Binding `{izin}` tersaring scope sekolah — pengajuan sekolah lain 404.
+ * Binding `{izin}` tersaring scope sekolah - pengajuan sekolah lain 404.
  */
 class PerizinanController extends Controller
 {

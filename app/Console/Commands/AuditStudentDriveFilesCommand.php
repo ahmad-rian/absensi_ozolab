@@ -16,7 +16,7 @@ use Throwable;
  * mana yang namanya sudah basi, dan mana yang kembar.
  *
  * Sengaja TANPA `--fix`. Ini alat potret sebelum-dan-sesudah, dan alat ukur
- * tidak boleh punya tombol yang mengubah keadaan yang sedang diukur —
+ * tidak boleh punya tombol yang mengubah keadaan yang sedang diukur -
  * `drive:audit-siswa` sudah punya `--fix` yang menulis ke database, jadi ia
  * tidak bisa dipakai untuk peran ini. Yang memperbaiki adalah
  * `drive:satukan-folder-siswa` dan `drive:bersihkan-duplikat`.
@@ -51,7 +51,7 @@ class AuditStudentDriveFilesCommand extends Command
 
         // Semua sekolah berbagi satu akun OAuth, jadi sapuan berkasnya
         // account-wide dan cukup sekali. Mengulanginya per sekolah berarti
-        // membaca puluhan ribu berkas yang sama berulang kali — pelajaran dari
+        // membaca puluhan ribu berkas yang sama berulang kali - pelajaran dari
         // `drive:bersihkan-duplikat`.
         $sapuanBersama = null;
 
@@ -81,7 +81,7 @@ class AuditStudentDriveFilesCommand extends Command
                     }
                 }
             } catch (Throwable $e) {
-                $this->error("{$school->name}: gagal menyiapkan klien Drive — {$e->getMessage()}");
+                $this->error("{$school->name}: gagal menyiapkan klien Drive - {$e->getMessage()}");
 
                 continue;
             }
@@ -125,10 +125,10 @@ class AuditStudentDriveFilesCommand extends Command
                 $lengkap[] = [
                     $school->name,
                     $murid->classroom?->name ?? '-',
-                    (string) ($murid->nis ?: '—'),
+                    (string) ($murid->nis ?: '-'),
                     $murid->full_name,
                     $temuan['jumlah'],
-                    $temuan['kurang'] === [] ? '—' : implode(', ', $temuan['kurang']),
+                    $temuan['kurang'] === [] ? '-' : implode(', ', $temuan['kurang']),
                     $temuan['basi'] ?: 0,
                     $temuan['kembar'] ?: 0,
                     $temuan['asing'] ?: 0,
@@ -137,13 +137,13 @@ class AuditStudentDriveFilesCommand extends Command
 
                 $baris[] = [
                     $school->name,
-                    $murid->nis ?: '—',
+                    $murid->nis ?: '-',
                     mb_strimwidth($murid->full_name, 0, 28, '…'),
                     $temuan['jumlah'],
-                    $temuan['kurang'] === [] ? '—' : implode(',', $temuan['kurang']),
-                    $temuan['basi'] ?: '—',
-                    $temuan['kembar'] ?: '—',
-                    $temuan['asing'] ?: '—',
+                    $temuan['kurang'] === [] ? '-' : implode(',', $temuan['kurang']),
+                    $temuan['basi'] ?: '-',
+                    $temuan['kembar'] ?: '-',
+                    $temuan['asing'] ?: '-',
                 ];
             }
 
@@ -205,7 +205,7 @@ class AuditStudentDriveFilesCommand extends Command
      *
      * Jalur unggahnya sendiri hanya berjalan ketika `photo_path` terisi
      * (`RegisterStudentCardsJob`), jadi mewajibkannya untuk semua siswa membuat
-     * setiap anak yang belum difoto dilaporkan sebagai folder rusak — dan itu
+     * setiap anak yang belum difoto dilaporkan sebagai folder rusak - dan itu
      * menenggelamkan folder yang benar-benar bermasalah.
      *
      * @param  array<int, string>  $jenisSekolah
@@ -222,7 +222,7 @@ class AuditStudentDriveFilesCommand extends Command
      * Periksa isi satu folder terhadap satu siswa.
      *
      * Public dan statis supaya keputusannya bisa diuji tanpa menyentuh Drive
-     * sama sekali — pola yang sama dengan `CleanDriveDuplicatesCommand::duplikat()`.
+     * sama sekali - pola yang sama dengan `CleanDriveDuplicatesCommand::duplikat()`.
      *
      * @param  array<int, array<string, mixed>>  $isi
      * @param  array<int, string>  $jenisWajib
@@ -265,7 +265,7 @@ class AuditStudentDriveFilesCommand extends Command
         $kurang = array_values(array_diff($jenisWajib, $adaJenis));
 
         return [
-            // Berkas bernama bebas milik fotografer bukan masalah — folder siswa
+            // Berkas bernama bebas milik fotografer bukan masalah - folder siswa
             // memang boleh berisi apa pun. Yang dilaporkan hanya ketidaksesuaian
             // pada keluaran aplikasi sendiri.
             'bermasalah' => $kurang !== [] || $basi > 0 || $kembar > 0,

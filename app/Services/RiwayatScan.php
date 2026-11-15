@@ -14,7 +14,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * Riwayat scan hari ini untuk halaman scan peserta, dibaca dari database —
+ * Riwayat scan hari ini untuk halaman scan peserta, dibaca dari database -
  * bukan disimpan di memori tab. Semua perangkat yang membuka link scan yang
  * sama melihat daftar yang sama, dengan jam server.
  *

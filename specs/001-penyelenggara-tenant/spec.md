@@ -47,7 +47,7 @@ halaman admin sekolah mana pun, sekalipun menebak alamatnya.
 yang tidak bisa diterima; prinsip tenancy fail-closed di konstitusi.
 
 **Independent Test**: Dua penyelenggara dengan data uji; akun admin A mencoba alamat data B dan
-alamat `/admin/...` sekolah — semuanya tidak memberi akses dan tidak membedakan "ada" vs "tidak
+alamat `/admin/...` sekolah - semuanya tidak memberi akses dan tidak membedakan "ada" vs "tidak
 ada".
 
 **Acceptance Scenarios**:
@@ -179,7 +179,7 @@ diizinkan.
   dua penyelenggara memakai dua email.
 - Undangan memakai mekanisme email yang sudah ada di aplikasi; masa berlaku 7 hari.
 - Saklar fitur penyelenggara mengikuti pola saklar fitur sekolah (bawaan menyala untuk modul inti).
-  **Ditunda (audit 2026-10-14):** UI saklar untuk super admin dibangun bersama spec 006 — fitur
+  **Ditunda (audit 2026-10-14):** UI saklar untuk super admin dibangun bersama spec 006 - fitur
   pertama yang memakainya (notifikasi wali) belum ada; sampai itu, `PenyelenggaraFeatures` memakai bawaan.
 - Penugasan Pendamping ke grup tertentu dikerjakan di spec 002 (grup); di spec ini Pendamping
   melihat semua data penyelenggaranya sesuai izin modul.

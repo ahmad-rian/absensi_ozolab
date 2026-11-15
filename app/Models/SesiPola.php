@@ -33,7 +33,7 @@ class SesiPola extends Model
 
     protected function casts(): array
     {
-        // Tanggal disimpan sebagai string Y-m-d (lihat Sesi) — tanpa cast `date`.
+        // Tanggal disimpan sebagai string Y-m-d (lihat Sesi) - tanpa cast `date`.
         return ['hari' => 'array'];
     }
 

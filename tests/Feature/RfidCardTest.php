@@ -105,7 +105,7 @@ test('a card can be released', function () {
 /**
  * Rute simpan/lepas hanya menerima POST dan DELETE. Mengalihkan dengan back()
  * membuat tujuannya ikut header Referer, dan begitu bilah alamat pernah berisi
- * URL POST itu, setiap pengalihan berikutnya menembak URL tanpa rute GET —
+ * URL POST itu, setiap pengalihan berikutnya menembak URL tanpa rute GET -
  * satu kegagalan sesaat berubah jadi rentetan 404. Dua test berikut mengunci
  * tujuannya ke halaman daftar.
  */

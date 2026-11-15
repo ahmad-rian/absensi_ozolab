@@ -62,7 +62,7 @@ enum PrayerType: string
     /**
      * Prefix key di kolom `schools.settings`.
      *
-     * Dzuhur sengaja memakai prefix lama `prayer` — BUKAN `prayer_dzuhur` —
+     * Dzuhur sengaja memakai prefix lama `prayer` - BUKAN `prayer_dzuhur` -
      * supaya enam sekolah produksi yang sudah menyimpan prayer_enabled /
      * prayer_start / prayer_end tidak perlu disentuh sama sekali. Key lama
      * otomatis jadi key Dzuhur.

@@ -42,7 +42,7 @@ function Status({ ok, ya, tidak }: { ok: boolean; ya: string; tidak: string }) {
 }
 
 /**
- * Pengaturan workspace Absensi General — tersimpan terpisah dari pengaturan
+ * Pengaturan workspace Absensi General - tersimpan terpisah dari pengaturan
  * sekolah mana pun.
  */
 export default function GeneralPengaturan({
@@ -247,7 +247,7 @@ export default function GeneralPengaturan({
                             <Status
                                 ok={Boolean(dataDrive.folder)}
                                 ya="Folder sudah diatur"
-                                tidak="Folder belum diatur — kartu hanya tersimpan di server"
+                                tidak="Folder belum diatur - kartu hanya tersimpan di server"
                             />
                             <Status
                                 ok={dataDrive.kredensial}
@@ -316,7 +316,7 @@ export default function GeneralPengaturan({
                                                     autoComplete="off"
                                                     placeholder={
                                                         dataWa.token_terisi
-                                                            ? 'Tersimpan — kosongkan untuk tetap memakai token lama'
+                                                            ? 'Tersimpan - kosongkan untuk tetap memakai token lama'
                                                             : 'Tempel token dari dashboard Fonnte'
                                                     }
                                                 />

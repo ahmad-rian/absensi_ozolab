@@ -7,12 +7,12 @@ return [
     | Alamat kanonik
     |--------------------------------------------------------------------------
     |
-    | Dipakai untuk <link rel="canonical">, og:url, sitemap, dan llms.txt —
+    | Dipakai untuk <link rel="canonical">, og:url, sitemap, dan llms.txt -
     | SELALU alamat ini, bukan host yang kebetulan menyajikan permintaan.
     |
     | Itu inti perbaikannya. Halaman ini pernah tersaji di host lain, Google
     | mengindeksnya di sana, dan tanpa canonical tidak ada yang memberi tahu
-    | Google host mana yang benar — hasil pencarian sampai sekarang menampilkan
+    | Google host mana yang benar - hasil pencarian sampai sekarang menampilkan
     | judul dan deskripsi situs ini di bawah domain yang bukan miliknya.
     |
     | Kalau `url()->current()` yang dipakai, canonical-nya ikut salah persis di
@@ -27,7 +27,7 @@ return [
     'locale' => 'id_ID',
 
     'default' => [
-        'title' => 'Tyas Photo — Absensi Sekolah Digital dengan QR & RFID',
+        'title' => 'Tyas Photo - Absensi Sekolah Digital dengan QR & RFID',
         'description' => 'Platform absensi sekolah berbasis QR Code dan kartu RFID. Rekap kehadiran otomatis, notifikasi WhatsApp ke orang tua, kartu pelajar dan pas foto siap cetak. Daftarkan sekolah dalam 5 menit.',
     ],
 
@@ -36,8 +36,8 @@ return [
     | Halaman yang boleh diindeks
     |--------------------------------------------------------------------------
     |
-    | Daftar putih, bukan daftar hitam. Aplikasi ini penuh halaman bertoken —
-    | /scan/{token}, /g/{kode}, /f/{token} — dan token yang terindeks sama saja
+    | Daftar putih, bukan daftar hitam. Aplikasi ini penuh halaman bertoken -
+    | /scan/{token}, /g/{kode}, /f/{token} - dan token yang terindeks sama saja
     | dengan token yang bocor. Komponen yang tidak disebut di sini otomatis
     | `noindex, nofollow`.
     |
@@ -45,12 +45,12 @@ return [
 
     'indexable' => [
         'welcome' => [
-            'title' => 'Tyas Photo — Absensi Sekolah Digital dengan QR & RFID',
+            'title' => 'Tyas Photo - Absensi Sekolah Digital dengan QR & RFID',
             'description' => 'Platform absensi sekolah berbasis QR Code dan kartu RFID. Rekap kehadiran otomatis, notifikasi WhatsApp ke orang tua, kartu pelajar dan pas foto siap cetak. Daftarkan sekolah dalam 5 menit.',
             'path' => '/',
         ],
         'student-register' => [
-            'title' => 'Daftar Sekolah — Tyas Photo',
+            'title' => 'Daftar Sekolah - Tyas Photo',
             'description' => 'Daftarkan sekolah Anda ke Tyas Photo. Isi data sekolah dan admin utama, lalu mulai mencatat kehadiran siswa dengan QR Code atau kartu RFID hari itu juga.',
             'path' => '/daftar',
         ],

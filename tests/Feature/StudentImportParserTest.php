@@ -45,7 +45,7 @@ function writeImportCsv(string $name, array $rows): string
  *
  * XLSX itu arsip zip bertimestamp, jadi isinya berbeda tiap kali ditulis. Selama
  * ia mendarat di direktori fixture yang ikut ter-commit, setiap kali suite
- * dijalankan pohon kerja jadi kotor — dan run berikutnya membaca keadaan yang
+ * dijalankan pohon kerja jadi kotor - dan run berikutnya membaca keadaan yang
  * berbeda lalu gagal di tempat yang tidak ada hubungannya dengan perubahannya.
  *
  * @param  list<list<string>>  $rows
@@ -252,7 +252,7 @@ it('membaca berkas xlsx sama seperti csv', function () {
 
     // Namanya sengaja BUKAN `contoh-impor`: berkas dengan nama itu ikut
     // ter-commit, dan menuliskannya di sini membuat setiap kali suite dijalankan
-    // meninggalkan perubahan di pohon kerja — lalu run berikutnya membaca
+    // meninggalkan perubahan di pohon kerja - lalu run berikutnya membaca
     // keadaan yang berbeda dan gagal di tempat yang tidak ada hubungannya.
     $path = writeImportXlsx('parser-xlsx', [
         ['NISN', 'NIS', 'Nama Lengkap', 'Kelas', 'L/P', 'Agama', 'No HP'],
@@ -357,7 +357,7 @@ it('membolehkan NIS bekas siswa yang sudah dihapus', function () {
 
 /**
  * CSV yang memuat id siswa (acak tiap run) ditulis ke direktori sementara,
- * bukan direktori fixture yang ikut ter-commit — alasannya sama dengan XLSX.
+ * bukan direktori fixture yang ikut ter-commit - alasannya sama dengan XLSX.
  *
  * @param  list<list<string>>  $rows
  */

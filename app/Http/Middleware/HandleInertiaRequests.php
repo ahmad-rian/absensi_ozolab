@@ -115,7 +115,7 @@ class HandleInertiaRequests extends Middleware
                 'dzuhur' => PrayerType::Dzuhur->shortLabel(),
             ],
             'currentSchool' => function () {
-                // Read from singleton set by SetCurrentSchool middleware — always fresh
+                // Read from singleton set by SetCurrentSchool middleware - always fresh
                 $school = app()->bound('currentSchool') ? app('currentSchool') : null;
 
                 return $school ? [
@@ -179,7 +179,7 @@ class HandleInertiaRequests extends Middleware
                 $school = app()->bound('currentSchool') ? app('currentSchool') : null;
 
                 // Sekolah milik akun yang sedang masuk, untuk halaman di luar
-                // grup yang memasang SetCurrentSchool — ganti-password salah
+                // grup yang memasang SetCurrentSchool - ganti-password salah
                 // satunya. Tanpa ini, orang yang baru login melihat logo
                 // Laravel bawaan padahal logonya sudah diunggah; logo itu
                 // tersimpan di kolom settings sekolah, bukan di tabel settings

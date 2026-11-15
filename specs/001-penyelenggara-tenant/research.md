@@ -7,7 +7,7 @@
   dari container (`app('currentPenyelenggara')`), bukan langsung dari user, supaya super admin bisa
   berpindah. Console/queue/rute publik memakai `withoutGlobalScope('penyelenggara')` + filter eksplisit.
 - **Rationale**: Konstitusi Prinsip II. `BelongsToSchool` (baris 31-35) hanya memfilter bila
-  `school_id` ada — user penyelenggara (school_id null) akan melihat semua baris sekolah.
+  `school_id` ada - user penyelenggara (school_id null) akan melihat semua baris sekolah.
 - **Alternatives**: Memakai `school_id` untuk penyelenggara (ditolak user); paket multitenancy
   (dependency baru, ditolak Prinsip I).
 
@@ -26,7 +26,7 @@
   (`penyelenggara-beranda`, `penyelenggara-tim`, `penyelenggara-hak-akses`; modul data ditambah di spec
   berikutnya) dengan permission `<value>.access`, disinkronkan `RolePermissionSeeder`; default per peran
   lewat `AppModule::defaultsFor()`. `Gate::before` super admin tidak diubah.
-- **Rationale**: Layar Hak Akses (`RolePermissionController`) sudah membaca `AppModule` — cukup
+- **Rationale**: Layar Hak Akses (`RolePermissionController`) sudah membaca `AppModule` - cukup
   dikelompokkan agar modul penyelenggara hanya tampil untuk peran penyelenggara.
 - **Alternatives**: Sistem izin terpisah (ditolak: dua sumber kebenaran).
 

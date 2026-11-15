@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Pengajuan izin/sakit siswa dari orang tua (portal atau form publik /izin).
- * Tabel baru — tidak mengubah tabel absensi yang sudah ada.
+ * Tabel baru - tidak mengubah tabel absensi yang sudah ada.
  */
 return new class extends Migration
 {

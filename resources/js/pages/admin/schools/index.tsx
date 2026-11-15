@@ -40,7 +40,7 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
     const [search, setSearch] = useState(filters.search);
 
     // Sekolah yang sedang dibuka. Dulu ditandai oleh pemilih di sidebar; sejak
-    // pemilih itu pindah ke sini, kartunya sendiri yang harus menyatakannya —
+    // pemilih itu pindah ke sini, kartunya sendiri yang harus menyatakannya -
     // kalau tidak, tidak ada lagi cara tahu sedang berada di sekolah mana.
     const { currentSchool } = usePage().props as unknown as {
         currentSchool: { id: string } | null;
@@ -52,7 +52,7 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
     }
 
     // Rutenya menyimpan pilihan ke session lalu memuat ulang ke dashboard, jadi
-    // menekan ini benar-benar berpindah tenant — bukan sekadar menyorot kartu.
+    // menekan ini benar-benar berpindah tenant - bukan sekadar menyorot kartu.
     function bukaSekolah(schoolId: string) {
         router.post('/admin/switch-school', { school_id: schoolId });
     }
@@ -76,7 +76,7 @@ export default function SchoolsIndex({ schools, filters }: { schools: Paginated;
 
     /**
      * Alamat pendek halaman scan ringan, untuk perangkat gerbang berspesifikasi
-     * rendah — box Android TV, yang alamatnya diketik pakai remote.
+     * rendah - box Android TV, yang alamatnya diketik pakai remote.
      */
     async function copyShortScanLink(code: string) {
         try {

@@ -35,7 +35,7 @@ export function useKonteksGeneral(): KonteksGeneral | null {
 }
 
 /**
- * Pemilih kategori/program di kanan atas workspace general — seperti pemilih
+ * Pemilih kategori/program di kanan atas workspace general - seperti pemilih
  * cabang. Menu sidebar mengikuti pilihan ini.
  */
 export function PemilihKonteks() {

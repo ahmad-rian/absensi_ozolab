@@ -16,7 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
-    // Senin PERTAMA di dalam bulan berjalan — startOfWeek() bisa melompat ke
+    // Senin PERTAMA di dalam bulan berjalan - startOfWeek() bisa melompat ke
     // bulan sebelumnya dan membuat seluruh baris jatuh di luar rentang default.
     $this->monday = SchoolTime::now()->startOfMonth();
 

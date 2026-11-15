@@ -24,7 +24,7 @@ class NisSementara
      *
      * Ini pengenalan bentuk, bukan bukti: NIS asli 12 digit berawalan tahun
      * akan ikut cocok. Karena itu hasilnya hanya boleh dipakai untuk hal yang
-     * aman bila keliru — mis. mengosongkan sel ekspor, yang saat diunggah
+     * aman bila keliru - mis. mengosongkan sel ekspor, yang saat diunggah
      * ulang berarti "biarkan nilai lama".
      */
     public static function tampak(?string $nis): bool

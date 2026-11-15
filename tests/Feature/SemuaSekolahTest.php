@@ -14,7 +14,7 @@ beforeEach(function () {
     $this->superAdmin = createSuperAdminUser();
 
     // Super admin membawa sekolahnya sendiri dengan nama acak dari factory, dan
-    // seluruh tabel di halaman ini diurutkan berdasarkan nama — jadi namanya
+    // seluruh tabel di halaman ini diurutkan berdasarkan nama - jadi namanya
     // dipatok supaya urutan barisnya bisa diuji.
     $this->superAdmin->school->update(['name' => 'AAA Sekolah Induk']);
 
@@ -86,7 +86,7 @@ test('a search reaches a student of another school', function () {
 
 /**
  * Tombol buka cepat perlu tahu ke sekolah mana konteks sesi dipindahkan. Kalau
- * `school_id` hilang dari payload, tombolnya tidak error — cuma diam saja.
+ * `school_id` hilang dari payload, tombolnya tidak error - cuma diam saja.
  */
 test('the listing carries school_id for the quick-open button', function () {
     $this->actingAs($this->superAdmin)
@@ -218,7 +218,7 @@ test('daftar orang tua diurutkan berdasarkan nama, bukan urutan acak database', 
 /**
  * `ParentProfile` tidak memakai SoftDeletes dan `students.parent_profile_id`
  * ber-cascadeOnDelete, jadi satu penghapusan di sini akan melenyapkan seluruh
- * anaknya PERMANEN — di sekolah yang bahkan tidak sedang dibuka operator.
+ * anaknya PERMANEN - di sekolah yang bahkan tidak sedang dibuka operator.
  */
 test('tab orang tua tidak menyediakan jalan mengubah atau menghapus', function () {
     $sumber = file_get_contents(base_path('resources/js/pages/admin/semua-sekolah/index.tsx'));

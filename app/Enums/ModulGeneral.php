@@ -101,7 +101,7 @@ enum ModulGeneral: string
     }
 
     /**
-     * Modul yang hanya boleh diberikan super admin — memegangnya berarti
+     * Modul yang hanya boleh diberikan super admin - memegangnya berarti
      * bisa menaikkan hak akses sendiri atau orang lain.
      */
     public function khususSuperAdmin(): bool
@@ -118,7 +118,7 @@ enum ModulGeneral: string
     }
 
     /**
-     * Izin modul Haji/Desain — dipakai rute bersama (drive, dashboard).
+     * Izin modul Haji/Desain - dipakai rute bersama (drive, dashboard).
      *
      * @return array<int, string>
      */

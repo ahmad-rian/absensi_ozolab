@@ -2,7 +2,7 @@
     Meta pencarian yang dirender server.
 
     Perayap AI umumnya tidak menjalankan JavaScript, jadi <Head> milik React
-    tidak pernah mereka lihat. Blok ini satu-satunya yang terbaca oleh mereka —
+    tidak pernah mereka lihat. Blok ini satu-satunya yang terbaca oleh mereka -
     dan <link rel="canonical"> di dalamnya yang memberi tahu Google host mana
     yang sah ketika isi yang sama pernah tersaji di host lain.
 --}}

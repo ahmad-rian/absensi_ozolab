@@ -179,7 +179,7 @@ test('an unknown template is refused', function () {
 });
 
 // Global scope `school` menutup lebih dulu, jadi batch sekolah lain hilang
-// sebagai 404 — keberadaannya tidak bocor. Cek `school_id` di controller tetap
+// sebagai 404 - keberadaannya tidak bocor. Cek `school_id` di controller tetap
 // dipertahankan sebagai lapis kedua kalau scope itu suatu saat dilepas.
 test('the pdf of another school cannot be downloaded', function () {
     $lain = School::factory()->create();

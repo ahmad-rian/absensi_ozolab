@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Penjaga endpoint Tyas Studio.
  *
- * Studio tidak punya sesi di aplikasi ini — ia aplikasi lain di subdomain lain.
+ * Studio tidak punya sesi di aplikasi ini - ia aplikasi lain di subdomain lain.
  * Yang dibawanya cuma `Authorization: Bearer <token>`.
  *
  * PERINGATAN untuk siapa pun yang menambah endpoint di balik middleware ini:
@@ -32,8 +32,8 @@ class AuthenticateStudioToken
             return response()->json(['message' => 'Token Studio tidak berlaku.'], 401);
         }
 
-        // Cukup sekali per menit. Tanpa penahan ini setiap permintaan — termasuk
-        // polling status unggahan — menulis satu baris UPDATE.
+        // Cukup sekali per menit. Tanpa penahan ini setiap permintaan - termasuk
+        // polling status unggahan - menulis satu baris UPDATE.
         if (! $token->last_used_at || $token->last_used_at->lt(now()->subMinute())) {
             $token->forceFill(['last_used_at' => now()])->saveQuietly();
         }

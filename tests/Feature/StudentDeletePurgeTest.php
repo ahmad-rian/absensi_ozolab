@@ -7,7 +7,7 @@ use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 
-/** Guru punya akses modul Siswa, jadi ia bisa menghapus — itu inti tesnya. */
+/** Guru punya akses modul Siswa, jadi ia bisa menghapus - itu inti tesnya. */
 function guruSekolah(string $schoolId): User
 {
     $user = User::factory()->create(['school_id' => $schoolId]);
@@ -19,7 +19,7 @@ function guruSekolah(string $schoolId): User
 /**
  * Menghapus siswa dulu hanya menyentuh database. Folder Drive berisi foto dan
  * kartunya berdiri selamanya, dan berkas lokalnya menumpuk tanpa ada yang
- * membersihkan — disk penuh sudah pernah menjatuhkan seluruh server.
+ * membersihkan - disk penuh sudah pernah menjatuhkan seluruh server.
  */
 beforeEach(function () {
     Queue::fake();
@@ -78,7 +78,7 @@ test('siswa tanpa jejak berkas apa pun tidak mengantrekan job', function () {
 
 /**
  * `card_generation_logs.student_id` di-set NULL begitu baris siswanya benar-benar
- * hilang, jadi daftar berkasnya harus dibaca SEBELUM penghapusan — setelah itu
+ * hilang, jadi daftar berkasnya harus dibaca SEBELUM penghapusan - setelah itu
  * tidak ada lagi cara mengetahui berkas mana milik siapa.
  */
 test('berkas kartu lokal ikut terkumpul selagi barisnya masih menunjuk siswa', function () {

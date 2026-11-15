@@ -37,7 +37,7 @@ const hariIni = () => {
  * Dialog guru BK: pilih siswa, tulis jenis pelanggaran (bebas, atau pilih dari
  * daftar sekolah supaya poinnya terisi), tentukan poin, tulis alasan.
  *
- * `siswaTetap` dipakai dari detail siswa — siswanya sudah pasti, tanpa cari.
+ * `siswaTetap` dipakai dari detail siswa - siswanya sudah pasti, tanpa cari.
  * `reloadOnly` membatasi muat ulang setelah simpan ke prop tertentu.
  */
 export function CatatPelanggaran({

@@ -58,7 +58,7 @@ test('balasannya kembali ke layar generate, bukan ke halaman detail siswa', func
 });
 
 test('foto lama dibuang saat diganti', function () {
-    // Nama berkas memuat 16 karakter acak, jadi yang lama TIDAK tertimpa — ia
+    // Nama berkas memuat 16 karakter acak, jadi yang lama TIDAK tertimpa - ia
     // tertinggal selamanya kalau tidak dihapus. Disk penuh sudah pernah
     // menjatuhkan server ini, dan langkah inilah yang paling mudah hilang
     // ketika logikanya diangkat ke servis bersama.
@@ -96,7 +96,7 @@ test('siswa yang tidak ada dijawab 404', function () {
 test('non-superadmin ditolak di endpoint ini', function () {
     $admin = createAdminUser();
 
-    // Permission `generate-kartu.access` dipegang ADMIN juga — yang menutup
+    // Permission `generate-kartu.access` dipegang ADMIN juga - yang menutup
     // pintu di sini middleware `super-admin`, bukan permission-nya.
     test()->actingAs($admin)
         ->post("/admin/generate-kartu/siswa/{$this->siswa->id}/foto", [
@@ -142,7 +142,7 @@ test('ringkasan layar ikut berubah setelah foto terpasang', function () {
     unggahMassal($this->siswa)->assertRedirect();
 
     // Hitungan dan daftarnya sama-sama diturunkan dari `photo_path`, jadi
-    // keduanya harus bergerak bersama — kalau tidak, tombol Generate bisa
+    // keduanya harus bergerak bersama - kalau tidak, tombol Generate bisa
     // terbuka padahal masih ada yang kurang.
     $layar()->assertInertia(fn ($page) => $page
         ->where('ringkasan.berfoto', 1)

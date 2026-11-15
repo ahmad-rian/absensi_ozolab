@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { StreakStats } from '@/types/student-stats';
 
 /**
- * Tiga angka skalar — `ResponsiveContainer` untuk ini hanya memboroskan bundle
+ * Tiga angka skalar - `ResponsiveContainer` untuk ini hanya memboroskan bundle
  * dan ruang layout.
  */
 export function StreakCard({ streaks }: { streaks?: StreakStats }) {

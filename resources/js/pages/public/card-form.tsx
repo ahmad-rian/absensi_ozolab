@@ -339,8 +339,8 @@ export default function PublicCardForm({ form, result }: Props) {
                                                     {field.type === 'photo'
                                                         ? val
                                                             ? `${(val as File).name}${manualCrop ? ' (crop diatur)' : ''}`
-                                                            : '—'
-                                                        : (val as string) || '—'}
+                                                            : '-'
+                                                        : (val as string) || '-'}
                                                 </dd>
                                             </div>
                                         );
@@ -439,7 +439,7 @@ function CardResult({ token, formName, initial }: { token: string; formName: str
     if (state.status === 'processing') {
         return (
             <>
-                <Head title={`${formName} — Memproses`} />
+                <Head title={`${formName} - Memproses`} />
                 <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
                     <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ring-1 ring-emerald-100">
                         <div className="flex flex-col items-center text-center">
@@ -456,7 +456,7 @@ function CardResult({ token, formName, initial }: { token: string; formName: str
     if (state.status === 'failed') {
         return (
             <>
-                <Head title={`${formName} — Gagal`} />
+                <Head title={`${formName} - Gagal`} />
                 <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 via-white to-red-50 p-4">
                     <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ring-1 ring-rose-100">
                         <div className="mb-4 flex flex-col items-center text-center">
@@ -478,7 +478,7 @@ function CardResult({ token, formName, initial }: { token: string; formName: str
 
     return (
         <>
-            <Head title={`${formName} — Selesai`} />
+            <Head title={`${formName} - Selesai`} />
             <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
                 <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl ring-1 ring-emerald-100">
                     <div className="mb-4 flex flex-col items-center text-center">

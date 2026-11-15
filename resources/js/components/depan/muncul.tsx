@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 
 /**
  * Satu IntersectionObserver untuk seluruh halaman, bukan satu per elemen.
- * Elemen ditandai `data-tampil` sekali saat masuk layar lalu dilepas —
+ * Elemen ditandai `data-tampil` sekali saat masuk layar lalu dilepas -
  * animasinya tidak diputar ulang tiap kali digulir bolak-balik.
  */
 let pengamat: IntersectionObserver | null = null;

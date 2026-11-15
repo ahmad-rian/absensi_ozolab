@@ -1,4 +1,4 @@
-# Spec 009 — Workspace "Absensi General"
+# Spec 009 - Workspace "Absensi General"
 
 **Status**: diimplementasi 2026-10-15 · **Pemilik**: super admin
 
@@ -12,7 +12,7 @@ nama "Kartu Bebas / Haji" masih tampil, padahal haji kini hanya salah satu kateg
   Pengaturan, Bantuan.
 - **Haji lama = pindah tampilan, data tetap.** Halaman `/kartu-bebas/*` dirender di dalam shell
   general. Baris `card_*`, `card_attendances`, QR, `/p/{kode}`, `/scan-peserta` tidak berubah
-  (konstitusi III). Nama permission `kartu-bebas.access` dan rute tidak diganti — hanya label.
+  (konstitusi III). Nama permission `kartu-bebas.access` dan rute tidak diganti - hanya label.
 - `/admin/penyelenggara*` dialihkan 301 ke `/general/penyelenggara*`.
 - Pengaturan general (`settings` berprefiks `general_`): nama & logo, kuota bawaan penyelenggara
   baru, folder Drive kartu, gateway WhatsApp (token Fonnte terenkripsi) + uji kirim. Tidak menyentuh
@@ -24,7 +24,7 @@ nama "Kartu Bebas / Haji" masih tampil, padahal haji kini hanya salah satu kateg
   `/penyelenggara/...` (anti open-redirect).
 
 ## Di luar cakupan
-Migrasi data haji lama ke program/sesi (butuh amandemen konstitusi — ditolak user 2026-10-15).
+Migrasi data haji lama ke program/sesi (butuh amandemen konstitusi - ditolak user 2026-10-15).
 
 ## Tes
 `tests/Feature/General/WorkspaceGeneralTest.php`; `KartuBebasTetapTest`, `BrandingTest` tetap lolos.

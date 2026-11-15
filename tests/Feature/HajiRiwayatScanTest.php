@@ -18,7 +18,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 /*
  * Riwayat scan Haji dibaca dari database: sama di semua perangkat, jam
- * server, tetap ada setelah reload — dan link scan lama tidak lagi menerima
+ * server, tetap ada setelah reload - dan link scan lama tidak lagi menerima
  * peserta program.
  */
 

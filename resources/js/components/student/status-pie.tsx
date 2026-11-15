@@ -37,7 +37,7 @@ export function prayerSlices(summary?: PrayerSummary): PieSlice[] | undefined {
 }
 
 /**
- * Digeneralkan dari versi lama yang mengunci enam status absensi sekolah —
+ * Digeneralkan dari versi lama yang mengunci enam status absensi sekolah -
  * itulah sebabnya tab sholat dulu tidak punya pie sama sekali.
  */
 export function StatusPie({

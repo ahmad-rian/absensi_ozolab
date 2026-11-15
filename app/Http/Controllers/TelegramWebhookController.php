@@ -28,7 +28,7 @@ class TelegramWebhookController extends Controller
         // Validate the secret header Telegram echoes back from setWebhook.
         //
         // Penjaga lama membandingkan `null !== null` ketika webhook_secret belum
-        // sempat tersimpan — hasilnya false, jadi tidak pernah trip dan siapa
+        // sempat tersimpan - hasilnya false, jadi tidak pernah trip dan siapa
         // pun bisa mengirim update palsu.
         $secret = (string) $channel?->setting('webhook_secret');
 
@@ -52,14 +52,14 @@ class TelegramWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // Step 2: parent shared their contact — match and link.
+        // Step 2: parent shared their contact - match and link.
         if (isset($message['contact'])) {
             $this->linkContact($school, $token, $message);
 
             return response()->json(['ok' => true]);
         }
 
-        // Step 1: /start — ask the parent to share their number.
+        // Step 1: /start - ask the parent to share their number.
         if (str_starts_with((string) ($message['text'] ?? ''), '/start')) {
             $this->telegram->sendMessage(
                 $token,

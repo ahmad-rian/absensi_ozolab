@@ -21,7 +21,7 @@ use Inertia\Inertia;
  * diedit di area penyelenggara (satu editor, satu sumber kebenaran).
  *
  * Kategori ber-tenant fail-closed, jadi semua pencarian lewat
- * `acrossPenyelenggara()` — binding rute biasa akan selalu 404 di sini.
+ * `acrossPenyelenggara()` - binding rute biasa akan selalu 404 di sini.
  */
 class KategoriController extends Controller
 {

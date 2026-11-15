@@ -1,9 +1,9 @@
 <?php
 
 use App\Enums\AppModule;
-use App\Enums\ModulGeneral;
 use App\Enums\AttendanceStatus;
 use App\Enums\AttendanceType;
+use App\Enums\ModulGeneral;
 use App\Models\Attendance;
 use App\Models\CardGenerationLog;
 use App\Models\Classroom;
@@ -53,7 +53,7 @@ test('parents cannot access another child on any portal endpoint', function (str
     [$parent, $own, $school] = portalFamily();
     $other = Student::factory()->create(['school_id' => $school->id]);
 
-    // Anaknya kini konteks (`?anak=`), bukan segmen rute — dan id anak orang
+    // Anaknya kini konteks (`?anak=`), bukan segmen rute - dan id anak orang
     // lain harus ditolak, bukan diam-diam diganti anak sendiri.
     $this->actingAs($parent)->get($path.'?anak='.$other->id)->assertForbidden();
     $this->get($path.'?anak='.$own->id)->assertOk();
@@ -385,7 +385,7 @@ test('the parent account sheet lists children of the current school only', funct
     Student::factory()->create(['school_id' => $lain->school_id, 'parent_profile_id' => $lain->id]);
 
     // Isi PDF-nya biner terkompresi, jadi yang diperiksa data yang masuk ke
-    // template — itu yang menentukan benar atau tidaknya, bukan ukuran berkas.
+    // template - itu yang menentukan benar atau tidaknya, bukan ukuran berkas.
     $baris = null;
     Event::listen('composing: pdf.akun-orang-tua', function ($view) use (&$baris): void {
         $baris = $view->getData()['rows'];

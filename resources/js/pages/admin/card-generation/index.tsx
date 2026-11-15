@@ -108,7 +108,7 @@ export default function CardGenerationIndex({ logs, filters }: Props) {
             }
             reloading = true;
             // `only` memuat ulang props tanpa pindah URL, jadi filter yang sedang
-            // aktif ikut terbawa apa adanya — tanpa ini polling akan melempar
+            // aktif ikut terbawa apa adanya - tanpa ini polling akan melempar
             // operator kembali ke daftar penuh setiap tiga detik.
             router.reload({
                 only: ['logs'],

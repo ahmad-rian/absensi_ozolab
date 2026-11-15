@@ -5,7 +5,7 @@ use App\Models\Student;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * H-7 — `sprintf('%d', <ULID>)` menghasilkan "1", sehingga seluruh sekolah
+ * H-7 - `sprintf('%d', <ULID>)` menghasilkan "1", sehingga seluruh sekolah
  * menulis ke `photos/students/1/` dengan nama berkas yang bisa ditebak dari
  * nama siswa.
  */

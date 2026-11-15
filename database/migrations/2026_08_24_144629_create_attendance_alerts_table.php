@@ -14,7 +14,7 @@ return new class extends Migration
      * anti-duplikat, dan cache hilang saat deploy dengan akibat yang sama.
      *
      * Ia juga menyediakan kolom korelasi untuk siswa yang TIDAK punya baris
-     * absensi sama sekali — "tidak datang" tidak bisa ditunjuk lewat
+     * absensi sama sekali - "tidak datang" tidak bisa ditunjuk lewat
      * `attendance_id`, dan `deliver()` mengunci idempotensi pada kolom korelasi.
      */
     public function up(): void

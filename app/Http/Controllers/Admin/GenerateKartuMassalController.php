@@ -20,7 +20,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Membuat kartu satu sekolah — atau satu kelas — sekaligus.
+ * Membuat kartu satu sekolah - atau satu kelas - sekaligus.
  *
  * Sampai sekarang kartu hanya bisa dibuat satu siswa pada satu waktu dari
  * halaman siswanya. Untuk angkatan baru berisi ratusan anak itu berarti ratusan
@@ -28,8 +28,8 @@ use Inertia\Response;
  *
  * Dua hal yang membedakannya dari sekadar perulangan:
  *
- *   1. **Foto wajib lengkap.** Kartu tanpa pas foto tetap jadi — dengan kotak
- *      kosong bergaris putus-putus di tempat wajahnya — dan itu baru ketahuan
+ *   1. **Foto wajib lengkap.** Kartu tanpa pas foto tetap jadi - dengan kotak
+ *      kosong bergaris putus-putus di tempat wajahnya - dan itu baru ketahuan
  *      setelah ratusan berkas terunggah ke Drive. Jadi layar ini menolak jalan
  *      selama masih ada satu siswa yang fotonya belum ada, dan menyebut siapa.
  *   2. **Kemajuannya tersimpan di server.** Satu batch berisi ratusan render
@@ -130,7 +130,7 @@ class GenerateKartuMassalController extends Controller
         }
 
         // Diperiksa ulang di sini meski tombolnya sudah dimatikan di klien.
-        // Tombol yang mati bukan penjagaan — ia hanya menjelaskan.
+        // Tombol yang mati bukan penjagaan - ia hanya menjelaskan.
         $tanpaFoto = $students->whereNull('photo_path')->count();
 
         if ($tanpaFoto > 0) {

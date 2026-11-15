@@ -72,7 +72,7 @@ class KonteksGeneral
 
         foreach ($programs->groupBy(fn (Program $p) => $p->kategori_id) as $kategoriId => $daftar) {
             $grup[] = [
-                'grup' => ($kategoris[$kategoriId] ?? 'Kategori').' · '.($penyelenggaras[$daftar->first()->penyelenggara_id] ?? '—'),
+                'grup' => ($kategoris[$kategoriId] ?? 'Kategori').' · '.($penyelenggaras[$daftar->first()->penyelenggara_id] ?? '-'),
                 'opsi' => $daftar->map(fn (Program $p) => ['id' => $p->id, 'label' => $p->name])->values()->all(),
             ];
         }

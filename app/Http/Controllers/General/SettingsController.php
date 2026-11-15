@@ -20,7 +20,7 @@ use Inertia\Response;
 
 /**
  * Pengaturan workspace Absensi General. Semua tersimpan di `settings` global
- * berprefiks `general_` — tidak pernah di `schools.settings`, jadi pengaturan
+ * berprefiks `general_` - tidak pernah di `schools.settings`, jadi pengaturan
  * sekolah tidak ikut berubah (spec 009).
  */
 class SettingsController extends Controller

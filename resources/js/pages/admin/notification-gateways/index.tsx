@@ -144,7 +144,7 @@ export default function NotificationGatewaysIndex({ schools, selectedSchoolId, c
                         <div className="space-y-6">
                             {/* Ozolab WA */}
                             <ChannelCard
-                                title="WhatsApp — Ozolab ID (Default)"
+                                title="WhatsApp - Ozolab ID (Default)"
                                 description="Gateway WhatsApp bawaan. Aktif default, tanpa kredensial khusus."
                                 active={form.data.channels.OZOLAB_WA.is_active}
                                 onToggle={(c) => setChannel('OZOLAB_WA', { is_active: c })}
@@ -165,7 +165,7 @@ export default function NotificationGatewaysIndex({ schools, selectedSchoolId, c
 
                             {/* Fonnte WA */}
                             <ChannelCard
-                                title="WhatsApp — Fonnte (Nomor Sekolah)"
+                                title="WhatsApp - Fonnte (Nomor Sekolah)"
                                 description="Nomor WhatsApp khusus sekolah via Fonnte.com."
                                 active={form.data.channels.FONNTE_WA.is_active}
                                 onToggle={(c) => setChannel('FONNTE_WA', { is_active: c })}
@@ -352,7 +352,7 @@ export default function NotificationGatewaysIndex({ schools, selectedSchoolId, c
                                         </div>
                                     </div>
                                     <p className="text-muted-foreground mt-3 text-xs">
-                                        Isi kredensial SMTP sekolah di sini — tidak perlu mengubah file server. Untuk Gmail, gunakan App Password (bukan password akun).
+                                        Isi kredensial SMTP sekolah di sini - tidak perlu mengubah file server. Untuk Gmail, gunakan App Password (bukan password akun).
                                     </p>
                                 </div>
 
@@ -417,9 +417,9 @@ export default function NotificationGatewaysIndex({ schools, selectedSchoolId, c
                                 <CardContent className="space-y-3 text-sm">
                                     <ol className="space-y-2">
                                         <GuideStep n={1}>Orang tua <strong>scan QR</strong> di kartu Telegram (cetak/sebar ke grup WA).</GuideStep>
-                                        <GuideStep n={2}>Telegram terbuka di bot sekolah — tekan <strong>Start</strong>.</GuideStep>
+                                        <GuideStep n={2}>Telegram terbuka di bot sekolah - tekan <strong>Start</strong>.</GuideStep>
                                         <GuideStep n={3}>Tekan <strong>Bagikan Nomor Saya</strong>. Sistem cocokkan dengan nomor WhatsApp terdaftar.</GuideStep>
-                                        <GuideStep n={4}>Selesai — chat_id tersimpan otomatis. Status muncul di menu <strong>Orang Tua</strong>.</GuideStep>
+                                        <GuideStep n={4}>Selesai - chat_id tersimpan otomatis. Status muncul di menu <strong>Orang Tua</strong>.</GuideStep>
                                     </ol>
                                     <div className="rounded-lg border bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
                                         Default semua sekolah pakai <strong>WhatsApp Ozolab ID</strong>. Fonnte & Telegram opsional.
@@ -551,7 +551,7 @@ const fonnteSteps = [
 const telegramSteps = [
     'Buka @BotFather di Telegram, kirim <strong>/newbot</strong>.',
     'Beri nama & username bot (harus diakhiri <code>bot</code>).',
-    'BotFather balas <strong>Bot Token</strong> — salin.',
+    'BotFather balas <strong>Bot Token</strong> - salin.',
     'Paste token di kartu Telegram, centang Aktifkan, lalu Simpan.',
     'Webhook & QR otomatis dibuat. Sebar QR ke orang tua.',
 ];
@@ -559,7 +559,7 @@ const telegramSteps = [
 const emailSteps = [
     'Buka <strong>myaccount.google.com/security</strong> → aktifkan <strong>Verifikasi 2 Langkah</strong> (wajib lebih dulu).',
     'Buka <strong>myaccount.google.com/apppasswords</strong>, beri nama mis. <code>Absensi</code>, klik <strong>Create</strong>.',
-    'Google tampilkan <strong>16 huruf</strong> (mis. <code>abcd efgh ijkl mnop</code>) — salin, spasi boleh dibuang.',
+    'Google tampilkan <strong>16 huruf</strong> (mis. <code>abcd efgh ijkl mnop</code>) - salin, spasi boleh dibuang.',
     'Isi field SMTP di kartu Email (lihat tabel di bawah), tempel 16 huruf itu di <strong>Password SMTP</strong>.',
     '<strong>Email Pengirim</strong> harus sama dengan alamat Gmail (username), jika beda email gagal/masuk spam.',
     'Centang <strong>Aktifkan Email</strong>, Simpan, lalu klik <strong>Test</strong> kirim ke email sendiri.',

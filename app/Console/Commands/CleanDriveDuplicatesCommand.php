@@ -14,7 +14,7 @@ use Throwable;
  * Rapikan berkas bernama sama yang menumpuk di folder siswa.
  *
  * Sampai `uploadFile()` belajar menimpa, setiap generate ulang kartu, pas foto,
- * atau foto siswa membuat berkas BARU dengan nama yang persis sama — Drive
+ * atau foto siswa membuat berkas BARU dengan nama yang persis sama - Drive
  * mengizinkannya, dan tidak ada yang memeriksa. Folder siswa yang kartunya
  * digenerate lima kali berisi lima berkas identik namanya, dan tidak ada cara
  * melihat mana yang berlaku selain membandingkan tanggal.
@@ -91,14 +91,14 @@ class CleanDriveDuplicatesCommand extends Command
                     }
                 }
             } catch (Throwable $e) {
-                $this->error("{$school->name}: gagal menyiapkan klien Drive — {$e->getMessage()}");
+                $this->error("{$school->name}: gagal menyiapkan klien Drive - {$e->getMessage()}");
 
                 continue;
             }
 
             // Berjalan per folder, bukan per siswa. Berkas kembar adalah dua
             // berkas bernama sama dalam SATU folder, jadi siswanya tidak perlu
-            // diketahui — dan nama foldernya sudah memuat NIS berikut namanya,
+            // diketahui - dan nama foldernya sudah memuat NIS berikut namanya,
             // yang justru lebih jelas untuk ditindaklanjuti.
             $this->mulaiBar($school->name, count($folders));
 
@@ -109,7 +109,7 @@ class CleanDriveDuplicatesCommand extends Command
                 try {
                     $dibuang += $this->pangkas($drive, $folder, $isiPerFolder, $school->name, $dryRun, $prefix);
                 } catch (Throwable $e) {
-                    $this->cetak("{$school->name} / {$folder['name']}: gagal diperiksa — {$e->getMessage()}", 'error');
+                    $this->cetak("{$school->name} / {$folder['name']}: gagal diperiksa - {$e->getMessage()}", 'error');
                 }
             }
 
@@ -204,7 +204,7 @@ class CleanDriveDuplicatesCommand extends Command
      * tidak diketahui umurnya, bukan yang jelas paling baru.
      *
      * Public dan statis supaya keputusan "mana yang disisakan" bisa diuji tanpa
-     * menyentuh Drive sama sekali — pola yang sama dengan
+     * menyentuh Drive sama sekali - pola yang sama dengan
      * GoogleDriveService::pickFolderIgnoringCase().
      *
      * @param  array<int, array<string, mixed>>  $files

@@ -265,7 +265,7 @@ export default function RolesIndex({ roles, modules }: Props) {
             <Dialog open={!!editingRole} onOpenChange={(open) => { if (!open) setEditingRole(null); }}>
                 <DialogContent className="sm:max-w-2xl">
                     <form onSubmit={handleEdit}>
-                        <DialogHeader><DialogTitle>Akses Modul — {editingRole?.label}</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle>Akses Modul - {editingRole?.label}</DialogTitle></DialogHeader>
                         <div className="grid gap-2 py-4">{moduleMatrix(editForm)}</div>
                         <DialogFooter>
                             <Button type="submit" disabled={editForm.processing}>Simpan Perubahan</Button>

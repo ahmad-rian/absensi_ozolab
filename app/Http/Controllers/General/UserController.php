@@ -17,7 +17,7 @@ use Inertia\Response;
 
 /**
  * Akun semua penyelenggara (admin & pendamping) di satu tempat. Akun sekolah
- * dan orang tua tidak pernah tersentuh di sini — selalu 404.
+ * dan orang tua tidak pernah tersentuh di sini - selalu 404.
  */
 class UserController extends Controller
 {

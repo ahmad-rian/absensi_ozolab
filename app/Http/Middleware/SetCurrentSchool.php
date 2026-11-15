@@ -38,7 +38,7 @@ class SetCurrentSchool
         session(['current_school_id' => $school->id]);
 
         // Global scope sekolah membaca users.school_id, jadi nilainya diselaraskan
-        // untuk SUPER_ADMIN — tapi HANYA di memori, tidak disimpan.
+        // untuk SUPER_ADMIN - tapi HANYA di memori, tidak disimpan.
         //
         // Sekolah yang sedang dibuka adalah pilihan per-browser dan tempatnya di
         // session. Menuliskannya ke kolom akun membuat dua browser pada satu akun

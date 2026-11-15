@@ -276,7 +276,7 @@ export default function OrangTuaIndex({
                                                                 {student.classroom && (
                                                                     <span className="text-muted-foreground">
                                                                         {' '}
-                                                                        —{' '}
+                                                                        -{' '}
                                                                         {
                                                                             student
                                                                                 .classroom

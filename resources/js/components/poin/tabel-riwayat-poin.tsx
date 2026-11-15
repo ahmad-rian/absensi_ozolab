@@ -95,7 +95,7 @@ export function TabelRiwayatPoin({
                             {tampilSiswa && (
                                 <td className="px-4 py-3">
                                     <span className="block font-medium">
-                                        {b.siswa?.nama ?? '—'}
+                                        {b.siswa?.nama ?? '-'}
                                     </span>
                                     <span className="block text-xs text-muted-foreground">
                                         {b.siswa?.nis}
@@ -122,7 +122,7 @@ export function TabelRiwayatPoin({
                             </td>
                             <td className="max-w-md px-4 py-3">
                                 <span className="block whitespace-pre-line">
-                                    {b.alasan ?? '—'}
+                                    {b.alasan ?? '-'}
                                 </span>
                                 {b.pencatat && (
                                     <span className="mt-1 block text-xs text-muted-foreground">

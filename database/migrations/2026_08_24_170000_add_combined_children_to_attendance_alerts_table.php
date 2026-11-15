@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Daftar anak yang digabung ke dalam satu pesan.
      *
-     * Satu orang tua bisa punya beberapa anak di sekolah yang sama — di data
+     * Satu orang tua bisa punya beberapa anak di sekolah yang sama - di data
      * prod ditemukan satu nomor dengan enam anak. Tanpa penggabungan, nomor itu
      * menerima enam WhatsApp nyaris identik dalam satu detik, yang terbaca
      * sebagai spam oleh penerimanya maupun oleh WhatsApp sendiri. Kuota harian

@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Membuang keluaran lokal dari generate sebelumnya.
  *
- * Nama berkas kartu dan lembar pas foto deterministik — `cards/{sekolah}/{awalan}
- * {jenis}.png` — jadi generate ulang biasa menimpanya di tempat. Tapi `awalan`
+ * Nama berkas kartu dan lembar pas foto deterministik - `cards/{sekolah}/{awalan}
+ * {jenis}.png` - jadi generate ulang biasa menimpanya di tempat. Tapi `awalan`
  * disusun dari nama dan NIS siswa (StudentDriveNaming::prefix). Begitu salah satu
  * dibetulkan, render baru mendarat di nama berkas yang BERBEDA dan PNG lama
  * tertinggal selamanya: tidak ada kode yang menunjuknya lagi, tidak ada yang
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
  *
  * Sisi Drive sudah punya penanganannya di SyncStudentDriveFolderJob, yang
  * menyelaraskan nama berkas di dalam folder siswa. Sisi lokal tidak pernah punya
- * padanannya — dan disk penuh sudah pernah menjatuhkan server ini.
+ * padanannya - dan disk penuh sudah pernah menjatuhkan server ini.
  *
  * Jalur lama dibaca dari `card_generation_logs.file_path`, bukan ditebak dari
  * pola nama: riwayat generate memang disimpan, jadi jejaknya sudah ada.

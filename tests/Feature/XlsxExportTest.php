@@ -25,7 +25,7 @@ beforeEach(function () {
  * Rentang bawaan (`startOfMonth`..`endOfMonth`) menjatuhkan baris di tanggal
  * terakhir saat dijalankan di SQLite: kolom bertipe `date` menyimpan komponen
  * jam, sehingga `'…-31 00:00:00' > '…-31'` secara leksikografis. Gejala test,
- * bukan bug produksi — MySQL memakai kolom DATE sungguhan.
+ * bukan bug produksi - MySQL memakai kolom DATE sungguhan.
  */
 function rekapUrl(): string
 {

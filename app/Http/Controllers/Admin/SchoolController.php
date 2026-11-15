@@ -28,7 +28,7 @@ class SchoolController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // Kirim field eksplisit — jangan serialisasi seluruh baris School,
+        // Kirim field eksplisit - jangan serialisasi seluruh baris School,
         // yang ikut membawa kolom `settings` beserta template notifikasi.
         $schools->through(fn (School $school) => [
             'id' => $school->id,
@@ -41,10 +41,10 @@ class SchoolController extends Controller
             'website' => $school->website,
             'is_active' => $school->is_active,
             'scanner_token' => $school->scanner_token,
-            // Kode alamat pendek dihitung server, bukan dipotong di frontend —
+            // Kode alamat pendek dihitung server, bukan dipotong di frontend -
             // supaya panjangnya hanya punya satu sumber (ScannerShortLink).
             'scan_short_code' => ScannerShortLink::codeFor($school),
-            // Penanda "sekolah ini memakai absen sholat" — cukup salah satu
+            // Penanda "sekolah ini memakai absen sholat" - cukup salah satu
             // jenis aktif, karena tautan scan-nya memang satu untuk keduanya.
             'prayer_enabled' => PrayerSchedule::for($school)->anyEnabled(),
             'library_enabled' => SchoolFeatures::for($school)->enabled(SchoolFeature::KunjunganPerpustakaan),
@@ -94,8 +94,8 @@ class SchoolController extends Controller
             'wa_alert_alpa' => true,
             'wa_verified' => false,
             'wa_daily_limit' => WhatsAppQuota::DEFAULT_LIMIT,
-            // Seluruh saklar fitur ditulis eksplisit — termasuk
-            // `whatsapp_enabled` dan `prayer_enabled` yang memakai nama lama —
+            // Seluruh saklar fitur ditulis eksplisit - termasuk
+            // `whatsapp_enabled` dan `prayer_enabled` yang memakai nama lama -
             // supaya sekolah baru tidak pernah punya keadaan "belum diatur".
             ...self::defaultFeatureFlags(),
         ];
@@ -120,7 +120,7 @@ class SchoolController extends Controller
     public function edit(School $school): Response
     {
         return Inertia::render('admin/schools/edit', [
-            // Jangan serialisasi model utuh — kolom `settings` ikut terbawa.
+            // Jangan serialisasi model utuh - kolom `settings` ikut terbawa.
             'school' => [
                 // `scanner_token` sempat tidak ikut dikirim, sehingga kotak
                 // "Link Absensi Publik" di halaman ini menampilkan
@@ -265,7 +265,7 @@ class SchoolController extends Controller
      * SELURUH key ditulis, termasuk yang memakai nama lama (`prayer_enabled`
      * dan kawan-kawan). Melewatkannya membuat sekolah baru lahir dengan
      * keadaan "belum pernah diatur", yang dibaca berbeda oleh `SchoolFeatures`
-     * dan `PrayerSettings` — lihat migrasi backfill_mapped_feature_keys.
+     * dan `PrayerSettings` - lihat migrasi backfill_mapped_feature_keys.
      *
      * @return array<string, bool>
      */

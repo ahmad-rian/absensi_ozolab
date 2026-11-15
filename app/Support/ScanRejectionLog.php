@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Mencatat scan yang ditolak di gerbang.
  *
- * Sampai sekarang scan yang gagal tidak meninggalkan jejak apa pun — tidak ada
+ * Sampai sekarang scan yang gagal tidak meninggalkan jejak apa pun - tidak ada
  * Log, tidak ada tabel, tidak ada penghitung. Akibatnya setiap laporan "kartu
  * tidak dikenali padahal datanya ada" harus dikejar dengan menebak dari bentuk
  * data, dan itu sudah terjadi tiga kali.
@@ -51,7 +51,7 @@ class ScanRejectionLog
      * Bacaan kotor yang masih bisa diselamatkan tetap dicatat.
      *
      * Kalau tidak, pembaca kartu yang menyisipkan karakter sampah akan ditutupi
-     * diam-diam oleh kode dan tidak pernah diperbaiki — persis yang terjadi pada
+     * diam-diam oleh kode dan tidak pernah diperbaiki - persis yang terjadi pada
      * insiden RFID, ketika huruf `T` di ujung UID baru ketahuan setelah
      * belasan kartu gagal berhari-hari.
      */
@@ -72,7 +72,7 @@ class ScanRejectionLog
     }
 
     /**
-     * Kenapa token ini tidak cocok — dijawab dengan satu query lintas sekolah.
+     * Kenapa token ini tidak cocok - dijawab dengan satu query lintas sekolah.
      */
     private static function sebab(School $school, ?string $token): string
     {
@@ -115,7 +115,7 @@ class ScanRejectionLog
             return 'siswa_nonaktif';
         }
 
-        // Ketiga syarat lolos tapi pencarian tetap gagal — seharusnya mustahil.
+        // Ketiga syarat lolos tapi pencarian tetap gagal - seharusnya mustahil.
         return 'lolos_syarat_tapi_tetap_gagal';
     }
 

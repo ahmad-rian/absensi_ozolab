@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
  *
  * Yang belum tercatat ditambah, yang syaratnya sudah tidak berlaku (izin
  * disetujui, admin mengoreksi status) dihapus. Catatan MANUAL tidak pernah
- * disentuh. Jenis yang poinnya 0 atau jendelanya belum tutup dilewati utuh —
+ * disentuh. Jenis yang poinnya 0 atau jendelanya belum tutup dilewati utuh -
  * tidak ditambah dan tidak dihapus.
  */
 class SapuanPoin

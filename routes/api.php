@@ -13,7 +13,7 @@ Route::post('telegram/webhook/{school}', [TelegramWebhookController::class, 'han
 
 /*
 |--------------------------------------------------------------------------
-| API Routes — butuh sesi login
+| API Routes - butuh sesi login
 |--------------------------------------------------------------------------
 |
 | Sebelumnya grup ini terbuka tanpa auth dan `GET /api/students` membocorkan
@@ -41,7 +41,7 @@ Route::middleware(['web', 'auth', 'permission:siswa.access', 'feature:master_sis
 
 /*
 |--------------------------------------------------------------------------
-| Tyas Studio — bertoken, tanpa sesi
+| Tyas Studio - bertoken, tanpa sesi
 |--------------------------------------------------------------------------
 |
 | Studio adalah aplikasi terpisah di tyasstudio.ozolab.id. Ia tidak punya
@@ -49,7 +49,7 @@ Route::middleware(['web', 'auth', 'permission:siswa.access', 'feature:master_sis
 |
 | Akibatnya global scope `school` mati total: ia membaca school_id milik user
 | yang login, dan di sini tidak ada yang login. Setiap query di balik grup ini
-| wajib dibatasi sendiri lewat `StudioRequest` — lihat peringatan di
+| wajib dibatasi sendiri lewat `StudioRequest` - lihat peringatan di
 | AuthenticateStudioToken.
 |
 | Batas laju dilonggarkan untuk unggah karena satu sesi foto mengirim berkas

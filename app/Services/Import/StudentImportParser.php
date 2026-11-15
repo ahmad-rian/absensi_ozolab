@@ -15,7 +15,7 @@ use RuntimeException;
  * Membaca berkas xlsx/csv siswa secara streaming lalu memutuskan, per baris,
  * apakah data itu siswa baru, pembaruan siswa lama, atau ditolak.
  *
- * Parser TIDAK menulis apa pun ke database — hasilnya dipakai untuk pratinjau
+ * Parser TIDAK menulis apa pun ke database - hasilnya dipakai untuk pratinjau
  * lebih dulu, baru StudentImportApplier yang menerapkannya.
  */
 class StudentImportParser
@@ -191,7 +191,7 @@ class StudentImportParser
         }
 
         if ($columns === null) {
-            throw new RuntimeException('Berkas kosong — tidak ada baris header yang bisa dibaca.');
+            throw new RuntimeException('Berkas kosong - tidak ada baris header yang bisa dibaca.');
         }
 
         $summary = [
@@ -349,7 +349,7 @@ class StudentImportParser
         }
 
         // Pencocokan EKSAK: NISN dulu, lalu NIS. Nama tidak pernah dipakai
-        // untuk mencocokkan — dua siswa bisa saja senama.
+        // untuk mencocokkan - dua siswa bisa saja senama.
         $candidates = [];
 
         if ($nisn !== '') {
@@ -397,7 +397,7 @@ class StudentImportParser
         // bebas. Pencocokan di atas berhenti pada nomor yang pertama terisi: baris
         // ber-NISN baru tapi ber-NIS milik siswa lama tidak cocok apa pun dan lolos
         // ke sini. Sejak `deleted_at` masuk unique index, database menganggap tiap
-        // NULL berbeda dan tidak lagi menolaknya — penjagaannya harus di sini.
+        // NULL berbeda dan tidak lagi menolaknya - penjagaannya harus di sini.
         foreach ([['NISN', $nisn, $studentsByNisn], ['NIS', $nis, $studentsByNis]] as [$label, $value, $index]) {
             if ($value === '' || ($index[$value] ?? []) === []) {
                 continue;
@@ -425,7 +425,7 @@ class StudentImportParser
      * pratinjau bisa memperlihatkan persis kolom mana yang akan ditimpa.
      *
      * Kolom kosong di berkas tidak pernah masuk `$data`, jadi tidak pernah
-     * dihitung sebagai perubahan — sama dengan aturan di StudentImportApplier.
+     * dihitung sebagai perubahan - sama dengan aturan di StudentImportApplier.
      *
      * @param  array<string, mixed>  $current
      * @param  array<string, mixed>  $data

@@ -15,7 +15,7 @@ class QrTokenGenerator
      * Bentuk token QR: "<identity>.<signature>", identity = NISN (fallback NIS)
      * supaya terbaca dari QR, signature = potongan HMAC ber-nonce acak.
      *
-     * Catatan penting: verifikasi TIDAK menghitung ulang HMAC — `verify()`
+     * Catatan penting: verifikasi TIDAK menghitung ulang HMAC - `verify()`
      * hanya melakukan lookup kolom `qr_token`. Jadi ketahanan token terhadap
      * pemalsuan sepenuhnya berasal dari nonce 64 bit CSPRNG, bukan dari
      * rahasianya. Jangan mengandalkan `attendance.qr_token_secret` sebagai

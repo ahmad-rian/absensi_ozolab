@@ -15,7 +15,7 @@ class KelompokKelas
     public const TANPA_KELAS = 'Tanpa Kelas';
 
     /**
-     * Urut nama kelas secara alami (7 A, 8 A, 10 A — bukan 10 A, 7 A),
+     * Urut nama kelas secara alami (7 A, 8 A, 10 A - bukan 10 A, 7 A),
      * siswa tanpa kelas paling akhir. Urutan siswa di dalam kelas dipertahankan.
      *
      * @param  Collection<int, array<string, mixed>>  $rows

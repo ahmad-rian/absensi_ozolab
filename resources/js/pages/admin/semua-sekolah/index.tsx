@@ -91,7 +91,7 @@ type PageProps = {
     tab: string;
     filters: { search: string; school_id: string; classroom_id: string; start: string; end: string };
     schools: SchoolOption[];
-    /** Terisi hanya setelah satu sekolah dipilih — nama kelas berulang di tiap sekolah. */
+    /** Terisi hanya setelah satu sekolah dipilih - nama kelas berulang di tiap sekolah. */
     classrooms: SchoolOption[];
     totals: { schools: number; students: number; active_students: number };
     summary: SummaryRow[] | null;
@@ -162,7 +162,7 @@ export default function SemuaSekolahIndex({
 
     /**
      * Memindahkan sekolah aktif di sesi ke sekolah siswa ini, lalu membuka
-     * halamannya. Perpindahannya diumumkan lewat toast dari server — sesudah ini
+     * halamannya. Perpindahannya diumumkan lewat toast dari server - sesudah ini
      * pemilih sekolah di kepala halaman ikut berganti, dan itu memang disengaja.
      */
     function bukaSiswa(id: string, tujuan: 'show' | 'edit') {
@@ -176,7 +176,7 @@ export default function SemuaSekolahIndex({
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Semua Sekolah</h1>
                     <p className="text-muted-foreground text-sm">
-                        Pandangan menyeluruh lintas sekolah. Halaman ini hanya menampilkan — pengubahan data tetap lewat menu sekolah
+                        Pandangan menyeluruh lintas sekolah. Halaman ini hanya menampilkan - pengubahan data tetap lewat menu sekolah
                         masing-masing.
                     </p>
                 </div>

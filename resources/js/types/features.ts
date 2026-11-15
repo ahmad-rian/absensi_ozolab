@@ -1,5 +1,5 @@
 /**
- * Cermin dari App\Enums\SchoolFeature. Ditulis manual — proyek ini tidak punya
+ * Cermin dari App\Enums\SchoolFeature. Ditulis manual - proyek ini tidak punya
  * codegen enum, dan menambah satu belum sebanding dengan 14 baris ini.
  *
  * Server selalu mengirim peta yang UTUH lewat shared prop `features`, jadi

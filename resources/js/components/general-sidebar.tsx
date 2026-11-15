@@ -113,7 +113,7 @@ export const generalUtama: ItemGeneral[] = [
 ];
 
 /**
- * Menu kategori aktif. Sama untuk semua kategori — isinya mengikuti pilihan
+ * Menu kategori aktif. Sama untuk semua kategori - isinya mengikuti pilihan
  * di kanan atas. Haji lama memakai halaman `/kartu-bebas/*` yang sudah ada,
  * kategori baru memakai halaman program di area penyelenggara.
  */

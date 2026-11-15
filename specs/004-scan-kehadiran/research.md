@@ -4,7 +4,7 @@
 - **Decision**: Program punya `programs.scanner_token` sendiri dan rute scan sendiri (`/hadir/{kode}` kamera,
   `/h/{kode}` ringan). `CardAttendanceService`, `/scan-peserta/*`, `/p/{kode}`, dan `card_attendances` TIDAK
   disentuh dan tidak menerima token peserta program (berbeda layout → HMAC beda).
-- **Rationale**: Konstitusi III — alur haji yang berjalan harus persis sama. Ekstraksi `CardTokenResolver`
+- **Rationale**: Konstitusi III - alur haji yang berjalan harus persis sama. Ekstraksi `CardTokenResolver`
   (rencana awal) ditinggalkan: cukup memakai `CardAttendanceService::qrToken()` yang sudah publik untuk
   memverifikasi token tanpa mengubah kelas itu.
 - **Alternatives**: Percabangan di `AttendanceController::rekamScan` (ditolak: menyentuh kode haji).

@@ -107,7 +107,7 @@ function konteksPenyelenggara(?Penyelenggara $penyelenggara): void
 /**
  * Baris-baris XLSX dari sebuah respons unduhan.
  *
- * Ekspor memakai `BinaryFileResponse`, jadi `streamedContent()` tidak berlaku —
+ * Ekspor memakai `BinaryFileResponse`, jadi `streamedContent()` tidak berlaku -
  * berkasnya ada di disk dan baru dihapus saat respons benar-benar dikirim, yang
  * tidak pernah terjadi di dalam test.
  *
@@ -168,7 +168,7 @@ function xlsxSheets(TestResponse $response): array
 /**
  * Isi mentah `xl/worksheets/sheet1.xml` di dalam berkas XLSX.
  *
- * Dipakai untuk membuktikan tidak ada elemen `<f>` — satu-satunya cara pasti
+ * Dipakai untuk membuktikan tidak ada elemen `<f>` - satu-satunya cara pasti
  * membedakan sel teks dari sel RUMUS. Pembaca OpenSpout mengembalikan nilai,
  * bukan jenis selnya, jadi membaca nilai saja tidak bisa menangkap injeksi.
  */

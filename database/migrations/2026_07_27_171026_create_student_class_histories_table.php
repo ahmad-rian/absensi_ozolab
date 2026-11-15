@@ -12,7 +12,7 @@ return new class extends Migration
      * Riwayat kelas per tahun ajaran.
      *
      * `students.classroom_id` SENGAJA dipertahankan sebagai penunjuk kelas
-     * berjalan — absensi, kartu, laporan, dan scanner semuanya membacanya.
+     * berjalan - absensi, kartu, laporan, dan scanner semuanya membacanya.
      * Tabel ini lapisan tambahan yang menjawab "tahun lalu dia di kelas apa",
      * pertanyaan yang tidak bisa dijawab oleh satu kolom.
      */

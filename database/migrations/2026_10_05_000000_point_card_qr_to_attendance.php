@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
  * QR kartu dipakai untuk absen, kartu lama digenerate dan dicetak ulang.
  *
  * Hanya isinya yang diganti. QR yang sengaja disembunyikan admin tetap
- * tersembunyi — menyalakannya akan mengubah desain kartu tanpa diminta.
+ * tersembunyi - menyalakannya akan mengubah desain kartu tanpa diminta.
  */
 return new class extends Migration
 {

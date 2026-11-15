@@ -17,7 +17,7 @@ type SchoolData = {
     email: string | null; website: string | null; is_active: boolean; scanner_token: string;
     /** Alias pilihan sendiri. Kosong berarti memakai potongan token. */
     scan_short_code: string | null;
-    /** Kode yang berlaku sekarang — alias kalau ada, potongan token kalau belum. */
+    /** Kode yang berlaku sekarang - alias kalau ada, potongan token kalau belum. */
     scan_short_code_effective: string;
     /** QR kartu berisi NISN polos, bukan token. */
     qr_isi_nisn: boolean;
@@ -136,7 +136,7 @@ return;
                         </CardHeader>
                         <CardContent className="grid gap-4">
                             <p className="text-muted-foreground text-sm">
-                                Bagikan link ini untuk halaman scan absensi siswa. Tidak perlu login — cukup buka & scan QR.
+                                Bagikan link ini untuk halaman scan absensi siswa. Tidak perlu login - cukup buka & scan QR.
                             </p>
                             <div className="flex gap-2">
                                 <Input value={scanUrl} readOnly onFocus={(e) => e.target.select()} className="font-mono text-sm" />
@@ -160,7 +160,7 @@ return;
                         </CardHeader>
                         <CardContent className="grid gap-4">
                             <p className="text-muted-foreground text-sm">
-                                Halaman scan sederhana untuk perangkat gerbang berspesifikasi rendah — box Android TV,
+                                Halaman scan sederhana untuk perangkat gerbang berspesifikasi rendah - box Android TV,
                                 tablet lama. Tanpa kamera, hanya barcode gun dan pembaca RFID. Alamatnya dibuat pendek
                                 karena diketik memakai remote.
                             </p>
@@ -194,7 +194,7 @@ return;
                             </div>
                             <p className="text-muted-foreground text-xs">
                                 Nama yang gampang ditebak berarti halaman ini gampang dibuka orang. Karena itu halaman
-                                ringan tidak memuat token sekolah sama sekali — gerbang sholat dan perpustakaan tetap
+                                ringan tidak memuat token sekolah sama sekali - gerbang sholat dan perpustakaan tetap
                                 terlindungi walau nama ini tersebar.
                             </p>
                         </CardContent>

@@ -29,7 +29,7 @@ export function ModulOrangTua() {
             </Para>
             <Pitfall>
                 Siswa tanpa wali, atau wali tanpa satu pun tujuan kirim (WhatsApp, email, Telegram),
-                <b> tidak akan pernah menerima notifikasi</b> — dan tidak ada peringatan apa pun soal itu
+                <b> tidak akan pernah menerima notifikasi</b> - dan tidak ada peringatan apa pun soal itu
                 di halaman absensi. Periksa di sini kalau ada orang tua yang mengaku tidak dapat kabar.
             </Pitfall>
         </div>
@@ -57,7 +57,7 @@ export function ModulJadwal() {
         <div className="space-y-4">
             <Para>
                 Menentukan hari aktif dan jam masuk/pulang. Jadwal bisa dibuat global untuk seluruh
-                sekolah, atau khusus satu kelas — yang khusus kelas menang.
+                sekolah, atau khusus satu kelas - yang khusus kelas menang.
             </Para>
             <Pitfall>
                 Hari tanpa jadwal aktif menolak semua scan dengan pesan &quot;Tidak ada jadwal aktif untuk
@@ -76,7 +76,7 @@ export function ModulAbsensi() {
                 sakit, atau QR-nya bermasalah.
             </Para>
             <Tip>
-                Ini tempat yang benar untuk mencatat siswa yang kartunya hilang — jangan mengetikkan NIS
+                Ini tempat yang benar untuk mencatat siswa yang kartunya hilang - jangan mengetikkan NIS
                 di halaman scan gerbang, karena memang sudah tidak menerimanya.
             </Tip>
         </div>
@@ -105,10 +105,10 @@ export function ModulNotifikasi() {
             </Para>
             <Bullets>
                 <li>
-                    <b>Terkirim</b> — gateway menerima pesannya.
+                    <b>Terkirim</b> - gateway menerima pesannya.
                 </li>
                 <li>
-                    <b>Gagal</b> — periksa kredensial gateway atau nomor tujuannya.
+                    <b>Gagal</b> - periksa kredensial gateway atau nomor tujuannya.
                 </li>
             </Bullets>
         </div>
@@ -120,18 +120,18 @@ export function ModulKartuAlbum() {
         <div className="space-y-4">
             <Steps>
                 <li>
-                    <Menu>Frame &amp; Bingkai</Menu> — unggah bingkai kartu.
+                    <Menu>Frame &amp; Bingkai</Menu> - unggah bingkai kartu.
                 </li>
                 <li>
-                    <Menu>Layout Kartu</Menu> — atur tata letak per jenis kartu: OSIS, perpustakaan,
+                    <Menu>Layout Kartu</Menu> - atur tata letak per jenis kartu: OSIS, perpustakaan,
                     identitas. Tandai satu sebagai default.
                 </li>
                 <li>
-                    <Menu>Generate Kartu</Menu> — pilih siswa, jalankan. Prosesnya di latar belakang dan
+                    <Menu>Generate Kartu</Menu> - pilih siswa, jalankan. Prosesnya di latar belakang dan
                     statusnya diperbarui sendiri.
                 </li>
                 <li>
-                    <Menu>Layout Album</Menu> dan <Menu>Generate Album</Menu> — untuk lembar foto massal.
+                    <Menu>Layout Album</Menu> dan <Menu>Generate Album</Menu> - untuk lembar foto massal.
                 </li>
             </Steps>
             <Note>Hasil kartu diunggah ke Google Drive sekolah dan tautannya muncul di detail siswa.</Note>
@@ -186,19 +186,19 @@ export function ModulPengaturan() {
         <div className="space-y-4">
             <Bullets>
                 <li>
-                    <b>Umum</b> — nama situs, zona waktu, dan tahun ajaran aktif.
+                    <b>Umum</b> - nama situs, zona waktu, dan tahun ajaran aktif.
                 </li>
                 <li>
-                    <b>Tampilan</b> — logo dan favicon. Tersimpan seketika, tanpa tombol simpan.
+                    <b>Tampilan</b> - logo dan favicon. Tersimpan seketika, tanpa tombol simpan.
                 </li>
                 <li>
-                    <b>Fitur</b> — empat belas saklar untuk menyalakan/mematikan bagian aplikasi.
+                    <b>Fitur</b> - empat belas saklar untuk menyalakan/mematikan bagian aplikasi.
                 </li>
                 <li>
-                    <b>Absen Sholat</b> — jendela Dhuha dan Dzuhur, serta kepesertaan lintas agama.
+                    <b>Absen Sholat</b> - jendela Dhuha dan Dzuhur, serta kepesertaan lintas agama.
                 </li>
                 <li>
-                    <b>Notifikasi</b> — saklar notifikasi absensi, ambang alpa sholat, dan template pesan.
+                    <b>Notifikasi</b> - saklar notifikasi absensi, ambang alpa sholat, dan template pesan.
                 </li>
             </Bullets>
             <Note>
@@ -228,7 +228,7 @@ export function ModulRole() {
     return (
         <div className="space-y-4">
             <Para>
-                Empat role bawaan — Super Admin, Admin Sekolah, Guru, Orang Tua — plus role custom yang
+                Empat role bawaan - Super Admin, Admin Sekolah, Guru, Orang Tua - plus role custom yang
                 bebas mengombinasikan modul.
             </Para>
             <Note>
@@ -246,7 +246,7 @@ export function ModulGateway() {
                 Kredensial per sekolah: token WhatsApp, bot Telegram, dan SMTP. Ada tombol uji kirim.
             </Para>
             <Pitfall>
-                Mengganti host SMTP dianggap rotasi kredensial — password lama tidak dipakai ulang, jadi
+                Mengganti host SMTP dianggap rotasi kredensial - password lama tidak dipakai ulang, jadi
                 harus diisi kembali.
             </Pitfall>
         </div>

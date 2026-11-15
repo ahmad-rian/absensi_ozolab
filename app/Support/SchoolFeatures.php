@@ -46,7 +46,7 @@ final class SchoolFeatures
 
     /**
      * Modul tanpa fitur pemilik (Dashboard, Pengaturan, grup Sistem) selalu
-     * lolos — itulah jaring pengaman yang mencegah admin mengunci dirinya.
+     * lolos - itulah jaring pengaman yang mencegah admin mengunci dirinya.
      */
     public function allowsModule(AppModule $module): bool
     {

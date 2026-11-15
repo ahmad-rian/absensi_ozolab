@@ -7,7 +7,7 @@ use App\Models\Student;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
-// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+// Laporan XLSX perintah drive:* ditulis ke disk local - jangan sampai ke storage sungguhan.
 beforeEach(fn () => Storage::fake('local'));
 
 /*
@@ -116,7 +116,7 @@ test('a guest cannot regenerate anything', function () {
 /**
  * `drive_file_id` adalah satu-satunya pegangan yang tidak bergeser ketika nama
  * atau NIS siswa dibetulkan. Jalur inilah yang paling sering dipakai, dan justru
- * dialah yang dulu hanya menyimpan URL — sehingga generate berikutnya tidak
+ * dialah yang dulu hanya menyimpan URL - sehingga generate berikutnya tidak
  * punya apa pun untuk ditimpa dan membuat berkas kedua.
  */
 test('jalur generate ulang menyimpan id berkas Drive, bukan hanya URL', function () {
@@ -153,7 +153,7 @@ test('perintah audit berkas jalan walau belum ada sekolah yang siap', function (
 /**
  * Audit adalah alat ukur, jadi ia harus diam soal hal yang bukan masalah. Di
  * prod, 194 dari 573 folder dilaporkan bermasalah hanya karena `foto` tidak ada
- * — padahal siswanya memang belum pernah difoto, dan jalur unggah foto sendiri
+ * - padahal siswanya memang belum pernah difoto, dan jalur unggah foto sendiri
  * tidak pernah berjalan tanpa `photo_path`.
  */
 test('foto hanya wajib untuk siswa yang punya fotonya', function () {

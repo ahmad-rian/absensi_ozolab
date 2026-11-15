@@ -9,11 +9,11 @@ use App\Models\Student;
 use Illuminate\Support\Facades\Queue;
 
 /*
- | Generate kartu satu sekolah — atau satu kelas — sekaligus.
+ | Generate kartu satu sekolah - atau satu kelas - sekaligus.
  |
  | Dua hal yang membedakannya dari sekadar perulangan, dan keduanya dijaga di
  | sini. Pertama: kartu tanpa pas foto tetap jadi, dengan kotak kosong di tempat
- | wajahnya, dan itu baru ketahuan setelah ratusan berkas terunggah ke Drive —
+ | wajahnya, dan itu baru ketahuan setelah ratusan berkas terunggah ke Drive -
  | jadi servernya sendiri yang menolak, bukan cuma tombolnya yang dimatikan.
  | Kedua: kemajuannya dihitung dari baris log, bukan dari penghitung yang
  | dinaikkan job, supaya job yang gagal atau dicoba ulang tidak bisa membuat
@@ -59,7 +59,7 @@ test('server menolak generate selama masih ada siswa tanpa pas foto', function (
     ]);
 
     // Tombolnya memang sudah mati di klien, tapi tombol yang mati bukan
-    // penjagaan — ia hanya menjelaskan. Yang menolak harus servernya.
+    // penjagaan - ia hanya menjelaskan. Yang menolak harus servernya.
     $this->actingAs($this->super)
         ->post('/admin/generate-kartu', ['school_id' => $this->schoolId])
         ->assertSessionHasErrors('school_id');
@@ -216,7 +216,7 @@ test('bukan super admin ditolak di ketiga rute', function () {
         'status' => 'processing',
     ]);
 
-    // Permission `generate-kartu.access` dipegang ADMIN juga — yang menutup
+    // Permission `generate-kartu.access` dipegang ADMIN juga - yang menutup
     // pintu di sini middleware `super-admin`, bukan permission-nya.
     $this->actingAs($admin)->get('/admin/generate-kartu')->assertForbidden();
     $this->actingAs($admin)->post('/admin/generate-kartu', ['school_id' => $admin->school_id])->assertForbidden();

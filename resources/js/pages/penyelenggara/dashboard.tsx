@@ -28,7 +28,7 @@ export default function PenyelenggaraDashboard({
 }: Props) {
     return (
         <>
-            <Head title={`Beranda — ${penyelenggara.name}`} />
+            <Head title={`Beranda - ${penyelenggara.name}`} />
             <div className="flex flex-col gap-6 p-4 md:p-6">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">

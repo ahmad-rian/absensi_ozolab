@@ -18,7 +18,7 @@ class Role extends SpatieRole
     }
 
     /**
-     * Peran sekolah & bawaan — peran staf General tidak pernah muncul di
+     * Peran sekolah & bawaan - peran staf General tidak pernah muncul di
      * halaman Role & Hak Akses sekolah.
      */
     public function scopeBukanPeranStaf($query)

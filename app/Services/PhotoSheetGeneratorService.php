@@ -20,7 +20,7 @@ class PhotoSheetGeneratorService
      */
     public const TEMPLATES = [
         '4r_3x4' => [
-            'label' => '4R — 8× (3×4)',
+            'label' => '4R - 8× (3×4)',
             'sheet' => [152, 102],
             'cols' => 4,
             'rows' => 2,
@@ -28,7 +28,7 @@ class PhotoSheetGeneratorService
             'gap' => 3,
         ],
         '4r_2x3' => [
-            'label' => '4R — 18× (2×3)',
+            'label' => '4R - 18× (2×3)',
             'sheet' => [152, 102],
             'cols' => 6,
             'rows' => 3,
@@ -36,7 +36,7 @@ class PhotoSheetGeneratorService
             'gap' => 2,
         ],
         '4r_4x6' => [
-            'label' => '4R — 4× (4×6)',
+            'label' => '4R - 4× (4×6)',
             'sheet' => [102, 152],
             'cols' => 2,
             'rows' => 2,
@@ -73,7 +73,7 @@ class PhotoSheetGeneratorService
             'photoUrl' => $this->toBase64DataUri($student->photo_path),
         ])->render();
 
-        // Awalannya dari StudentDriveNaming — lihat catatan di
+        // Awalannya dari StudentDriveNaming - lihat catatan di
         // CardGeneratorService soal `??` versus `?:`.
         $filename = sprintf(
             'sheets/%s/%s%s.'.GambarCetak::EKSTENSI,

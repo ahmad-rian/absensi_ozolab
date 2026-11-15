@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Tabel terpisah dari `attendances` — bukan `type` baru — karena banyak
+     * Tabel terpisah dari `attendances` - bukan `type` baru - karena banyak
      * query dashboard/laporan tidak memfilter `type`, sehingga baris sholat
      * akan menggelembungkan statistik absensi sekolah.
      */

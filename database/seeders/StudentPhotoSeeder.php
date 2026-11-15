@@ -12,7 +12,7 @@ class StudentPhotoSeeder extends Seeder
 {
     /**
      * Generate placeholder student photos using GD.
-     * Creates colored avatar images with initials — no external API needed.
+     * Creates colored avatar images with initials - no external API needed.
      */
     public function run(): void
     {

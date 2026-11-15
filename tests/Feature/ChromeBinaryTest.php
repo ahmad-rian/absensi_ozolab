@@ -7,8 +7,8 @@ use Spatie\Browsershot\Browsershot;
  * Regresi 1 September 2026.
  *
  * Direktori Chrome ikut tersapu saat bersih-bersih server. `CHROME_PATH` masih
- * terisi, berkasnya sudah tidak ada, dan penjaga lama — `if ($path &&
- * file_exists($path))` yang disalin di lima service — MELEWATINYA tanpa suara.
+ * terisi, berkasnya sudah tidak ada, dan penjaga lama - `if ($path &&
+ * file_exists($path))` yang disalin di lima service - MELEWATINYA tanpa suara.
  * Browsershot lalu jatuh ke pencarian Chrome bawaannya dan gagal dengan galat
  * Node sepanjang layar yang tidak menyebut Chrome sama sekali.
  *
@@ -40,7 +40,7 @@ test('CHROME_PATH kosong dibiarkan, Browsershot mencari Chrome sendiri', functio
 });
 
 test('CHROME_PATH yang valid dipasang sebagai executablePath', function () {
-    // Berkas apa pun yang pasti ada — yang diuji keputusannya, bukan apakah
+    // Berkas apa pun yang pasti ada - yang diuji keputusannya, bukan apakah
     // binernya benar-benar Chrome.
     $adaBerkas = base_path('artisan');
 

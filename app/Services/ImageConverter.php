@@ -29,7 +29,7 @@ class ImageConverter
         if (! $source) {
             // Fallback: simpan berkas asli apa adanya kalau GD tidak bisa
             // mengolahnya. Ekstensinya diambil dari hasil sniffing mime, BUKAN
-            // dari nama berkas klien — berkas ber-signature PNG palsu bernama
+            // dari nama berkas klien - berkas ber-signature PNG palsu bernama
             // `x.html` dulu tersimpan sebagai .html dan disajikan sebagai HTML
             // same-origin.
             $extension = match ($file->getMimeType()) {

@@ -37,7 +37,7 @@ class Classroom extends Model
      * Hanya kelas milik tahun ajaran aktif sekolahnya.
      *
      * Nama kelas ("7A") dibuat ulang tiap tahun, jadi daftar pilihan yang
-     * memuat semua tahun berisi nama kembar yang tidak terbedakan — dan siswa
+     * memuat semua tahun berisi nama kembar yang tidak terbedakan - dan siswa
      * baru bisa terdaftar ke kelas tahun lalu.
      *
      * Dua kelonggaran yang disengaja:

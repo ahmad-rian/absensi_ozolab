@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Storage;
  *
  * Global scope `school` membaca `auth()->user()->school_id`. Di jalur bertoken
  * TIDAK ADA user yang login, jadi scope-nya mengembalikan null dan mati
- * sepenuhnya — `Student::query()` akan memuat siswa dari SEMUA sekolah.
+ * sepenuhnya - `Student::query()` akan memuat siswa dari SEMUA sekolah.
  *
  * Artinya penyaringan di sini bukan lapisan kedua di atas scope; ia satu-satunya
- * lapisan. Kalau ia terlewat, tidak ada galat yang muncul — yang muncul adalah
+ * lapisan. Kalau ia terlewat, tidak ada galat yang muncul - yang muncul adalah
  * kebocoran yang diam.
  */
 beforeEach(function () {
@@ -171,7 +171,7 @@ test('unggah foto ke siswa sekolah lain ditolak sebelum apa pun tersimpan', func
 });
 
 /**
- * Token lintas sekolah memang ada dan memang boleh melihat semuanya — operator
+ * Token lintas sekolah memang ada dan memang boleh melihat semuanya - operator
  * studio memotret siswa dari beberapa sekolah dalam satu hari. Yang penting
  * adalah itu keputusan sadar, bukan akibat scope yang mati.
  */
@@ -185,7 +185,7 @@ test('token lintas sekolah melihat kedua sekolah', function () {
 
 /**
  * Penjaga tingkat sumber. Kalau suatu saat ada yang menambah endpoint Studio
- * dengan `Student::where(...)` telanjang, tes di atas tidak akan menangkapnya —
+ * dengan `Student::where(...)` telanjang, tes di atas tidak akan menangkapnya -
  * mereka hanya menguji endpoint yang sudah ada.
  */
 test('setiap pembacaan siswa di controller Studio lewat pembatas sekolah', function () {

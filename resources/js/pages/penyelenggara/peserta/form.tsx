@@ -190,7 +190,7 @@ export default function PesertaForm({
                                                     })
                                                 }
                                             >
-                                                <option value="">—</option>
+                                                <option value="">-</option>
                                                 {(f.options ?? []).map((o) => (
                                                     <option key={o} value={o}>
                                                         {o}

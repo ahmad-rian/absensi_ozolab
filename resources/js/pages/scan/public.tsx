@@ -17,7 +17,7 @@ type PageProps = {
 };
 
 /**
- * Satu gerbang mencatat datang, Dhuha, Dzuhur, dan pulang — server yang memilih
+ * Satu gerbang mencatat datang, Dhuha, Dzuhur, dan pulang - server yang memilih
  * mana berdasarkan jam dan apa yang belum tercatat. Tanpa baris ini operator
  * tidak punya cara tahu kenapa kartu yang sama menghasilkan catatan berbeda di
  * jam yang berbeda.
@@ -35,7 +35,7 @@ function petunjuk(jendela: JendelaSholat[]): string | undefined {
 export default function PublicScanPage({ school, scanToken, scanUrl, featureEnabled, jendelaSholat }: PageProps) {
     return (
         <>
-            <Head title={`Scan Absensi — ${school.name}`} />
+            <Head title={`Scan Absensi - ${school.name}`} />
             <PublicScanConsole
                 school={school}
                 scanUrl={scanUrl ?? `/scan/${scanToken}`}

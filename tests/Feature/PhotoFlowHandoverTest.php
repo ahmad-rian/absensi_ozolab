@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Queue;
  | Langkah Foto di /daftar: ada, tapi boleh dilewati.
  |
  | Dulu satu POST publik menyeret unduhan Drive PLUS dua render headless
- | Chrome, dan fotonya wajib — pendaftar yang belum tahu nomor fotonya tidak
+ | Chrome, dan fotonya wajib - pendaftar yang belum tahu nomor fotonya tidak
  | bisa menyelesaikan formulir sama sekali.
  |
  | Sekarang dua hal dipisah. Foto boleh diisi dan boleh dikosongkan; yang
  | mengosongkan diurus admin dari halaman siswa. Tapi KARTU tidak pernah lagi
- | lahir dari endpoint publik ini — dua panggilan headless Chrome per POST itu
+ | lahir dari endpoint publik ini - dua panggilan headless Chrome per POST itu
  | jalur penyalahgunaan yang jelas, dan kartu memang sudah punya rumahnya
  | sendiri di sisi admin.
  |
@@ -56,7 +56,7 @@ function siswaTerdaftar(): ?Student
     return Student::withoutGlobalScope('school')->firstWhere('nisn', '9988776655');
 }
 
-test('foto boleh dikosongkan — pendaftaran tetap berhasil dan nol job diantrekan', function () {
+test('foto boleh dikosongkan - pendaftaran tetap berhasil dan nol job diantrekan', function () {
     test()->postJson('/daftar', pendaftaran())
         ->assertOk()
         ->assertJson(['success' => true, 'queued' => false]);
@@ -79,7 +79,7 @@ test('foto yang diisi diambil dari Drive, tapi TIDAK ikut merender kartu', funct
     Queue::assertPushed(RegisterStudentCardsJob::class, function (RegisterStudentCardsJob $job) {
         // Satu keluaran saja. Kalau OUTPUT_CARDS ikut lolos ke sini, endpoint
         // publik ini kembali bisa memaksa dua render headless Chrome per POST
-        // — persis yang baru saja ditutup.
+        // - persis yang baru saja ditutup.
         return $job->outputs === [RegisterStudentCardsJob::OUTPUT_PHOTO]
             && $job->generateCards === false
             && $job->photoFilename === 'FIC_0008.JPG';
@@ -90,7 +90,7 @@ test('foto yang diisi diambil dari Drive, tapi TIDAK ikut merender kartu', funct
 
 test('generate_cards yang diselundupkan lewat POST langsung tidak berpengaruh', function () {
     // Field-nya sudah tidak divalidasi lagi, tapi yang menyelundupkannya bukan
-    // form — melainkan siapa pun yang mem-POST endpoint publik ini sendiri.
+    // form - melainkan siapa pun yang mem-POST endpoint publik ini sendiri.
     test()->postJson('/daftar', pendaftaran([
         'photo_drive_filename' => 'FIC_0008.JPG',
         'generate_cards' => true,

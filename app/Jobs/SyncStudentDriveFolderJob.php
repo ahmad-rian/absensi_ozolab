@@ -22,11 +22,11 @@ use Throwable;
  * Folder siswa duduk di `{Sekolah}/{Kelas}/{NIS - Nama}`, jadi ketiga nilai itu
  * ikut menentukan letaknya. Tanpa job ini, satu kali naik kelas membuat generate
  * berikutnya membangun folder BARU di kelas yang baru, sementara foto dan kartu
- * lama tertinggal di folder kelas lama — persis gejala "fotonya hilang" dan
+ * lama tertinggal di folder kelas lama - persis gejala "fotonya hilang" dan
  * "URL-nya ganti sendiri".
  *
  * Folder dipindah, bukan isinya: id berkas di dalamnya tidak berubah, sehingga
- * tautan yang sudah tersimpan tetap hidup. Nama berkasnya yang diselaraskan —
+ * tautan yang sudah tersimpan tetap hidup. Nama berkasnya yang diselaraskan -
  * dan hanya ketika NIS atau nama siswa yang berubah, karena nama berkas tidak
  * memuat kelas.
  */
@@ -88,7 +88,7 @@ class SyncStudentDriveFolderJob implements ShouldQueue
             }
 
             if (! $student->drive_folder_id && ! $this->adopsiFolderLama($drive, $student, $schoolRootId)) {
-                // Nama lamanya tidak ada di Drive — tidak ada yang perlu
+                // Nama lamanya tidak ada di Drive - tidak ada yang perlu
                 // diselamatkan, dan membuat folder di sini bukan tugas job ini.
                 return;
             }
@@ -118,13 +118,13 @@ class SyncStudentDriveFolderJob implements ShouldQueue
     /**
      * Temukan folder siswa yang sudah ada di bawah NAMA LAMA, lalu catat idnya.
      *
-     * Folder siswa duduk di `{Sekolah}/{Kelas}/{NIS - Nama}` — ketiganya nilai
+     * Folder siswa duduk di `{Sekolah}/{Kelas}/{NIS - Nama}` - ketiganya nilai
      * yang barusan berubah, jadi pencariannya memakai nilai lama. `findFolder()`
      * mencoba nama persis lalu mengabaikan huruf besar/kecil, dan tidak pernah
      * membuat folder baru: kalau tidak ketemu, memang tidak ada yang diadopsi.
      *
      * Nama folder disusun lewat helper yang sama dengan jalur tulis, bukan
-     * dirakit ulang di sini — dua aturan penamaan yang terpisah pasti menyimpang.
+     * dirakit ulang di sini - dua aturan penamaan yang terpisah pasti menyimpang.
      */
     private function adopsiFolderLama(GoogleDriveService $drive, Student $student, string $schoolRootId): bool
     {
@@ -154,8 +154,8 @@ class SyncStudentDriveFolderJob implements ShouldQueue
      * Selaraskan nama berkas di dalam folder dengan nama siswa sekarang.
      *
      * Tanpa ini, membetulkan nama siswa hanya mengganti nama FOLDER-nya. Isinya
-     * tetap memakai slug lama, dan pencarian berbasis nama —
-     * `StudentDrivePhotoLocator` mencari `{awalan-baru}foto.png` — kembali nihil.
+     * tetap memakai slug lama, dan pencarian berbasis nama -
+     * `StudentDrivePhotoLocator` mencari `{awalan-baru}foto.png` - kembali nihil.
      * Itu gejala "foto hilang" yang sama, hanya penyebab yang berbeda.
      */
     private function selaraskanNamaBerkas(GoogleDriveService $drive, Student $student): void

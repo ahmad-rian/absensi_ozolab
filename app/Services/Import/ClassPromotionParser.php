@@ -8,7 +8,7 @@ use App\Services\Import\Concerns\ReadsSpreadsheetRows;
 use RuntimeException;
 
 /**
- * Membaca berkas kenaikan kelas — hanya butuh NISN (atau NIS) + kelas tujuan —
+ * Membaca berkas kenaikan kelas - hanya butuh NISN (atau NIS) + kelas tujuan -
  * lalu memutuskan per baris apakah siswanya dipindah, diluluskan, atau ditolak.
  *
  * Pencocokan siswa selalu eksak: NISN dulu; NIS hanya dipakai bila kolom NISN
@@ -120,7 +120,7 @@ class ClassPromotionParser
         }
 
         if ($columns === null) {
-            throw new RuntimeException('Berkas kosong — tidak ada baris header yang bisa dibaca.');
+            throw new RuntimeException('Berkas kosong - tidak ada baris header yang bisa dibaca.');
         }
 
         $missing = [];

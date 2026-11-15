@@ -12,7 +12,7 @@ export type SettingsTab = {
 
 /**
  * Registri, bukan JSX hardcode: menambah bagian ke-6 cukup satu entri di sini
- * dan satu `<TabsContent>` — daftar tab, whitelist URL, dan indikator perubahan
+ * dan satu `<TabsContent>` - daftar tab, whitelist URL, dan indikator perubahan
  * semuanya diturunkan dari array ini.
  */
 export const SETTINGS_TABS: SettingsTab[] = [
@@ -28,7 +28,7 @@ export const SETTINGS_TABS: SettingsTab[] = [
 export const SETTINGS_SECTIONS: SettingsSection[] = SETTINGS_TABS.map((tab) => tab.value);
 
 export function resolveSettingsTab(url: string): SettingsSection {
-    // `usePage().url` sudah berisi path + query, aman dipakai saat SSR — beda
+    // `usePage().url` sudah berisi path + query, aman dipakai saat SSR - beda
     // dengan window.location yang butuh guard tersendiri.
     const requested = new URL(url, 'http://localhost').searchParams.get('tab');
 

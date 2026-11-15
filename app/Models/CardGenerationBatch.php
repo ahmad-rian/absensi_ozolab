@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * Sengaja TIDAK memakai `BelongsToSchool`. Batch dibuat super admin yang
  * memilih sekolahnya dari daftar, dan sekolah itu belum tentu sekolah aktif di
- * sesinya — global scope `school` akan menyembunyikan batch yang baru saja ia
+ * sesinya - global scope `school` akan menyembunyikan batch yang baru saja ia
  * buat sendiri. Penjagaannya ada di middleware `super-admin` pada ketiga rute
  * `generate-kartu`, pola yang sama dengan `School` dan `Role`.
  */
@@ -56,7 +56,7 @@ class CardGenerationBatch extends Model
     }
 
     /**
-     * Kemajuan batch, dihitung dari baris log — bukan dari penghitung yang
+     * Kemajuan batch, dihitung dari baris log - bukan dari penghitung yang
      * di-increment job.
      *
      * Job render punya `tries = 3`, jadi penghitung yang dinaikkan setiap kali
@@ -71,7 +71,7 @@ class CardGenerationBatch extends Model
     {
         // `acrossSchools()`, bukan relasi `logs()`: `CardGenerationLog` memakai
         // global scope `school`, jadi menghitung lewat relasi mengembalikan nol
-        // begitu batch yang dibuka milik sekolah selain yang aktif di sesi —
+        // begitu batch yang dibuka milik sekolah selain yang aktif di sesi -
         // dan itu justru keadaan normal bagi super admin.
         $perStatus = CardGenerationLog::acrossSchools()
             ->where('card_generation_batch_id', $this->id)

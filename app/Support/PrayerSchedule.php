@@ -82,7 +82,7 @@ class PrayerSchedule
     /**
      * Kalimat untuk pesan galat scanner.
      *
-     * Satu jenis : "11:00 s/d 13:00"  — bentuk lama, sengaja dijaga.
+     * Satu jenis : "11:00 s/d 13:00"  - bentuk lama, sengaja dijaga.
      * Dua jenis  : "07:30 s/d 09:00 (Dhuha) atau 11:00 s/d 13:00 (Dzuhur)"
      */
     public function windowsSentence(): string

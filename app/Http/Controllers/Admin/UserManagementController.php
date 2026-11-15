@@ -157,7 +157,7 @@ class UserManagementController extends Controller
 
         $user->syncRoles([$validated['role']]);
 
-        // Akses tambahan di luar role — inilah bagian "custom per pengguna".
+        // Akses tambahan di luar role - inilah bagian "custom per pengguna".
         $user->syncPermissions($validated['extra_permissions'] ?? []);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengguna berhasil diperbarui.']);

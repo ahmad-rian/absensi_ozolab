@@ -297,7 +297,7 @@ export default function KartuBebasGenerateForm({ layout }: Props) {
                     setStatusState(json);
                 }
             } catch {
-                // transient error — keep polling
+                // transient error - keep polling
             } finally {
                 inFlight = false;
             }
@@ -335,7 +335,7 @@ export default function KartuBebasGenerateForm({ layout }: Props) {
     if (submissionId && statusState) {
         return (
             <>
-                <Head title={`Generate — ${layout.name}`} />
+                <Head title={`Generate - ${layout.name}`} />
                 <ResultView statusState={statusState} onReset={resetWizard} />
                 <div className="px-6 pb-6 text-center"><Link className="underline" href={participantShow.url(submissionId)}>Lihat peserta, edit foto, atau generate ulang</Link></div>
             </>
@@ -347,7 +347,7 @@ export default function KartuBebasGenerateForm({ layout }: Props) {
 
     return (
         <>
-            <Head title={`Generate — ${layout.name}`} />
+            <Head title={`Generate - ${layout.name}`} />
             <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 p-4 md:p-6">
                 <div>
                     <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400">
@@ -389,8 +389,8 @@ export default function KartuBebasGenerateForm({ layout }: Props) {
                                             {field.type === 'photo'
                                                 ? photoFile
                                                     ? `${photoFile.name}${manualCrop ? ' (crop diatur)' : ''}`
-                                                    : '—'
-                                                : values[field.key] || '—'}
+                                                    : '-'
+                                                : values[field.key] || '-'}
                                         </dd>
                                     </div>
                                 ))}

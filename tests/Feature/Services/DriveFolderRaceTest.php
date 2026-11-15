@@ -33,7 +33,7 @@ beforeEach(function () {
 
 test('job kedua memakai folder yang baru disimpan job pertama walau modelnya basi', function () {
     $siswa = Student::factory()->create(['drive_folder_id' => null]);
-    // Dimuat sebelum job pertama menyimpan foldernya — persis keadaan job kedua.
+    // Dimuat sebelum job pertama menyimpan foldernya - persis keadaan job kedua.
     $basi = Student::withoutGlobalScopes()->find($siswa->id);
     Student::withoutGlobalScopes()->whereKey($siswa->id)->update(['drive_folder_id' => 'folder-pertama']);
 

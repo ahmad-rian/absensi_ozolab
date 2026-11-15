@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Halaman album dan ZIP-nya dibuat ulang setiap kali admin mengunduh — tidak
+ * Halaman album dan ZIP-nya dibuat ulang setiap kali admin mengunduh - tidak
  * ada baris database yang menunjuknya dan tidak pernah dibaca lagi. Tanpa
  * pembersihan ini folder `albums/` hanya bertambah (1,5 GB di produksi pada
  * Oktober 2026).

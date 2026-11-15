@@ -4,13 +4,13 @@ export type GuideTopic = {
     id: string;
     title: string;
     summary: string;
-    /** Kata kunci tambahan untuk pencarian — istilah yang dipakai admin sehari-hari. */
+    /** Kata kunci tambahan untuk pencarian - istilah yang dipakai admin sehari-hari. */
     keywords: string[];
     /** Permission modul. Kosong = selalu tampil (mis. Mulai Cepat). */
     permission?: string;
     /** Fitur sekolah. Topiknya hilang kalau sekolah mematikan fiturnya. */
     feature?: SchoolFeatureKey;
-    /** Hanya untuk super admin — modul lintas sekolah. */
+    /** Hanya untuk super admin - modul lintas sekolah. */
     superAdminOnly?: boolean;
 };
 

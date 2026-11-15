@@ -9,7 +9,7 @@ use Spatie\Browsershot\Browsershot;
  * Pasang biner Chrome ke Browsershot.
  *
  * Sebelumnya penjaganya disalin di lima service dan berbunyi
- * `if ($path && file_exists($path))` — artinya `CHROME_PATH` yang terisi tapi
+ * `if ($path && file_exists($path))` - artinya `CHROME_PATH` yang terisi tapi
  * berkasnya sudah tidak ada akan **dilewati tanpa suara**, dan Browsershot
  * jatuh ke pencarian Chrome bawaannya lalu gagal dengan galat Node sepanjang
  * layar yang tidak menyebut Chrome sama sekali.
@@ -25,7 +25,7 @@ class ChromeBinary
     {
         $path = config('services.chrome.path');
 
-        // Tidak diatur sama sekali itu sah — mesin pengembang mengandalkan
+        // Tidak diatur sama sekali itu sah - mesin pengembang mengandalkan
         // Chrome yang sudah ada di PATH. Yang tidak sah adalah diatur ke
         // sesuatu yang tidak ada.
         if (! $path) {

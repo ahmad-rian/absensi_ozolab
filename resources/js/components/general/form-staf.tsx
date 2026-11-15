@@ -185,7 +185,7 @@ export function FormStaf({
                             className="h-9 rounded-md border bg-background px-2 text-sm"
                         >
                             <option value="">
-                                Tanpa peran — centang modul sendiri
+                                Tanpa peran - centang modul sendiri
                             </option>
                             {peranStaf.map((p) => (
                                 <option key={p.id} value={p.id}>

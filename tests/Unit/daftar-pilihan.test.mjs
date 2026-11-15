@@ -4,7 +4,7 @@ import { test } from 'node:test';
 
 // Laporan dari lapangan: di HP, daftar Kelas di /daftar "susah muncul".
 // Radix Select membuka daftarnya di bawah kotak dengan tinggi sisa layar, dan
-// kotak Kelas ada di dasar kartu — daftarnya jadi garis tipis. Formulir publik
+// kotak Kelas ada di dasar kartu - daftarnya jadi garis tipis. Formulir publik
 // ini memakai <select> asli supaya HP membuka pemilih layar penuhnya sendiri.
 const sumber = readFileSync(
     new URL('../../resources/js/pages/student-register.tsx', import.meta.url),

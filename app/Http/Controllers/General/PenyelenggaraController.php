@@ -16,7 +16,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Kelola penyelenggara (tenant modul Absensi General) — super admin saja, di
+ * Kelola penyelenggara (tenant modul Absensi General) - super admin saja, di
  * workspace `/general` yang terpisah dari sekolah (spec 009).
  */
 class PenyelenggaraController extends Controller

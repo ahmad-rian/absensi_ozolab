@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Queue;
 
 /**
  * Membetulkan nama siswa dulu hanya mengganti nama FOLDER-nya. Isinya tetap
- * memakai slug lama, jadi pencarian berbasis nama — `StudentDrivePhotoLocator`
- * mencari `{awalan-baru}foto.png` — kembali nihil. Gejalanya sama persis dengan
+ * memakai slug lama, jadi pencarian berbasis nama - `StudentDrivePhotoLocator`
+ * mencari `{awalan-baru}foto.png` - kembali nihil. Gejalanya sama persis dengan
  * "foto hilang" yang sudah pernah dikejar, hanya penyebabnya berbeda.
  */
 function siswaBerfolder(array $atribut = []): Student
@@ -51,8 +51,8 @@ test('NIS yang diisi belakangan juga menggeser nama berkas', function () {
 
 /**
  * Penjaga biaya. Nama berkas tidak memuat kelas, jadi kenaikan kelas satu
- * angkatan — ratusan job sekaligus di antrean yang dipakai bersama puluhan
- * situs — tidak boleh menambah satu pun panggilan Drive untuk menyelaraskan
+ * angkatan - ratusan job sekaligus di antrean yang dipakai bersama puluhan
+ * situs - tidak boleh menambah satu pun panggilan Drive untuk menyelaraskan
  * nama.
  */
 test('pindah kelas saja tidak memicu penyelarasan berkas', function () {

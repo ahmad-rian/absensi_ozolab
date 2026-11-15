@@ -139,7 +139,7 @@ test('a non-muslim student is rejected unless the school opts in', function () {
         ->assertJson(['success' => true]);
 });
 
-test('the admin scanner pages are gone \u2014 scanning only happens on the public links', function () {
+test('the admin scanner pages are gone - scanning only happens on the public links', function () {
     $admin = createAdminUser();
 
     $this->actingAs($admin)->get('/admin/scanner')->assertNotFound();

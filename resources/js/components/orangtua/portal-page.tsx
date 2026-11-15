@@ -55,7 +55,7 @@ export type Filters = { start_date: string; end_date: string };
 /**
  * Kerangka setiap halaman portal: judul, identitas anak, dan penyaring periode.
  *
- * Penyaringnya hidup di sini, bukan disalin ke tiap halaman — periode yang
+ * Penyaringnya hidup di sini, bukan disalin ke tiap halaman - periode yang
  * dipilih orang tua harus berarti sama di Absensi, Sholat, dan Laporan.
  */
 export function PortalPage({

@@ -1,4 +1,4 @@
-/** Garis panduan framing (pecahan 0..1 tinggi crop) — dihitung server, lihat PhotoCropService::framingGuide(). */
+/** Garis panduan framing (pecahan 0..1 tinggi crop) - dihitung server, lihat PhotoCropService::framingGuide(). */
 export type CropGuide = {
     headroom: number;
     headTop: number;
@@ -12,7 +12,7 @@ export type CropGuide = {
  * Pergeseran garis ke atas, dalam unit viewBox (= persen tinggi kotak crop).
  *
  * Murni tampilan. `PhotoCropService::HEADROOM_FRACTION` tidak ikut bergeser, jadi
- * hasil crop otomatis tetap sama — jangan disamakan dengan konstanta framing itu.
+ * hasil crop otomatis tetap sama - jangan disamakan dengan konstanta framing itu.
  */
 const GUIDE_LIFT = 3;
 

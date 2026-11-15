@@ -72,7 +72,7 @@ test('brand new features default to off', function () {
 });
 
 test('a stored false does not fall back to the default', function () {
-    // getSetting() memakai `??`, jadi false yang tersimpan harus tetap false —
+    // getSetting() memakai `??`, jadi false yang tersimpan harus tetap false -
     // regresi untuk nuansa yang mudah terlewat.
     $flags = SchoolFeatures::for(School::factory()->create([
         'settings' => ['feature_kartu_album' => false],
@@ -179,7 +179,7 @@ test('registration is refused for a school that switched public sign-up off', fu
         'settings' => ['feature_pendaftaran_publik' => false],
     ]);
 
-    // Menyaring daftar di UI saja tidak cukup — school_id masih bisa di-POST.
+    // Menyaring daftar di UI saja tidak cukup - school_id masih bisa di-POST.
     $this->post('/daftar', [
         'school_id' => $closed->id,
         'full_name' => 'Budi Santoso',
@@ -282,7 +282,7 @@ test('B-10: another tenant feature state is not observable through the api', fun
     $other = School::factory()->create(['settings' => ['feature_master_siswa' => false]]);
     $otherOn = School::factory()->create(['settings' => ['feature_master_siswa' => true]]);
 
-    // Jawabannya harus sama apa pun status fitur sekolah lain — kalau berbeda,
+    // Jawabannya harus sama apa pun status fitur sekolah lain - kalau berbeda,
     // selisih 403/404 jadi oracle enumerasi lintas-tenant.
     $off = $this->actingAs($this->admin)->getJson("/api/schools/{$other->id}/students");
     $on = $this->actingAs($this->admin)->getJson("/api/schools/{$otherOn->id}/students");

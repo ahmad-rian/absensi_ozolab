@@ -9,7 +9,7 @@ use App\Models\User;
  *
  * Dua hal yang diuji di sini tidak akan tertangkap `OrangTuaControllerTest`:
  * tujuannya (operator tidak boleh terlempar keluar dari halaman siswa) dan
- * gerbang izinnya — Guru memegang `siswa.access` tapi TIDAK `orang-tua.access`.
+ * gerbang izinnya - Guru memegang `siswa.access` tapi TIDAK `orang-tua.access`.
  */
 beforeEach(function () {
     $this->admin = createAdminUser();
@@ -58,7 +58,7 @@ test('admin mengubah orang tua dari halaman siswa dan tetap berada di halaman it
 
 /**
  * Guru punya akses modul Siswa, jadi halaman detailnya terbuka untuknya. Nomor
- * WhatsApp orang tua adalah tujuan notifikasi kehadiran — membiarkannya diubah
+ * WhatsApp orang tua adalah tujuan notifikasi kehadiran - membiarkannya diubah
  * dari pintu samping akan melebarkan hak akses Guru diam-diam.
  */
 test('guru ditolak mengubah orang tua lewat pintasan ini', function () {
@@ -108,7 +108,7 @@ test('nomor WhatsApp yang sudah dipakai orang tua lain di sekolah yang sama dito
 
 /**
  * Unique index-nya `(school_id, whatsapp_number)`, bukan global. Dua sekolah
- * berbeda boleh memegang nomor yang sama — kalau aturannya salah disalin ke
+ * berbeda boleh memegang nomor yang sama - kalau aturannya salah disalin ke
  * jalur baru ini, orang tua di sekolah lain ikut memblokir.
  */
 test('nomor yang sama di sekolah lain tidak memblokir', function () {

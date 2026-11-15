@@ -113,7 +113,7 @@ class AutoCheckoutAttendanceCommand extends Command
                 ]);
                 $created++;
             } catch (UniqueConstraintViolationException) {
-                // Sudah ditutup oleh proses lain — aman diabaikan.
+                // Sudah ditutup oleh proses lain - aman diabaikan.
             }
         }
 

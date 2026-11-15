@@ -14,12 +14,12 @@ use Inertia\Inertia;
  * Halaman `semua-sekolah` menampilkan siswa dari semua sekolah, tapi seluruh
  * route siswa disaring global scope `school` yang mengunci super admin ke satu
  * sekolah yang sedang aktif di sesinya. Tautan biasa ke siswa sekolah lain
- * karena itu berakhir 404 — kelas kesalahan yang sama seperti ketika konteks
+ * karena itu berakhir 404 - kelas kesalahan yang sama seperti ketika konteks
  * tenant belum ditetapkan sebelum route model binding.
  *
  * Jalan keluarnya bukan menembus scope, melainkan MEMINDAHKAN konteksnya lebih
  * dulu, lalu membuka halaman siswa seperti biasa. Jadi setelah mendarat, super
- * admin benar-benar sedang membuka sekolah itu — bukan mengubah data sekolah
+ * admin benar-benar sedang membuka sekolah itu - bukan mengubah data sekolah
  * yang tidak terlihat di pemilih sekolahnya.
  *
  * Sengaja di luar grup `permission:siswa.access` + `feature:master_siswa`:

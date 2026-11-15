@@ -37,7 +37,7 @@ type PageProps = {
 
 /**
  * Halaman detail satu kelas, seperti ruang kelas di LMS: absen manual hari
- * ini, daftar hadir sebulan, dan anggota kelas — semuanya di satu tempat.
+ * ini, daftar hadir sebulan, dan anggota kelas - semuanya di satu tempat.
  */
 export default function DetailKelas() {
     const {

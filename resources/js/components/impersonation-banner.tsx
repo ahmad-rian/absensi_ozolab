@@ -17,7 +17,7 @@ export function ImpersonationBanner() {
             <UserRoundCog className="size-4 shrink-0" />
             <span>
                 Anda sedang menyamar sebagai <strong>{auth.user?.name}</strong>
-                {impersonation.original_name && <> — akun asli: {impersonation.original_name}</>}
+                {impersonation.original_name && <> - akun asli: {impersonation.original_name}</>}
             </span>
             <Button
                 size="sm"

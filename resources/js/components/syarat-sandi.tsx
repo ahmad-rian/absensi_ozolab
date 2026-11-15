@@ -11,7 +11,7 @@ export type Syarat = {
     Daftar syarat sandi yang mencentang dirinya sendiri saat diketik.
 
     Daftarnya TIDAK ditulis di sini. Ia datang dari App\Support\AturanSandi,
-    kelas yang juga membangkitkan aturan validasinya — kalau halaman menyusun
+    kelas yang juga membangkitkan aturan validasinya - kalau halaman menyusun
     daftarnya sendiri, suatu hari ia akan menjanjikan "minimal 8 karakter" pada
     akun yang sebenarnya dituntut 12, lalu menolak tanpa memberi tahu apa yang
     kurang. Itu betul-betul terjadi.
@@ -20,7 +20,7 @@ export type Syarat = {
     sandi tidak boleh sama dengan nomor WhatsApp atau email yang baru saja
     diketik beberapa kolom di atasnya.
 
-    Yang tidak bisa diperiksa di peramban — pemeriksaan kebocoran — muncul
+    Yang tidak bisa diperiksa di peramban - pemeriksaan kebocoran - muncul
     sebagai `catatan`, bukan sebagai centang yang berbohong.
 */
 export default function SyaratSandi({
@@ -79,7 +79,7 @@ export default function SyaratSandi({
 
 /*
     Penanda di bawah kolom ulangi sandi. Merah hanya sesudah orang mulai
-    mengetik di kolom itu — kolom kosong belum salah, baru belum diisi.
+    mengetik di kolom itu - kolom kosong belum salah, baru belum diisi.
 */
 export function CocokSandi({
     password,

@@ -19,7 +19,7 @@ test('konsol scan tidak mengimpor pustaka kamera secara statis', function () {
 
     /*
         `html5-qrcode` membawa dekoder ZXing dan sendirian ±360 KB. Selama ia
-        diimpor statis, chunk itu ikut diunduh di SETIAP gerbang — termasuk PC
+        diimpor statis, chunk itu ikut diunduh di SETIAP gerbang - termasuk PC
         bersenjata barcode gun yang tidak punya kamera sama sekali.
 
         Yang diizinkan hanya impor TIPE (terhapus saat build) dan `import()`
@@ -47,7 +47,7 @@ test('konsol scan terkunci satu layar dengan panel riwayat tetap', function () {
     $sumber = file_get_contents(resource_path('js/components/scanner/public-scan-console.tsx'));
 
     /*
-        Di gerbang tidak ada yang menggulir — tidak ada tetikus, dan remote TV
+        Di gerbang tidak ada yang menggulir - tidak ada tetikus, dan remote TV
         tidak punya caranya. Jadi tingginya dipatok dan tiap bagian harus
         sanggup menyusut.
 
@@ -57,7 +57,7 @@ test('konsol scan terkunci satu layar dengan panel riwayat tetap', function () {
     expect($sumber)
         ->toContain('h-screen h-dvh')
         ->toContain('overflow-hidden')
-        // Tiga bagian untuk area scan, sisanya untuk riwayat — dan mulai
+        // Tiga bagian untuk area scan, sisanya untuk riwayat - dan mulai
         // 1024px keduanya berdampingan, bukan bertumpuk.
         ->toContain('flex-[3]')
         ->toContain('lg:flex-row')
@@ -91,7 +91,7 @@ test('setiap halaman scan terdaftar sebagai halaman tanpa layout admin', functio
     /*
         `app.tsx` menyebut halaman publik satu per satu; yang tidak disebut
         jatuh ke `default: AppLayout`. `scan/prayer` dan `scan/library` pernah
-        terlewat persis begitu — dua tautan publik yang merender kerangka
+        terlewat persis begitu - dua tautan publik yang merender kerangka
         sidebar admin lengkap dengan menu internalnya.
     */
     foreach ($halaman as $nama) {
@@ -104,7 +104,7 @@ test('setiap halaman scan terdaftar sebagai halaman tanpa layout admin', functio
 /*
  | Penjaga tingkat sumber, dan sengaja HANYA itu.
  |
- | Perilaku runtime-nya — thumbnail dipakai kalau ada, foto asli kalau belum —
+ | Perilaku runtime-nya - thumbnail dipakai kalau ada, foto asli kalau belum -
  | sudah diuji lewat HTTP di GatePerformanceTest pada jalur absensi sekolah.
  | Menirunya untuk sholat dan perpustakaan menuntut menyiapkan jendela waktu
  | sholat dan aturan kunjungan perpustakaan, dan percobaan pertama justru

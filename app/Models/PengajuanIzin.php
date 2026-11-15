@@ -11,7 +11,7 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * Pengajuan izin/sakit siswa. `tanggal_mulai`/`tanggal_selesai` sengaja tanpa
- * cast `date` — dibaca sebagai string Y-m-d supaya perbandingan sama di MySQL
+ * cast `date` - dibaca sebagai string Y-m-d supaya perbandingan sama di MySQL
  * dan SQLite (lihat catatan jebakan tanggal di repo).
  */
 class PengajuanIzin extends Model

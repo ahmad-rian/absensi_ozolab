@@ -12,11 +12,11 @@ use Google\Service\Drive\FileList;
 use Google\Service\Drive\Resource\Files as DriveFiles;
 use Illuminate\Support\Facades\Storage;
 
-// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+// Laporan XLSX perintah drive:* ditulis ke disk local - jangan sampai ke storage sungguhan.
 beforeEach(fn () => Storage::fake('local'));
 
 /**
- * Jalur unggah ke Drive sebelumnya sama sekali tidak punya test — itu sebabnya
+ * Jalur unggah ke Drive sebelumnya sama sekali tidak punya test - itu sebabnya
  * `files->create` yang polos bisa bertahan lama: tiap generate ulang kartu
  * membuat berkas KEDUA bernama sama, dan tidak ada yang menangkapnya.
  *
@@ -74,7 +74,7 @@ test('berkas yang belum ada dibuat baru', function () {
 
 /**
  * Inti perbaikannya. `update`, bukan hapus-lalu-buat, supaya id berkas tidak
- * bergeser — `card_generation_logs.drive_url` dan tautan yang sudah dibagikan ke
+ * bergeser - `card_generation_logs.drive_url` dan tautan yang sudah dibagikan ke
  * orang tua menunjuk id itu.
  */
 test('nama yang sudah ada ditimpa, bukan digandakan', function () {
@@ -97,7 +97,7 @@ test('nama yang sudah ada ditimpa, bukan digandakan', function () {
 
 /**
  * Sisa tumpukan lama membuat pencarian mengembalikan lebih dari satu. Jalur
- * unggah tidak boleh ikut menghapus — itu tugas `drive:bersihkan-duplikat`.
+ * unggah tidak boleh ikut menghapus - itu tugas `drive:bersihkan-duplikat`.
  */
 test('saat sudah terlanjur menumpuk, yang pertama yang ditimpa dan tidak ada yang dihapus', function () {
     $files = Mockery::mock(DriveFiles::class);
@@ -146,7 +146,7 @@ test('dari yang bernama sama, yang paling baru berdiri paling depan', function (
 
 /**
  * Berkas lama kadang tidak punya createdTime. Yang tidak diketahui umurnya harus
- * jatuh ke belakang, jadi yang dibuang adalah dia — bukan berkas yang jelas-jelas
+ * jatuh ke belakang, jadi yang dibuang adalah dia - bukan berkas yang jelas-jelas
  * paling baru.
  */
 test('berkas tanpa createdTime tidak pernah menang', function () {
@@ -166,7 +166,7 @@ test('perintah pembersih jalan walau belum ada sekolah yang siap', function () {
 /**
  * Inti perbaikan folder terbelah. Letak folder siswa dulu SELALU diturunkan dari
  * nama kelas dan nama siswa, dan folder baru dibuat begitu namanya tidak ketemu
- * — padahal nama itu bergeser tiap kali kelas diganti nama, siswa naik kelas,
+ * - padahal nama itu bergeser tiap kali kelas diganti nama, siswa naik kelas,
  * atau NIS diisi belakangan. Selama id yang tersimpan masih hidup, dialah yang
  * dipakai, dan Drive tidak ditanya soal nama sama sekali.
  */
@@ -216,7 +216,7 @@ test('tanpa id tersimpan, letaknya tetap diturunkan dari nama seperti dulu', fun
 /**
  * Berkas yang dibuang ke sampah bisa jadi justru yang dicatat database. Kartu
  * yang salinan lokalnya sudah dibuang (BerkasKeluaran) dibaca lewat
- * drive_file_id — begitu sampahnya dikosongkan 30 hari kemudian, kartu itu
+ * drive_file_id - begitu sampahnya dikosongkan 30 hari kemudian, kartu itu
  * hilang dari web dan portal orang tua. Rujukannya harus pindah ke penyintas.
  */
 test('rujukan database ke berkas kembar yang dibuang dialihkan ke penyintasnya', function () {

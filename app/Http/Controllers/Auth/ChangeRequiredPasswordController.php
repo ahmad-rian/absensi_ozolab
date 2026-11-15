@@ -59,15 +59,15 @@ class ChangeRequiredPasswordController extends Controller
      * Semua peran di halaman ini memakai ambang yang sama: delapan karakter
      * plus daftar-tolak SandiUmum.
      *
-     * Sempat dibedakan — admin dan staf dikenai Password::defaults() yang di
+     * Sempat dibedakan - admin dan staf dikenai Password::defaults() yang di
      * produksi menuntut 12 karakter, huruf besar-kecil, angka, simbol, dan cek
      * kebocoran. Dilonggarkan atas keputusan pemilik aplikasi (24 Sep 2026):
      * halaman ini muncul pada login pertama akun yang dibuatkan admin, dan
      * empat syarat komposisi di depan staf sekolah terbukti terlalu sulit.
      * Pintu login tetap dibatasi 5 percobaan per menit per email+IP.
      *
-     * Hanya halaman ini. Password::defaults() — dipakai ganti sandi di
-     * pengaturan profil dan reset sandi — tidak disentuh.
+     * Hanya halaman ini. Password::defaults() - dipakai ganti sandi di
+     * pengaturan profil dan reset sandi - tidak disentuh.
      *
      * @return list<Password|SandiUmum>
      */

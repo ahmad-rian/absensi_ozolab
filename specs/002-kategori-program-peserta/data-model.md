@@ -23,4 +23,4 @@
 Kolom inti: `nama` (text, required, core), `telepon_wali` (text, core).
 
 ## Setting global
-`drive_penyelenggara_root_folder_id` — ID folder "Tyas General Apps".
+`drive_penyelenggara_root_folder_id` - ID folder "Tyas General Apps".

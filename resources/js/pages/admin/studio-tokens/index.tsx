@@ -41,7 +41,7 @@ export default function StudioTokensIndex({ tokens, schools, studioUrl }: Props)
     const form = useForm<{ name: string; school_id: string | null }>({ name: '', school_id: null });
 
     /*
-     * Token mentah hanya ada di respons ini dan tidak di mana pun lagi — tidak
+     * Token mentah hanya ada di respons ini dan tidak di mana pun lagi - tidak
      * di basis data, tidak di log. Kalau dialog ini ditutup sebelum disalin,
      * satu-satunya jalan adalah menerbitkan token baru.
      */
@@ -121,7 +121,7 @@ export default function StudioTokensIndex({ tokens, schools, studioUrl }: Props)
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <dt>Diterbitkan</dt>
-                                            <dd className="text-foreground text-right">{token.created_by ?? '—'}</dd>
+                                            <dd className="text-foreground text-right">{token.created_by ?? '-'}</dd>
                                         </div>
                                     </dl>
 
@@ -204,7 +204,7 @@ export default function StudioTokensIndex({ tokens, schools, studioUrl }: Props)
                         <DialogTitle>Salin sekarang</DialogTitle>
                         <DialogDescription>
                             Ini satu-satunya kali tokennya terlihat. Setelah dialog ini ditutup, tidak ada cara melihatnya
-                            lagi — yang tersimpan di server hanya sidik jarinya.
+                            lagi - yang tersimpan di server hanya sidik jarinya.
                         </DialogDescription>
                     </DialogHeader>
 

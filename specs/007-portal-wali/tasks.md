@@ -1,4 +1,4 @@
-# Tasks: Portal Wali (007) — direncanakan
+# Tasks: Portal Wali (007) - direncanakan
 
 - [ ] T001 Tes isolasi wali (peserta lain 404), satu akun banyak peserta, kartu digital tanpa data sensitif, tautan dicabut → 404
 - [ ] T002 Peran `WALI_PESERTA` + modul izin + tabel `wali_peserta`

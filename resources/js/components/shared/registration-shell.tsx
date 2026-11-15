@@ -10,7 +10,7 @@ import { ThemeToggle } from '@/components/shared/theme-toggle';
  *
  * Dipakai bersama oleh `/daftar` (form panjang berlangkah) dan `/quick-regis`
  * (empat isian, satu halaman). Disatukan di sini supaya keduanya tidak bisa
- * berbeda diam-diam — keduanya tautan yang dibagikan ke sekolah, dan yang satu
+ * berbeda diam-diam - keduanya tautan yang dibagikan ke sekolah, dan yang satu
  * terlihat seperti halaman internal sistem adalah kesan yang salah.
  *
  * Halaman yang memakainya WAJIB dikecualikan dari AppLayout di `app.tsx`. Tanpa

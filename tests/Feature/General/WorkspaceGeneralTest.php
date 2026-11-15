@@ -16,7 +16,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 /*
  * Workspace "Absensi General" (spec 009): area super admin yang berdiri sendiri,
- * terpisah dari sekolah. Haji lama (Kartu Bebas) hanya pindah tampilan — tidak
+ * terpisah dari sekolah. Haji lama (Kartu Bebas) hanya pindah tampilan - tidak
  * ada baris kartu yang berubah.
  */
 

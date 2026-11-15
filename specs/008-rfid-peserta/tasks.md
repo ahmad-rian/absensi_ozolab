@@ -1,4 +1,4 @@
-# Tasks: RFID Peserta (008) — direncanakan
+# Tasks: RFID Peserta (008) - direncanakan
 
 - [ ] T001 Tes: daftar UID, UID kembar ditolak dengan nama pemilik, desimal/heks dinormalkan, scan UID = scan QR, saklar mati menolak
 - [ ] T002 Migrasi kolom `rfid_uid` nullable + indeks pada `card_form_submissions` (baris lama NULL)

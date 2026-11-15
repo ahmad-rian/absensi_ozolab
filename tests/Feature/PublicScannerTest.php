@@ -16,7 +16,7 @@ beforeEach(function () {
 });
 
 /**
- * Senin pukul 07:00 WIB — di dalam jendela masuk pada jadwal default.
+ * Senin pukul 07:00 WIB - di dalam jendela masuk pada jadwal default.
  */
 function schoolMonday(int $hour = 7, int $minute = 0): Carbon
 {
@@ -158,7 +158,7 @@ test('late morning scan is still a check-in but flagged terlambat', function () 
         ->assertJson(['success' => true, 'student' => ['type' => 'CHECK_IN', 'status' => 'Terlambat']]);
 });
 
-test('a raw NIS is rejected — only the QR token is accepted', function () {
+test('a raw NIS is rejected - only the QR token is accepted', function () {
     [$school, $student] = makeScannableStudent();
 
     // NIS bisa ditebak (8 digit, rentang sempit); dulu ini cukup untuk

@@ -9,7 +9,7 @@ use Illuminate\Http\Response;
  * Berkas yang dibaca mesin: sitemap untuk mesin pencari, llms.txt untuk model
  * bahasa.
  *
- * Keduanya menyebut alamat kanonik dari konfigurasi, bukan host permintaan —
+ * Keduanya menyebut alamat kanonik dari konfigurasi, bukan host permintaan -
  * sitemap yang menyebut host salah justru menguatkan indeks yang salah.
  */
 class SeoController extends Controller
@@ -30,7 +30,7 @@ class SeoController extends Controller
     }
 
     /**
-     * llms.txt — ringkasan situs untuk perayap model bahasa.
+     * llms.txt - ringkasan situs untuk perayap model bahasa.
      *
      * Perayap AI umumnya tidak menjalankan JavaScript, jadi halaman Inertia
      * tampak kosong bagi mereka. Berkas ini yang menjelaskan situs ini apa,

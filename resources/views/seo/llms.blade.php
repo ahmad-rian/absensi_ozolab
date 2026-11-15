@@ -6,8 +6,8 @@
 
 ## Cara siswa dicatat hadir
 
-- **QR Code** — tiap siswa punya kartu ber-QR. Dipindai dengan kamera perangkat apa pun, atau ditembak barcode gun.
-- **Kartu RFID** — pembaca kartu USB mode HID. Ditempel, langsung tercatat.
+- **QR Code** - tiap siswa punya kartu ber-QR. Dipindai dengan kamera perangkat apa pun, atau ditembak barcode gun.
+- **Kartu RFID** - pembaca kartu USB mode HID. Ditempel, langsung tercatat.
 - Sistem sendiri yang menentukan absen masuk atau pulang, berdasarkan jendela waktu pada jadwal sekolah.
 - Terlambat ditandai otomatis dari ambang jam yang diatur tiap sekolah.
 
@@ -28,8 +28,8 @@ Sekolah dasar, sekolah menengah, madrasah, pesantren, dan lembaga kursus di Indo
 
 ## Halaman
 
-- [Beranda]({{ $beranda }}) — penjelasan lengkap, fitur, dan pertanyaan umum
-- [Daftarkan sekolah]({{ $daftar }}) — pendaftaran sekolah baru
+- [Beranda]({{ $beranda }}) - penjelasan lengkap, fitur, dan pertanyaan umum
+- [Daftarkan sekolah]({{ $daftar }}) - pendaftaran sekolah baru
 
 ## Pertanyaan yang sering diajukan
 
@@ -41,8 +41,8 @@ Sekolah dasar, sekolah menengah, madrasah, pesantren, dan lembaga kursus di Indo
 @endforeach
 ## Catatan untuk perayap
 
-Halaman absensi tiap sekolah beralamat rahasia dan sengaja tidak diindeks. Jangan merayapi atau menyimpan alamat di bawah `/scan/`, `/g/`, `/f/`, `/admin`, maupun `/kartu-bebas` — semuanya memuat token akses sekolah.
+Halaman absensi tiap sekolah beralamat rahasia dan sengaja tidak diindeks. Jangan merayapi atau menyimpan alamat di bawah `/scan/`, `/g/`, `/f/`, `/admin`, maupun `/kartu-bebas` - semuanya memuat token akses sekolah.
 
 ## Penyedia
 
-{{ $organisasi['name'] }} — {{ $organisasi['url'] }}
+{{ $organisasi['name'] }} - {{ $organisasi['url'] }}

@@ -77,7 +77,7 @@ class PublicScannerController extends Controller
     /**
      * Konsol scan versi ringan: Blade mandiri, tanpa React/Inertia/Vite.
      *
-     * Dipakai perangkat gerbang berspesifikasi rendah — terutama box Android TV
+     * Dipakai perangkat gerbang berspesifikasi rendah - terutama box Android TV
      * yang browsernya terlalu tua untuk oklch() di app.css. Penjaganya sama
      * persis dengan index(), termasuk membedakan "sekolah nonaktif" dari "fitur
      * dimatikan admin", dan halamannya tetap 200 supaya layar di dinding
@@ -89,7 +89,7 @@ class PublicScannerController extends Controller
     }
 
     /**
-     * `/g/{kode}` — alamat pendek menuju halaman scan ringan.
+     * `/g/{kode}` - alamat pendek menuju halaman scan ringan.
      *
      * Box Android TV di gerbang diketik pakai remote; 40 karakter scanner_token
      * tidak masuk akal untuk itu. Kode tidak dikenal atau ambigu dijawab 404,
@@ -97,7 +97,7 @@ class PublicScannerController extends Controller
      *
      * Halamannya dirender di sini, BUKAN dialihkan ke /scan/{token}/ringan.
      * Pengalihan akan menaruh token 40 karakter itu di bilah alamat, dan token
-     * yang sama juga membuka gerbang sholat dan perpustakaan — sedangkan alias
+     * yang sama juga membuka gerbang sholat dan perpustakaan - sedangkan alias
      * seperti "tyas-photo" memang dibuat untuk gampang ditebak orang.
      */
     public function shortLink(string $kode): View
@@ -110,7 +110,7 @@ class PublicScannerController extends Controller
     }
 
     /**
-     * `GET /g/{kode}/kamera` — konsol kamera untuk HP (iPhone tidak bisa
+     * `GET /g/{kode}/kamera` - konsol kamera untuk HP (iPhone tidak bisa
      * memindai di halaman ringan). Dibuka lewat kode pendek dan memakai
      * endpoint scan pendek, jadi `scanner_token` tetap tidak pernah tampil.
      */
@@ -133,11 +133,11 @@ class PublicScannerController extends Controller
     }
 
     /**
-     * `POST /g/{kode}` — endpoint scan milik halaman ringan.
+     * `POST /g/{kode}` - endpoint scan milik halaman ringan.
      *
      * Alasannya sama dengan di atas: halaman ringan tidak boleh memuat
      * `scanner_token` di dalam HTML-nya, karena alamatnya sengaja gampang
-     * ditebak. Logikanya tidak digandakan — keduanya masuk ke recordScan().
+     * ditebak. Logikanya tidak digandakan - keduanya masuk ke recordScan().
      */
     public function shortScan(Request $request, string $kode, GerbangRecorder $recorder): JsonResponse
     {
@@ -202,7 +202,7 @@ class PublicScannerController extends Controller
         $student = $this->studentLookup->findByQrToken($request->token, $school->id);
 
         // Pembaca RFID mode HID mengetik UID lalu Enter, persis seperti pemindai
-        // QR — konsol scan tidak bisa membedakan keduanya, jadi server yang
+        // QR - konsol scan tidak bisa membedakan keduanya, jadi server yang
         // mencoba UID kartu setelah token QR tidak cocok. Hanya saat fiturnya
         // dinyalakan: UID kartu jauh lebih pendek daripada qr_token, jadi jangan
         // membuka jalur tebakan itu di sekolah yang tidak memakai RFID.
@@ -223,7 +223,7 @@ class PublicScannerController extends Controller
         }
 
         // Jenisnya ditentukan server, bukan client: masuk, Dhuha, Dzuhur, atau
-        // pulang — yang mana pun yang belum tercatat pada jam ini.
+        // pulang - yang mana pun yang belum tercatat pada jam ini.
         $result = $recorder->record(sekolahSiswa: $school, student: $student, deviceId: 'PUBLIC-SCAN');
 
         return response()->json([
@@ -231,7 +231,7 @@ class PublicScannerController extends Controller
             'message' => $result['message'],
             'student' => $result['success'] ? [
                 // Layar gerbang hanya butuh identitas seperlunya. Alamat,
-                // tanggal lahir, agama, dan NISN sengaja tidak dikirim — itu
+                // tanggal lahir, agama, dan NISN sengaja tidak dikirim - itu
                 // yang dulu membuat endpoint ini jadi alat panen PII.
                 'full_name' => $student->full_name,
                 'nis' => $student->nis,
@@ -239,7 +239,7 @@ class PublicScannerController extends Controller
                 'classroom' => $student->classroom?->name,
                 // Thumbnail kalau ada, foto asli kalau belum. Aslinya PNG
                 // 1600 px berukuran megabita sementara layar gerbang cuma
-                // menggambarnya 240×320 — di box Android TV dengan wifi
+                // menggambarnya 240×320 - di box Android TV dengan wifi
                 // sekolah, itu yang membuat jeda antara kartu ditempel dan
                 // wajah muncul terasa panjang.
                 'photo_url' => StudentPhotoStorage::displayUrl($student->photo_path),

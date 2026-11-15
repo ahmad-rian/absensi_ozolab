@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 
 /**
- * Satu-satunya jalur penerbitan undangan penyelenggara — dipakai super admin
+ * Satu-satunya jalur penerbitan undangan penyelenggara - dipakai super admin
  * (admin pertama) dan admin penyelenggara (tim), supaya aturan email dan
  * pencatatan log tidak bercabang.
  */

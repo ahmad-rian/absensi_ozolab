@@ -87,7 +87,7 @@ class PhotoCropService
      * Smart crop optimized for ID card photos.
      *
      * Strategy: detect face region, then create a tight crop that frames
-     * head + upper shoulders — like a proper passport/ID photo.
+     * head + upper shoulders - like a proper passport/ID photo.
      * Uses card slot ratio (16:21) so no additional cropping is needed in CSS.
      */
     private function smartCropForCard(\GdImage $image, int $w, int $h): \GdImage
@@ -98,7 +98,7 @@ class PhotoCropService
             return $this->cropAroundFace($image, $w, $h, $face);
         }
 
-        // No face detected — fall back to center-top crop
+        // No face detected - fall back to center-top crop
         return $this->fallbackCrop($image, $w, $h);
     }
 
@@ -117,7 +117,7 @@ class PhotoCropService
         $faceCenterY = $faceY + $faceH / 2;
 
         // School ID photo: headroom + face + neck + tie + chest
-        // Face occupies ~23% of crop height — shows more body
+        // Face occupies ~23% of crop height - shows more body
         $cropH = (int) ($faceH / 0.23); // face = 23% of crop height
         $cropW = (int) ($cropH * self::SLOT_RATIO);
 
@@ -132,7 +132,7 @@ class PhotoCropService
             $cropH = (int) ($cropW / self::SLOT_RATIO);
         }
 
-        // Position face center at 36% from top of crop — balanced headroom
+        // Position face center at 36% from top of crop - balanced headroom
         $desiredFaceCenterY = (int) ($cropH * 0.36);
         $rawCropY = (int) ($faceCenterY - $desiredFaceCenterY);
         $cropX = (int) ($faceCenterX - $cropW / 2);
@@ -141,7 +141,7 @@ class PhotoCropService
         $cropX = max(0, min($imgW - $cropW, $cropX));
 
         if ($rawCropY < 0) {
-            // Not enough space above in original photo — pad with background color
+            // Not enough space above in original photo - pad with background color
             $shift = abs($rawCropY); // how many pixels to pad on top
             $bgColor = imagecolorat($image, 5, 5);
             $padded = imagecreatetruecolor($cropW, $cropH);
@@ -155,7 +155,7 @@ class PhotoCropService
             return $padded;
         }
 
-        // Normal case — enough space above
+        // Normal case - enough space above
         $cropY = min($rawCropY, $imgH - $cropH);
         $cropY = max(0, $cropY);
 
@@ -168,20 +168,20 @@ class PhotoCropService
 
     /**
      * Fallback crop when no face is detected.
-     * Assumes standard portrait photo — crops center-top with card ratio.
+     * Assumes standard portrait photo - crops center-top with card ratio.
      */
     private function fallbackCrop(\GdImage $image, int $w, int $h): \GdImage
     {
         $currentRatio = $w / $h;
 
         if ($currentRatio > self::SLOT_RATIO) {
-            // Wider than needed — crop sides
+            // Wider than needed - crop sides
             $cropW = (int) ($h * self::SLOT_RATIO);
             $cropH = $h;
             $cropX = (int) (($w - $cropW) / 2);
             $cropY = 0;
         } else {
-            // Taller than needed — crop bottom mostly
+            // Taller than needed - crop bottom mostly
             $cropW = $w;
             $cropH = (int) ($w / self::SLOT_RATIO);
             $cropX = 0;
@@ -211,7 +211,7 @@ class PhotoCropService
         $stepY = max(1, (int) ($h / 80));
         $skinPoints = [];
 
-        // Only scan upper 60% — face is always in the top portion
+        // Only scan upper 60% - face is always in the top portion
         $scanH = (int) ($h * 0.60);
 
         for ($y = 0; $y < $scanH; $y += $stepY) {
@@ -354,7 +354,7 @@ class PhotoCropService
     }
 
     /**
-     * Fix EXIF orientation — phone photos often have rotation metadata
+     * Fix EXIF orientation - phone photos often have rotation metadata
      * that GD doesn't apply automatically, causing "tilted" images.
      */
     private function fixExifOrientation(\GdImage $image, string $path, int $type): \GdImage

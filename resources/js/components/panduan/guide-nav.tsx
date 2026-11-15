@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
  * Progres dan navigasi antar langkah.
  *
  * Angkanya memakai jumlah topik yang TERLIHAT pembaca, bukan jumlah seluruh
- * topik — supaya guru yang hanya melihat lima modul tidak dibuat merasa ada
+ * topik - supaya guru yang hanya melihat lima modul tidak dibuat merasa ada
  * belasan langkah yang tidak pernah muncul.
  */
 export function GuideNav({

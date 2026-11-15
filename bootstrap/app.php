@@ -96,7 +96,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 Gerbang tidak pernah dibalas halaman React.
 
                 Rute gerbang sengaja dibuat Blade polos karena yang membukanya
-                box Android TV ber-Chrome tua — halaman yang bundelnya saja
+                box Android TV ber-Chrome tua - halaman yang bundelnya saja
                 tidak sanggup ia jalankan. Tanpa cabang ini, satu salah ketik
                 kode `/g/` justru mengirimkan bundel React ke perangkat itu:
                 halaman yang dirancang seringan mungkin, gagalnya paling berat.
@@ -162,12 +162,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('poin:sapu')->hourly()->withoutOverlapping();
 
         // Peringatan alpa sholat. Hourly, bukan dailyAt(), karena jendela
-        // sholat diatur per sekolah — satu jam tetap pasti salah untuk
+        // sholat diatur per sekolah - satu jam tetap pasti salah untuk
         // sebagian tenant. Command sendiri yang memutuskan apakah jendela hari
         // ini sudah benar-benar tutup.
         $schedule->command('prayer:notify-absence')->hourly()->withoutOverlapping();
 
-        // PDF lembar pas foto hanya alat cetak — dibuang setelah seminggu supaya
+        // PDF lembar pas foto hanya alat cetak - dibuang setelah seminggu supaya
         // tidak menumpuk di disk.
         $schedule->command('photo-sheets:prune')->dailyAt('02:30');
 

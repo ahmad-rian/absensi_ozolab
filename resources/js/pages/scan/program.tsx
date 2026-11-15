@@ -3,7 +3,7 @@ import { PublicScanConsole } from '@/components/scanner/public-scan-console';
 
 /**
  * Konsol scan kamera program penyelenggara (spec 004). Datang/pulang diputuskan
- * server dari jadwal sesi — tidak ada tombol mode.
+ * server dari jadwal sesi - tidak ada tombol mode.
  */
 export default function ProgramScanner({
     program,
@@ -23,7 +23,7 @@ export default function ProgramScanner({
 
     return (
         <>
-            <Head title={`Scan — ${program.name}`} />
+            <Head title={`Scan - ${program.name}`} />
             <PublicScanConsole
                 subjectLabel="peserta"
                 groupLabel="Sesi"

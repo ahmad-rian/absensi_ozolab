@@ -116,7 +116,7 @@ test('the streak resets once the student prays again', function () {
         markPresent($this->student, $this->monday->copy()->addDays($offset));
     }
 
-    // Alpa, alpa, sholat, alpa, alpa — tidak pernah 3 beruntun.
+    // Alpa, alpa, sholat, alpa, alpa - tidak pernah 3 beruntun.
     markPrayed($this->student, $this->monday->copy()->addDays(2));
 
     runAbsenceCommand($this->monday->copy()->addDays(4));
@@ -135,7 +135,7 @@ test('a day the school did not operate is skipped, not counted', function () {
 
     runAbsenceCommand($this->monday->copy()->addDays(3));
 
-    // Tiga hari sekolah efektif yang terlewat tetap 3 — hari libur tidak
+    // Tiga hari sekolah efektif yang terlewat tetap 3 - hari libur tidak
     // memutus rentetan dan tidak ikut dihitung.
     $alert = PrayerAbsenceAlert::withoutGlobalScope('school')->first();
 

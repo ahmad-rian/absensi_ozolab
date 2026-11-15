@@ -7,7 +7,7 @@ const sumber = readFileSync(new URL('../../resources/js/components/scanner/publi
 /*
  * html5-qrcode membaca `useBarCodeDetectorIfSupported` dan `formatsToSupport`
  * dari KONSTRUKTOR. Dioper ke `start()`, keduanya diabaikan tanpa galat dan
- * semua ponsel jatuh ke ZXing JavaScript yang lambat — sebab laporan "QR kurang
+ * semua ponsel jatuh ke ZXing JavaScript yang lambat - sebab laporan "QR kurang
  * responsif dibanding QRIS".
  */
 test('detektor bawaan dan format QR dioper ke konstruktor, bukan ke start()', () => {

@@ -79,7 +79,7 @@ class NotifyPrayerAbsenceCommand extends Command
                     continue;
                 }
 
-                // Alert ditutup hanya kalau rentetan siswa benar-benar putus —
+                // Alert ditutup hanya kalau rentetan siswa benar-benar putus -
                 // bukan kalau rentetannya sekadar turun di bawah ambang, yang
                 // terjadi begitu admin menaikkan `prayer_absence_threshold`.
                 $ongoing = $result->map(fn (array $row) => $row['student']->id)->all();
@@ -143,7 +143,7 @@ class NotifyPrayerAbsenceCommand extends Command
      * Tutup alert terbuka milik siswa yang rentetannya BENAR-BENAR putus.
      *
      * `$ongoing` berisi setiap siswa yang masih punya rentetan berjalan, tanpa
-     * peduli ambang — kalau daftar ini disaring ambang lebih dulu, menaikkan
+     * peduli ambang - kalau daftar ini disaring ambang lebih dulu, menaikkan
      * `prayer_absence_threshold` akan menandai siswa yang masih alpa tiap hari
      * sebagai "sudah sembuh".
      *
@@ -177,7 +177,7 @@ class NotifyPrayerAbsenceCommand extends Command
     {
         $student = $row['student'];
 
-        // Penjaga UTAMA — bukan unique key. Rentetan yang lebih panjang dari
+        // Penjaga UTAMA - bukan unique key. Rentetan yang lebih panjang dari
         // jendela pindai menggeser streak_start_date tiap hari, jadi unique key
         // sendirian akan menghasilkan notifikasi duplikat setiap hari.
         $openAlert = PrayerAbsenceAlert::withoutGlobalScope('school')
@@ -198,7 +198,7 @@ class NotifyPrayerAbsenceCommand extends Command
         }
 
         if ($dryRun) {
-            $this->line("  [dry-run] {$student->full_name} — {$type->shortLabel($school)} {$row['streak']} hari");
+            $this->line("  [dry-run] {$student->full_name} - {$type->shortLabel($school)} {$row['streak']} hari");
 
             return null;
         }

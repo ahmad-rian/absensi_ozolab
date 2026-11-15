@@ -14,7 +14,7 @@ use Throwable;
  *
  * Sejak Oktober foto baru disimpan JPEG berkualitas 95 (`PhotoCropService`);
  * foto sebelum itu tetap PNG 3–5× lebih besar tanpa bedanya terlihat di kartu.
- * Ukuran piksel tidak diubah — hanya wadahnya. Batas resolusi dan kualitas
+ * Ukuran piksel tidak diubah - hanya wadahnya. Batas resolusi dan kualitas
  * foto baru tidak disentuh.
  *
  * Per berkas dan tidak pernah merusak: JPEG ditulis dan dibaca balik dulu,
@@ -146,7 +146,7 @@ class KompresUlangFotoCommand extends Command
             ->update(['file_path' => $baru]);
 
         // Thumbnail diturunkan dari nama tanpa ekstensi, jadi `x.png` dan
-        // `x.jpg` berbagi `x-kecil.jpg` — yang sudah ada tetap berlaku.
+        // `x.jpg` berbagi `x-kecil.jpg` - yang sudah ada tetap berlaku.
         $disk->delete($lama);
 
         return $baru;

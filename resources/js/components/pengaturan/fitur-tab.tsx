@@ -94,7 +94,7 @@ export function FiturTab({
                         <CardTitle>Selalu Aktif</CardTitle>
                     </div>
                     <CardDescription>
-                        Dashboard dan Pengaturan tidak bisa dimatikan — tanpa keduanya tidak ada jalan untuk
+                        Dashboard dan Pengaturan tidak bisa dimatikan - tanpa keduanya tidak ada jalan untuk
                         menyalakan fitur kembali. Modul sistem berlaku lintas sekolah, jadi saklarnya ada di
                         level Super Admin, bukan di sini.
                     </CardDescription>

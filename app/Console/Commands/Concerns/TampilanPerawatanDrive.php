@@ -12,7 +12,7 @@ use Symfony\Component\Console\Helper\ProgressBar;
  *
  * Perintah-perintah ini menyapu puluhan ribu berkas dan ribuan siswa; tanpa
  * bar progres mereka diam bermenit-menit dan tampak macet. Hasil lengkapnya
- * disimpan sebagai XLSX karena ribuan baris tidak muat di terminal — dan XLSX,
+ * disimpan sebagai XLSX karena ribuan baris tidak muat di terminal - dan XLSX,
  * bukan CSV, supaya NIS berawalan nol tidak dirusak Excel.
  */
 trait TampilanPerawatanDrive
@@ -61,7 +61,7 @@ trait TampilanPerawatanDrive
     }
 
     /**
-     * Bar per sekolah, atau null bila tidak ada yang diproses — bar bertotal 0
+     * Bar per sekolah, atau null bila tidak ada yang diproses - bar bertotal 0
      * tidak bisa menghitung sisa waktu dan melempar LogicException.
      */
     protected function mulaiBar(string $label, int $total): ?ProgressBar

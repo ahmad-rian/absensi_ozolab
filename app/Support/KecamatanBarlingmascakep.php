@@ -4,7 +4,7 @@ namespace App\Support;
 
 /**
  * Daftar kecamatan Barlingmascakep (Banjarnegara, Purbalingga, Banyumas,
- * Cilacap, Kebumen) — 105 kecamatan, kode Kemendagri (Kepmendagri
+ * Cilacap, Kebumen) - 105 kecamatan, kode Kemendagri (Kepmendagri
  * 300.2.2-2138/2025), dicocokkan silang dengan Wikipedia. Sumber tunggal di
  * `resources/data/kecamatan_barlingmascakep.json`, dipakai juga oleh React.
  *

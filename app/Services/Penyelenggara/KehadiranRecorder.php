@@ -48,7 +48,7 @@ class KehadiranRecorder
         $sekarang = $hasil['sekarang'];
 
         if ($hasil['libur']) {
-            $this->tolak('Hari ini libur'.($hasil['libur']->keterangan ? " ({$hasil['libur']->keterangan})" : '').' — tidak ada sesi.');
+            $this->tolak('Hari ini libur'.($hasil['libur']->keterangan ? " ({$hasil['libur']->keterangan})" : '').' - tidak ada sesi.');
         }
 
         $sesi = $hasil['sesi'];

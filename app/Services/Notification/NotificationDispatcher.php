@@ -158,7 +158,7 @@ class NotificationDispatcher
     /**
      * Kirim ke satu channel dengan logging idempotent.
      *
-     * `$correlation` adalah kolom yang mengunci satu log ke satu kejadian —
+     * `$correlation` adalah kolom yang mengunci satu log ke satu kejadian -
      * `['attendance_id' => ...]` untuk notifikasi absensi,
      * `['prayer_absence_alert_id' => ...]` untuk peringatan alpa sholat,
      * `['attendance_alert_id' => ...]` untuk peringatan terlambat/tidak hadir.
@@ -370,7 +370,7 @@ class NotificationDispatcher
      * Pemilihan kanal SENGAJA asimetris terhadap dispatchAttendance(): email
      * dikirim kapan pun orang tua punya alamat, tanpa mensyaratkan baris
      * SchoolNotificationChannel bertipe EMAIL. Itulah arti "default lewat
-     * email" — DefaultEmailGateway sudah jatuh ke mailer global kalau sekolah
+     * email" - DefaultEmailGateway sudah jatuh ke mailer global kalau sekolah
      * belum mengatur SMTP sendiri. Jangan "dirapikan" menyamai absensi.
      *
      * @return bool true jika tidak ada channel yang gagal pada percobaan ini.
@@ -517,7 +517,7 @@ class NotificationDispatcher
     }
 
     /**
-     * Satu baris per anak. Jam scan hanya ditulis kalau ada — "Terlambat, absen
+     * Satu baris per anak. Jam scan hanya ditulis kalau ada - "Terlambat, absen
      * -" lebih membingungkan daripada tidak menyebutkan jam sama sekali.
      *
      * @param  array<int, array<string, string>>  $daftar

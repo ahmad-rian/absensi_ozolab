@@ -19,7 +19,7 @@ class SyncAttendanceSchedulesCommand extends Command
         $times = $provisioner->defaultTimes();
 
         $this->line(sprintf(
-            'Jam default: masuk %s (telat > %s) — pulang %s s/d %s',
+            'Jam default: masuk %s (telat > %s) - pulang %s s/d %s',
             $times['check_in_start'],
             $times['late_threshold'],
             $times['check_out_start'],
@@ -42,7 +42,7 @@ class SyncAttendanceSchedulesCommand extends Command
             $result = $provisioner->provision($school->id, $force);
 
             $this->info(sprintf(
-                '%s — %d jadwal dibuat, %d baris jamnya diseragamkan.',
+                '%s - %d jadwal dibuat, %d baris jamnya diseragamkan.',
                 $school->name,
                 $result['created'],
                 $result['updated'],

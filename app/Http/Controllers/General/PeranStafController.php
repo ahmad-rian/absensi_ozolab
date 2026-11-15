@@ -107,7 +107,7 @@ class PeranStafController extends Controller
 
     /**
      * Modul khusus super admin (Staf & Peran Staf) tidak bisa dimasukkan ke
-     * peran oleh staf — memasukkannya sama dengan menaikkan hak sendiri.
+     * peran oleh staf - memasukkannya sama dengan menaikkan hak sendiri.
      *
      * @param  array<int, string>  $diminta
      * @return array<int, string>

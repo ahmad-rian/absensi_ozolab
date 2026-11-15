@@ -68,8 +68,8 @@
         {{--
             Penjaga halaman putih.
 
-            Kalau bundelnya gagal — sintaks yang tidak dikenal peramban lama,
-            unduhan yang putus, JavaScript dimatikan — React tidak pernah
+            Kalau bundelnya gagal - sintaks yang tidak dikenal peramban lama,
+            unduhan yang putus, JavaScript dimatikan - React tidak pernah
             memasang apa pun dan yang dilihat orang layar putih polos. Tidak ada
             pesan, tidak ada jejak di server, dan yang melaporkannya cuma bisa
             bilang "tidak bisa dibuka". Itu sudah terjadi di halaman gerbang
@@ -95,7 +95,7 @@
                     atribut `data-page` yang memang selalu kosong, dan satu
                     `#app` tempat React benar-benar merender. Versi pertama
                     penjaga ini memeriksa yang pertama, jadi ia menyala di
-                    halaman yang baik-baik saja — lalu React menimpanya lagi
+                    halaman yang baik-baik saja - lalu React menimpanya lagi
                     pada render berikutnya dan yang terlihat cuma kedipan
                     peringatan palsu. Harness CDP yang menangkapnya.
                 */

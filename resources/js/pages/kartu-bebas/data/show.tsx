@@ -128,7 +128,7 @@ export default function KartuBebasDataShow({ dataset, layouts }: { dataset: Data
                                             <LinkFormPublik url={l.public_url} />
                                         ) : (
                                             <p className="text-muted-foreground text-xs">
-                                                Layout nonaktif — aktifkan di editor layout supaya link bisa dibuka.
+                                                Layout nonaktif - aktifkan di editor layout supaya link bisa dibuka.
                                             </p>
                                         )}
                                     </div>

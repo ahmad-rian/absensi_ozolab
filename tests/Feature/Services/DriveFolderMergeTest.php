@@ -5,7 +5,7 @@ use App\Models\Student;
 use App\Services\PhotoSheetGeneratorService;
 use Illuminate\Support\Facades\Storage;
 
-// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+// Laporan XLSX perintah drive:* ditulis ke disk local - jangan sampai ke storage sungguhan.
 beforeEach(fn () => Storage::fake('local'));
 
 /**
@@ -84,7 +84,7 @@ test('awalan disusun dari NIS, dan jatuh ke ULID saat NIS kosong', function () {
  * NIS salah ketik lalu dibetulkan membuat NIS itu berpindah tangan, dan folder
  * milik siswa LAIN tertinggal di bawahnya. Terjadi sungguhan: folder
  * "17346 - Ibrahim sabian alghifari" ikut terkumpul untuk siswa ber-NIS 17346
- * yang sekarang bernama Hyacintha Althafah Calluella — dua anak berbeda.
+ * yang sekarang bernama Hyacintha Althafah Calluella - dua anak berbeda.
  */
 test('nama yang sama sekali tidak beririsan ditolak', function () {
     expect(MergeStudentDriveFoldersCommand::namaMirip('17346 - Ibrahim sabian alghifari', 'HYACINTHA ALTHAFAH CALLUELLA'))
@@ -102,7 +102,7 @@ test('beda kapitalisasi saja jelas orang yang sama', function () {
 });
 
 /**
- * NIS-nya ikut terbaca sebagai teks, tapi angka bukan kata — kalau ikut
+ * NIS-nya ikut terbaca sebagai teks, tapi angka bukan kata - kalau ikut
  * dihitung, setiap folder akan beririsan dengan setiap siswa lewat NIS-nya
  * sendiri dan pengaman ini tidak menjaga apa pun.
  */
@@ -172,7 +172,7 @@ test('setiap template pas foto dikenali', function () {
  * NIS yang berpindah tangan meninggalkan berkas milik siswa LAIN di dalam folder
  * ini, bukan hanya folder terpisah. Terjadi sungguhan: berkas
  * `alfian-rifky-maulana-17336-*.png` berada di folder siswa yang sekarang
- * bernama ALVIAN FAIZ SYAHPUTRA — dua anak berbeda. Mengganti namanya berarti
+ * bernama ALVIAN FAIZ SYAHPUTRA - dua anak berbeda. Mengganti namanya berarti
  * melabeli foto yang satu dengan nama yang lain.
  */
 test('bagian nama dari berkas membuang jenis keluarannya', function () {
@@ -187,7 +187,7 @@ test('berkas milik siswa lain di folder yang sama ditolak', function () {
 });
 
 /**
- * Koreksi ejaan dan koreksi NIS harus tetap lolos — itu justru yang perlu
+ * Koreksi ejaan dan koreksi NIS harus tetap lolos - itu justru yang perlu
  * diselaraskan.
  */
 test('koreksi ejaan dan NIS tetap lolos', function () {
@@ -200,7 +200,7 @@ test('koreksi ejaan dan NIS tetap lolos', function () {
 
 /**
  * Tanpa membuang jenis keluarannya, `osis` dan `foto` muncul di setiap berkas
- * dan membuat semua nama terlihat beririsan — pengamannya jadi tidak menjaga
+ * dan membuat semua nama terlihat beririsan - pengamannya jadi tidak menjaga
  * apa pun.
  */
 test('jenis keluaran tidak boleh jadi sumber kesamaan', function () {

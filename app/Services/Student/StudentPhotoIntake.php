@@ -18,7 +18,7 @@ use Throwable;
  * satu di antaranya sudah pernah menjatuhkan server ini: nama berkas memuat 16
  * karakter acak, jadi foto lama TIDAK tertimpa dan akan tertinggal selamanya
  * kalau tidak dibuang. Dua salinan urutan seperti itu adalah dua urutan yang
- * cepat atau lambat berbeda — dan yang hilang di salinan kedua biasanya justru
+ * cepat atau lambat berbeda - dan yang hilang di salinan kedua biasanya justru
  * langkah penghapusannya.
  *
  * Yang TIDAK dikerjakan di sini: merender kartu dan lembar pas foto. Keduanya

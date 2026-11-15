@@ -13,7 +13,7 @@
 ### User Story 1 - Pantauan hari ini (Priority: P1)
 
 Pukul 08.20 ketua biro membuka dashboard program: Manasik Pagi 287/320 hadir, 12 terlambat,
-21 belum hadir — daftar yang belum hadir bisa dibuka per rombongan.
+21 belum hadir - daftar yang belum hadir bisa dibuka per rombongan.
 
 **Why this priority**: Keputusan lapangan (menjemput jamaah yang tertinggal) bergantung pada ini.
 

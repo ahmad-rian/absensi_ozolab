@@ -34,7 +34,7 @@ function registerClassPromotionRoutes(): void
         });
 
     // Nama route dipasang setelah route masuk koleksi, jadi peta namanya harus
-    // disegarkan manual — di aplikasi sungguhan RouteServiceProvider yang
+    // disegarkan manual - di aplikasi sungguhan RouteServiceProvider yang
     // melakukannya seusai memuat routes/web.php.
     Route::getRoutes()->refreshNameLookups();
 }
@@ -46,7 +46,7 @@ function writePromotionCsv(array $rows): string
 {
     // Direktori sementara, BUKAN `tests/fixtures/imports` yang ikut ter-commit.
     // Menulis ke sana mengotori pohon kerja setiap kali suite jalan, dan run
-    // berikutnya gagal di test lain yang tidak ada hubungannya — persis ranjau
+    // berikutnya gagal di test lain yang tidak ada hubungannya - persis ranjau
     // yang sudah dicabut dari `StudentImportParserTest` di 15068c8.
     $dir = sys_get_temp_dir().'/absensi-promotion-'.uniqid();
 
@@ -300,7 +300,7 @@ it('tidak menggandakan riwayat saat diterapkan dua kali', function () {
         ->post(route('admin.kelas.kenaikan.apply', ['key' => $key]))
         ->assertRedirect();
 
-    // Berkas yang sama diunggah dan diterapkan ulang — persis yang dilakukan
+    // Berkas yang sama diunggah dan diterapkan ulang - persis yang dilakukan
     // admin kalau ragu apakah kenaikan tadi berhasil.
     $repeatKey = uploadPromotionFile($user, [
         ['nisn', 'kelas baru'],

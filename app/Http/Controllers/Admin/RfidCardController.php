@@ -15,7 +15,7 @@ use Inertia\Response;
 /**
  * Pendaftaran kartu RFID ke siswa.
  *
- * Yang disimpan adalah UID kartu — angka yang sudah dibakar pabrik ke dalam
+ * Yang disimpan adalah UID kartu - angka yang sudah dibakar pabrik ke dalam
  * chip dan bersifat baca-saja. Tidak ada yang ditulis ke kartunya; pembaca mode
  * HID mengetikkan UID itu seperti keyboard, dan halaman ini menangkapnya.
  */
@@ -121,7 +121,7 @@ class RfidCardController extends Controller
      * back() mengikuti header Referer, dan URL ini hanya punya rute POST/DELETE.
      * Begitu satu kegagalan membuat Inertia menaruh URL POST di bilah alamat
      * (itulah yang terjadi saat penangan galat merender halaman error), setiap
-     * pengalihan berikutnya menembak URL yang tidak punya rute GET — satu
+     * pengalihan berikutnya menembak URL yang tidak punya rute GET - satu
      * gangguan sesaat berubah jadi rentetan 404 sampai halaman dimuat ulang.
      *
      * Filter ikut dibawa supaya operator tidak terlempar ke halaman pertama

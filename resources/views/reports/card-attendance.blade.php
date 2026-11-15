@@ -22,7 +22,7 @@ section + section { page-break-before: always; }
 @forelse ($sections as $section)
 <section><h2>{{ $section['name'] }}</h2><table><thead><tr><th>Tanggal</th><th>Peserta</th><th>Layout</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Catatan</th></tr></thead><tbody>
 @foreach ($section['rows'] as $row)
-<tr><td>{{ $row['date'] }}</td><td>{{ $row['name'] }}</td><td>{{ $row['layout'] }}</td><td>{{ $row['status'] }}</td><td>{{ $row['check_in'] ?? '—' }}</td><td>{{ $row['check_out'] ?? '—' }}</td><td>{{ $row['note'] ?? '—' }}</td></tr>
+<tr><td>{{ $row['date'] }}</td><td>{{ $row['name'] }}</td><td>{{ $row['layout'] }}</td><td>{{ $row['status'] }}</td><td>{{ $row['check_in'] ?? '-' }}</td><td>{{ $row['check_out'] ?? '-' }}</td><td>{{ $row['note'] ?? '-' }}</td></tr>
 @endforeach
 </tbody></table></section>
 @empty

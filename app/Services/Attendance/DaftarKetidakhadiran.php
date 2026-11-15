@@ -80,7 +80,7 @@ class DaftarKetidakhadiran
      * Penjaga hari libur.
      *
      * Nol check-in sepanjang hari hampir pasti berarti libur yang tidak
-     * terdaftar di jadwal — bukan seluruh siswa membolos bersamaan.
+     * terdaftar di jadwal - bukan seluruh siswa membolos bersamaan.
      */
     public function adaCheckIn(School $school, Carbon $date): bool
     {

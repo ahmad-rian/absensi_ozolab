@@ -11,7 +11,7 @@ isolasi tiga keadaan lewat trait `CardTenancy`. Detail di [research.md](./resear
 ## Technical Context
 
 **Language/Version**: PHP 8.4, TypeScript (React 19) · **Primary Dependencies**: Laravel 13, Inertia v3,
-OpenSpout (impor), Browsershot (render kartu, sudah ada), Google Drive API (sudah ada) — tanpa dependency baru
+OpenSpout (impor), Browsershot (render kartu, sudah ada), Google Drive API (sudah ada) - tanpa dependency baru
 · **Storage**: MySQL/SQLite · **Testing**: Pest 4 + node test · **Project Type**: monolit web ·
 **Performance Goals**: pratinjau impor 1.000 baris < 30 s; daftar peserta 500 baris < 1 s ·
 **Constraints**: baris `card_*` lama tidak berubah; Kartu Bebas berperilaku sama ·

@@ -13,7 +13,7 @@ return new class extends Migration
      *
      * Dua bug ditutup sekaligus:
      * 1. Validasi aplikasi (SiswaController) sudah lama memakai unique per
-     *    sekolah, sementara DB masih unik global — sekolah kedua yang kebetulan
+     *    sekolah, sementara DB masih unik global - sekolah kedua yang kebetulan
      *    memakai NIS sama ditolak dengan QueryException, bukan pesan validasi.
      * 2. `deleted_at` ikut ke dalam index supaya siswa yang di-soft-delete
      *    melepas NIS/NISN-nya. Tanpa itu, NIS bekas siswa pindahan menyandera
@@ -23,7 +23,7 @@ return new class extends Migration
      * index, jadi index yang memuat `deleted_at` TIDAK menolak dua siswa aktif
      * ber-NIS sama di satu sekolah. Penegakan itu tetap di lapisan validasi;
      * index ini yang menutup kebocoran lintas sekolah dan membebaskan NIS milik
-     * baris terhapus. Karena itu duplikat lama harus dibereskan manual — `up()`
+     * baris terhapus. Karena itu duplikat lama harus dibereskan manual - `up()`
      * menolak jalan bila menemukannya.
      */
     public function up(): void
@@ -59,7 +59,7 @@ return new class extends Migration
     }
 
     /**
-     * PERINGATAN: `down()` bisa gagal di produksi — unique global tidak dapat
+     * PERINGATAN: `down()` bisa gagal di produksi - unique global tidak dapat
      * dipasang ulang selama ada dua sekolah memakai NIS/NISN yang sama.
      */
     public function down(): void
@@ -81,7 +81,7 @@ return new class extends Migration
 
     /**
      * Hentikan migrasi SEBELUM satu pun DDL dijalankan kalau data lama sudah
-     * melanggar bentuk unique yang baru — lebih baik gagal utuh dan bisa
+     * melanggar bentuk unique yang baru - lebih baik gagal utuh dan bisa
      * diulang daripada gagal di tengah dengan index setengah terpasang.
      *
      * @throws RuntimeException

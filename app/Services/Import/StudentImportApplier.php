@@ -146,7 +146,7 @@ class StudentImportApplier
     /**
      * Nama orang tua yang dibetulkan lewat berkas hanya mengubah
      * `students.parent_name`. Nama akun login orang tua (`users.name`) sengaja
-     * tidak ikut disentuh — lihat catatan pada Student::parentName().
+     * tidak ikut disentuh - lihat catatan pada Student::parentName().
      */
     private function linkParent(Student $student, string $schoolId, ?string $email): void
     {

@@ -34,7 +34,7 @@ function ukuran(bytes: number | null): string {
  *
  * Pratinjaunya dialirkan lewat server (`/drive/thumb/{id}`) karena
  * `thumbnailLink` milik Drive berumur pendek dan menuntut sesi Google si
- * pemilik berkas — dipasang langsung di `<img src>` ia hanya menghasilkan
+ * pemilik berkas - dipasang langsung di `<img src>` ia hanya menghasilkan
  * gambar rusak.
  */
 type PickerProps = { studentId: string } | {
@@ -95,7 +95,7 @@ export function DrivePhotoPicker(props: PickerProps) {
         siswa jauh lebih sering dibuka untuk mencetak QR daripada untuk
         mengganti foto. Kedua: `setState` di dalam efek memicu rentetan render
         dan ditolak `react-hooks/set-state-in-effect`. Membuka dialog memang
-        sebuah peristiwa — di situlah tempatnya.
+        sebuah peristiwa - di situlah tempatnya.
     */
     function buka() {
         setOpen(true);

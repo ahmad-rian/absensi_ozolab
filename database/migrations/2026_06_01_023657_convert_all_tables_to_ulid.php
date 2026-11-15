@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Only applies to MySQL — SQLite already has correct column types from fresh migrations
+        // Only applies to MySQL - SQLite already has correct column types from fresh migrations
         if (DB::getDriverName() !== 'mysql') {
             return;
         }

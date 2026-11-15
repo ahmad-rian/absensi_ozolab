@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 /**
  * Seragamkan kapitalisasi nama siswa yang sudah tersimpan.
  *
- * Kapitalisasi masuk campur dari impor tiap sekolah — "ABDILLAH AZIZ RAMADHANI"
+ * Kapitalisasi masuk campur dari impor tiap sekolah - "ABDILLAH AZIZ RAMADHANI"
  * bersebelahan dengan "afrisya aulia sari" di daftar yang sama, dan ikut
  * terbawa ke album serta PDF laporan. Sejak mutator di `Student` dipasang,
  * input baru sudah huruf besar; command ini yang menyusulkan data lama.
@@ -36,7 +36,7 @@ class UppercaseStudentNamesCommand extends Command
         //
         // withoutGlobalScope('school'): di CLI tidak ada user login sehingga
         // scope-nya kosong, tapi command ini juga dipanggil dari test yang
-        // sudah actingAs() — di sana tanpa ini hanya satu sekolah yang tersentuh.
+        // sudah actingAs() - di sana tanpa ini hanya satu sekolah yang tersentuh.
         Student::withoutGlobalScope('school')
             ->withTrashed()
             ->when($this->option('school'), fn ($query) => $query->where('school_id', $this->option('school')))

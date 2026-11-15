@@ -18,7 +18,7 @@ export type SiswaAntre = {
  * Memasang pas foto beberapa siswa berturut-turut tanpa meninggalkan halaman.
  *
  * Sebelumnya tiap baris menautkan ke halaman edit siswa, yang berarti berpindah
- * halaman dan kembali lagi untuk setiap anak — dan untuk sekolah yang belum
+ * halaman dan kembali lagi untuk setiap anak - dan untuk sekolah yang belum
  * dipilih di sesi, tautan itu bahkan 404 (lihat catatan di
  * `GenerateKartuMassalController::unggahFoto`).
  *
@@ -54,7 +54,7 @@ export function ModalPasFotoAntre({
         Pemanggil merender komponen ini HANYA saat terbuka dan memberinya
         `key`, jadi tiap pembukaan adalah mount baru dan salinannya selalu
         segar. Itu yang membuat state awal boleh dibaca dari prop di sini tanpa
-        menulis state saat render maupun menyalinnya di dalam efek — keduanya
+        menulis state saat render maupun menyalinnya di dalam efek - keduanya
         ditolak aturan React Compiler yang berlaku di repo ini.
     */
     const [antrean] = useState<SiswaAntre[]>(() => siswa);

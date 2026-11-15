@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
  *
  * SENGAJA tidak memakai `BelongsToSchool`. Global scope itu membaca sekolah
  * milik user yang sedang login, sedangkan token justru dicari ketika TIDAK ada
- * user sama sekali — scope-nya akan mati dan memberi rasa aman yang palsu.
+ * user sama sekali - scope-nya akan mati dan memberi rasa aman yang palsu.
  * Penyaringan sekolah di sini selalu eksplisit, di pemanggilnya.
  */
 class StudioToken extends Model
@@ -33,7 +33,7 @@ class StudioToken extends Model
      * `token_hash` tidak pernah ikut serialisasi.
      *
      * Ia bukan token mentahnya, tapi ia satu-satunya bahan untuk menebak lewat
-     * kamus — dan tidak ada satu pun layar yang butuh melihatnya.
+     * kamus - dan tidak ada satu pun layar yang butuh melihatnya.
      */
     protected $hidden = ['token_hash'];
 
@@ -118,7 +118,7 @@ class StudioToken extends Model
      * Batasi query ke sekolah yang boleh disentuh token ini.
      *
      * Dipakai di SETIAP query endpoint Studio. Global scope `school` mati di
-     * jalur bertoken — tanpa pembatas ini, satu token akan melihat seluruh
+     * jalur bertoken - tanpa pembatas ini, satu token akan melihat seluruh
      * siswa dari seluruh sekolah.
      *
      * @template TModel of Model

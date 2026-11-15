@@ -22,7 +22,7 @@ use Throwable;
  * tingkat DB), jadi job tidak boleh bergantung pada barisnya masih ada.
  *
  * Foldernya dibuang ke SAMPAH, bukan dihapus. Sampah Drive menyimpan 30 hari,
- * dan `drive:pulihkan-sampah` bisa mengembalikannya — memulihkan folder ikut
+ * dan `drive:pulihkan-sampah` bisa mengembalikannya - memulihkan folder ikut
  * mengembalikan seluruh isinya. `GoogleDriveService::delete()` sengaja tidak
  * dipakai: ia satu-satunya penghapus permanen di kode ini dan tidak memberi
  * kesempatan membatalkan.
@@ -100,13 +100,13 @@ class PurgeStudentDriveAssetsJob implements ShouldQueue
     /**
      * Boleh dibuang, atau masih ada siswa hidup yang memakainya?
      *
-     * Siswa yang di-soft-delete sengaja TIDAK dihitung — SoftDeletes sudah
+     * Siswa yang di-soft-delete sengaja TIDAK dihitung - SoftDeletes sudah
      * membuangnya dari query ini. Kalau ia ikut dihitung, folder tidak akan
      * pernah bisa dibuang sama sekali: siswa yang barusan dihapus itu sendiri
      * masih punya baris yang menunjuk ke sana.
      *
      * Public dan statis supaya keputusannya bisa diuji tanpa memalsukan seluruh
-     * klien Google — pola yang sama dengan `CleanDriveDuplicatesCommand::duplikat()`.
+     * klien Google - pola yang sama dengan `CleanDriveDuplicatesCommand::duplikat()`.
      */
     public static function folderBolehDibuang(?string $folderId, string $studentId): bool
     {
@@ -124,7 +124,7 @@ class PurgeStudentDriveAssetsJob implements ShouldQueue
      * Foto crop dan kartu PNG di disk `public`.
      *
      * Sampai sekarang tidak ada satu pun jalur yang membersihkannya, jadi tiap
-     * siswa yang dihapus meninggalkan berkasnya selamanya — dan disk penuh
+     * siswa yang dihapus meninggalkan berkasnya selamanya - dan disk penuh
      * sudah pernah menjatuhkan seluruh server.
      */
     private function purgeLocal(): void

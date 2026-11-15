@@ -14,7 +14,7 @@ type StatCardProps = {
 
 /**
  * Kartu angka ringkas: latar diwarnai tipis sesuai maknanya, garis aksen di
- * kiri, ikon di pojok — supaya deretan angka di atas terbaca sekilas.
+ * kiri, ikon di pojok - supaya deretan angka di atas terbaca sekilas.
  */
 const colorMap = {
     blue: {

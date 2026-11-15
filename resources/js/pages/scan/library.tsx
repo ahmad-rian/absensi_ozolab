@@ -11,12 +11,12 @@ type PageProps = {
 export default function LibraryScanPage({ school, scanToken, featureEnabled }: PageProps) {
     return (
         <>
-            <Head title={`Kunjungan Perpustakaan — ${school.name}`} />
+            <Head title={`Kunjungan Perpustakaan - ${school.name}`} />
             <PublicScanConsole
                 school={school}
                 scanUrl={`/scan/${scanToken}/perpustakaan`}
                 tagline="Kunjungan Perpustakaan"
-                // Satu tautan melayani masuk maupun keluar — server yang tahu
+                // Satu tautan melayani masuk maupun keluar - server yang tahu
                 // siswa itu sedang di dalam atau tidak, jadi petugas tidak
                 // pernah perlu memilih mode.
                 hint="Tempel sekali saat masuk, tempel lagi saat keluar"

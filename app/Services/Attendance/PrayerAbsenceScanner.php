@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  * Cari siswa yang berturut-turut tidak ikut sholat.
  *
  * Menghitung "hari sholat" tanpa kalender hari libur: hari yang tidak punya
- * satu pun baris `attendances` untuk sekolah itu dianggap libur — heuristik
+ * satu pun baris `attendances` untuk sekolah itu dianggap libur - heuristik
  * yang PERSIS sama dengan StudentStatsBuilder::effectiveDays(), supaya angka di
  * notifikasi tidak pernah bertentangan dengan laporan yang bisa dibuka orang
  * tua dan admin.
@@ -31,12 +31,12 @@ class PrayerAbsenceScanner
 
     /**
      * Setiap siswa yang sedang punya rentetan berjalan, tanpa penyaringan
-     * ambang — pemanggil yang memutuskan mana yang layak dinotifikasi dan mana
+     * ambang - pemanggil yang memutuskan mana yang layak dinotifikasi dan mana
      * yang cukup menahan alert-nya tetap terbuka.
      *
      * `null` berarti pindaian TIDAK BISA dilakukan (tidak ada satu pun hari
      * operasional dalam jendela pindai, mis. libur panjang). Itu berbeda dari
-     * koleksi kosong yang berarti "tidak ada yang alpa" — kalau keduanya
+     * koleksi kosong yang berarti "tidak ada yang alpa" - kalau keduanya
      * disamakan, libur panjang akan menutup semua alert yang terbuka.
      *
      * @return ?Collection<int, array{student: Student, streak: int, start: string, last: string}>
@@ -56,7 +56,7 @@ class PrayerAbsenceScanner
         $students = $this->candidates($school, $settings);
 
         if ($students->isEmpty()) {
-            // Pindaian valid, hanya tidak ada siswa yang tercakup — alert lama
+            // Pindaian valid, hanya tidak ada siswa yang tercakup - alert lama
             // milik siswa yang sudah tidak wajib sholat memang layak ditutup.
             return collect();
         }
@@ -93,7 +93,7 @@ class PrayerAbsenceScanner
     }
 
     /**
-     * Tanggal (desc) yang punya minimal satu baris absensi — proksi kalender
+     * Tanggal (desc) yang punya minimal satu baris absensi - proksi kalender
      * libur.
      *
      * @return array<int, string>

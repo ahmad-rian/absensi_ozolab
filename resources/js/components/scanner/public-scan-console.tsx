@@ -23,7 +23,7 @@ import { playErrorSound, playReadTick, playSuccessSound } from '@/components/sca
 /*
     `html5-qrcode` diunduh saat dibutuhkan, bukan saat halaman dibuka.
 
-    Pustaka ini membawa dekoder ZXing dan sendirian berukuran ±379 KB — chunk
+    Pustaka ini membawa dekoder ZXing dan sendirian berukuran ±379 KB - chunk
     terbesar ketiga di seluruh aplikasi. Selama ia diimpor statis, setiap
     gerbang ikut mengunduhnya: termasuk PC gerbang bersenjata barcode gun yang
     tidak punya kamera sama sekali, dan tablet perpustakaan yang cuma
@@ -55,7 +55,7 @@ function muatPustakaKamera(): Promise<PustakaKamera> {
  * Apakah perangkat ini punya kamera, diperiksa TANPA memuat pustakanya.
  *
  * `enumerateDevices()` bawaan peramban mengisi `kind` bahkan sebelum izin
- * diberikan — labelnya saja yang kosong — jadi keberadaan `videoinput` bisa
+ * diberikan - labelnya saja yang kosong - jadi keberadaan `videoinput` bisa
  * diketahui lebih dulu. Itulah yang menghemat unduhan di gerbang tanpa kamera.
  *
  * Daftar yang KOSONG SAMA SEKALI sengaja dianggap "tidak bisa dipastikan", dan
@@ -138,7 +138,7 @@ type Props = {
     groupLabel?: string;
     /**
      * Endpoint GET riwayat scan hari ini. Bila diisi, daftar riwayat dibaca
-     * dari database (sama di semua perangkat, jam server) — bukan dari memori
+     * dari database (sama di semua perangkat, jam server) - bukan dari memori
      * tab. Tanpa ini perilaku lama tetap (dipakai gerbang sekolah).
      */
     riwayatUrl?: string;
@@ -152,7 +152,7 @@ const DATE_FMT: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', 
  * Berapa lama kartu yang SAMA diabaikan setelah berhasil tercatat.
  *
  * Tidak ada jeda menyeluruh: kartu berbeda boleh menyusul seketika, supaya
- * antrean di gerbang tidak tersendat. Penjaga ini hanya menahan pantulan —
+ * antrean di gerbang tidak tersendat. Penjaga ini hanya menahan pantulan -
  * pembaca RFID/barcode kerap memancarkan UID dua kali dalam satu tempelan,
  * dan tanpa penahan itu anak melihat kotak merah "Sudah absen masuk hari ini"
  * sedetik setelah dia benar-benar berhasil.
@@ -168,7 +168,7 @@ const FPS_PINDAI_ZXING = 12;
 /**
  * Minta autofokus kontinu bila kamera mendukung. Banyak kamera ponsel
  * memulai dengan fokus tetap sehingga kartu yang didekatkan kabur dan QR-nya
- * tidak pernah terbaca — aplikasi QRIS selalu menyalakan ini.
+ * tidak pernah terbaca - aplikasi QRIS selalu menyalakan ini.
  */
 async function fokusKontinu(scanner: Html5Qrcode): Promise<void> {
     try {
@@ -198,7 +198,7 @@ const RESULT_MS = 2500;
  * Timernya direset tiap tombol, jadi angka ini adalah jeda ANTAR-KARAKTER,
  * bukan total. Nilai lama 150 ms terlalu ketat: saat React sedang render di
  * perangkat lemot, satu keystroke bisa tertunda melewatinya dan buffer dibuang
- * di tengah UID — sisanya terkirim sebagai token potong dan ditolak server.
+ * di tengah UID - sisanya terkirim sebagai token potong dan ditolak server.
  * Manusia butuh ~1 detik untuk berganti kartu, jadi angka ini tidak akan
  * menyatukan dua tempelan.
  */
@@ -220,7 +220,7 @@ const MIN_TOKEN = 6;
  *
  * Pembaca RFID/barcode mengetik 5-20 ms per karakter; manusia tercepat pun
  * jauh di atas 50 ms. Ini yang memisahkan tempelan kartu dari orang yang
- * sedang mengetik di kotak manual — supaya ketikan tangan tidak terkirim
+ * sedang mengetik di kotak manual - supaya ketikan tangan tidak terkirim
  * sendiri di tengah jalan.
  */
 const MACHINE_MS_PER_KEY = 50;
@@ -267,7 +267,7 @@ function layarPenuhSekarang(): Element | null {
  * Peramban yang dibuka DI DALAM aplikasi lain, bukan peramban sungguhan.
  *
  * WhatsApp, Instagram, Facebook, dan Line membuka tautan di WebView sendiri.
- * Di iOS, WebView itu MEMBLOKIR `getUserMedia` sepenuhnya — bukan menanyakan
+ * Di iOS, WebView itu MEMBLOKIR `getUserMedia` sepenuhnya - bukan menanyakan
  * izin, langsung menolak. Tautan gerbang ini dibagikan lewat WhatsApp, jadi
  * itu justru jalan masuk yang paling mungkin dipakai orang.
  *
@@ -286,7 +286,7 @@ function peramban_dalam_aplikasi(): boolean {
 /**
  * Konsol scan layar-penuh: kamera QR, barcode gun, kartu hasil, riwayat.
  *
- * Dipakai bersama oleh absensi sekolah dan absen sholat — dua halaman itu
+ * Dipakai bersama oleh absensi sekolah dan absen sholat - dua halaman itu
  * hanya berbeda endpoint dan label, jadi implementasinya tidak digandakan.
  */
 export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNotice = null, subjectLabel = 'siswa', groupLabel = 'Kelas', riwayatUrl }: Props) {
@@ -330,7 +330,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
      * Bentuk bacaan terakhir, ditampilkan hanya saat gagal.
      *
      * Operator memegang kartunya. Kalau layar bilang "terbaca 18 karakter"
-     * padahal tokennya 35, bacaan yang terpotong kelihatan saat itu juga —
+     * padahal tokennya 35, bacaan yang terpotong kelihatan saat itu juga -
      * tanpa perlu membuka server. Ini yang selama ini hilang setiap kali ada
      * laporan "kartu tidak dikenali padahal datanya ada".
      */
@@ -342,7 +342,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
     const barcodeInputRef = useRef<HTMLInputElement>(null);
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const mountedRef = useRef(true);
-    /** Token yang requestnya sedang terbang — mencegah kirim ganda token sama. */
+    /** Token yang requestnya sedang terbang - mencegah kirim ganda token sama. */
     const inFlightRef = useRef<Set<string>>(new Set());
     /** Token berhasil terakhir beserta waktunya, untuk penjaga SAME_CARD_MS. */
     const recentRef = useRef<Map<string, number>>(new Map());
@@ -402,7 +402,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
      * sekali.
      *
      * Safari di iPhone tidak mengenal `requestFullscreen` maupun
-     * `fullscreenElement` — bukan ditolak, memang tidak ada. Tombolnya
+     * `fullscreenElement` - bukan ditolak, memang tidak ada. Tombolnya
      * terpasang, ditekan, dan tidak terjadi apa-apa. Tombol mati lebih buruk
      * daripada tombol yang tidak ada: yang pertama membuat orang menekannya
      * berkali-kali lalu menyimpulkan halamannya rusak.
@@ -458,7 +458,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             if (recent.has(token)) return;
 
             inFlightRef.current.add(token);
-            // Bunyi dan getar SEKETIKA saat QR terbaca, sebelum server menjawab —
+            // Bunyi dan getar SEKETIKA saat QR terbaca, sebelum server menjawab -
             // seperti aplikasi QRIS. Jawaban server menyusul lewat suara hasil.
             playReadTick();
             setMemproses(true);
@@ -472,10 +472,10 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                  *
                  * Halaman gerbang dibiarkan terbuka sepanjang hari. Token CSRF
                  * ikut tercetak SEKALI saat halaman dimuat, dan sesi berakhir
-                 * setelah menganggur — jeda antara absen masuk pagi dan absen
+                 * setelah menganggur - jeda antara absen masuk pagi dan absen
                  * pulang siang sudah cukup. Sesudah itu SETIAP tempelan kartu
                  * dijawab 419 berisi HTML, `res.json()` melempar, dan layarnya
-                 * bilang "Gagal menghubungi server" — kalimat yang mengirim
+                 * bilang "Gagal menghubungi server" - kalimat yang mengirim
                  * orang memeriksa jaringan dan kabel, bukan memuat ulang
                  * halaman.
                  *
@@ -504,8 +504,8 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                     return;
                 }
 
-                // Jawaban yang bukan JSON — 500, 503, atau halaman perantara
-                // jaringan sekolah — membuat `json()` melempar dan menyamar
+                // Jawaban yang bukan JSON - 500, 503, atau halaman perantara
+                // jaringan sekolah - membuat `json()` melempar dan menyamar
                 // jadi "gagal menghubungi server".
                 const jenis = res.headers.get('content-type') ?? '';
 
@@ -524,7 +524,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 if (!mountedRef.current) return;
 
                 // Hanya yang berhasil yang ditahan. Kartu yang ditolak boleh
-                // ditempel ulang saat itu juga — dulu ia ikut terkunci dan
+                // ditempel ulang saat itu juga - dulu ia ikut terkunci dan
                 // operator mengira alatnya rusak.
                 if (data.success) recent.set(token, Date.now());
 
@@ -573,7 +573,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
      *
      * Dulu dipatok 260x260. Di layar ponsel yang lebih sempit dari itu,
      * html5-qrcode menolak memulai dengan "qrbox dimensions should not be
-     * greater than the video width/height" — kamera tidak menyala sama sekali,
+     * greater than the video width/height" - kamera tidak menyala sama sekali,
      * dan di Windows angka itu tidak pernah tercapai sehingga tidak pernah
      * terlihat.
      */
@@ -617,14 +617,14 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             el.innerHTML = '';
 
             /*
-             * Tidak ada `mediaDevices` sama sekali — dibedakan dari izin yang
+             * Tidak ada `mediaDevices` sama sekali - dibedakan dari izin yang
              * ditolak, karena tindakannya berbeda jauh.
              *
              * Tiga sebab: halaman diakses lewat http biasa (API kamera cuma
              * hidup di konteks aman), peramban terlalu tua, atau tautannya
              * dibuka di dalam WhatsApp. Yang ketiga paling sering di sini, dan
              * satu-satunya jalan keluarnya membuka tautan di peramban
-             * sungguhan — bukan menekan "Coba Lagi" berulang kali.
+             * sungguhan - bukan menekan "Coba Lagi" berulang kali.
              */
             if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
                 setCameraError(
@@ -664,7 +664,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 /*
                  * Kenapa dulu terasa lambat dibanding aplikasi QRIS:
                  * `useBarCodeDetectorIfSupported` dioper ke `start()`, padahal itu
-                 * opsi KONSTRUKTOR — diabaikan diam-diam, sehingga detektor QR
+                 * opsi KONSTRUKTOR - diabaikan diam-diam, sehingga detektor QR
                  * bawaan perangkat (cepat, dipakai Chrome Android) tidak pernah
                  * dipakai dan semua ponsel jatuh ke ZXing JavaScript yang
                  * mencoba belasan format barcode tiap frame. Kartu hanya
@@ -686,7 +686,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                      * Html5Qrcode punya mesin keadaan internal, dan memanggil
                      * `start()` lagi pada instance yang percobaan sebelumnya
                      * baru saja gagal menghasilkan "Cannot transition to a new
-                     * state, already under transition" — galat yang menutupi
+                     * state, already under transition" - galat yang menutupi
                      * sebab aslinya dan membuat tangga percobaan ini tidak ada
                      * gunanya. Terlihat pertama kali di harness CDP, bukan di
                      * lapangan.
@@ -740,7 +740,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
 
                 if (msg.includes('Permission') || msg.includes('NotAllowed')) {
                     // Di dalam WhatsApp, iOS menolak dengan galat yang sama
-                    // persis seperti izin yang ditolak pengguna — padahal
+                    // persis seperti izin yang ditolak pengguna - padahal
                     // tidak ada izin yang bisa diberikan di sana.
                     setCameraError(
                         peramban_dalam_aplikasi()
@@ -803,15 +803,15 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                  * belakang (ponsel).
                  *
                  * Yang DIBUANG: `cams[cams.length - 1]` sebagai jalan terakhir.
-                 * Ponsel Android sekarang memaparkan empat sampai enam kamera —
-                 * ultrawide, telefoto, sensor kedalaman, monokrom — dan yang
+                 * Ponsel Android sekarang memaparkan empat sampai enam kamera -
+                 * ultrawide, telefoto, sensor kedalaman, monokrom - dan yang
                  * terakhir dalam daftar sering salah satu dari itu. Kameranya
                  * menyala, gambarnya muncul, tapi tidak bisa fokus sedekat
                  * kartu, jadi QR tidak pernah terbaca dan layar terlihat
                  * seolah kartunya yang bermasalah.
                  *
                  * Tanpa pilihan yang meyakinkan, lebih baik menyerahkannya ke
-                 * `facingMode: environment` di `startWithCamera` — peramban
+                 * `facingMode: environment` di `startWithCamera` - peramban
                  * yang paling tahu kamera mana yang utama.
                  */
                 const pilih = pilihKamera(cams);
@@ -870,7 +870,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
          * Kotak isian adalah sumber UTAMA, bukan cadangan: elemen input tidak
          * punya timer dan tidak bisa terpotong, sedangkan buffer bisa terpangkas
          * kalau satu keystroke tertunda melewati KEY_IDLE_MS di perangkat lemot.
-         * Buffer hanya dipakai ketika fokus tidak berada di kotak itu — misalnya
+         * Buffer hanya dipakai ketika fokus tidak berada di kotak itu - misalnya
          * operator baru saja mengklik di tempat lain.
          */
         function flush() {
@@ -906,7 +906,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                 timer = setTimeout(() => {
                     timer = null;
 
-                    // Banyak pembaca RFID tidak mengirim Enter sama sekali —
+                    // Banyak pembaca RFID tidak mengirim Enter sama sekali -
                     // ketikannya berhenti begitu saja. Dulu buffer-nya justru
                     // DIBUANG di sini, jadi kartu semacam itu tidak pernah
                     // terkirim tanpa operator menekan Enter sendiri.
@@ -955,7 +955,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
 
     return (
         <div className="relative flex h-screen h-dvh flex-col overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-800 lg:flex-row">
-            {/* Fullscreen toggle — samar saat fullscreen, hilang di iPhone
+            {/* Fullscreen toggle - samar saat fullscreen, hilang di iPhone
                 yang memang tidak punya API-nya. */}
             <button
                 ref={tombolPenuhRef}
@@ -1003,7 +1003,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                             dari stream. Di ponsel potret selisihnya besar:
                             operator menaruh QR tepat di dalam kotak hijau,
                             dan kotak itu bukan yang dibaca. Kamera menyala,
-                            gambar jernih, kartu tidak pernah terbaca — tanpa
+                            gambar jernih, kartu tidak pernah terbaca - tanpa
                             satu pun petunjuk kenapa. */}
                         <div id={readerId} className="size-full [&>video]:!size-full [&>video]:!object-contain" />
 
@@ -1013,7 +1013,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                             html5-qrcode sudah menggambar kotaknya sendiri, dan
                             kotak itu menurut definisinya adalah area yang
                             benar-benar dibaca. Dulu ada empat sudut hijau
-                            berukuran tetap di atasnya — hiasan yang tidak
+                            berukuran tetap di atasnya - hiasan yang tidak
                             terhubung ke apa pun, dan di ponsel ia menunjuk
                             tempat yang salah sehingga operator mengarahkan
                             kartu ke luar area baca. Percobaan menyamakan
@@ -1024,7 +1024,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 to-transparent p-4 text-center">
                                 <p className="text-sm font-medium text-slate-100">Arahkan QR Code {subjectLabel} ke kamera</p>
                                 <p className="mt-0.5 text-xs text-slate-400">
-                                    {hint ?? 'atau tembak QR-nya dengan barcode gun — otomatis terdeteksi'}
+                                    {hint ?? 'atau tembak QR-nya dengan barcode gun - otomatis terdeteksi'}
                                 </p>
                             </div>
                         )}
@@ -1065,7 +1065,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
                                     <div className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-2xl">
                                         {/* Header: foto + nama + badge */}
                                         <div className="flex gap-4">
-                                            {/* Bentuk pas foto 3:4 dengan object-contain — kotak
+                                            {/* Bentuk pas foto 3:4 dengan object-contain - kotak
                                                 + object-cover dulu memangkas kepala anak. */}
                                             {lastResult.student.photo_url ? (
                                                 <img
@@ -1159,7 +1159,7 @@ export function PublicScanConsole({ school, scanUrl, tagline, hint, disabledNoti
             {/*
                 Seperempat layar: siapa saja yang barusan scan.
 
-                Selalu dirender, bukan hanya ketika sudah ada isinya — di
+                Selalu dirender, bukan hanya ketika sudah ada isinya - di
                 gerbang panel ini dipakai operator untuk memastikan kartu yang
                 barusan ditempel memang tercatat, dan panel yang muncul-hilang
                 membuat seluruh tata letak melompat tepat saat kartu pertama

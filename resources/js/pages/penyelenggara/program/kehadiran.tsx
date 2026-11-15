@@ -100,7 +100,7 @@ function BarisPeserta({
                 )}
             </td>
             <td className="p-3 tabular-nums">
-                {p.datang ?? '—'}
+                {p.datang ?? '-'}
                 {p.pulang ? ` / ${p.pulang}` : ''}
             </td>
             <td className="p-3">
@@ -159,7 +159,7 @@ export default function Kehadiran({
 
     return (
         <>
-            <Head title={`Kehadiran — ${program.name}`} />
+            <Head title={`Kehadiran - ${program.name}`} />
             <div className="flex flex-col gap-6 p-4 md:p-6">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                     <div>

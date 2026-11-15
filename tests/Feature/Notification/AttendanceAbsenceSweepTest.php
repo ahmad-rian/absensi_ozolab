@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Queue;
 /**
  * Waktu dibekukan pada Senin 24 Agustus 2026 supaya hasilnya tidak bergantung
  * pada hari saat suite dijalankan. Jendela bawaan jadwal: masuk 06:00, ambang
- * terlambat 08:00, mulai pulang 13:00, tenggang 30 menit — jadi 14:00 berarti
+ * terlambat 08:00, mulai pulang 13:00, tenggang 30 menit - jadi 14:00 berarti
  * kedua jendela sudah tutup, dan 09:00 hanya jendela terlambat.
  */
 beforeEach(function () {
@@ -117,7 +117,7 @@ test('izin dan sakit tidak pernah jadi sasaran', function () {
 
 /**
  * ALPA yang diisi admin manual adalah pernyataan eksplisit bahwa siswanya tidak
- * datang — justru itu yang perlu dikabarkan.
+ * datang - justru itu yang perlu dikabarkan.
  */
 test('alpa yang diisi manual tetap dikabarkan', function () {
     Queue::fake();
@@ -133,7 +133,7 @@ test('alpa yang diisi manual tetap dikabarkan', function () {
 
 /**
  * Penjaga terpenting. Nol check-in sepanjang hari berarti libur yang tidak
- * terdaftar, bukan seluruh siswa membolos bersamaan — tanpa ini satu libur
+ * terdaftar, bukan seluruh siswa membolos bersamaan - tanpa ini satu libur
  * nasional mengirimi SETIAP orang tua pesan "anak Anda tidak hadir".
  */
 test('hari tanpa satu pun check-in dianggap libur', function () {
@@ -164,7 +164,7 @@ test('hari tanpa jadwal aktif dilewati', function () {
 
 /**
  * Ketidakhadiran baru boleh dinilai setelah jendela masuk BENAR-BENAR habis,
- * yaitu `check_out_start` — bukan `check_in_end`. Pukul 09:00 siswa yang belum
+ * yaitu `check_out_start` - bukan `check_in_end`. Pukul 09:00 siswa yang belum
  * datang masih bisa absen dan tercatat terlambat.
  */
 test('sebelum jendela masuk habis hanya keterlambatan yang dikumpulkan', function () {
@@ -290,8 +290,8 @@ test('anak dari satu nomor digabung jadi satu pesan', function () {
 
     $this->artisan('attendance:notify-absence')->assertSuccessful();
 
-    // Tiga baris alert tetap ditulis — sapuan berikutnya harus tahu ketiganya
-    // sudah dikabarkan — tapi hanya satu pesan yang dikirim.
+    // Tiga baris alert tetap ditulis - sapuan berikutnya harus tahu ketiganya
+    // sudah dikabarkan - tapi hanya satu pesan yang dikirim.
     expect(AttendanceAlert::withoutGlobalScope('school')->count())->toBe(3);
     Queue::assertPushed(SendAttendanceAlert::class, 1);
 
@@ -336,7 +336,7 @@ test('nomor dengan dan tanpa nol depan dihitung satu orang', function () {
 });
 
 /**
- * Anak yang sudah dikabarkan pagi tidak boleh ikut lagi ke pesan sore —
+ * Anak yang sudah dikabarkan pagi tidak boleh ikut lagi ke pesan sore -
  * orang tuanya akan membaca keterlambatan yang sama dua kali.
  */
 test('anak yang sudah dikabarkan tidak ikut digabung di sapuan berikutnya', function () {

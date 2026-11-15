@@ -11,44 +11,44 @@ export function DaftarFitur() {
 
             <Bullets>
                 <li>
-                    <b>Master Data Siswa</b> — menutup Siswa, Orang Tua, Kelas, Impor, Kenaikan Kelas.
+                    <b>Master Data Siswa</b> - menutup Siswa, Orang Tua, Kelas, Impor, Kenaikan Kelas.
                 </li>
                 <li>
-                    <b>Absensi Sekolah</b> — menutup Absensi dan Jadwal Absensi, serta mematikan halaman
+                    <b>Absensi Sekolah</b> - menutup Absensi dan Jadwal Absensi, serta mematikan halaman
                     scan gerbang.
                 </li>
                 <li>
-                    <b>Absen Sholat Dzuhur</b> dan <b>Dhuha</b> — mematikan jenis sholatnya di halaman
+                    <b>Absen Sholat Dzuhur</b> dan <b>Dhuha</b> - mematikan jenis sholatnya di halaman
                     scan sholat.
                 </li>
                 <li>
-                    <b>Laporan</b> — menutup menu Laporan beserta ekspornya.
+                    <b>Laporan</b> - menutup menu Laporan beserta ekspornya.
                 </li>
                 <li>
-                    <b>Notifikasi Absensi</b> — menghentikan pesan ke orang tua saat siswa scan.
+                    <b>Notifikasi Absensi</b> - menghentikan pesan ke orang tua saat siswa scan.
                 </li>
                 <li>
-                    <b>Notifikasi Alpa Sholat</b> — peringatan saat siswa berturut-turut tidak sholat.
+                    <b>Notifikasi Alpa Sholat</b> - peringatan saat siswa berturut-turut tidak sholat.
                 </li>
                 <li>
-                    <b>Inbox Notifikasi</b> — menutup menu riwayat pesan.
+                    <b>Inbox Notifikasi</b> - menutup menu riwayat pesan.
                 </li>
                 <li>
-                    <b>Kartu &amp; Album</b> — menutup tujuh menu sekaligus, yaitu seluruh isi grup Kartu
+                    <b>Kartu &amp; Album</b> - menutup tujuh menu sekaligus, yaitu seluruh isi grup Kartu
                     Siswa, Album &amp; Pas Foto, dan Desain Kartu &amp; Album.
                 </li>
                 <li>
-                    <b>Pendaftaran Publik</b> dan <b>Pendaftaran Telegram</b> — menyembunyikan sekolahmu
+                    <b>Pendaftaran Publik</b> dan <b>Pendaftaran Telegram</b> - menyembunyikan sekolahmu
                     dari halaman publik.
                 </li>
                 <li>
-                    <b>Manajemen Pengguna</b>, <b>Integrasi Google Drive</b>, <b>Integrasi WhatsApp</b> —
+                    <b>Manajemen Pengguna</b>, <b>Integrasi Google Drive</b>, <b>Integrasi WhatsApp</b> -
                     menutup menunya masing-masing.
                 </li>
             </Bullets>
 
             <Note>
-                Dashboard dan Pengaturan tidak bisa dimatikan — kalau bisa, tidak ada lagi jalan untuk
+                Dashboard dan Pengaturan tidak bisa dimatikan - kalau bisa, tidak ada lagi jalan untuk
                 menyalakannya kembali. Modul sistem juga tidak, karena berlaku lintas sekolah.
             </Note>
 
@@ -69,7 +69,7 @@ export function KeluhanUmum() {
                 </Para>
                 <Para>
                     Jamnya di luar jendela yang diatur. Periksa <Menu>Jadwal Absensi</Menu> untuk hari itu
-                    — bawaan 06:00–08:00 masuk dan 13:00–18:00 pulang.
+                    - bawaan 06:00–08:00 masuk dan 13:00–18:00 pulang.
                 </Para>
             </div>
 
@@ -89,7 +89,7 @@ export function KeluhanUmum() {
                 </Para>
                 <Para>
                     QR-nya milik sekolah lain, siswanya nonaktif, atau QR-nya sudah diperbarui. Halaman
-                    scan <b>hanya</b> menerima QR — mengetik NIS tidak lagi bisa. Catat lewat menu
+                    scan <b>hanya</b> menerima QR - mengetik NIS tidak lagi bisa. Catat lewat menu
                     Absensi.
                 </Para>
             </div>
@@ -107,7 +107,7 @@ export function KeluhanUmum() {
                         Gateway belum diisi Super Admin. Cek statusnya di <Menu>WhatsApp</Menu>.
                     </li>
                     <li>
-                        Cek <Menu>Notifikasi</Menu> — kalau statusnya Gagal, masalahnya di gateway atau
+                        Cek <Menu>Notifikasi</Menu> - kalau statusnya Gagal, masalahnya di gateway atau
                         nomornya.
                     </li>
                 </Bullets>
@@ -158,7 +158,7 @@ export function KeluhanUmum() {
             </div>
 
             <Tip>
-                Kalau masalahnya tetap tidak jelas, catat pesan galat persisnya dan jam kejadiannya —
+                Kalau masalahnya tetap tidak jelas, catat pesan galat persisnya dan jam kejadiannya -
                 dua hal itu yang paling cepat mengarahkan ke penyebabnya.
             </Tip>
         </div>
@@ -197,7 +197,7 @@ Terima kasih.`}
 - Pulang dari sekolah (scan pulang)
 
 Pesan berisi nama, kelas, status kehadiran, dan jamnya.
-Pesan ini otomatis — mohon tidak dibalas.
+Pesan ini otomatis - mohon tidak dibalas.
 Bila ada pertanyaan, hubungi wali kelas.`}
                 </pre>
             </div>
@@ -213,7 +213,7 @@ Bila ada pertanyaan, hubungi wali kelas.`}
 3. Isi data siswa dan orang tua sesuai dokumen resmi
 4. Ikuti panduan mengatur posisi foto agar seragam
 
-Pastikan NISN diisi benar — nomor ini dipakai seterusnya.`}
+Pastikan NISN diisi benar - nomor ini dipakai seterusnya.`}
                 </pre>
             </div>
 

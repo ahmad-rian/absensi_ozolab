@@ -14,7 +14,7 @@ use Illuminate\Console\Command;
  * siswanya aktif, tidak di-soft-delete, dan tokennya masih yang sama seperti
  * saat kartu dicetak. Pesan di layar gerbang sengaja sama untuk keempatnya,
  * jadi tanpa perintah ini satu-satunya cara mengetahui bedanya adalah menyusun
- * query tinker satu per satu — yang sudah tiga kali harus dilakukan.
+ * query tinker satu per satu - yang sudah tiga kali harus dilakukan.
  *
  * BACA SAJA. Tidak menulis apa pun.
  */
@@ -23,7 +23,7 @@ class ScanDiagnoseCommand extends Command
     protected $signature = 'scan:diagnosa
         {--sekolah= : Slug atau scanner_token sekolah gerbangnya}
         {--nis= : Periksa satu siswa lewat NIS atau NISN}
-        {--token= : Periksa token hasil bacaan (masuk riwayat shell — pakai --nis bila bisa)}';
+        {--token= : Periksa token hasil bacaan (masuk riwayat shell - pakai --nis bila bisa)}';
 
     protected $description = 'Periksa kenapa sebuah kartu ditolak di gerbang sekolah';
 
@@ -37,7 +37,7 @@ class ScanDiagnoseCommand extends Command
 
         $this->line('');
         $this->info(sprintf('Sekolah: %s', $school->name));
-        $this->line(sprintf('  aktif        : %s', $school->is_active ? 'ya' : 'TIDAK — semua scan ditolak'));
+        $this->line(sprintf('  aktif        : %s', $school->is_active ? 'ya' : 'TIDAK - semua scan ditolak'));
         $this->line(sprintf('  slug         : %s', $school->slug));
 
         if ($nis = $this->option('nis')) {
@@ -95,15 +95,15 @@ class ScanDiagnoseCommand extends Command
             $this->info(sprintf('Siswa: %s', $r->full_name));
             $this->line(sprintf('  sekolah      : %s', $r->school_id === $school->id
                 ? 'COCOK'
-                : 'BEDA — '.(School::find($r->school_id)?->name ?? $r->school_id)));
-            $this->line(sprintf('  is_active    : %s', $r->is_active ? 'ya' : 'TIDAK — kartunya tidak akan dikenali'));
+                : 'BEDA - '.(School::find($r->school_id)?->name ?? $r->school_id)));
+            $this->line(sprintf('  is_active    : %s', $r->is_active ? 'ya' : 'TIDAK - kartunya tidak akan dikenali'));
             $this->line(sprintf('  dihapus      : %s', $r->deleted_at ? 'YA pada '.$r->deleted_at : 'tidak'));
             $this->line(sprintf('  qr_token     : %s', $r->qr_token
                 ? sprintf('ada, %d karakter, bentuk %s', strlen($r->qr_token), $this->bentuk($r->qr_token))
-                : 'KOSONG — kartunya tidak pernah bisa dipindai'));
+                : 'KOSONG - kartunya tidak pernah bisa dipindai'));
             $this->line(sprintf('  qr_issued_at : %s', $r->qr_issued_at ?: '-'));
             $this->line(sprintf('  qr_rotated_at: %s', $r->qr_rotated_at
-                ? $r->qr_rotated_at.' — kartu yang dicetak SEBELUM ini sudah mati'
+                ? $r->qr_rotated_at.' - kartu yang dicetak SEBELUM ini sudah mati'
                 : 'belum pernah diputar'));
             $this->line(sprintf('  rfid_uid     : %s', $r->rfid_uid ?: '-'));
         }
@@ -139,7 +139,7 @@ class ScanDiagnoseCommand extends Command
         $this->line('');
 
         if (! $pemilik) {
-            $this->error('  tidak_ada_di_mana_pun — token ini tidak ada di sekolah mana pun.');
+            $this->error('  tidak_ada_di_mana_pun - token ini tidak ada di sekolah mana pun.');
             $this->line('  Bacaan terpotong, atau kartunya dicetak sebelum tokennya diganti.');
 
             return self::SUCCESS;
@@ -148,7 +148,7 @@ class ScanDiagnoseCommand extends Command
         $this->info(sprintf('  Pemilik: %s', $pemilik->full_name));
 
         if ($pemilik->school_id !== $school->id) {
-            $this->error('  ada_di_sekolah_lain — '.(School::find($pemilik->school_id)?->name ?? $pemilik->school_id));
+            $this->error('  ada_di_sekolah_lain - '.(School::find($pemilik->school_id)?->name ?? $pemilik->school_id));
         } elseif ($pemilik->deleted_at) {
             $this->error('  siswa_dihapus pada '.$pemilik->deleted_at);
         } elseif (! $pemilik->is_active) {

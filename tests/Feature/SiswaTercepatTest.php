@@ -148,7 +148,7 @@ test('rata-rata jam datang dihitung di jam dinding Jakarta, termasuk check-in ya
 
     $pagi = kategori(app(SiswaTercepat::class)->hitung($this->sekolah, hariTes()))['pagi'][1];
 
-    // Rata-rata 06:50 dan 07:20 adalah 07:05 — bukan 12:05 (UTC dianggap
+    // Rata-rata 06:50 dan 07:20 adalah 07:05 - bukan 12:05 (UTC dianggap
     // jam lokal lalu ditambah 7 jam) dan bukan "06.85" (jam desimal).
     expect($pagi)->toHaveCount(1)
         ->and($pagi[0])->toMatchArray(['nama' => 'EKA PUTRI', 'rataRata' => '07:05', 'hari' => 6]);

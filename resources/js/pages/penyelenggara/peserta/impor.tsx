@@ -110,7 +110,7 @@ export default function ImporPratinjau({ program, pratinjau }: Props) {
                                     <tr key={i} className="border-t">
                                         {kolom.map((k) => (
                                             <td key={k} className="p-3">
-                                                {row[k] ?? '—'}
+                                                {row[k] ?? '-'}
                                             </td>
                                         ))}
                                     </tr>

@@ -16,7 +16,7 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         // Kelompok pertama adalah halaman publik. Tanpa disebut di sini sebuah
-        // halaman jatuh ke `default` dan dirender di dalam sidebar admin —
+        // halaman jatuh ke `default` dan dirender di dalam sidebar admin -
         // tautan publik yang memamerkan menu internal.
         //
         // `scan/prayer` dan `scan/library` pernah terlewat persis begitu, dan

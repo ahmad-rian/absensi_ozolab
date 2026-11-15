@@ -142,7 +142,7 @@ sub-grupnya); alamat peserta grup lain → sama dengan tidak ada.
 ### Functional Requirements
 
 - **FR-001**: Sistem MUST menyediakan 5 template kategori: Haji/Umroh, Pelatihan, Pengajian,
-  Karyawan, Event satu hari — masing-masing dengan istilah peserta/grup, kolom bawaan, dan saklar
+  Karyawan, Event satu hari - masing-masing dengan istilah peserta/grup, kolom bawaan, dan saklar
   fitur bawaan.
 - **FR-002**: Admin penyelenggara MUST bisa membuat, mengubah, dan mengarsip kategori; skema kolom
   mendukung tipe teks, angka, tanggal, pilihan, dan foto, serta urutan dan status wajib.

@@ -11,7 +11,7 @@ export type ExportLink = { label: string; href: string; icon: LucideIcon };
  * Rakit tautan Excel+PDF untuk satu jenis laporan.
  *
  * Href SELALU dibangun dari rentang yang sudah dikonfirmasi server, bukan dari
- * state input lokal — kalau tidak, berkas yang diunduh berbeda dengan chart di
+ * state input lokal - kalau tidak, berkas yang diunduh berbeda dengan chart di
  * layar sampai tombol Terapkan ditekan.
  */
 export function reportExports(studentId: string, kind: string, start: string, end: string, jenis?: string): ExportLink[] {

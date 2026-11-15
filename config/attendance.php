@@ -74,7 +74,7 @@ return [
     |
     | Default MATI. Sekolah yang sudah berjalan hanya menjalankan Dzuhur; Dhuha
     | baru aktif setelah admin menyalakannya di menu Pengaturan. Jendelanya
-    | wajib tidak tumpang tindih dengan jendela Dzuhur — divalidasi di
+    | wajib tidak tumpang tindih dengan jendela Dzuhur - divalidasi di
     | PengaturanController supaya deteksi-jam di scanner tidak pernah ambigu.
     |
     | `all_religions` sengaja tidak diduplikasi di sini: kepesertaan lintas

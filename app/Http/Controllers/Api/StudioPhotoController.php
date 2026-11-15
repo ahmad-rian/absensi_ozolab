@@ -22,7 +22,7 @@ use Throwable;
 /**
  * Pintu tulis Tyas Studio: foto asli masuk, dua berkas mendarat di Drive.
  *
- * Studio mengirim berkas ASLI beserta persegi potong ternormalisasi — bukan dua
+ * Studio mengirim berkas ASLI beserta persegi potong ternormalisasi - bukan dua
  * berkas jadi. Yang merasterisasi adalah `PhotoCropService` di sini, supaya
  * koreksi EXIF, batas 1600px, minimum 480×630, dan rasio slot kartu 16:21
  * punya satu implementasi saja. Studio tidak memuat pustaka gambar apa pun.
@@ -114,7 +114,7 @@ class StudioPhotoController extends Controller
             'upload_id' => $log->id,
             'status' => $log->status,
             'drive_url' => $log->drive_url,
-            // Pesan galatnya memang untuk dibaca operator — di situlah "Drive
+            // Pesan galatnya memang untuk dibaca operator - di situlah "Drive
             // belum aktif untuk sekolah ini" jadi berguna.
             'error' => $log->error_message,
         ]);
@@ -126,8 +126,8 @@ class StudioPhotoController extends Controller
      * Kembalikan jepretan ASLI yang tersimpan di folder Drive siswa.
      *
      * Ada supaya Tyas Studio bisa memotong ULANG tanpa memfoto ulang anaknya.
-     * Salinan di server sengaja dihapus begitu naik ke Drive — lihat
-     * `SyncStudioPhotoToDriveJob::bersihkan()` — jadi Drive adalah satu-satunya
+     * Salinan di server sengaja dihapus begitu naik ke Drive - lihat
+     * `SyncStudioPhotoToDriveJob::bersihkan()` - jadi Drive adalah satu-satunya
      * tempat ia ada, dan induk tetap satu-satunya yang memegang kredensialnya.
      *
      * Distream, bukan disimpan dulu ke disk: berkasnya bisa 20 MB, dan disk
@@ -142,7 +142,7 @@ class StudioPhotoController extends Controller
          *
          * Konstruktor `GoogleDriveService` melempar kalau kredensial sekolahnya
          * belum diatur, dan menaruhnya di konstruktor controller berarti
-         * `store` dan `status` — yang tidak menyentuh Drive sama sekali — ikut
+         * `store` dan `status` - yang tidak menyentuh Drive sama sekali - ikut
          * meledak 500 untuk sekolah yang Drive-nya memang belum aktif.
          */
         try {
@@ -204,7 +204,7 @@ class StudioPhotoController extends Controller
      *
      * `cropAndStore()` menulis ke disk `public` dan itu tidak bisa diatur, jadi
      * hasilnya dipindahkan begitu jadi. Kalau pemindahannya gagal, request ini
-     * yang meledak — sebelum ada apa pun yang diantrekan.
+     * yang meledak - sebelum ada apa pun yang diantrekan.
      *
      * @param  array{sx: float, sy: float, sw: float, sh: float}  $rect
      * @return array{0: string, 1: string} jalur relatif di disk `local`

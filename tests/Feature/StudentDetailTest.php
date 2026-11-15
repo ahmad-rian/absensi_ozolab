@@ -219,7 +219,7 @@ test('a non-muslim student is flagged as not covered', function () {
 
 /**
  * Prop `drivePhoto` bersifat optional, jadi ia hanya ikut pada partial reload yang
- * memintanya — persis seperti yang dilakukan tombol "Cari di Drive" di halaman.
+ * memintanya - persis seperti yang dilakukan tombol "Cari di Drive" di halaman.
  */
 function requestDrivePhoto(): TestResponse
 {
@@ -290,7 +290,7 @@ test('refreshing drops the cached lookup so the next search hits drive again', f
     Cache::put($key, ['file_id' => 'FILE123'], 600);
 
     // Rute ini hanya menerima POST, jadi tujuan pengalihannya harus halaman
-    // detail — bukan Referer, yang bisa menunjuk ke URL tanpa rute GET.
+    // detail - bukan Referer, yang bisa menunjuk ke URL tanpa rute GET.
     $this->actingAs($this->admin)
         ->from(route('admin.siswa.drive-photo.refresh', $this->student))
         ->post(route('admin.siswa.drive-photo.refresh', $this->student))

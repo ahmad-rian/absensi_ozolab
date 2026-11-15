@@ -70,7 +70,7 @@ class Student extends Model
      * Kapitalisasinya masuk campur dari impor tiap sekolah, dan nama yang sama
      * bisa datang lewat delapan jalur tulis berbeda (form admin, pendaftaran
      * publik, pendaftaran orang tua, impor, seeder, factory). Semuanya lewat
-     * mass-assignment atau `fill()`, jadi mutator di sini menangkap semuanya —
+     * mass-assignment atau `fill()`, jadi mutator di sini menangkap semuanya -
      * termasuk jalur baru yang belum ada.
      */
     protected function fullName(): Attribute
@@ -92,7 +92,7 @@ class Student extends Model
 
     /**
      * `mb_strtoupper`, bukan `strtoupper`, supaya huruf beraksen tidak rusak.
-     * Null diteruskan apa adanya — kolomnya nullable, dan string kosong bukan
+     * Null diteruskan apa adanya - kolomnya nullable, dan string kosong bukan
      * hal yang sama dengan "belum diisi".
      */
     private function toUpperName(?string $value): ?string

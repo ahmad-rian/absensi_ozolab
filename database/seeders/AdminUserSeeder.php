@@ -15,7 +15,7 @@ class AdminUserSeeder extends Seeder
         $smpNusantara = School::where('slug', 'smp-nusantara')->firstOrFail();
         $sdMentari = School::where('slug', 'sd-mentari')->firstOrFail();
 
-        // Super Admin — platform owner, no school_id (can access all schools)
+        // Super Admin - platform owner, no school_id (can access all schools)
         $superAdmin = User::create([
             'name' => 'Super Admin',
             'email' => 'superadmin@absenku.test',
@@ -51,7 +51,7 @@ class AdminUserSeeder extends Seeder
         ]);
         $adminSd->assignRole(UserRole::Admin->value);
 
-        // Guru SMP Nusantara — disabled for production deploy (admin/superadmin only)
+        // Guru SMP Nusantara - disabled for production deploy (admin/superadmin only)
         // $teachers = [
         //     ['name' => 'Budi Santoso', 'email' => 'budi@sekolah.test'],
         //     ['name' => 'Siti Rahayu', 'email' => 'siti@sekolah.test'],

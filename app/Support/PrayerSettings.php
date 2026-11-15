@@ -46,7 +46,7 @@ class PrayerSettings
                 config($type->configPrefix().'.end', $fallback['end']),
             )),
             // Kepesertaan lintas agama itu kebijakan sekolah terhadap SISWA,
-            // bukan properti waktu sholat — jadi satu key lama
+            // bukan properti waktu sholat - jadi satu key lama
             // `prayer_all_religions` sengaja dipakai bersama kedua jenis.
             allReligions: (bool) $school->getSetting(
                 'prayer_all_religions',

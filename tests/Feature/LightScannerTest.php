@@ -66,7 +66,7 @@ test('alias pilihan sendiri juga membuka halaman yang sama', function () {
 /**
  * Alias seperti "tyas-photo" memang dibuat gampang ditebak. Kalau halamannya
  * memuat scanner_token, alias yang tersebar ikut membuka gerbang sholat dan
- * perpustakaan — ketiganya memakai token yang sama.
+ * perpustakaan - ketiganya memakai token yang sama.
  */
 test('halaman ringan tidak pernah memuat scanner_token', function () {
     $school = School::factory()->create(['scan_short_code' => 'tyas-photo']);
@@ -116,7 +116,7 @@ test('wildcard LIKE tidak bisa dipakai menebak sekolah', function () {
 });
 
 test('kode yang ambigu ditolak, bukan ditebak', function () {
-    // Dua sekolah dengan awalan token sama — tidak mungkin dipilih dengan benar.
+    // Dua sekolah dengan awalan token sama - tidak mungkin dipilih dengan benar.
     School::factory()->create(['scanner_token' => 'KEMBAR11'.str_repeat('a', 32)]);
     School::factory()->create(['scanner_token' => 'KEMBAR11'.str_repeat('b', 32)]);
 
@@ -137,14 +137,14 @@ test('halaman ringan tidak memungut kembali beban yang justru dihindarinya', fun
         ->not->toContain('oklch(')
         ->not->toContain('color-mix(')
         ->not->toContain('aspect-ratio')
-        // Nol request eksternal. Satu berkas, satu perjalanan — itu seluruh
+        // Nol request eksternal. Satu berkas, satu perjalanan - itu seluruh
         // alasan halaman ini ada.
         ->not->toContain('<script src')
         ->not->toContain('rel="stylesheet"')
         // Locale non-default memaksa jalur ICU, dan jam dinding memanggilnya
         // sekali per detik selamanya di perangkat yang paling lemah.
         ->not->toContain('toLocaleTimeString')
-        // Emoji orang diganti inisial siswa — hiasan generik yang tidak
+        // Emoji orang diganti inisial siswa - hiasan generik yang tidak
         // memberi tahu siapa pun tidak boleh kembali.
         ->not->toContain('&#128100;');
 });
@@ -153,7 +153,7 @@ test('halaman ringan tidak memungut kembali beban yang justru dihindarinya', fun
  * Tautan pendeknya dibuka di ponsel, bukan cuma di box TV.
  *
  * Seluruh ukuran halaman ini px tetap. Tanpa satu pun media query, nama
- * sekolah bertabrakan dengan jam dan jamnya terpotong di tepi kanan — persis
+ * sekolah bertabrakan dengan jam dan jamnya terpotong di tepi kanan - persis
  * yang terjadi sebelum ambang ini dipasang.
  */
 test('halaman ringan punya ambang untuk layar sempit', function () {
@@ -179,7 +179,7 @@ test('halaman ringan bertema gelap', function () {
 });
 
 /**
- * Tiga banding satu: panggung hasil scan tiga bagian, riwayat satu — dan
+ * Tiga banding satu: panggung hasil scan tiga bagian, riwayat satu - dan
  * halamannya tidak pernah menggulir, karena di gerbang tidak ada yang bisa
  * menggulir. Remote TV tidak punya caranya.
  */
@@ -205,12 +205,12 @@ test('halaman ringan terkunci satu layar dengan panel riwayat', function () {
  *
  * Yang diukur ukuran TERKOMPRESI, bukan mentah. Ambang mentah yang dipakai
  * sebelumnya mengukur hal yang salah: berkas ini padat komentar yang memang
- * disengaja — ia merekam kenapa tiap batasan ada — dan komentar memampat
+ * disengaja - ia merekam kenapa tiap batasan ada - dan komentar memampat
  * hampir habis. Versi mentahnya 40 KB, yang menyeberang 10,7 KB. Menghitung
  * yang mentah berarti menekan penulis berikutnya membuang catatan demi angka
  * yang tidak pernah dirasakan siapa pun di gerbang.
  *
- * Ambang mentah tetap ada sebagai jaring kasar — kalau seseorang menempelkan
+ * Ambang mentah tetap ada sebagai jaring kasar - kalau seseorang menempelkan
  * pustaka utuh ke dalam berkas ini, itu tertangkap keduanya.
  */
 test('halaman ringan tetap ringan saat dikirim', function () {
@@ -231,7 +231,7 @@ test('halaman ringan menyediakan tombol ke halaman kamera untuk HP (iPhone tidak
         ->assertOk()
         ->assertSee('Scan pakai kamera HP')
         ->assertSee(route('public.scanner.short.kamera', ['kode' => ScannerShortLink::codeFor($school)]), false)
-        // Tombol hanya ditampilkan JS di layar sentuh — box TV tidak melihatnya.
+        // Tombol hanya ditampilkan JS di layar sentuh - box TV tidak melihatnya.
         ->assertSee('(pointer: coarse)', false);
 });
 

@@ -142,7 +142,7 @@ class StudentReportBuilder
     }
 
     /**
-     * `?jenis=dhuha|dzuhur` — tanpa parameter berarti seluruh jenis yang aktif.
+     * `?jenis=dhuha|dzuhur` - tanpa parameter berarti seluruh jenis yang aktif.
      *
      * Sengaja query param, bukan segmen rute baru: keempat rute laporan yang
      * sudah beredar sebagai `<a href>` tetap hidup tanpa alias apa pun.

@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
  * ada absen sama sekali.
  *
  * Tidak semua sekolah memakai absensi, jadi hanya sekolah yang dicentang
- * "dipantau" yang diberi peringkat — diurutkan dari yang paling jarang absen.
+ * "dipantau" yang diberi peringkat - diurutkan dari yang paling jarang absen.
  * Sekolah lain tetap terlihat di bawah supaya bisa dicentang kapan saja.
  *
  * Seluruh angka diambil dengan beberapa query agregat (group by school_id),
@@ -78,7 +78,7 @@ class MonitorSekolah
             ->groupBy('school_id')
             ->pluck('tanggal', 'school_id');
 
-        // Berapa hari (dalam rentang) sekolah punya absen masuk — dasar urutan:
+        // Berapa hari (dalam rentang) sekolah punya absen masuk - dasar urutan:
         // paling jarang di atas, paling sering di bawah.
         $hariAktif = Attendance::withoutGlobalScopes()
             ->whereIn('school_id', $ids)

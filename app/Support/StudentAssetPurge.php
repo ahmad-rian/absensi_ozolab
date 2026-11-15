@@ -12,7 +12,7 @@ use App\Models\User;
  * Antrekan pembuangan berkas milik siswa yang akan dihapus.
  *
  * Dipanggil dari controller, BUKAN dari observer. Observer tidak tahu siapa yang
- * menekan tombol, dan hak akses fitur ini dibatasi Admin serta Super Admin —
+ * menekan tombol, dan hak akses fitur ini dibatasi Admin serta Super Admin -
  * guru boleh menghapus data siswa tapi berkas Drive-nya dibiarkan. Observer juga
  * tidak pernah menyala pada jalur hapus orang tua, karena cascade tingkat
  * database tidak memicu event Eloquent sama sekali.

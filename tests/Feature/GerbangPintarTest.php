@@ -14,7 +14,7 @@ use Carbon\Carbon;
  | Satu gerbang, empat jenis absen.
  |
  | Sebelum ini absen sholat hanya bisa lewat URL-nya sendiri, dan halaman ringan
- | — yang justru dibuat untuk box Android berspesifikasi rendah — tidak punya
+ | - yang justru dibuat untuk box Android berspesifikasi rendah - tidak punya
  | versi sholat sama sekali. Sekarang satu tautan melayani datang, Dhuha,
  | Dzuhur, dan pulang.
  |
@@ -51,7 +51,7 @@ beforeEach(function () {
     }
 });
 
-/** Tempel kartu lewat alamat pendek — jalur yang dipakai box Android. */
+/** Tempel kartu lewat alamat pendek - jalur yang dipakai box Android. */
 function tempel(string $jam, ?Student $siswa = null)
 {
     test()->travelTo(test()->senin->copy()->setTimeFromTimeString($jam));
@@ -64,7 +64,7 @@ function tempel(string $jam, ?Student $siswa = null)
 test('satu hari penuh lewat satu tautan yang sama', function () {
     /*
         Inti seluruh pekerjaan ini. Empat tempelan pada satu URL menghasilkan
-        empat catatan berbeda — dan yang memilih jenisnya server, bukan
+        empat catatan berbeda - dan yang memilih jenisnya server, bukan
         operator yang harus ingat membuka halaman mana.
     */
     tempel('06:42')->assertOk()
@@ -92,7 +92,7 @@ test('satu hari penuh lewat satu tautan yang sama', function () {
 test('datang menang atas sholat ketika keduanya mungkin', function () {
     /*
         Pukul 07:45 berada di dalam jendela masuk DAN jendela Dhuha. Kalau
-        sholat yang menang, siswa yang baru tiba tidak pernah tercatat hadir —
+        sholat yang menang, siswa yang baru tiba tidak pernah tercatat hadir -
         ia dihitung alpa seharian dan orang tuanya menerima peringatan.
     */
     tempel('07:45')->assertOk()->assertJsonPath('student.type', 'CHECK_IN');
@@ -181,7 +181,7 @@ test('sekolah yang hanya memakai absen sholat tidak terkunci dari gerbangnya', f
 });
 
 test('halaman ringan menampilkan jenis absen tanpa pernah memuat token', function () {
-    // Label jenisnya datang dari respons scan, bukan dari HTML — yang diperiksa
+    // Label jenisnya datang dari respons scan, bukan dari HTML - yang diperiksa
     // di sini hanya bahwa halamannya tetap tidak membocorkan token sekolah,
     // karena alamat pendeknya memang dibuat gampang ditebak.
     $this->get('/g/uji-gerbang')

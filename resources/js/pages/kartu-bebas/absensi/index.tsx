@@ -102,8 +102,8 @@ function AttendanceRow({
             <TableCell>
                 {participant.attendance?.status ?? 'Belum dicatat'}
             </TableCell>
-            <TableCell>{participant.attendance?.check_in ?? '—'}</TableCell>
-            <TableCell>{participant.attendance?.check_out ?? '—'}</TableCell>
+            <TableCell>{participant.attendance?.check_in ?? '-'}</TableCell>
+            <TableCell>{participant.attendance?.check_out ?? '-'}</TableCell>
             <TableCell>
                 {editing ? (
                     <form

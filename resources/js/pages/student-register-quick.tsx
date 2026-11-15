@@ -17,7 +17,7 @@ import { Spinner } from '@/components/ui/spinner';
 /**
  * Pendaftaran pendek untuk sesi foto sekolah.
  *
- * Satu halaman tanpa wizard: nama, kelas, nomor absen — plus NIS dan nomor foto
+ * Satu halaman tanpa wizard: nama, kelas, nomor absen - plus NIS dan nomor foto
  * yang boleh dilewati.
  * Di depan antrean yang tersedia cuma daftar hadir dan nomor fotonya, dan form
  * panjang di `/daftar` menagih NIS/NISN, tempat & tanggal lahir, alamat, serta
@@ -32,7 +32,7 @@ import { Spinner } from '@/components/ui/spinner';
  *   datanya dilengkapi lewat admin.
  * - **Kartu & lembar pas foto.** Tidak dirender, tidak ada yang diunggah ke
  *   Drive. Satu-satunya kerja latar adalah menarik fotonya sendiri dari Drive.
- * - **Kotak croping.** Foto Drive dipakai apa adanya — lihat catatan di
+ * - **Kotak croping.** Foto Drive dipakai apa adanya - lihat catatan di
  *   `components/shared/registration-crop-reposition.tsx`.
  */
 
@@ -361,7 +361,7 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
                                 )}
                             </div>
                             <p className="text-muted-foreground text-xs">
-                                Ketik nomor/nama filenya — fotonya muncul otomatis di bawah. Boleh dilewati kalau belum
+                                Ketik nomor/nama filenya - fotonya muncul otomatis di bawah. Boleh dilewati kalau belum
                                 difoto.
                             </p>
                             <InputError message={errors.photo_drive_filename} />
@@ -430,7 +430,7 @@ export default function StudentRegisterQuick({ schools, classrooms, registration
                                 .join(' · ')}
                         </p>
                         <p className="mt-2 text-xs text-green-700 dark:text-green-300">
-                            Sekolah dan kelas dibiarkan terisi — langsung ketik siswa berikutnya.
+                            Sekolah dan kelas dibiarkan terisi - langsung ketik siswa berikutnya.
                         </p>
                     </div>
                 )}

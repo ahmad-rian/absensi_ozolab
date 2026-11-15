@@ -296,7 +296,7 @@ export default function ParentTelegram({ schools }: { schools: School[] }) {
                                                 >
                                                     {s.name}
                                                     {s.city
-                                                        ? ` — ${s.city}`
+                                                        ? ` - ${s.city}`
                                                         : ''}
                                                 </option>
                                             ))}
@@ -364,7 +364,7 @@ export default function ParentTelegram({ schools }: { schools: School[] }) {
                                                             <span className="block truncate text-xs text-[var(--tinta-3)]">
                                                                 {s.school
                                                                     ?.name ??
-                                                                    '—'}
+                                                                    '-'}
                                                                 {s.classroom &&
                                                                     ` · ${s.classroom.name}`}
                                                             </span>

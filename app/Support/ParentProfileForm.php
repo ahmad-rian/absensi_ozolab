@@ -90,7 +90,7 @@ class ParentProfileForm
             $parent->update([
                 'whatsapp_number' => $validated['phone'],
                 'telegram_chat_id' => $validated['telegram_chat_id'] ?? null,
-                // Email notifikasi kosong berarti pakai email akun — kecuali
+                // Email notifikasi kosong berarti pakai email akun - kecuali
                 // akun itu sendiri memakai alamat `@internal.app` yang dibuat
                 // sistem dan tidak akan pernah sampai ke siapa pun.
                 'email' => ($validated['notification_email'] ?? null) ?: (AlamatLoginOrangTua::bawaanSistem($validated['email']) ? null : $validated['email']),

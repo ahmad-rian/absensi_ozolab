@@ -55,10 +55,10 @@ class NotificationGatewayController extends Controller
 
         $input = $validated['channels'] ?? [];
 
-        // Ozolab WA — tanpa kredensial.
+        // Ozolab WA - tanpa kredensial.
         $this->saveChannel($school, SchoolChannelType::OzolabWa, (bool) ($input['OZOLAB_WA']['is_active'] ?? false));
 
-        // Fonnte WA — token + nomor (token hanya diupdate jika diisi).
+        // Fonnte WA - token + nomor (token hanya diupdate jika diisi).
         $this->saveChannel(
             $school,
             SchoolChannelType::FonnteWa,
@@ -69,7 +69,7 @@ class NotificationGatewayController extends Controller
             ], fn ($v) => $v !== null),
         );
 
-        // Telegram — bot token (hanya diupdate jika diisi).
+        // Telegram - bot token (hanya diupdate jika diisi).
         $this->saveChannel(
             $school,
             SchoolChannelType::Telegram,
@@ -79,7 +79,7 @@ class NotificationGatewayController extends Controller
             ], fn ($v) => $v !== null),
         );
 
-        // Email — kredensial SMTP + pengirim per sekolah (password hanya
+        // Email - kredensial SMTP + pengirim per sekolah (password hanya
         // di-update jika diisi, field lain ikut tersimpan walau dikosongkan).
         $email = $input['EMAIL'] ?? [];
         $emailSettings = [
@@ -132,7 +132,7 @@ class NotificationGatewayController extends Controller
         $token = (string) $channel->setting('bot_token');
 
         // Kedua jalur gagal di bawah berhenti SEBELUM webhook_secret ditulis.
-        // Kalau kanal dibiarkan aktif, webhook-nya berjalan tanpa secret —
+        // Kalau kanal dibiarkan aktif, webhook-nya berjalan tanpa secret -
         // itu yang dulu membuat penjaga di TelegramWebhookController lolos.
         if ($token === '') {
             $this->deactivate($channel);

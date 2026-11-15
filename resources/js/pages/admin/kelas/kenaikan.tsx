@@ -274,7 +274,7 @@ export default function KenaikanKelas({
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <CheckCircle2 className="size-4" />
-                                Hasil penerapan — {hasil.filename}
+                                Hasil penerapan - {hasil.filename}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -362,7 +362,7 @@ export default function KenaikanKelas({
                                                     </TableCell>
                                                     <TableCell>
                                                         {row.student_name ??
-                                                            '—'}
+                                                            '-'}
                                                     </TableCell>
                                                     <TableCell>
                                                         {row.to_classroom}
@@ -458,7 +458,7 @@ export default function KenaikanKelas({
                                                         </TableCell>
                                                         <TableCell className="text-muted-foreground">
                                                             {row.from_classroom ??
-                                                                '—'}
+                                                                '-'}
                                                         </TableCell>
                                                         <TableCell className="font-medium">
                                                             {row.to_classroom}
@@ -508,14 +508,14 @@ export default function KenaikanKelas({
                                                             {row.row_number}
                                                         </TableCell>
                                                         <TableCell>
-                                                            {row.nisn || '—'}
+                                                            {row.nisn || '-'}
                                                         </TableCell>
                                                         <TableCell>
                                                             {row.student_name}
                                                         </TableCell>
                                                         <TableCell className="text-muted-foreground">
                                                             {row.from_classroom ??
-                                                                '—'}
+                                                                '-'}
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
@@ -576,14 +576,14 @@ export default function KenaikanKelas({
                                                     >
                                                         <TableCell>
                                                             {student.nisn ||
-                                                                '—'}
+                                                                '-'}
                                                         </TableCell>
                                                         <TableCell>
                                                             {student.full_name}
                                                         </TableCell>
                                                         <TableCell className="text-muted-foreground">
                                                             {student.classroom ??
-                                                                '—'}
+                                                                '-'}
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
@@ -641,15 +641,15 @@ export default function KenaikanKelas({
                                                         <TableCell>
                                                             {row.nisn ||
                                                                 row.nis ||
-                                                                '—'}
+                                                                '-'}
                                                         </TableCell>
                                                         <TableCell>
                                                             {row.student_name ??
-                                                                '—'}
+                                                                '-'}
                                                         </TableCell>
                                                         <TableCell>
                                                             {row.to_classroom ||
-                                                                '—'}
+                                                                '-'}
                                                         </TableCell>
                                                         <TableCell className="text-destructive">
                                                             {row.reason}

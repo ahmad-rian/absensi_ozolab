@@ -8,7 +8,7 @@ return new class extends Migration
     /**
      * Tuliskan ketiga saklar ber-key-lama secara EKSPLISIT ke setiap sekolah.
      *
-     * Ketiganya dibaca lewat dua jalur — `SchoolFeatures` (tab Fitur, sidebar,
+     * Ketiganya dibaca lewat dua jalur - `SchoolFeatures` (tab Fitur, sidebar,
      * middleware) dan `PrayerSettings`/`DispatchAttendanceNotifications`
      * (perilaku sebenarnya). Selama key-nya belum pernah ditulis, setiap jalur
      * memakai default-nya masing-masing, dan perbedaan sekecil apa pun di
@@ -40,7 +40,7 @@ return new class extends Migration
                 // array_key_exists, bukan `??`: `false` yang sudah pernah
                 // disimpan admin tidak boleh ikut ditimpa.
                 if (array_key_exists($key, $settings) && $settings[$key] !== null) {
-                    // Sekalian normalkan tipenya — nilai lama bisa berupa
+                    // Sekalian normalkan tipenya - nilai lama bisa berupa
                     // string kosong hasil hidrasi form yang keliru.
                     $normalized = (bool) $settings[$key];
 

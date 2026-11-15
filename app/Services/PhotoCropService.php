@@ -50,7 +50,7 @@ class PhotoCropService
     public function cropAndStore(string $inputPath, string $storagePath, int $quality = 9, ?array $manualCrop = null, bool $crop = true): string
     {
         // Large studio JPEGs (e.g. 6000px+) decode to ~100MB of truecolor before
-        // we downscale — raise the limit so cropping never OOMs mid-request.
+        // we downscale - raise the limit so cropping never OOMs mid-request.
         $this->ensureMemoryLimit(512);
 
         $info = getimagesize($inputPath);
@@ -74,7 +74,7 @@ class PhotoCropService
          |
          | Dilewati untuk pendaftaran siswa sejak 21 Agustus 2026: klien meminta
          | croping dibuang, foto Drive dipakai apa adanya. Jalur kartu bebas
-         | (Public\CardFormController) tetap memotong — makanya ini sebuah flag,
+         | (Public\CardFormController) tetap memotong - makanya ini sebuah flag,
          | bukan kode yang dihapus.
          */
         if ($crop) {
@@ -119,7 +119,7 @@ class PhotoCropService
         }
 
         // Thumbnail ditulis dari gambar yang MASIH di memori, bukan dengan
-        // membuka ulang PNG yang baru saja disimpan — dekode 1600px kedua kali
+        // membuka ulang PNG yang baru saja disimpan - dekode 1600px kedua kali
         // adalah pekerjaan yang sudah selesai dikerjakan.
         $this->writeThumbnail($image, $storagePath);
 
@@ -131,7 +131,7 @@ class PhotoCropService
     /**
      * Thumbnail kecil untuk layar gerbang.
      *
-     * Aslinya PNG 1600 px berukuran megabita — PNG memang buruk untuk foto —
+     * Aslinya PNG 1600 px berukuran megabita - PNG memang buruk untuk foto -
      * sementara halaman scan ringan menggambarnya di kotak 240×320 lalu
      * membuangnya 2,5 detik kemudian. Di box Android TV dengan wifi sekolah,
      * satu siswa lewat berarti satu unduhan multi-megabita plus dekode PNG
@@ -163,7 +163,7 @@ class PhotoCropService
 
             imagedestroy($kecil);
         } catch (\Throwable) {
-            // Sengaja diam — lihat docblock.
+            // Sengaja diam - lihat docblock.
         }
     }
 
@@ -192,7 +192,7 @@ class PhotoCropService
      * dan orientasi EXIF sudah diperbaiki.
      *
      * Foto studio mentah bisa 5 MB, dan itu dikirim apa adanya ke browser hanya untuk
-     * ditampilkan di kotak crop — lambat muncul. 1600px adalah batas yang sama dengan
+     * ditampilkan di kotak crop - lambat muncul. 1600px adalah batas yang sama dengan
      * yang dipakai `cropAndStore()` sebelum memotong, jadi hasil pas foto akhirnya
      * tidak berubah sedikit pun.
      */
@@ -551,7 +551,7 @@ class PhotoCropService
         }
 
         $total = count($samples);
-        arsort($buckets); // by insertion? no — sort by count below instead
+        arsort($buckets); // by insertion? no - sort by count below instead
         uasort($buckets, fn ($a, $b) => $b['n'] <=> $a['n']);
 
         $clusters = [];
@@ -681,7 +681,7 @@ class PhotoCropService
         $cropX = max(0, min($imgW - $cropW, $cropX));
 
         if ($rawCropY < 0) {
-            // Not enough headroom in the source — pad the top with the backdrop color.
+            // Not enough headroom in the source - pad the top with the backdrop color.
             $shift = -$rawCropY;
             $bgColor = $this->edgeBackgroundColor($image, $imgW);
             $padded = imagecreatetruecolor($cropW, $cropH);
@@ -704,20 +704,20 @@ class PhotoCropService
 
     /**
      * Fallback crop when segmentation fails.
-     * Assumes standard portrait photo — crops center-top with card ratio.
+     * Assumes standard portrait photo - crops center-top with card ratio.
      */
     private function fallbackCrop(\GdImage $image, int $w, int $h): \GdImage
     {
         $currentRatio = $w / $h;
 
         if ($currentRatio > self::SLOT_RATIO) {
-            // Wider than needed — crop sides
+            // Wider than needed - crop sides
             $cropW = (int) ($h * self::SLOT_RATIO);
             $cropH = $h;
             $cropX = (int) (($w - $cropW) / 2);
             $cropY = 0;
         } else {
-            // Taller than needed — crop bottom mostly
+            // Taller than needed - crop bottom mostly
             $cropW = $w;
             $cropH = (int) ($w / self::SLOT_RATIO);
             $cropX = 0;
@@ -906,7 +906,7 @@ class PhotoCropService
      */
     private function edgeBackgroundColor(\GdImage $image, int $imgW): int
     {
-        // Sample the two top corners — backdrop even when the head reaches the
+        // Sample the two top corners - backdrop even when the head reaches the
         // top-center edge (which the old top-center sampling would mistake for hair).
         $h = imagesy($image);
         $pts = [
@@ -982,7 +982,7 @@ class PhotoCropService
     }
 
     /**
-     * Fix EXIF orientation — phone photos often have rotation metadata
+     * Fix EXIF orientation - phone photos often have rotation metadata
      * that GD doesn't apply automatically, causing "tilted" images.
      */
     private function fixExifOrientation(\GdImage $image, string $path, int $type): \GdImage

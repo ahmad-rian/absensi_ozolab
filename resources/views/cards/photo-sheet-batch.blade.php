@@ -54,7 +54,7 @@
             object-fit: cover;
             display: block;
         }
-        /* Slot sisa dibiarkan putih — operator memotongnya sebagai kertas kosong. */
+        /* Slot sisa dibiarkan putih - operator memotongnya sebagai kertas kosong. */
         .slot.empty {
             border-color: #e5e7eb;
         }

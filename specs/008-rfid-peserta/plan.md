@@ -4,7 +4,7 @@
 
 ## Summary
 Kolom `rfid_uid` (dinormalkan: heksadesimal huruf besar) per peserta, unik per penyelenggara (ditegakkan di
-aplikasi — unique index dengan kolom nullable tidak menegakkan apa pun). `KehadiranRecorder::scan()` menerima
+aplikasi - unique index dengan kolom nullable tidak menegakkan apa pun). `KehadiranRecorder::scan()` menerima
 UID selain token QR bila saklar RFID kategori menyala; reader HID mengetik UID + Enter di halaman scan ringan.
 
 ## Constitution Check

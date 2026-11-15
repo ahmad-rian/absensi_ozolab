@@ -75,7 +75,7 @@ test('foto lama berformat PNG tetap bernama .png di Drive, dan keduanya dicari',
 /**
  * Kartu dan lembar pas foto menyusun nama berkas LOKAL, dan `basename()`-nya
  * itulah yang jadi nama di Drive. Keduanya dulu menyalin aturannya sendiri dan
- * menyimpang diam-diam. Ini penjaga supaya salinan itu tidak kembali — memanggil
+ * menyimpang diam-diam. Ini penjaga supaya salinan itu tidak kembali - memanggil
  * metodenya langsung tidak mungkin, keduanya merender lewat Browsershot.
  */
 test('kartu dan lembar pas foto tidak menyusun awalan sendiri', function (string $kelas) {
@@ -90,7 +90,7 @@ test('kartu dan lembar pas foto tidak menyusun awalan sendiri', function (string
 
 /**
  * Keluaran Tyas Studio. Tanpa keduanya masuk daftar jenis yang dikenal,
- * `jenisDari()` menganggapnya berkas fotografer — dan begitu nama siswa
+ * `jenisDari()` menganggapnya berkas fotografer - dan begitu nama siswa
  * dibetulkan, keduanya tertinggal dengan nama basi: yatim di folder yang benar.
  */
 test('keluaran Tyas Studio dikenali sebagai jenis tersendiri', function () {
@@ -111,7 +111,7 @@ test('keluaran Tyas Studio ikut diselaraskan saat nama siswa berubah', function 
 /**
  * Pas foto kartu dan keluaran Studio harus tetap jadi tiga berkas berbeda.
  * Kalau salah satu jenisnya bertabrakan, `replaceStudentOutput` akan menimpa
- * berkas yang salah — dan pas foto kartu ikut berganti tanpa ada yang meminta.
+ * berkas yang salah - dan pas foto kartu ikut berganti tanpa ada yang meminta.
  */
 test('ori, studio, dan foto tidak saling menimpa', function () {
     $siswa = Student::factory()->make(['full_name' => 'FULAN', 'nis' => '17357']);

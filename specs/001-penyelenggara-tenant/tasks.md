@@ -4,7 +4,7 @@
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/routes.md, quickstart.md
 
-**Tests**: WAJIB (Konstitusi Prinsip I — setiap perubahan perilaku punya Pest feature test). Tulis tes dulu, pastikan gagal, lalu implementasi.
+**Tests**: WAJIB (Konstitusi Prinsip I - setiap perubahan perilaku punya Pest feature test). Tulis tes dulu, pastikan gagal, lalu implementasi.
 
 **Organization**: Dikelompokkan per user story agar tiap story bisa diuji sendiri.
 
@@ -59,7 +59,7 @@ Monolit Laravel: `app/`, `database/`, `routes/`, `resources/js/`, `tests/Feature
 
 **Goal**: Super admin membuat penyelenggara, mengundang admin; admin menerima undangan dan masuk ke area penyelenggara.
 
-**Independent Test**: lihat spec US1 — penyelenggara tersimpan, undangan terkirim, tautan menghasilkan akun Admin Penyelenggara yang mendarat di `/penyelenggara`.
+**Independent Test**: lihat spec US1 - penyelenggara tersimpan, undangan terkirim, tautan menghasilkan akun Admin Penyelenggara yang mendarat di `/penyelenggara`.
 
 ### Tests for User Story 1
 
@@ -164,15 +164,15 @@ US3 (switch konteks) dan US4 (tim) menyusul dalam commit terpisah bila waktu sem
 - Tidak ada perubahan pada tabel `card_*`, `attendances`, `schools` (Konstitusi III & V).
 - Nama index MySQL ≤ 64 karakter; query tanggal kompatibel SQLite.
 
-## Audit 2026-10-14 — P1
+## Audit 2026-10-14 - P1
 
 Tes: `tests/Feature/Penyelenggara/AuditP1Test.php`, `tests/Unit/akses-penyelenggara.test.mjs`.
 
-- [X] T-A10 Sidebar penyelenggara juga di halaman Settings (`auth.user.penyelenggara_id`) — `app-sidebar-layout.tsx`, `HandleInertiaRequests`
+- [X] T-A10 Sidebar penyelenggara juga di halaman Settings (`auth.user.penyelenggara_id`) - `app-sidebar-layout.tsx`, `HandleInertiaRequests`
 
-## Audit 2026-10-14 — P2
+## Audit 2026-10-14 - P2
 
 Tes: `tests/Feature/Penyelenggara/AuditP2Test.php`.
 
-- [X] T-A30 Ubah peran anggota tim (Admin ↔ Pendamping) dengan penjaga minimal satu admin aktif — `TimController::peran`, `tim.tsx`
+- [X] T-A30 Ubah peran anggota tim (Admin ↔ Pendamping) dengan penjaga minimal satu admin aktif - `TimController::peran`, `tim.tsx`
 - [X] T-A31 Saklar fitur penyelenggara ditunda ke spec 006 (dicatat di spec.md)

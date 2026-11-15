@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
  * Pindahkan foto siswa dari path lama ke path baru.
  *
  * `sprintf('%d', <ULID>)` menghasilkan "1", sehingga seluruh sekolah menulis ke
- * `photos/students/1/` dan nama berkasnya hanya slug nama siswa — bisa ditebak
+ * `photos/students/1/` dan nama berkasnya hanya slug nama siswa - bisa ditebak
  * siapa pun, dan dua siswa bernama sama di sekolah berbeda saling menimpa.
  *
  * Command ini idempoten: berkas yang sudah berada di path baru dilewati.
@@ -40,7 +40,7 @@ class FixStudentPhotoPathsCommand extends Command
         $missing = 0;
         $shared = 0;
 
-        // Bug `%d` yang asli membuat beberapa siswa berbagi SATU berkas —
+        // Bug `%d` yang asli membuat beberapa siswa berbagi SATU berkas -
         // nama berkasnya cuma slug nama siswa, jadi dua "Imam Sutrisno" di
         // sekolah berbeda menunjuk file yang sama. Karena itu berkasnya
         // disalin, bukan dipindah; sumber lama baru dihapus setelah semua
@@ -95,7 +95,7 @@ class FixStudentPhotoPathsCommand extends Command
         $this->info(($dryRun ? '[dry-run] ' : '')."Dipindah: {$moved}, sudah rapi: {$skipped}, berkas hilang: {$missing}.");
 
         if ($shared > 0) {
-            $this->comment("{$shared} berkas dipakai lebih dari satu siswa — disalin, bukan dipindah.");
+            $this->comment("{$shared} berkas dipakai lebih dari satu siswa - disalin, bukan dipindah.");
         }
 
         $this->info(($dryRun ? '[dry-run] ' : '')."Berkas lama dihapus: {$purged}.");

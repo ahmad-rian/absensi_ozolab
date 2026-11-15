@@ -19,7 +19,7 @@
   `SetCurrentPenyelenggara` dipindah dari middleware global `web` ke grup `/penyelenggara` saja, supaya
   super admin yang punya pilihan konteks tidak membawa konteks itu ke Kartu Bebas.
 - **Rationale**: Kartu Bebas tidak melihat data penyelenggara; job generate tetap menemukan barisnya.
-  Keadaan 3 tidak pernah dicapai akun penyelenggara (mereka terkunci di area sendiri) — dicatat di
+  Keadaan 3 tidak pernah dicapai akun penyelenggara (mereka terkunci di area sendiri) - dicatat di
   Complexity Tracking.
 - **Alternatives**: Scope fail-closed penuh (ditolak: job & scan publik lama berhenti bekerja).
 

@@ -11,7 +11,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Catatan kunjungan perpustakaan. Hanya menampilkan — pencatatannya lewat
+ * Catatan kunjungan perpustakaan. Hanya menampilkan - pencatatannya lewat
  * halaman scan, dan tidak ada alasan mengubahnya dari sini.
  */
 class KunjunganPerpusController extends Controller

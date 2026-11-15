@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\Storage;
 use Mockery\MockInterface;
 use OpenSpout\Reader\XLSX\Reader;
 
-// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+// Laporan XLSX perintah drive:* ditulis ke disk local - jangan sampai ke storage sungguhan.
 beforeEach(fn () => Storage::fake('local'));
 
 /*
  | `drive:audit-siswa` dibaca manusia, dan itu bagian dari apa yang harus benar.
  |
  | Jalan pertamanya di server mengeluarkan "1849 dari 1853 siswa perlu diperiksa"
- | — angka yang terbaca seperti bencana padahal mayoritasnya hanya belum
+ | - angka yang terbaca seperti bencana padahal mayoritasnya hanya belum
  | di-backfill. Test di sini menjaga tiga hal yang membuat laporan itu bisa
  | ditindak: keadaan dipisah, kelas yang hilang tidak diulang per siswa, dan
  | tanpa --fix tidak ada satu baris pun yang berubah.
@@ -43,7 +43,7 @@ beforeEach(function () {
 });
 
 /**
- * Siswa yang pernah difoto. Tanpa `photo_path` audit melewatinya — ia memang
+ * Siswa yang pernah difoto. Tanpa `photo_path` audit melewatinya - ia memang
  * belum pernah difoto, dan melaporkannya menenggelamkan yang benar-benar rusak.
  */
 function auditedStudent(array $attributes = []): Student
@@ -75,7 +75,7 @@ function auditLocator(GoogleDriveService $drive): StudentDrivePhotoLocator
 
 test('a missing class folder is reported once, not once per student', function () {
     // Kalau 28 siswa satu kelas gagal berbarengan, yang hilang adalah folder
-    // kelasnya — satu folder, bukan 28. Mencetaknya per siswa membuat tabelnya
+    // kelasnya - satu folder, bukan 28. Mencetaknya per siswa membuat tabelnya
     // sepanjang layar dan menyembunyikan bahwa perbaikannya cuma satu tindakan.
     $siswa = collect(range(1, 3))->map(fn (int $i) => auditedStudent(['nis' => "900{$i}"]));
 
@@ -89,7 +89,7 @@ test('a missing class folder is reported once, not once per student', function (
     $this->artisan('drive:audit-siswa')
         ->expectsOutputToContain('Folder kelas yang tidak ada di Drive')
         ->expectsOutputToContain('7C')
-        // Tabel temuan per siswa tidak dicetak sama sekali — itulah buktinya
+        // Tabel temuan per siswa tidak dicetak sama sekali - itulah buktinya
         // ketiga siswa dilipat jadi satu baris, bukan sekadar diringkas.
         ->doesntExpectOutputToContain('Temuan')
         ->assertExitCode(1);
@@ -181,7 +181,7 @@ test('a student who has never been photographed is not a finding', function () {
 
 test('sekolah tanpa siswa tidak menghentikan audit di tengah jalan', function () {
     // Bar progres bertotal 0 tidak bisa menghitung sisa waktu dan dulu
-    // melempar LogicException — seluruh audit berhenti di sekolah kosong pertama.
+    // melempar LogicException - seluruh audit berhenti di sekolah kosong pertama.
     auditLocator(mock(GoogleDriveService::class));
 
     $this->artisan('drive:audit-siswa')

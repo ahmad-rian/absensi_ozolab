@@ -180,7 +180,7 @@ export default function SiswaCreate({ classrooms, parentProfiles }: PageProps) {
                                     {errors.classroom_id && <p className="text-sm text-destructive">{errors.classroom_id}</p>}
                                 </div>
 
-                                {/* Orang Tua — Searchable */}
+                                {/* Orang Tua - Searchable */}
                                 <div className="grid gap-2">
                                     <Label>Orang Tua / Wali</Label>
                                     <Popover open={parentOpen} onOpenChange={setParentOpen}>

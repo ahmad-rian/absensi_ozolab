@@ -52,7 +52,7 @@ function Ringkasan({ items }: { items: RingkasanItem[] }) {
                         {item.label}
                     </dt>
                     <dd className="mt-1 text-lg font-semibold tabular-nums">
-                        {item.value ?? '—'}
+                        {item.value ?? '-'}
                     </dd>
                 </div>
             ))}

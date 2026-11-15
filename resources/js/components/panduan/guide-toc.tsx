@@ -6,7 +6,7 @@ import type { FlatTopic } from './guide-registry';
  * Daftar isi bernomor.
  *
  * Nomornya diberikan SETELAH penyaringan role, jadi "Langkah 3 dari 12" selalu
- * cocok dengan apa yang benar-benar terlihat pembacanya — bukan nomor topik
+ * cocok dengan apa yang benar-benar terlihat pembacanya - bukan nomor topik
  * yang sebagian tersembunyi.
  */
 export function GuideToc({

@@ -250,7 +250,7 @@ export default function PoinIndex({
                                         </Link>
                                     </td>
                                     <td className="px-4 py-3">
-                                        {s.kelas ?? '—'}
+                                        {s.kelas ?? '-'}
                                     </td>
                                     <td className="px-4 py-3 text-right tabular-nums">
                                         {s.terlambat}×

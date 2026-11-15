@@ -19,7 +19,7 @@ use Throwable;
  *   --sejak=2026-08-23   hanya yang dibuang pada atau sesudah waktu itu
  *
  * Tanpa satu pun penyaring ia akan memulihkan SELURUH isi sampah, termasuk
- * berkas yang memang sengaja dibuang orang jauh sebelumnya — karena itu tanpa
+ * berkas yang memang sengaja dibuang orang jauh sebelumnya - karena itu tanpa
  * penyaring ia menolak jalan kecuali diberi `--semua`.
  */
 class RestoreDriveTrashCommand extends Command
@@ -69,7 +69,7 @@ class RestoreDriveTrashCommand extends Command
                 $drive = GoogleDriveService::forSchool($config);
                 $sampah = $drive->trashedFiles();
             } catch (Throwable $e) {
-                $this->error("{$school->name}: gagal membaca sampah — {$e->getMessage()}");
+                $this->error("{$school->name}: gagal membaca sampah - {$e->getMessage()}");
 
                 continue;
             }
@@ -79,7 +79,7 @@ class RestoreDriveTrashCommand extends Command
             foreach (self::saring($sampah, $cocok, $sejak) as $berkas) {
                 $waktu = $berkas['trashedTime'] ?? 'entah kapan';
                 // Jenisnya disebut karena memulihkan FOLDER ikut mengembalikan
-                // seluruh isinya — akibatnya jauh lebih luas daripada memulihkan
+                // seluruh isinya - akibatnya jauh lebih luas daripada memulihkan
                 // satu berkas, dan operator berhak tahu sebelum menerapkannya.
                 $jenis = self::jenis($berkas);
                 $this->line("{$prefix}{$school->name}: [{$jenis}] {$berkas['name']} (dibuang {$waktu})");
@@ -105,7 +105,7 @@ class RestoreDriveTrashCommand extends Command
     /**
      * Saring isi sampah menurut potongan nama dan waktu pembuangan.
      *
-     * Perbandingan waktunya string ISO 8601 apa adanya — Drive selalu
+     * Perbandingan waktunya string ISO 8601 apa adanya - Drive selalu
      * mengembalikan UTC berformat tetap, jadi urutan leksikalnya sama dengan
      * urutan kronologisnya, dan `--sejak=2026-08-23` cukup sebagai awalan hari.
      *

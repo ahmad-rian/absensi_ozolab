@@ -73,7 +73,7 @@ class GenerateRegistrationCardJob implements ShouldQueue
             $log->update([
                 'status' => 'completed',
                 'file_path' => $path,
-                // `drive_file_id` dulu tidak pernah ditulis di sini — hanya
+                // `drive_file_id` dulu tidak pernah ditulis di sini - hanya
                 // URL-nya. Akibatnya justru jalur tombol "Generate Ulang Kartu",
                 // yang paling sering dipakai, tidak punya pegangan id sama
                 // sekali dan selalu jatuh ke pencocokan nama.

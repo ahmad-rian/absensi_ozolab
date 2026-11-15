@@ -58,7 +58,7 @@ class RegisterStudentCardsJob implements ShouldQueue
         public string $generatedBy = 'registration',
         // Batch yang menaungi baris log kartu dari job ini, kalau ada. Dipakai
         // bar kemajuan: persennya dihitung dengan mengelompokkan status baris
-        // log per batch, bukan dari penghitung yang dinaikkan job — job ini
+        // log per batch, bukan dari penghitung yang dinaikkan job - job ini
         // `tries = 2` dan yang dirender `tries = 3`.
         public ?string $batchId = null,
     ) {
@@ -93,7 +93,7 @@ class RegisterStudentCardsJob implements ShouldQueue
             $student->update(['drive_folder_id' => $folderId]);
         }
 
-        // Result #3 — the cropped photo (already produced above). Log + upload.
+        // Result #3 - the cropped photo (already produced above). Log + upload.
         if ($this->wants(self::OUTPUT_PHOTO) && $student->photo_path) {
             // Baris dibuat SEBELUM unggahan, berstatus `processing`, supaya
             // halaman siswa punya sesuatu untuk ditampilkan selama job berjalan.
@@ -114,11 +114,11 @@ class RegisterStudentCardsJob implements ShouldQueue
 
             if ($upload) {
                 // Id berkas tidak ikut berubah saat berkasnya dipindah atau diganti
-                // nama — inilah tautan yang tetap, dan sampai sekarang dibuang.
+                // nama - inilah tautan yang tetap, dan sampai sekarang dibuang.
                 $student->update(['photo_drive_file_id' => $upload['id']]);
             }
 
-            // Drive yang memang tidak aktif untuk sekolah ini bukan kegagalan —
+            // Drive yang memang tidak aktif untuk sekolah ini bukan kegagalan -
             // fotonya tetap tersimpan di server. Yang gagal adalah ketika folder
             // tujuannya ada tapi unggahannya tidak menghasilkan apa-apa; dulu
             // keadaan itu ikut dicatat `completed` dan tidak terlihat siapa pun.
@@ -129,7 +129,7 @@ class RegisterStudentCardsJob implements ShouldQueue
             ]);
         }
 
-        // Results #1 & #2 — OSIS + Perpustakaan cards (render in parallel).
+        // Results #1 & #2 - OSIS + Perpustakaan cards (render in parallel).
         foreach ($this->wants(self::OUTPUT_CARDS) ? $this->resolveLayouts($school) : [] as $layout) {
             $log = CardGenerationLog::create([
                 'school_id' => $school->id,
@@ -143,7 +143,7 @@ class RegisterStudentCardsJob implements ShouldQueue
             GenerateRegistrationCardJob::dispatch($log->id, $folderId);
         }
 
-        // Result #4 — pas-foto sheet (4R), only when a photo exists.
+        // Result #4 - pas-foto sheet (4R), only when a photo exists.
         if ($this->wants(self::OUTPUT_SHEET) && $student->photo_path) {
             $sheetLog = CardGenerationLog::create([
                 'school_id' => $school->id,
@@ -170,7 +170,7 @@ class RegisterStudentCardsJob implements ShouldQueue
      * Pasang foto baru, lalu buang berkas lama dari disk.
      *
      * StudentPhotoStorage::path() menyisipkan 16 karakter acak, jadi keluaran
-     * baru TIDAK PERNAH menimpa yang lama — ia mendarat di sebelahnya. Tanpa
+     * baru TIDAK PERNAH menimpa yang lama - ia mendarat di sebelahnya. Tanpa
      * pembuangan ini setiap "generate ulang foto" menambah satu berkas yatim,
      * dan disk penuh sudah pernah menjatuhkan server ini. Jalur unggah dari
      * browser (SiswaController::uploadPhoto) sudah melakukan hal yang sama;
@@ -199,7 +199,7 @@ class RegisterStudentCardsJob implements ShouldQueue
         if ($this->photoTemp && Storage::disk('local')->exists($this->photoTemp)) {
             try {
                 $storagePath = $this->photoStoragePath($school, $student);
-                // `crop: false` — pendaftaran memakai foto Drive apa adanya sejak
+                // `crop: false` - pendaftaran memakai foto Drive apa adanya sejak
                 // klien meminta croping dibuang. Lihat PhotoCropService::cropAndStore().
                 (new PhotoCropService)->cropAndStore(Storage::disk('local')->path($this->photoTemp), $storagePath, 9, $this->manualCrop, crop: false);
                 Storage::disk('local')->delete($this->photoTemp);
@@ -287,8 +287,8 @@ class RegisterStudentCardsJob implements ShouldQueue
      *
      * Dulu method ini SELALU menurunkan letak folder dari nama kelas dan nama
      * siswa, dan `findOrCreateFolder()` membuat folder baru begitu namanya tidak
-     * ketemu. Nama itu bergeser karena banyak hal biasa — kelas diganti nama,
-     * siswa naik kelas, NIS diisi belakangan — dan setiap pergeseran melahirkan
+     * ketemu. Nama itu bergeser karena banyak hal biasa - kelas diganti nama,
+     * siswa naik kelas, NIS diisi belakangan - dan setiap pergeseran melahirkan
      * folder KEDUA. Hasil generate berikutnya mendarat di sana, penunjuk lama
      * ditimpa, dan folder berisi kartu serta pas foto sebelumnya menjadi yatim:
      * masih utuh di Drive, tapi tidak bisa ditemukan kode mana pun lagi.

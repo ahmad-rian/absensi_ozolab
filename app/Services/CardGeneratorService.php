@@ -51,7 +51,7 @@ class CardGeneratorService
             'exportMm' => $exportMm,
         ])->render();
 
-        // %s, bukan %d — school_id adalah ULID dan dulu runtuh jadi "1",
+        // %s, bukan %d - school_id adalah ULID dan dulu runtuh jadi "1",
         // sehingga seluruh sekolah menulis ke direktori yang sama.
         //
         // Awalannya dari StudentDriveNaming, bukan disusun ulang di sini: baris

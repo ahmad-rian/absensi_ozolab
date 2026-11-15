@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /*
- | Halaman ganti sandi wajib — yang dilihat orang tua pada login pertama.
+ | Halaman ganti sandi wajib - yang dilihat orang tua pada login pertama.
  |
  | Sebelum ini halaman itu cuma berisi dua kolom tanpa satu kata pun tentang
  | ketentuan sandinya, sementara aturannya berbeda per peran. Yang dijaga berkas
@@ -68,7 +68,7 @@ test('logo sekolah muncul di halaman ganti sandi', function () {
         Rute ini berada di luar grup yang memasang SetCurrentSchool, jadi
         `currentSchool` kosong di sini. Sebelum ada fallback ke sekolah milik
         akunnya, halaman menampilkan logo Laravel bawaan padahal logonya sudah
-        diunggah — logo itu tersimpan di kolom settings sekolah, bukan di tabel
+        diunggah - logo itu tersimpan di kolom settings sekolah, bukan di tabel
         settings global.
     */
     $school = School::factory()->create(['settings' => ['app_logo' => 'images/branding/logo.webp']]);
@@ -90,7 +90,7 @@ test('sandi orang tua yang tidak memenuhi ketentuan ditolak dengan alasannya', f
     expect($user->fresh()->must_change_password)->toBeTrue();
 })->with([
     'terlalu pendek' => 'sandi',
-    // Sandi bawaan yang dipakai massal saat impor — persis yang halaman ini ada
+    // Sandi bawaan yang dipakai massal saat impor - persis yang halaman ini ada
     // untuk menggantikan.
     'sandi bawaan' => '11111111',
     'sandi umum' => '12345678',

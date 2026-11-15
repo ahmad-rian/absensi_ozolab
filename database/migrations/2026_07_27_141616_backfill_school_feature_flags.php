@@ -11,7 +11,7 @@ return new class extends Migration
      * dihapus, `migrate:fresh` tidak boleh ikut pecah.
      *
      * Fitur yang memetakan ke key lama (`prayer_enabled`, `prayer_dhuha_enabled`,
-     * `whatsapp_enabled`) sengaja TIDAK ada di sini — key-nya sudah jadi sumber
+     * `whatsapp_enabled`) sengaja TIDAK ada di sini - key-nya sudah jadi sumber
      * kebenaran yang sama, jadi tidak ada yang perlu di-backfill.
      *
      * @var array<string, bool>

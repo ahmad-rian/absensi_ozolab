@@ -15,7 +15,7 @@ return new class extends Migration
      * disentuhnya.
      *
      * Yang disimpan adalah HASH-nya, bukan tokennya. Sekali diterbitkan, nilai
-     * mentahnya hanya tampil satu kali di layar dan tidak bisa dilihat lagi —
+     * mentahnya hanya tampil satu kali di layar dan tidak bisa dilihat lagi -
      * baris ini tidak boleh cukup untuk mengabsenkan atau memfoto siapa pun.
      */
     public function up(): void

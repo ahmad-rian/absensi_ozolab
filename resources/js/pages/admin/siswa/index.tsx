@@ -174,14 +174,14 @@ export default function SiswaIndex({ students, classrooms, filters }: PageProps)
                                         <TableCell className="font-medium">{student.nis ?? '-'}</TableCell>
                                         <TableCell>{student.nisn ?? '-'}</TableCell>
                                         {/* Data nama masuk campur kapitalisasinya dari impor sekolah.
-                                            Diseragamkan lewat CSS saja — nilai aslinya tetap utuh di
+                                            Diseragamkan lewat CSS saja - nilai aslinya tetap utuh di
                                             database, jadi kartu, album, dan ekspor tidak ikut berubah. */}
                                         <TableCell className="uppercase">{student.full_name}</TableCell>
                                         <TableCell>{student.classroom?.name ?? '-'}</TableCell>
                                         <TableCell>{genderLabel(student.gender)}</TableCell>
                                         {/* Kolom ini membaca nama AKUN LOGIN orang tua, bukan
                                             students.parent_name. Nama akun sengaja tidak diubah di
-                                            database — itu identitas mereka sendiri, muncul di profil,
+                                            database - itu identitas mereka sendiri, muncul di profil,
                                             email, dan notifikasi. Jadi diseragamkan lewat CSS saja. */}
                                         <TableCell className="uppercase">{student.parent_profile?.user?.name ?? '-'}</TableCell>
                                         <TableCell>

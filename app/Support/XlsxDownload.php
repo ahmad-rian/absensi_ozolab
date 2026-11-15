@@ -30,7 +30,7 @@ class XlsxDownload
     }
 
     /**
-     * Tulis beberapa sheet ke berkas XLSX di `$path` — dipakai unduhan dan
+     * Tulis beberapa sheet ke berkas XLSX di `$path` - dipakai unduhan dan
      * laporan perintah konsol yang disimpan di disk.
      *
      * @param  array<string, array{header: array, rows: array}>  $sheets
@@ -75,7 +75,7 @@ class XlsxDownload
      * Nama sheet yang pasti diterima `sheets()`: tanpa karakter terlarang
      * Excel, maksimal 31 karakter, dan tidak kembar dengan `$terpakai`.
      *
-     * Nama kelas datang dari admin sekolah — "XI IPA/1" atau dua nama panjang
+     * Nama kelas datang dari admin sekolah - "XI IPA/1" atau dua nama panjang
      * yang baru berbeda di karakter ke-32 adalah hal biasa, dan satu nama
      * yang ditolak menggagalkan seluruh unduhan.
      *
@@ -145,14 +145,14 @@ class XlsxDownload
      * Bangun sel secara eksplisit, JANGAN lewat `Cell::fromValue()`.
      *
      * `Cell::fromValue()` memeriksa `'=' === $value[0]` dan mengembalikan
-     * `FormulaCell` — nilai yang datang dari pendaftaran publik akan ditulis
+     * `FormulaCell` - nilai yang datang dari pendaftaran publik akan ditulis
      * sebagai rumus sungguhan dan dieksekusi saat berkasnya dibuka. Itu temuan
      * M-4 di SECURITY-AUDIT.md, dulu ditangkal dengan melarikan awalan pada
      * jalur CSV. Di sini penangkalnya adalah tipe selnya sendiri: teks tetap
      * teks apa pun karakter pertamanya.
      *
      * Angka sengaja tetap `NumericCell` supaya kolom hitungan bisa dijumlah di
-     * Excel — nilai yang harus tetap tampil apa adanya (NIS, persentase)
+     * Excel - nilai yang harus tetap tampil apa adanya (NIS, persentase)
      * dikirim pemanggilnya sebagai string.
      */
     private static function cell(mixed $nilai, ?Style $style = null): Cell

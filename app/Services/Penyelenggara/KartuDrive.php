@@ -36,7 +36,7 @@ class KartuDrive
     }
 
     /**
-     * Klien Drive, atau null bila root/kredensial belum diatur — kartu tetap
+     * Klien Drive, atau null bila root/kredensial belum diatur - kartu tetap
      * tersimpan di server dan bisa diunduh.
      */
     public function drive(): ?GoogleDriveService

@@ -55,7 +55,7 @@ class GrupController extends Controller
             return back()->withErrors(['grup' => 'Grup masih punya sub-grup atau peserta. Kosongkan dulu sebelum menghapus.']);
         }
 
-        // Sesi khusus grup ikut terhapus (FK cascade) beserta kehadirannya —
+        // Sesi khusus grup ikut terhapus (FK cascade) beserta kehadirannya -
         // riwayat laporan tidak boleh hilang diam-diam.
         if (SesiPola::where('grup_id', $grup->id)->exists() || Sesi::where('grup_id', $grup->id)->exists()) {
             return back()->withErrors(['grup' => 'Grup ini punya jadwal sesi sendiri. Hapus atau pindahkan jadwalnya dulu supaya riwayat kehadiran tidak ikut terhapus.']);

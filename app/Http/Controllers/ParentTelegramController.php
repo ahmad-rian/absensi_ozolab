@@ -54,7 +54,7 @@ class ParentTelegramController extends Controller
             'school_id' => [
                 'required',
                 'exists:schools,id',
-                // Menyaring daftar di UI saja tidak cukup — school_id masih
+                // Menyaring daftar di UI saja tidak cukup - school_id masih
                 // bisa dikirim langsung ke endpoint ini.
                 new SchoolFeatureEnabled(SchoolFeature::PendaftaranTelegram, 'Sekolah ini sedang tidak menerima pendaftaran Telegram.'),
             ],

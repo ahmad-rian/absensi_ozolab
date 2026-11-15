@@ -26,7 +26,7 @@ type TabsProps = {
 };
 
 /**
- * Tabs terkontrol tanpa dependency Radix — cukup untuk kebutuhan aplikasi
+ * Tabs terkontrol tanpa dependency Radix - cukup untuk kebutuhan aplikasi
  * ini dan menjaga bundle tetap ramping.
  */
 export function Tabs({ value, onValueChange, className, children }: TabsProps) {

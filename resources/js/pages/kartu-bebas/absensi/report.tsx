@@ -229,7 +229,7 @@ export default function CardAttendanceReport({
                             <TableRow key={i}>
                                 {Object.values(row).map((value, j) => (
                                     <TableCell key={j}>
-                                        {value ?? '—'}
+                                        {value ?? '-'}
                                     </TableCell>
                                 ))}
                             </TableRow>

@@ -182,7 +182,7 @@ export default function StudentRegister({
         Draf dibaca sekali lewat inisialisator malas `useState`, bukan `useRef`.
 
         Versi sebelumnya menyimpannya di ref lalu membaca `.current` di tengah
-        render — pelanggaran `react-hooks/refs` yang selama ini tidak terlihat
+        render - pelanggaran `react-hooks/refs` yang selama ini tidak terlihat
         karena berkasnya cukup rumit sampai React Compiler menyerah
         menganalisisnya. Begitu langkah Foto dibuang dan berkasnya menyusut,
         penganalisisnya berhasil jalan dan keduanya muncul.
@@ -197,7 +197,7 @@ export default function StudentRegister({
     const [step, setStep] = useState(awal.step);
     const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
 
-    // Keadaan langkah Foto — sementara, tidak ikut disimpan ke draf.
+    // Keadaan langkah Foto - sementara, tidak ikut disimpan ke draf.
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState('');
     const [photoPreview, setPhotoPreview] = useState<{
@@ -207,7 +207,7 @@ export default function StudentRegister({
     // Gambarnya benar-benar selesai dimuat di peramban, bukan sekadar respons
     // server sudah tiba.
     const [photoReady, setPhotoReady] = useState(false);
-    // Nomor urut pencarian — hanya respons terbaru yang boleh menulis state.
+    // Nomor urut pencarian - hanya respons terbaru yang boleh menulis state.
     const photoRequestRef = useRef(0);
 
     const { data, setData, processing, errors } = useForm<FormData>(awal.data);
@@ -396,8 +396,8 @@ export default function StudentRegister({
         setLoadingStep('Menyimpan data siswa...');
 
         const controller = new AbortController();
-        // Tinggal satu INSERT sekarang — tidak ada unduhan Drive atau render
-        // kartu yang menahan respons — tapi ambangnya dibiarkan longgar: yang
+        // Tinggal satu INSERT sekarang - tidak ada unduhan Drive atau render
+        // kartu yang menahan respons - tapi ambangnya dibiarkan longgar: yang
         // memakainya jaringan sekolah, bukan jalur ini.
         const timeout = setTimeout(() => controller.abort(), 120000);
 
@@ -549,7 +549,7 @@ export default function StudentRegister({
         setData,
     ]);
 
-    // Dicari sendiri begitu pengetikan berhenti — tidak ada tombol "cari".
+    // Dicari sendiri begitu pengetikan berhenti - tidak ada tombol "cari".
     useEffect(() => {
         if (!data.photo_drive_filename.trim() || !data.school_id) {
             return;
@@ -570,7 +570,7 @@ export default function StudentRegister({
         setPhotoReady(false);
     }
 
-    // Halaman sukses. Tidak ada lagi yang berjalan di latar — foto dan kartu
+    // Halaman sukses. Tidak ada lagi yang berjalan di latar - foto dan kartu
     // diurus admin sekolah dari halaman siswa.
     if (submitted && result) {
         return (
@@ -762,7 +762,7 @@ export default function StudentRegister({
                                     </div>
                                     <p className="text-xs text-muted-foreground">
                                         Ketik nama berkas foto yang sudah ada di
-                                        folder Foto Siswa di Google Drive —
+                                        folder Foto Siswa di Google Drive -
                                         fotonya muncul sendiri di bawah.
                                     </p>
 
@@ -770,7 +770,7 @@ export default function StudentRegister({
                                         <p className="text-xs text-blue-800 dark:text-blue-200">
                                             <b>Boleh dikosongkan.</b> Kalau
                                             nomor fotonya belum tahu, lewati
-                                            saja — admin sekolah bisa memasang
+                                            saja - admin sekolah bisa memasang
                                             pas fotonya nanti dari halaman
                                             siswa.
                                         </p>
@@ -1221,14 +1221,14 @@ export default function StudentRegister({
                                         bukan sesudah. Kolom sandi ini duduk
                                         tepat di bawah kolom email, dan urutan
                                         itu membuat banyak orang tua membacanya
-                                        sebagai permintaan sandi email mereka —
+                                        sebagai permintaan sandi email mereka -
                                         lalu berhenti mendaftar, atau benar-benar
                                         mengetikkannya.
                                     */}
                                     <p className="rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:bg-amber-950 dark:text-amber-200">
                                         Kata sandi <strong>baru</strong> yang
                                         Anda tentukan sendiri untuk masuk ke
-                                        portal ini —{' '}
+                                        portal ini -{' '}
                                         <strong>bukan sandi email Anda</strong>.
                                     </p>
                                     <PasswordInput
@@ -1362,7 +1362,7 @@ export default function StudentRegister({
                                         label="File Foto"
                                         value={
                                             data.photo_drive_filename ||
-                                            '(dilewati — diurus admin sekolah)'
+                                            '(dilewati - diurus admin sekolah)'
                                         }
                                     />
                                 </ReviewGroup>
@@ -1385,7 +1385,7 @@ export default function StudentRegister({
                                     />
                                     <ReviewRow
                                         label="Email"
-                                        value={data.parent_email || '—'}
+                                        value={data.parent_email || '-'}
                                     />
                                 </ReviewGroup>
 
@@ -1561,7 +1561,7 @@ function ReviewRow({ label, value }: { label: string; value?: string | null }) {
         <div className="flex items-start justify-between gap-4 text-sm">
             <dt className="shrink-0 text-muted-foreground">{label}</dt>
             <dd className="text-right font-medium break-words">
-                {value || '—'}
+                {value || '-'}
             </dd>
         </div>
     );
@@ -1572,7 +1572,7 @@ function ReviewRow({ label, value }: { label: string; value?: string | null }) {
 
     Di HP, Radix membuka daftarnya DI BAWAH kotak dengan tinggi yang dibatasi
     sisa layar. Kotak Kelas berada di dasar kartu, jadi sisa layarnya cuma
-    beberapa piksel dan daftarnya muncul sebagai garis tipis — "kelasnya susah
+    beberapa piksel dan daftarnya muncul sebagai garis tipis - "kelasnya susah
     muncul" yang dilaporkan dari lapangan. `<select>` asli membuka pemilih
     layar penuh milik Android/iOS: besar, bisa digulir, tanpa perlu ruang di
     bawah kotaknya.

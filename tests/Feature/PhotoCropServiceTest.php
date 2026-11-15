@@ -46,7 +46,7 @@ it('leaves headroom above the head (top is backdrop, not clipped hair/face)', fu
     $w = imagesx($img);
     $h = imagesy($img);
 
-    // Sample the top-center strip — should be studio backdrop, never dark hair.
+    // Sample the top-center strip - should be studio backdrop, never dark hair.
     $lum = [];
     for ($i = 3; $i <= 5; $i++) {
         $rgb = imagecolorat($img, (int) ($w * $i / 8), (int) ($h * 0.025));
@@ -177,7 +177,7 @@ it('no-contrast (white subject on white background) falls back without garbage',
 
     $service = new PhotoCropService;
     $m = $service->analyze($src);
-    // Either no detection or a rejected one — never a confident bogus subject.
+    // Either no detection or a rejected one - never a confident bogus subject.
     expect($m === null || ! $m['ok'])->toBeTrue();
 
     $service->cropAndStore($src, 'photos/test/no_contrast.png');

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Queue;
  |
  | Sebagian besar test di sini menjaga apa yang TIDAK terjadi. Kartu, lembar pas
  | foto, dan unggahan Drive semuanya lewat antrean `cards` yang dipakai bersama
- | seluruh sekolah, dan satu sesi foto berisi ratusan siswa — form ini bocor
+ | seluruh sekolah, dan satu sesi foto berisi ratusan siswa - form ini bocor
  | sedikit saja, antreannya penuh oleh pekerjaan yang tidak pernah diminta.
  */
 
@@ -109,7 +109,7 @@ test('gender is not asked for and stays empty', function () {
     expect(registeredStudent()->gender)->toBeNull();
 });
 
-test('nothing is rendered — only the photo is fetched', function () {
+test('nothing is rendered - only the photo is fetched', function () {
     postQuick()->assertOk();
 
     Queue::assertPushed(RegisterStudentCardsJob::class, function ($job) {

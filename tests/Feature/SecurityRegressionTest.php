@@ -121,7 +121,7 @@ test('H-5: the telegram webhook rejects a request when no secret is stored', fun
         'settings' => ['bot_token' => 'x'],
     ]);
 
-    // Tanpa header sama sekali — dulu lolos karena `null !== null` bernilai false.
+    // Tanpa header sama sekali - dulu lolos karena `null !== null` bernilai false.
     $this->postJson(route('telegram.webhook', $this->otherSchool), [
         'message' => ['chat' => ['id' => '999'], 'from' => ['id' => 1]],
     ])->assertForbidden();
@@ -151,7 +151,7 @@ test('H-5: the webhook accepts the correct secret', function () {
  * `OpenSpout\Common\Entity\Cell::fromValue()` mengubah string berawalan `=`
  * menjadi `FormulaCell`. `XlsxDownload` sengaja membangun `StringCell` sendiri.
  *
- * Elemen `<f>` di sheet XML adalah bukti pastinya — pembaca OpenSpout hanya
+ * Elemen `<f>` di sheet XML adalah bukti pastinya - pembaca OpenSpout hanya
  * mengembalikan nilai sel, jadi memeriksa nilainya saja tidak akan menangkap
  * kalau sel itu ternyata rumus.
  */
@@ -214,7 +214,7 @@ test('every system-module route is guarded by the super-admin middleware', funct
             );
 
             // `gatherMiddleware()` mengembalikan alias apa adanya, bukan
-            // nama kelasnya — cek keduanya supaya tidak rapuh.
+            // nama kelasnya - cek keduanya supaya tidak rapuh.
             $guarded = in_array('super-admin', $middleware, true)
                 || in_array(EnsureSuperAdmin::class, $middleware, true);
 

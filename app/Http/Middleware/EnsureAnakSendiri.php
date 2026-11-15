@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
  * Menetapkan anak yang sedang dilihat, dan menolak anak milik orang lain.
  *
  * Anaknya datang dari `?anak=`; tanpa itu dipakai anak pertama. Hasilnya
- * ditaruh di `$request->attributes` — BUKAN lewat route model binding, karena
+ * ditaruh di `$request->attributes` - BUKAN lewat route model binding, karena
  * binding menerapkan global scope `school` yang menilai konteks sekolah
  * pengguna dan akan 404 sebelum controller sempat jalan.
  */
@@ -43,7 +43,7 @@ class EnsureAnakSendiri
         $student = $diminta ? $children->firstWhere('id', $diminta) : $children->first();
 
         // Id yang disebut tapi bukan anaknya adalah percobaan menembus, bukan
-        // salah ketik — jangan diam-diam dialihkan ke anak sendiri.
+        // salah ketik - jangan diam-diam dialihkan ke anak sendiri.
         abort_if($diminta && ! $student, 403);
 
         $request->attributes->set('portalStudent', $student);

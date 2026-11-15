@@ -9,7 +9,7 @@ namespace App\Support;
  *
  * 1. Judul saja tidak cukup. Tanpa <link rel="canonical">, dua host yang
  *    menyajikan isi sama bersaing di indeks Google dan yang menang belum tentu
- *    host yang benar — persis yang terjadi pada situs ini.
+ *    host yang benar - persis yang terjadi pada situs ini.
  *
  * 2. Perayap AI (GPTBot, ClaudeBot, PerplexityBot, dan kawan-kawan) umumnya
  *    TIDAK menjalankan JavaScript. Halaman Inertia tanpa SSR tampak kosong bagi
@@ -49,7 +49,7 @@ class SeoMeta
      * Alamat absolut di host kanonik.
      *
      * Sengaja TIDAK memakai url()->current(): kalau host yang menyajikan
-     * permintaan memang salah, canonical-nya ikut salah — dan itu keadaan yang
+     * permintaan memang salah, canonical-nya ikut salah - dan itu keadaan yang
      * mau diperbaiki, bukan diabadikan.
      */
     public static function url(?string $path = null): string

@@ -80,7 +80,7 @@ class StudentImportController extends Controller
      * diunggah ulang.
      *
      * Kolom pertama `ID Sistem` membuat unggahan ulang selalu jatuh ke siswa
-     * yang sama — termasuk siswa pendaftaran cepat yang belum punya NISN dan
+     * yang sama - termasuk siswa pendaftaran cepat yang belum punya NISN dan
      * NIS-nya masih sementara. Tanpa kolom itu mereka tidak bisa dicocokkan dan
      * akan terbuat ganda.
      */

@@ -13,8 +13,8 @@ use Illuminate\Support\Str;
  * teknis dan tidak mungkin dipakai manusia: 26 karakter acak yang harus dieja
  * satu per satu ke orang tua yang sedang memegang ponsel di gerbang sekolah.
  *
- * Gantinya slug nama + domain pendek. Ini BUKAN kotak surat — tidak ada yang
- * dikirim ke sini — melainkan nama pengguna yang kebetulan berbentuk email
+ * Gantinya slug nama + domain pendek. Ini BUKAN kotak surat - tidak ada yang
+ * dikirim ke sini - melainkan nama pengguna yang kebetulan berbentuk email
  * karena Fortify memakai kolom `email` sebagai identitas login.
  */
 class AlamatLoginOrangTua
@@ -26,9 +26,9 @@ class AlamatLoginOrangTua
     /**
      * Alamat unik untuk satu orang tua.
      *
-     * Nama orang tua dipakai lebih dulu. Kalau tidak layak jadi slug — dan di
+     * Nama orang tua dipakai lebih dulu. Kalau tidak layak jadi slug - dan di
      * data nyata banyak yang terisi nomor telepon, satu-dua huruf, atau tanda
-     * baca — dipakai nama anaknya, yang selalu terisi dan selalu berupa nama.
+     * baca - dipakai nama anaknya, yang selalu terisi dan selalu berupa nama.
      *
      * @param  array<string, true>  $dipesan  alamat yang sudah dialokasikan dalam simulasi
      * @param  string|null  $abaikanUserId  akun yang alamatnya sedang diganti,
@@ -43,7 +43,7 @@ class AlamatLoginOrangTua
 
         $alamat = $dasar.'@'.self::DOMAIN;
 
-        // Nama yang sama memang lumrah — dua "Siti Aminah" di satu sekolah
+        // Nama yang sama memang lumrah - dua "Siti Aminah" di satu sekolah
         // bukan kelainan data. Yang kedua dapat akhiran angka.
         $urutan = 1;
         while (isset($dipesan[$alamat]) || self::dipakai($alamat, $abaikanUserId)) {
@@ -55,7 +55,7 @@ class AlamatLoginOrangTua
     }
 
     /**
-     * Alamat yang dibuatkan sistem — baik bentuk acak lama maupun slug baru.
+     * Alamat yang dibuatkan sistem - baik bentuk acak lama maupun slug baru.
      *
      * Keduanya nama pengguna, bukan kotak surat. Jadi begitu sekolah memberi
      * email orang tua yang sungguhan, alamat itu yang menang: ia bisa dipakai

@@ -36,7 +36,7 @@ trait BelongsToSchool
     }
 
     /**
-     * Model yang di-opt-out dari global scope — dipakai User, yang batas
+     * Model yang di-opt-out dari global scope - dipakai User, yang batas
      * sekolahnya ditegakkan di controller karena relasi auth/notifikasi ikut
      * memuat User dari konteks lintas sekolah.
      */
@@ -87,7 +87,7 @@ trait BelongsToSchool
     }
 
     /**
-     * Lepas batas sekolah — hanya untuk operasi lintas sekolah yang disengaja.
+     * Lepas batas sekolah - hanya untuk operasi lintas sekolah yang disengaja.
      *
      * @param  Builder<static>  $query
      * @return Builder<static>

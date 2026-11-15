@@ -220,11 +220,11 @@ class OrangTuaController extends Controller
      * Pintasan ubah orang tua dari halaman detail siswa.
      *
      * Aturan dan penyimpanannya sama persis dengan `update()`; yang berbeda
-     * hanya tujuannya — operator dikembalikan ke siswa yang sedang dilihatnya,
+     * hanya tujuannya - operator dikembalikan ke siswa yang sedang dilihatnya,
      * bukan dilempar ke daftar orang tua.
      *
-     * Rutenya duduk di grup `permission:orang-tua.access`, jadi Guru — yang
-     * memegang `siswa.access` tapi tidak `orang-tua.access` — tertahan di
+     * Rutenya duduk di grup `permission:orang-tua.access`, jadi Guru - yang
+     * memegang `siswa.access` tapi tidak `orang-tua.access` - tertahan di
      * middleware tanpa penjaga tambahan di sini.
      */
     public function updateFromStudent(Request $request, Student $siswa): RedirectResponse
@@ -251,7 +251,7 @@ class OrangTuaController extends Controller
             // `students.parent_profile_id` ber-cascadeOnDelete dan ParentProfile
             // TIDAK memakai SoftDeletes, jadi baris siswanya benar-benar lenyap
             // di sini. Cascade tingkat database tidak memicu event Eloquent,
-            // jadi tidak ada observer yang akan tahu — antreannya harus disusun
+            // jadi tidak ada observer yang akan tahu - antreannya harus disusun
             // eksplisit, dan sebelum induknya dihapus selagi bahannya masih ada.
             foreach ($parentProfile->students()->withoutGlobalScope('school')->get() as $student) {
                 StudentAssetPurge::queue($student, auth()->user());

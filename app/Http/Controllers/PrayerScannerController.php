@@ -86,7 +86,7 @@ class PrayerScannerController extends Controller
             'message' => $result['message'],
             'student' => $result['success'] ? [
                 // Layar gerbang hanya butuh identitas seperlunya. Alamat,
-                // tanggal lahir, agama, dan NISN sengaja tidak dikirim — itu
+                // tanggal lahir, agama, dan NISN sengaja tidak dikirim - itu
                 // yang dulu membuat endpoint ini jadi alat panen PII.
                 'full_name' => $student->full_name,
                 'nis' => $student->nis,
@@ -94,11 +94,11 @@ class PrayerScannerController extends Controller
                 'classroom' => $student->classroom?->name,
                 // Thumbnail kalau ada, foto asli kalau belum. Aslinya PNG 1600 px
                 // berukuran megabita sementara layar gerbang menggambarnya di
-                // kotak 96×128 px — jalur absensi sekolah sudah dibereskan
+                // kotak 96×128 px - jalur absensi sekolah sudah dibereskan
                 // lebih dulu, dua gerbang ini terlewat.
                 'photo_url' => StudentPhotoStorage::displayUrl($student->photo_path),
                 'status' => $result['attendance']?->status->label(),
-                // `type` tetap 'PRAYER' — frontend memakainya sebagai penanda
+                // `type` tetap 'PRAYER' - frontend memakainya sebagai penanda
                 // mode scanner; yang jadi dinamis adalah labelnya.
                 'type' => 'PRAYER',
                 'type_label' => $result['attendance']?->prayer_type->label($school) ?? 'Sholat',

@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
  * punya tiga salinan yang sudah menyimpang diam-diam: `GoogleDriveService`
  * memakai `?:` sementara `CardGeneratorService` dan `PhotoSheetGeneratorService`
  * memakai `??`. Untuk NIS bernilai string kosong keduanya menghasilkan nama
- * berbeda — `{slug}--osis.png` versus `{slug}-{ulid}-foto.png` — di folder yang
+ * berbeda - `{slug}--osis.png` versus `{slug}-{ulid}-foto.png` - di folder yang
  * sama, dan tidak ada satu pun jalur baca yang menduga itu.
  *
  * Nama BUKAN identitas berkas. Ia bergeser tiap kali nama siswa dibetulkan atau
@@ -35,12 +35,12 @@ class StudentDriveNaming
      * Jenis keluaran yang namanya boleh diselaraskan.
      *
      * Daftar tertutup dengan sengaja. Folder siswa juga bisa berisi berkas yang
-     * ditaruh fotografer dengan nama bebas — mengganti namanya berdasarkan pola
+     * ditaruh fotografer dengan nama bebas - mengganti namanya berdasarkan pola
      * tebakan akan merusak berkas yang tidak ada hubungannya dengan aplikasi.
      *
      * `ori` dan `studio` datang dari Tyas Studio. Keduanya WAJIB ada di sini:
      * tanpa itu `jenisDari()` menganggapnya berkas fotografer, dan begitu nama
-     * siswa dibetulkan keduanya tertinggal dengan nama basi — yatim di folder
+     * siswa dibetulkan keduanya tertinggal dengan nama basi - yatim di folder
      * yang benar. Keduanya satu kata tanpa hubung, jadi aman terhadap
      * pemotongan di tanda hubung terakhir.
      *
@@ -77,7 +77,7 @@ class StudentDriveNaming
     /**
      * Nama berkas yang sudah diselaraskan dengan nama siswa sekarang.
      *
-     * `null` berarti tidak perlu — atau tidak boleh — diubah.
+     * `null` berarti tidak perlu - atau tidak boleh - diubah.
      */
     public static function namaSelaras(string $namaLama, string $awalanBaru): ?string
     {
@@ -97,14 +97,14 @@ class StudentDriveNaming
     /** Namanya diselaraskan dengan nama siswa sekarang. */
     public const GANTI_NAMA = 'ganti-nama';
 
-    /** Sudah tergantikan berkas lain — dibuang ke sampah. */
+    /** Sudah tergantikan berkas lain - dibuang ke sampah. */
     public const BUANG = 'buang';
 
     /**
      * Apa yang harus dilakukan pada satu berkas ketika nama siswa berubah.
      *
      * Dipisah dari job supaya keputusannya bisa diuji tanpa memalsukan seluruh
-     * klien Google — pola yang sama dengan
+     * klien Google - pola yang sama dengan
      * `CleanDriveDuplicatesCommand::duplikat()`.
      *
      * @param  array<int, string>  $namaTerpakai  nama berkas lain di folder yang sama
@@ -125,7 +125,7 @@ class StudentDriveNaming
             return self::LEWATI;
         }
 
-        // Sudah ada berkas bernama sasaran itu — berarti berkas ini versi lama
+        // Sudah ada berkas bernama sasaran itu - berarti berkas ini versi lama
         // yang sudah tergantikan.
         return in_array($namaBaru, $namaTerpakai, true) ? self::BUANG : self::GANTI_NAMA;
     }
@@ -148,7 +148,7 @@ class StudentDriveNaming
     /**
      * Apakah nama ini masuk akal milik siswa tersebut.
      *
-     * Nama orang berubah dengan berbagai cara yang masih menyisakan jejak —
+     * Nama orang berubah dengan berbagai cara yang masih menyisakan jejak -
      * "RADEN WASTU YUGA WIBOWO" jadi "R WASTU YUGA WIBOWO", kapitalisasi
      * diseragamkan, gelar dibuang. Semuanya tetap berbagi kata. Yang TIDAK
      * berbagi satu kata pun hampir pasti orang lain, dan biasanya lahir dari
@@ -157,7 +157,7 @@ class StudentDriveNaming
      *
      * Kata sepanjang dua huruf atau kurang diabaikan: "R", "AL", dan "DE"
      * beririsan terlalu mudah untuk bisa dipercaya. Kalau salah satu sisi tidak
-     * menyisakan kata yang bisa dinilai, jawabannya `true` — pemanggilnya tidak
+     * menyisakan kata yang bisa dinilai, jawabannya `true` - pemanggilnya tidak
      * boleh menolak bekerja hanya karena namanya pendek.
      */
     public static function namaMirip(string $namaBerkas, string $namaSiswa): bool

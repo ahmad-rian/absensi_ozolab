@@ -1,6 +1,6 @@
 # Feature Specification: Notifikasi Wali
 
-**Feature Branch**: `006-notifikasi-wali` (langsung di `main`) · **Created**: 2026-10-14 · **Status**: Draft — implementasi setelah spec 001–005
+**Feature Branch**: `006-notifikasi-wali` (langsung di `main`) · **Created**: 2026-10-14 · **Status**: Draft - implementasi setelah spec 001–005
 
 **Input**: User description: "WA/Email/Telegram ke wali saat hadir, terlambat, atau alpa; kuota per penyelenggara dan antrean terpisah supaya notifikasi sekolah tidak tertunda."
 

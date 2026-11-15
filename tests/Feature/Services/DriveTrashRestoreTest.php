@@ -25,7 +25,7 @@ test('penyaring nama tidak peduli huruf besar kecil', function () use ($sampah) 
 
 /**
  * Berkas yang dibuang jauh sebelum perintah pembersih dijalankan tidak boleh
- * ikut hidup lagi — itu keputusan orang, bukan kecelakaan.
+ * ikut hidup lagi - itu keputusan orang, bukan kecelakaan.
  */
 test('penyaring waktu meninggalkan sampah lama', function () use ($sampah) {
     expect(array_column(RestoreDriveTrashCommand::saring($sampah, null, '2026-08-23'), 'id'))

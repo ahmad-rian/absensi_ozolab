@@ -83,7 +83,7 @@ class RekapPoin
     }
 
     /**
-     * Total semester berjalan saja — untuk ringkasan yang tidak butuh riwayat.
+     * Total semester berjalan saja - untuk ringkasan yang tidak butuh riwayat.
      */
     public function totalSiswa(Student $student, PoinSettings $setup): int
     {

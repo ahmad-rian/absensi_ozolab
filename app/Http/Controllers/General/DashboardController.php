@@ -18,7 +18,7 @@ use Inertia\Response;
 
 /**
  * Ringkasan workspace Absensi General: lintas semua penyelenggara, ditambah
- * kartu haji lama (Kartu Bebas) yang hanya dibaca — tidak ada baris kartu yang
+ * kartu haji lama (Kartu Bebas) yang hanya dibaca - tidak ada baris kartu yang
  * disentuh (spec 009, konstitusi III).
  *
  * Semua angka berasal dari query agregat per penyelenggara, bukan per program.

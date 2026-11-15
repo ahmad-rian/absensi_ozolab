@@ -18,7 +18,7 @@ use Illuminate\Console\Command;
  * Kirim kabar terlambat / tidak hadir ke orang tua lewat WhatsApp.
  *
  * Kebijakan WA dibalik: yang hadir tepat waktu tidak lagi dikabarkan sama
- * sekali, dan yang dikirim justru dikumpulkan dalam satu sapuan — bukan satu
+ * sekali, dan yang dikirim justru dikumpulkan dalam satu sapuan - bukan satu
  * pesan per scan. Email dan Telegram tidak lewat sini; keduanya tetap mengabari
  * tiap scan lewat DispatchAttendanceNotifications.
  *
@@ -140,7 +140,7 @@ class NotifyAttendanceAbsenceCommand extends Command
     /**
      * Satu pesan per NOMOR, bukan per anak.
      *
-     * Satu orang tua bisa punya beberapa anak di sekolah yang sama — di data
+     * Satu orang tua bisa punya beberapa anak di sekolah yang sama - di data
      * prod ditemukan satu nomor dengan enam. Tanpa penggabungan, nomor itu
      * menerima enam WhatsApp nyaris identik dalam satu detik: terbaca spam oleh
      * penerimanya maupun oleh WhatsApp sendiri, dan kuota harian tidak
@@ -159,7 +159,7 @@ class NotifyAttendanceAbsenceCommand extends Command
 
             // Jalur ini WhatsApp saja. Tanpa nomor, membuat baris alert
             // ber-notified_at hanya akan membungkam peringatan yang tidak pernah
-            // terkirim — pelajaran dari NotifyPrayerAbsenceCommand.
+            // terkirim - pelajaran dari NotifyPrayerAbsenceCommand.
             if (! $student || empty($nomor)) {
                 continue;
             }
@@ -215,7 +215,7 @@ class NotifyAttendanceAbsenceCommand extends Command
     {
         // `whereDate`, bukan `firstOrNew(['alert_date' => ...])`. Cast `date`
         // menyimpan kolomnya sebagai "Y-m-d H:i:s", jadi pencocokan persis
-        // terhadap "Y-m-d" tidak pernah ketemu — barisnya dianggap belum ada
+        // terhadap "Y-m-d" tidak pernah ketemu - barisnya dianggap belum ada
         // lalu insert-nya menabrak unique key.
         $alert = AttendanceAlert::withoutGlobalScope('school')
             ->where('student_id', $student->id)

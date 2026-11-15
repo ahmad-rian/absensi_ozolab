@@ -49,7 +49,7 @@ class PhotoCropTestCommand extends Command
                 $tag = $m ? sprintf('ok=%d conf=%.2f [%s]', $m['ok'], $m['confidence'], $m['reason']) : 'no-detect';
                 $this->line('✓ '.basename($src).'  '.$tag);
             } catch (\Throwable $e) {
-                $this->error('✗ '.basename($src).' — '.$e->getMessage());
+                $this->error('✗ '.basename($src).' - '.$e->getMessage());
             }
         }
 

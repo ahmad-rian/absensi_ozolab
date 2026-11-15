@@ -82,7 +82,7 @@ export default function PesertaIndex({
 
     return (
         <>
-            <Head title={`${program.istilah_peserta} — ${program.name}`} />
+            <Head title={`${program.istilah_peserta} - ${program.name}`} />
             <div className="flex flex-col gap-6 p-4 md:p-6">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                     <div>
@@ -263,11 +263,11 @@ export default function PesertaIndex({
                                                 key={k.key}
                                                 className="p-3 text-muted-foreground"
                                             >
-                                                {p.data[k.key] ?? '—'}
+                                                {p.data[k.key] ?? '-'}
                                             </td>
                                         ))}
                                         <td className="p-3">
-                                            {p.grups.join(', ') || '—'}
+                                            {p.grups.join(', ') || '-'}
                                         </td>
                                         <td className="p-3">
                                             {p.archived ? (

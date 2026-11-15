@@ -446,7 +446,7 @@ export default function IzinPublik({
                                                             </span>
                                                             <span className="text-xs text-muted-foreground">
                                                                 Kelas{' '}
-                                                                {s.kelas ?? '—'}
+                                                                {s.kelas ?? '-'}
                                                             </span>
                                                         </span>
                                                         <ArrowRight className="size-4 text-muted-foreground" />
@@ -481,7 +481,7 @@ export default function IzinPublik({
                                     </span>
                                     <span className="text-muted-foreground">
                                         {' '}
-                                        · Kelas {anak.kelas ?? '—'}
+                                        · Kelas {anak.kelas ?? '-'}
                                     </span>
                                 </div>
                                 <div className="grid gap-2">
@@ -569,7 +569,7 @@ export default function IzinPublik({
                                     <Label>
                                         Bukti foto{' '}
                                         <span className="font-normal text-muted-foreground">
-                                            (surat dokter, dll. — opsional)
+                                            (surat dokter, dll. - opsional)
                                         </span>
                                     </Label>
                                     <BuktiFoto

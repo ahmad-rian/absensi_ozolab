@@ -6,7 +6,7 @@
  * iPhone Pro tidak bisa fokus lebih dekat dari ±20 cm, jadi QR kartu tidak
  * pernah terbaca walau gambarnya muncul. Kamera VIRTUAL "Back Triple Camera" /
  * "Back Dual Wide Camera" otomatis pindah ke lensa makro saat kartu didekatkan
- * — itu yang dipakai aplikasi Kamera bawaan. Ultra wide, telefoto, dan sensor
+ * - itu yang dipakai aplikasi Kamera bawaan. Ultra wide, telefoto, dan sensor
  * kedalaman tidak pernah dipilih.
  */
 export function pilihKamera(

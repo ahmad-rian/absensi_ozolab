@@ -118,7 +118,7 @@
 <body>
     <div class="header">
         <h1>{{ $config['title'] ?? $school->name }}</h1>
-        <p>{{ $config['subtitle'] ?? 'Album Foto Siswa' }} — Halaman {{ $pageNumber }} dari {{ $totalPages }}</p>
+        <p>{{ $config['subtitle'] ?? 'Album Foto Siswa' }} - Halaman {{ $pageNumber }} dari {{ $totalPages }}</p>
     </div>
 
     <div class="grid">
@@ -144,6 +144,6 @@
         @endforeach
     </div>
 
-    <div class="footer">{{ $school->name }} — Dicetak {{ now()->format('d M Y') }}</div>
+    <div class="footer">{{ $school->name }} - Dicetak {{ now()->format('d M Y') }}</div>
 </body>
 </html>

@@ -13,7 +13,7 @@ use Throwable;
  *
  * Sejak `PhotoCropService::cropAndStore()` menulis thumbnail, foto BARU selalu
  * punya. Yang lama tidak, dan halaman gerbang jatuh ke PNG 1600 px berukuran
- * megabita untuk mereka — persis keadaan yang hendak dihindari.
+ * megabita untuk mereka - persis keadaan yang hendak dihindari.
  *
  * Bertahap dan bisa dihentikan dengan sengaja. Server ini 4,9 GB RAM untuk 48
  * situs, dan GD memuat gambar sebagai truecolor: satu foto 1600×2100 memakan
@@ -48,7 +48,7 @@ class BackfillStudentPhotoThumbnails extends Command
 
         // `chunkById`, bukan `chunk`: keduanya sama-sama mengambil per potongan,
         // tapi `chunk` memakai OFFSET yang bergeser kalau ada baris berubah di
-        // tengah jalan — dan perintah ini memang menulis ke disk sambil jalan.
+        // tengah jalan - dan perintah ini memang menulis ke disk sambil jalan.
         $query->chunkById(50, function ($siswa) use ($disk, $kering, $limit, &$diperiksa, &$dibuat, &$dilewati, &$gagal, &$hilang) {
             foreach ($siswa as $s) {
                 if ($diperiksa >= $limit) {
@@ -66,7 +66,7 @@ class BackfillStudentPhotoThumbnails extends Command
 
                 if (! $disk->exists($s->photo_path)) {
                     // Baris menunjuk berkas yang sudah tidak ada. Dilaporkan,
-                    // bukan diperbaiki — membetulkannya urusan `drive:audit-siswa`.
+                    // bukan diperbaiki - membetulkannya urusan `drive:audit-siswa`.
                     $hilang++;
 
                     continue;
@@ -100,7 +100,7 @@ class BackfillStudentPhotoThumbnails extends Command
         } elseif ($diperiksa >= $limit) {
             $this->comment('Batas tercapai. Jalankan lagi untuk melanjutkan.');
         } else {
-            $this->info('Selesai — tidak ada foto tersisa yang cocok.');
+            $this->info('Selesai - tidak ada foto tersisa yang cocok.');
         }
 
         return self::SUCCESS;
@@ -109,7 +109,7 @@ class BackfillStudentPhotoThumbnails extends Command
     /**
      * Sengaja tidak memakai `PhotoCropService`: servis itu memotong, membetulkan
      * orientasi EXIF, dan menulis ulang PNG aslinya. Di sini aslinya sudah benar
-     * dan tidak boleh disentuh — yang kurang cuma turunannya.
+     * dan tidak boleh disentuh - yang kurang cuma turunannya.
      */
     private function tulisThumbnail(string $sumber, string $tujuan): void
     {
@@ -133,7 +133,7 @@ class BackfillStudentPhotoThumbnails extends Command
             imagedestroy($kecil);
         } finally {
             // `finally`, supaya gambar sumber tetap dilepas kalau resample
-            // meledak di tengah — kebocoran 13 MB per kegagalan akan
+            // meledak di tengah - kebocoran 13 MB per kegagalan akan
             // menghabiskan server ini jauh sebelum perintahnya selesai.
             imagedestroy($gambar);
         }

@@ -110,7 +110,7 @@ test('detail peserta memuat riwayat kehadiran berhalaman dan statistik jam datan
     $p = pesertaFitur($program, 'Siti');
     catatFitur(sesiFitur($program, '2027-06-10'), $p, 'HADIR', '07:10');
     catatFitur(sesiFitur($program, '2027-06-11'), $p, 'TERLAMBAT', '07:50');
-    // Izin dicatat petugas jam 09:30 — bukan jam datang, tidak ikut rata-rata.
+    // Izin dicatat petugas jam 09:30 - bukan jam datang, tidak ikut rata-rata.
     catatFitur(sesiFitur($program, '2027-06-12'), $p, 'IZIN', null);
 
     $this->actingAs($admin)->get(route('penyelenggara.peserta.edit', $p))

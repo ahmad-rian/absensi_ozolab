@@ -12,7 +12,7 @@ use App\Models\School;
  *
  * Nomor WhatsApp yang belum terverifikasi (belum bercentang biru) diblokir
  * penyedia kalau mengirim terlalu banyak pesan dalam sehari, dan blokirnya
- * mengenai seluruh sekolah — bukan hanya pesan yang kelebihan. Batas ini
+ * mengenai seluruh sekolah - bukan hanya pesan yang kelebihan. Batas ini
  * menahan diri lebih dulu supaya nomornya tetap hidup.
  *
  * Penghitungnya `notification_logs`, bukan penghitung terpisah: satu sumber
@@ -34,7 +34,7 @@ class WhatsAppQuota
         $limit = $school->getSetting('wa_daily_limit');
 
         // Nilai tak masuk akal (0, negatif, teks) dikembalikan ke bawaan, bukan
-        // dipakai apa adanya — batas 0 akan membungkam sekolah tanpa satu pun
+        // dipakai apa adanya - batas 0 akan membungkam sekolah tanpa satu pun
         // pesan galat yang bisa dilihat admin.
         return is_numeric($limit) && (int) $limit > 0
             ? (int) $limit

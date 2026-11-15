@@ -104,7 +104,7 @@ export default function RfidCardsIndex({ students, classrooms, filters, summary 
                             <span className="text-foreground font-semibold">{summary.registered}</span> dari {summary.total} siswa sudah punya kartu
                         </span>
                         <span className="text-xs">
-                            Colok pembaca kartu USB ke komputer ini, klik Daftarkan, lalu tempelkan kartunya — UID terisi sendiri.
+                            Colok pembaca kartu USB ke komputer ini, klik Daftarkan, lalu tempelkan kartunya - UID terisi sendiri.
                         </span>
                     </CardContent>
                 </Card>
@@ -265,7 +265,7 @@ export default function RfidCardsIndex({ students, classrooms, filters, summary 
 
 /**
  * Pembaca RFID mode HID berlaku seperti keyboard: ia mengetikkan UID lalu menekan
- * Enter. Jadi yang dibutuhkan hanya satu input yang sudah terfokus — tidak perlu
+ * Enter. Jadi yang dibutuhkan hanya satu input yang sudah terfokus - tidak perlu
  * menyadap keydown global seperti konsol scan gerbang, karena di sini fokusnya
  * memang milik dialog ini sendiri.
  */
@@ -298,7 +298,7 @@ function RegisterCardDialog({ student, onClose }: { student: StudentRow | null; 
         form.post(storeCard.url(student.id), {
             preserveScroll: true,
             onSuccess: () => onClose(),
-            // Simpan gagal berarti operator akan menempelkan kartu lagi —
+            // Simpan gagal berarti operator akan menempelkan kartu lagi -
             // kolomnya harus siap menerima, bukan kehilangan fokus.
             onError: () => inputRef.current?.focus(),
         });

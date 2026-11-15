@@ -16,7 +16,7 @@ namespace App\Enums;
  * permission sampah yang ikut muncul di halaman Role & Hak Akses.
  *
  * Modul Dashboard, Pengaturan, dan seluruh grup 'Sistem' sengaja tidak ada di
- * sini — lihat alwaysOnModules().
+ * sini - lihat alwaysOnModules().
  */
 enum SchoolFeature: string
 {
@@ -53,7 +53,7 @@ enum SchoolFeature: string
      * Tiga fitur memakai key yang SUDAH ADA, bukan key `feature_*` kembar:
      * PrayerSettings dan DispatchAttendanceNotifications sudah membacanya, jadi
      * saklar di tab Fitur menulis ke sumber kebenaran yang sama. Tanpa ini kita
-     * harus menyinkronkan dua key selamanya — dan sinkronisasi itu pasti
+     * harus menyinkronkan dua key selamanya - dan sinkronisasi itu pasti
      * meleset suatu hari.
      */
     public function settingKey(): string
@@ -74,7 +74,7 @@ enum SchoolFeature: string
      * Ketiga fitur yang memakai key lama HARUS mengambil default dari sumber
      * yang sama dengan pembacanya. Sebelumnya SholatDzuhur default `true` di
      * sini sementara `PrayerSettings` membacanya dari config yang default
-     * `false` — selama key-nya belum pernah ditulis, kedua jalur memberi
+     * `false` - selama key-nya belum pernah ditulis, kedua jalur memberi
      * jawaban berlawanan, dan menyimpan tab Fitur akan menyalakan absen sholat
      * untuk sekolah yang tidak pernah memintanya.
      */
@@ -193,7 +193,7 @@ enum SchoolFeature: string
      * Modul yang tidak pernah bisa dimatikan.
      *
      * Dashboard & Pengaturan: mematikannya menghapus satu-satunya panel untuk
-     * menyalakannya kembali — kunci-diri permanen tanpa akses database. Grup
+     * menyalakannya kembali - kunci-diri permanen tanpa akses database. Grup
      * 'Sistem': lintas-tenant dan super-admin-only, jadi "dimatikan untuk satu
      * sekolah" tidak punya arti.
      *

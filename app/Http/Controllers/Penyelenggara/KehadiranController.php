@@ -65,12 +65,12 @@ class KehadiranController extends Controller
                 ->get()->keyBy('card_form_submission_id');
             $baris = $peserta->map(function (CardFormSubmission $p) use ($kehadiran) {
                 // `$koleksi[$id]?->x` tetap memanggil offsetGet dan melempar untuk
-                // peserta yang belum punya kehadiran — ambil lewat get().
+                // peserta yang belum punya kehadiran - ambil lewat get().
                 $k = $kehadiran->get($p->id);
 
                 return [
                     'id' => $p->id,
-                    'nama' => $p->data['nama'] ?? '—',
+                    'nama' => $p->data['nama'] ?? '-',
                     'grups' => $p->grups->pluck('name'),
                     'status' => $k->status ?? 'BELUM',
                     'datang' => $k?->datang_at?->format('H:i'),

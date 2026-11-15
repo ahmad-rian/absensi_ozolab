@@ -339,7 +339,7 @@ users (ADMIN/GURU) ──── (∞ via recorded_by) attendances
 
 ---
 
-## 5. Migrations — Urutan Eksekusi
+## 5. Migrations - Urutan Eksekusi
 
 1. `create_users_table` (modifikasi default Breeze + tambahan kolom)
 2. `create_password_reset_tokens_table`
@@ -358,7 +358,7 @@ users (ADMIN/GURU) ──── (∞ via recorded_by) attendances
 
 ---
 
-## 6. Seeders — Strategi Data Dummy
+## 6. Seeders - Strategi Data Dummy
 
 ### 6.1 Urutan & Volume Default
 | Seeder | Volume | Catatan |
@@ -374,7 +374,7 @@ users (ADMIN/GURU) ──── (∞ via recorded_by) attendances
 | `NotificationLogSeeder` | Mirror attendance | 95% SENT, 4% FAILED, 1% PENDING |
 
 ### 6.2 Pertimbangan Realisme Data
-- Nama siswa & orang tua: kombinasi factory dengan kamus nama Indonesia (Bagus, Citra, Dewi, dsb.) — bukan `fake()->name()` murni.
+- Nama siswa & orang tua: kombinasi factory dengan kamus nama Indonesia (Bagus, Citra, Dewi, dsb.) - bukan `fake()->name()` murni.
 - Nomor WhatsApp: format `62812xxxxxxxx`, valid E.164.
 - Tanggal absensi: skip hari libur nasional + Sabtu/Minggu via array `holidays` di seeder.
 - Distribusi terlambat lebih tinggi pada Senin pagi (boolean weighted random).
@@ -424,7 +424,7 @@ Gunakan `fake('id_ID')` di semua factory untuk nama tempat, alamat, kota.
 - Saat MVP, `register` boleh disederhanakan jadi 1 langkah (akun orang tua saja); pendaftaran siswa dilakukan setelah login pertama. **Catatan: registrasi UI tetap dibuat lengkap, namun field siswa boleh disembunyikan/opsional di MVP.**
 
 ### 8.2 Form Login (Halaman `/login`)
-**Layout:** `AuthLayout` — split screen 50/50 (kiri ilustrasi/branding, kanan form). Pada mobile, ilustrasi disembunyikan.
+**Layout:** `AuthLayout` - split screen 50/50 (kiri ilustrasi/branding, kanan form). Pada mobile, ilustrasi disembunyikan.
 
 **Field:**
 - Email (input email)
@@ -443,10 +443,10 @@ Gunakan `fake('id_ID')` di semua factory untuk nama tempat, alamat, kota.
 ### 8.3 Form Registrasi (Halaman `/register`)
 **Layout:** `AuthLayout` versi wide, dengan progress stepper.
 
-**Step 1 — Data Akun Orang Tua:**
+**Step 1 - Data Akun Orang Tua:**
 - Nama lengkap, Email, Nomor WhatsApp (input dengan prefix `+62`), Password, Konfirmasi password, Hubungan dengan siswa (Select: Ayah/Ibu/Wali).
 
-**Step 2 — Data Siswa (opsional di MVP):**
+**Step 2 - Data Siswa (opsional di MVP):**
 - Nama lengkap siswa, NIS (atau "Belum tahu"), Tanggal lahir (Calendar popover), Jenis kelamin (RadioGroup), Kelas (Combobox via `Command`), Alamat (Textarea), Foto (opsional, dropzone).
 - Tombol "Tambah siswa lain" (array fields, useFieldArray).
 
@@ -489,19 +489,19 @@ Gunakan `fake('id_ID')` di semua factory untuk nama tempat, alamat, kota.
 
 **Header (`AppHeader`):**
 - Breadcrumb di kiri (gunakan komponen `Breadcrumb`).
-- Search global (Cmd+K, gunakan `Command` dialog) — placeholder di MVP.
-- Theme toggle (light/dark) — gunakan `DropdownMenu` dengan tiga opsi: Terang, Gelap, Sistem.
+- Search global (Cmd+K, gunakan `Command` dialog) - placeholder di MVP.
+- Theme toggle (light/dark) - gunakan `DropdownMenu` dengan tiga opsi: Terang, Gelap, Sistem.
 - Notification bell dengan badge unread count.
 - Avatar + nama user.
 
 ### 9.2 Konten Halaman Dashboard
 
-**Section 1 — Page Header:**
+**Section 1 - Page Header:**
 - Judul "Dashboard"
 - Subjudul tanggal hari ini (format: "Senin, 19 Mei 2026")
 - Action di kanan: `Select` filter rentang waktu (Hari ini, 7 hari, 30 hari, Bulan ini, Semester ini).
 
-**Section 2 — Stat Cards (Grid 4 kolom desktop, 2 kolom tablet, 1 kolom mobile):**
+**Section 2 - Stat Cards (Grid 4 kolom desktop, 2 kolom tablet, 1 kolom mobile):**
 
 | Card | Metrik | Trend |
 |------|--------|-------|
@@ -512,7 +512,7 @@ Gunakan `fake('id_ID')` di semua factory untuk nama tempat, alamat, kota.
 
 Setiap card menggunakan komponen `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`. Trend ditampilkan dengan `Badge` (variant default/destructive/secondary) + ikon panah dari `lucide-react`.
 
-**Section 3 — Grafik Utama (Grid 2 kolom desktop, 1 kolom mobile):**
+**Section 3 - Grafik Utama (Grid 2 kolom desktop, 1 kolom mobile):**
 
 - **Tren Kehadiran 30 Hari Terakhir** (LineChart Recharts)
   - X-axis: tanggal
@@ -525,7 +525,7 @@ Setiap card menggunakan komponen `Card`, `CardHeader`, `CardTitle`, `CardDescrip
   - Warna pakai `--chart-1` sampai `--chart-5`
   - Legend di bawah.
 
-**Section 4 — Grafik Sekunder (Grid 2 kolom):**
+**Section 4 - Grafik Sekunder (Grid 2 kolom):**
 
 - **Perbandingan Antar Kelas** (BarChart horizontal)
   - X-axis: % kehadiran
@@ -537,7 +537,7 @@ Setiap card menggunakan komponen `Card`, `CardHeader`, `CardTitle`, `CardDescrip
   - Stacked area: Hadir, Terlambat, Tidak Hadir
   - Insight ringkas di bawah ("Hari paling sering terlambat: Senin").
 
-**Section 5 — Aktivitas Terkini (Grid 3 kolom: 2 kol tabel + 1 kol feed):**
+**Section 5 - Aktivitas Terkini (Grid 3 kolom: 2 kol tabel + 1 kol feed):**
 
 - **Tabel Check-in Terbaru** (2 kolom):
   - Kolom: Foto+Nama, Kelas, Waktu, Status (Badge berwarna), Notifikasi (✓/✗ status WA).
@@ -564,8 +564,8 @@ Setiap card menggunakan komponen `Card`, `CardHeader`, `CardTitle`, `CardDescrip
 File CSS pada `resources/css/app.css`. Karena memakai Tailwind 4 dengan `@import "tailwindcss"`, semua token CSS variable di `:root` dan `.dark` akan langsung dipakai oleh utility classes shadcn (bg-background, text-foreground, dsb.).
 
 ### 10.2 Identitas Visual yang Dihasilkan
-- **Warna utama:** biru cerah (oklch 0.67 0.16 245) — bernuansa Twitter blue.
-- **Border radius:** 1.3rem (sangat rounded — gaya modern friendly).
+- **Warna utama:** biru cerah (oklch 0.67 0.16 245) - bernuansa Twitter blue.
+- **Border radius:** 1.3rem (sangat rounded - gaya modern friendly).
 - **Font sans:** Open Sans.
 - **Shadow:** sangat tipis hingga nyaris invisible (opacity 0) → tampilan flat, minimalis.
 - **Dark mode:** background hitam pekat (oklch 0 0 0), card sedikit lebih terang.
@@ -586,7 +586,7 @@ Tambah Google Fonts Open Sans di `resources/views/app.blade.php` head (preconnec
 
 ---
 
-## 11. Komponen UI — Pola Pemakaian
+## 11. Komponen UI - Pola Pemakaian
 
 ### 11.1 Alert (Inline, Non-blocking)
 **Lokasi penggunaan:**
@@ -595,10 +595,10 @@ Tambah Google Fonts Open Sans di `resources/views/app.blade.php` head (preconnec
 - Notifikasi sukses ringkas setelah aksi.
 
 **Varian:**
-- `default` — info umum
-- `destructive` — error / peringatan keras
-- (Custom) `success` — buat via override (border hijau + bg `--chart-2/10`)
-- (Custom) `warning` — kuning (mis. `--chart-3`)
+- `default` - info umum
+- `destructive` - error / peringatan keras
+- (Custom) `success` - buat via override (border hijau + bg `--chart-2/10`)
+- (Custom) `warning` - kuning (mis. `--chart-3`)
 
 **Anatomi:** `<Alert>` mengandung `<AlertTitle>` (opsional) dan `<AlertDescription>`. Tambah ikon dari `lucide-react` (Info, AlertCircle, CheckCircle2, AlertTriangle) di kiri.
 
@@ -617,10 +617,10 @@ Tambah Google Fonts Open Sans di `resources/views/app.blade.php` head (preconnec
 **Anatomi:** `AlertDialog`, `AlertDialogTrigger`, `AlertDialogContent`, `AlertDialogHeader`, `AlertDialogTitle`, `AlertDialogDescription`, `AlertDialogFooter`, `AlertDialogAction`, `AlertDialogCancel`.
 
 **Variant kustom yang perlu disiapkan (via prop):**
-- `destructive` — tombol Action merah, ikon AlertTriangle.
-- `warning` — tombol Action kuning, ikon AlertCircle.
-- `info` — tombol Action biru (primary), ikon Info.
-- `success` — tombol Action hijau, ikon CheckCircle2.
+- `destructive` - tombol Action merah, ikon AlertTriangle.
+- `warning` - tombol Action kuning, ikon AlertCircle.
+- `info` - tombol Action biru (primary), ikon Info.
+- `success` - tombol Action hijau, ikon CheckCircle2.
 
 **Hook `useConfirm`:** wrapper untuk memanggil AlertDialog secara imperatif tanpa harus mount manual. Mengembalikan promise `<boolean>`.
 
@@ -631,8 +631,8 @@ Tambah Google Fonts Open Sans di `resources/views/app.blade.php` head (preconnec
 - Pakai untuk: feedback aksi cepat, notifikasi inbound (WA terkirim), error background sync.
 
 ### 11.4 Dialog vs Alert Dialog
-- **Dialog** — untuk konten interaktif (form, detail, edit cepat). Bisa ditutup via Esc dan klik luar.
-- **Alert Dialog** — hanya untuk konfirmasi keputusan; tidak bisa ditutup via klik luar (paksa pengguna memilih).
+- **Dialog** - untuk konten interaktif (form, detail, edit cepat). Bisa ditutup via Esc dan klik luar.
+- **Alert Dialog** - hanya untuk konfirmasi keputusan; tidak bisa ditutup via klik luar (paksa pengguna memilih).
 
 ### 11.5 Tabel Data
 - Pakai `@tanstack/react-table` v8 sebagai engine, render dengan `Table` shadcn.
@@ -644,8 +644,8 @@ Tambah Google Fonts Open Sans di `resources/views/app.blade.php` head (preconnec
 
 ### 12.1 Wrapper Chart shadcn-style
 Buat `components/ui/chart.tsx` mengikuti pola shadcn:
-- `ChartContainer` — provider CSS variable untuk warna chart, mengaplikasikan `--chart-1` … `--chart-5` ke `--color-{key}` lokal.
-- `ChartTooltip` & `ChartTooltipContent` — custom tooltip Recharts dengan styling tema.
+- `ChartContainer` - provider CSS variable untuk warna chart, mengaplikasikan `--chart-1` … `--chart-5` ke `--color-{key}` lokal.
+- `ChartTooltip` & `ChartTooltipContent` - custom tooltip Recharts dengan styling tema.
 - `ChartLegend` & `ChartLegendContent`.
 
 ### 12.2 Konfigurasi Warna per Chart
@@ -692,7 +692,7 @@ Setiap chart menerima objek `config`:
 
 ### 13.3 Penyimpanan & Pengiriman
 - PNG QR di-generate on-demand via service `QrTokenGenerator->renderPng()`, di-cache di `storage/app/qr-codes/{student_id}.png` selama 30 hari.
-- Endpoint download cetak (PDF kartu siswa) — disiapkan untuk fase 2.
+- Endpoint download cetak (PDF kartu siswa) - disiapkan untuk fase 2.
 
 ### 13.4 Validasi Scan (Fase 2, infrastruktur disiapkan)
 - Endpoint `POST /api/scanner/scan`:
@@ -803,7 +803,7 @@ Disimpan di `settings` dengan key `whatsapp_template_attendance`. Variabel place
 
 ---
 
-## 17. Pengaturan (Settings) — Key Default
+## 17. Pengaturan (Settings) - Key Default
 
 | Key | Tipe | Default | Deskripsi |
 |-----|------|---------|-----------|
@@ -849,9 +849,9 @@ Disimpan di `settings` dengan key `whatsapp_template_attendance`. Variabel place
 
 - Laravel Telescope (dev only).
 - Log channels:
-  - `daily` — default
-  - `whatsapp` — khusus WA gateway, retensi 30 hari
-  - `attendance` — khusus event absen, retensi 90 hari
+  - `daily` - default
+  - `whatsapp` - khusus WA gateway, retensi 30 hari
+  - `attendance` - khusus event absen, retensi 90 hari
 - Sentry (atau alternatif) di production via package `sentry/sentry-laravel`.
 
 ---
@@ -918,9 +918,9 @@ VITE_APP_NAME="${APP_NAME}"
 10. `php artisan migrate --seed`.
 
 ### 23.2 Perintah Harian
-- `composer dev` — script gabungan menjalankan `php artisan serve`, `php artisan queue:listen`, `php artisan pail`, dan `npm run dev`.
-- `php artisan test` — jalankan test suite.
-- `php artisan migrate:fresh --seed` — reset database + isi ulang dummy.
+- `composer dev` - script gabungan menjalankan `php artisan serve`, `php artisan queue:listen`, `php artisan pail`, dan `npm run dev`.
+- `php artisan test` - jalankan test suite.
+- `php artisan migrate:fresh --seed` - reset database + isi ulang dummy.
 
 ### 23.3 Git Workflow
 - Branching: `main` (production), `develop` (integrasi), `feature/*`, `fix/*`.

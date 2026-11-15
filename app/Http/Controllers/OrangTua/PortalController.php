@@ -184,7 +184,7 @@ class PortalController extends Controller
     }
 
     /**
-     * Poin pelanggaran anak di semester berjalan. Hanya baca — sekolah yang
+     * Poin pelanggaran anak di semester berjalan. Hanya baca - sekolah yang
      * mencatat.
      */
     public function poin(Request $request): Response
@@ -250,7 +250,7 @@ class PortalController extends Controller
             'student' => $student ? $this->identity($student) : null,
             'daftarAnak' => $children->map(fn (Student $child): array => $this->identity($child))->values(),
             // Menu Sholat disembunyikan kalau sekolahnya memang tidak memakai
-            // fitur itu — menu yang selalu kosong hanya bikin orang tua ragu
+            // fitur itu - menu yang selalu kosong hanya bikin orang tua ragu
             // apakah anaknya yang tidak pernah ikut atau sistemnya yang rusak.
             'fiturSholat' => $student && $student->school
                 ? SchoolFeatures::for($student->school)->enabled(SchoolFeature::SholatDhuha)

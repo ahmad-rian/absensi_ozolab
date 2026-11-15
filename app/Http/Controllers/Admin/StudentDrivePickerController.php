@@ -25,7 +25,7 @@ use Throwable;
  * Sampai sekarang foto hanya bisa datang dari dua arah: diunggah dari komputer
  * admin, atau dicocokkan otomatis oleh `StudentDrivePhotoLocator` lewat nama
  * berkas yang diturunkan dari NIS dan nama siswa. Pencocokan itu meleset setiap
- * kali penamaan di Drive tidak mengikuti pola — dan ketika meleset, tidak ada
+ * kali penamaan di Drive tidak mengikuti pola - dan ketika meleset, tidak ada
  * jalan lain dari dalam aplikasi selain mengunduh manual lalu mengunggah lagi.
  *
  * Yang dibuka di sini hanya melihat dan memilih; tidak ada berkas Drive yang
@@ -60,8 +60,8 @@ class StudentDrivePickerController extends Controller
 
         $diminta = (string) $request->query('folder', '');
 
-        // Tanpa `folder`, mulai dari folder siswa kalau ada — itu tempat yang
-        // hampir selalu dituju — dan jatuh ke root sekolah kalau belum pernah
+        // Tanpa `folder`, mulai dari folder siswa kalau ada - itu tempat yang
+        // hampir selalu dituju - dan jatuh ke root sekolah kalau belum pernah
         // dibuat.
         $folderId = $diminta !== ''
             ? $diminta
@@ -162,7 +162,7 @@ class StudentDrivePickerController extends Controller
             $drive->downloadFile($berkas['id'], $sementara);
 
             // `crop: false`, sama dengan jalur unggah manual dan jalur
-            // pendaftaran — supaya foto yang sama menghasilkan berkas yang sama
+            // pendaftaran - supaya foto yang sama menghasilkan berkas yang sama
             // dari arah mana pun ia masuk.
             (new PhotoCropService)->cropAndStore($sementara, $jalurBaru, 9, null, crop: false);
         } catch (Throwable) {
@@ -183,7 +183,7 @@ class StudentDrivePickerController extends Controller
         ])->save();
 
         // Nama berkas lokal memuat 16 karakter acak, jadi yang lama tidak
-        // tertimpa — ia tertinggal selamanya kalau tidak dibuang di sini.
+        // tertimpa - ia tertinggal selamanya kalau tidak dibuang di sini.
         if ($fotoLama && $fotoLama !== $jalurBaru) {
             StudentPhotoStorage::deleteWithThumb($fotoLama);
         }
@@ -193,7 +193,7 @@ class StudentDrivePickerController extends Controller
         // sampai cache-nya kedaluwarsa enam jam kemudian.
         $this->locator->forget($siswa);
 
-        // Foto ini SUDAH ada di Drive — tidak ada yang perlu diunggah balik.
+        // Foto ini SUDAH ada di Drive - tidak ada yang perlu diunggah balik.
         // Riwayatnya tetap dicatat supaya halaman siswa punya jejak dari mana
         // pas fotonya datang.
         CardGenerationLog::create([

@@ -13,8 +13,8 @@ export type AutoCrop = CropRect & { natW: number; natH: number; ratio: number };
  |
  | TIDAK DIPAKAI sejak 21 Agustus 2026. Klien meminta croping dibuang dari kedua
  | link pendaftaran: pendaftar cukup mengetik nama berkas dan melihat foto
- | Drive-nya apa adanya. Komponennya dipisah ke berkas ini — bukan dihapus dan
- | bukan dikomentari 226 baris di tengah halaman — supaya menghidupkannya lagi
+ | Drive-nya apa adanya. Komponennya dipisah ke berkas ini - bukan dihapus dan
+ | bukan dikomentari 226 baris di tengah halaman - supaya menghidupkannya lagi
  | cukup membuka kembali satu blok di `pages/student-register.tsx`.
  |
  | Yang ikut mati bersamanya: endpoint `POST /daftar/crop-preview` dan
@@ -42,7 +42,7 @@ export function CropReposition({
     const [zoom, setZoom] = useState(1);
     const [resetKey, setResetKey] = useState(0);
     const [showGuide, setShowGuide] = useState(false);
-    // Ukuran alami gambar pratinjau — dipakai menormalkan rect hasil geser/zoom.
+    // Ukuran alami gambar pratinjau - dipakai menormalkan rect hasil geser/zoom.
     const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
     // Ukuran kotak crop sebenarnya, supaya sketsa panduan berimpit dengannya dan
     // tidak sekadar menebak lewat rasio container.
@@ -53,7 +53,7 @@ export function CropReposition({
     const initializedRef = useRef(false);
 
     // `onReady` menjaga tombol Lanjut tetap mati sampai gambarnya benar-benar
-    // terlihat — respons crop-preview saja belum cukup, karena berkasnya masih
+    // terlihat - respons crop-preview saja belum cukup, karena berkasnya masih
     // dalam perjalanan ke browser saat itu.
     useEffect(() => {
         setNatural(null);
@@ -68,7 +68,7 @@ export function CropReposition({
     }, [imageUrl, onReady]);
 
     // Rect dari server sudah ternormalisasi 0..1, jadi versi persen adalah jalur
-    // yang tepat — tidak lewat pembulatan piksel seperti varian *Pixels.
+    // yang tepat - tidak lewat pembulatan piksel seperti varian *Pixels.
     const initialArea = {
         x: auto.sx * 100,
         y: auto.sy * 100,
@@ -153,7 +153,7 @@ export function CropReposition({
                     )}
                 </div>
 
-                {/* Zoom control — kept right under the cropper */}
+                {/* Zoom control - kept right under the cropper */}
                 <div className="mt-3 flex items-center gap-3">
                     <span className="text-muted-foreground text-xs">Zoom</span>
                     <input
@@ -208,7 +208,7 @@ export function CropReposition({
                         <li className="flex items-start gap-2">
                             <Crop className="mt-0.5 size-3.5 shrink-0" />
                             <span>
-                                <b>Pastikan wajah penuh</b> di dalam kotak — rasio pas foto 3×4 (16:21). Ikuti garis bantu di atas foto: mata
+                                <b>Pastikan wajah penuh</b> di dalam kotak - rasio pas foto 3×4 (16:21). Ikuti garis bantu di atas foto: mata
                                 di garis hijau, bahu terlihat.
                             </span>
                         </li>

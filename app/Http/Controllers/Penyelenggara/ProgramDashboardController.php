@@ -34,7 +34,7 @@ class ProgramDashboardController extends Controller
             'program' => ['id' => $program->id, 'name' => $program->name, 'tanggal' => $hariIni->toDateString()],
             'adaSesiHariIni' => $sesis->isNotEmpty(),
             'libur' => $libur,
-            // Tautan yang boleh ditampilkan — pendamping tidak punya izin program.
+            // Tautan yang boleh ditampilkan - pendamping tidak punya izin program.
             'akses' => [
                 'program' => $user->can('penyelenggara-program.access'),
                 'kehadiran' => $user->can('penyelenggara-peserta.access'),

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Pintu tulis Tyas Studio.
  *
- * Studio mengirim foto ASLI beserta persegi potong, bukan dua berkas jadi —
+ * Studio mengirim foto ASLI beserta persegi potong, bukan dua berkas jadi -
  * yang merasterisasi tetap `PhotoCropService` di sini, supaya rasio slot kartu,
  * koreksi EXIF, dan minimum 480×630 punya satu implementasi saja.
  */

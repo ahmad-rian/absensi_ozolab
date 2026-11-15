@@ -160,7 +160,7 @@ export default function PenyelenggaraShow({
                                                     penyelenggara.is_active
                                                 }
                                             />
-                                            Aktif — bila dimatikan, semua akun
+                                            Aktif - bila dimatikan, semua akun
                                             penyelenggara ini tidak bisa masuk.
                                         </label>
                                         <Button

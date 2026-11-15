@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Queue;
 /**
  * Kebijakan WhatsApp dibalik: kabar per scan diserahkan ke Email dan Telegram,
  * WA hanya untuk terlambat / tidak hadir lewat sapuan. Yang diuji di sini adalah
- * jalur per scan — bahwa WA benar-benar keluar darinya, dan kanal lain tidak
+ * jalur per scan - bahwa WA benar-benar keluar darinya, dan kanal lain tidak
  * ikut terbawa.
  *
  * @param  array<string, mixed>  $parentAttributes
@@ -61,7 +61,7 @@ test('scan hadir tidak lagi mengantre WhatsApp saat kebijakan dibalik', function
 });
 
 /**
- * Yang terlambat pun tidak dikirimi WA di sini. Sapuan yang mengurusnya — kalau
+ * Yang terlambat pun tidak dikirimi WA di sini. Sapuan yang mengurusnya - kalau
  * jalur ini ikut mengirim, orang tua menerima dua pesan untuk satu
  * keterlambatan yang sama.
  */

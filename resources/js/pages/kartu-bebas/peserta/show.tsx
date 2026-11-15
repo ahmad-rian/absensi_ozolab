@@ -151,7 +151,7 @@ export default function ParticipantShow({
                                             {field.label}
                                         </dt>
                                         <dd className="break-words">
-                                            {participant.data[field.key] ?? '—'}
+                                            {participant.data[field.key] ?? '-'}
                                         </dd>
                                     </div>
                                 ))}
@@ -247,18 +247,18 @@ export default function ParticipantShow({
                                                     ] ?? k.status}
                                                 </td>
                                                 <td className="py-2 pr-3 tabular-nums">
-                                                    {k.masuk ?? '—'}
+                                                    {k.masuk ?? '-'}
                                                 </td>
                                                 <td className="py-2 pr-3 tabular-nums">
-                                                    {k.pulang ?? '—'}
+                                                    {k.pulang ?? '-'}
                                                 </td>
                                                 <td className="py-2 pr-3 text-muted-foreground tabular-nums">
                                                     {k.scan > 0
                                                         ? `${k.scan}×`
-                                                        : '—'}
+                                                        : '-'}
                                                 </td>
                                                 <td className="py-2 text-muted-foreground">
-                                                    {k.catatan ?? '—'}
+                                                    {k.catatan ?? '-'}
                                                 </td>
                                             </tr>
                                         ))}

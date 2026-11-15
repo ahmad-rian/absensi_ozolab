@@ -10,7 +10,7 @@ use App\Support\SchoolTime;
 use Carbon\Carbon;
 
 /**
- * Kunjungan perpustakaan — satu kunjungan punya jam masuk dan jam keluar, dan
+ * Kunjungan perpustakaan - satu kunjungan punya jam masuk dan jam keluar, dan
  * siswa boleh keluar-masuk berkali-kali dalam sehari.
  *
  * Satu tap melakukan dua hal berbeda tergantung keadaan: membuka kunjungan baru,
@@ -35,7 +35,7 @@ class LibraryVisitRecorder
      * Tap dalam rentang ini setelah peristiwa terakhir dianggap tidak disengaja.
      *
      * Tanpa penjaga ini, kartu yang tersenggol dua kali akan membuka lalu langsung
-     * menutup kunjungan dalam hitungan detik — dan laporan durasinya jadi sampah.
+     * menutup kunjungan dalam hitungan detik - dan laporan durasinya jadi sampah.
      */
     private const COOLDOWN_SECONDS = 60;
 

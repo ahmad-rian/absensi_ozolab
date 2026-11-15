@@ -55,7 +55,7 @@ test('sandi delapan huruf biasa diterima apa adanya', function () {
     /*
         Diputuskan setelah melihat lapangan: yang mengisi form ini orang tua,
         dan aturan komposisi (huruf besar, angka, simbol) pada kelompok itu
-        menghasilkan sandi yang ditulis di kertas atau seragam sekeluarga —
+        menghasilkan sandi yang ditulis di kertas atau seragam sekeluarga -
         bukan akun yang lebih aman. Penggantinya daftar-tolak di SandiUmum plus
         pembatasan laju login. Tes ini mengunci keputusan itu supaya aturan
         komposisi tidak diam-diam kembali.
@@ -73,7 +73,7 @@ test('orang tua lama bersandi lemah tidak terkunci dari anak keduanya', function
     /*
         Kolom sandi di /daftar bermakna ganda: membuat sandi baru, atau
         mencocokkan sandi akun yang sudah ada. Aturan kekuatan hanya boleh
-        mengikat yang pertama — ribuan akun hasil impor masih memegang sandi
+        mengikat yang pertama - ribuan akun hasil impor masih memegang sandi
         bawaan `password`, yang lolos aturan lama dan gagal aturan baru. Kalau
         aturannya dipasang polos, mereka ditolak validator sebelum sandinya
         sempat dicocokkan, dan anak keduanya tidak bisa didaftarkan sama sekali.

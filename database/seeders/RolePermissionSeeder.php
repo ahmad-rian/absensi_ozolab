@@ -27,7 +27,7 @@ class RolePermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // Modul workspace General (staf Tyas) — di luar matriks sekolah.
+        // Modul workspace General (staf Tyas) - di luar matriks sekolah.
         foreach (ModulGeneral::permissions() as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }

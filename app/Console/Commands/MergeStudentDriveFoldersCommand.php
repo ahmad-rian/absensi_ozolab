@@ -14,8 +14,8 @@ use Throwable;
  * Satukan kembali folder Drive siswa yang terbelah dua.
  *
  * Sampai `resolveStudentDriveFolder()` belajar menghormati `drive_folder_id`,
- * setiap pergeseran nama — kelas diganti nama, siswa naik kelas, NIS diisi
- * belakangan — membuat generate berikutnya membuat folder KEDUA. Hasil baru
+ * setiap pergeseran nama - kelas diganti nama, siswa naik kelas, NIS diisi
+ * belakangan - membuat generate berikutnya membuat folder KEDUA. Hasil baru
  * mendarat di sana, penunjuk lama ditimpa, dan folder berisi kartu serta pas
  * foto sebelumnya menjadi yatim. Berkasnya tidak hilang dan tidak masuk sampah;
  * ia hanya tidak bisa ditemukan lagi oleh aplikasi.
@@ -58,7 +58,7 @@ class MergeStudentDriveFoldersCommand extends Command
 
         // Sapuan berkas mencakup SELURUH Drive, bukan satu sekolah. Selama
         // sekolah-sekolah memakai kredensial global yang sama, mereka melihat
-        // Drive yang sama juga — mengulang sapuan itu per sekolah berarti
+        // Drive yang sama juga - mengulang sapuan itu per sekolah berarti
         // membaca puluhan ribu berkas yang sama berulang kali.
         $sapuanBersama = null;
 
@@ -105,7 +105,7 @@ class MergeStudentDriveFoldersCommand extends Command
                     }
                 }
             } catch (Throwable $e) {
-                $this->error("{$school->name}: gagal membaca folder Drive — {$e->getMessage()}");
+                $this->error("{$school->name}: gagal membaca folder Drive - {$e->getMessage()}");
 
                 continue;
             }
@@ -212,7 +212,7 @@ class MergeStudentDriveFoldersCommand extends Command
             // harus dengan tangan. Nama yang sama sekali tidak beririsan adalah
             // tanda paling jelas untuk keadaan itu.
             if (! $this->paksa && ! self::namaMirip($folder['name'], $student->full_name)) {
-                $this->catat($schoolName, $student->full_name, 'Folder dilewati (nama tidak beririsan)', $folder['name'], "  ! {$schoolName} / {$student->full_name}: folder \"{$folder['name']}\" namanya tidak beririsan — dilewati. Periksa manual, atau pakai --paksa.", 'warn');
+                $this->catat($schoolName, $student->full_name, 'Folder dilewati (nama tidak beririsan)', $folder['name'], "  ! {$schoolName} / {$student->full_name}: folder \"{$folder['name']}\" namanya tidak beririsan - dilewati. Periksa manual, atau pakai --paksa.", 'warn');
 
                 continue;
             }
@@ -225,7 +225,7 @@ class MergeStudentDriveFoldersCommand extends Command
                 }
 
                 // Peta diperbarui di tempat supaya penyelarasan nama yang jalan
-                // sesudah ini melihat isi folder tujuan yang sudah lengkap —
+                // sesudah ini melihat isi folder tujuan yang sudah lengkap -
                 // termasuk untuk menilai bentrok nama.
                 $isiPerFolder[$tujuan][] = $berkas;
                 $dipindah++;
@@ -234,8 +234,8 @@ class MergeStudentDriveFoldersCommand extends Command
             $isiPerFolder[$folder['id']] = [];
         }
 
-        // Penunjuknya diselaraskan supaya generate berikutnya — yang sekarang
-        // menghormati id tersimpan — mendarat di folder yang sama.
+        // Penunjuknya diselaraskan supaya generate berikutnya - yang sekarang
+        // menghormati id tersimpan - mendarat di folder yang sama.
         if (! $dryRun && $student->drive_folder_id !== $tujuan) {
             $student->forceFill(['drive_folder_id' => $tujuan])->saveQuietly();
         }
@@ -314,16 +314,16 @@ class MergeStudentDriveFoldersCommand extends Command
             // Pengaman yang sama seperti pada folder, dan sama perlunya: NIS
             // yang berpindah tangan meninggalkan berkas milik SISWA LAIN di
             // dalam folder ini. Mengganti namanya berarti melabeli foto anak
-            // yang satu dengan nama anak yang lain — lebih buruk daripada
+            // yang satu dengan nama anak yang lain - lebih buruk daripada
             // membiarkannya bernama lama.
             if (! $this->paksa && ! self::namaMirip(self::bagianNama($berkas['name']), $student->full_name)) {
-                $this->catat($schoolName, $student->full_name, 'Berkas dilewati (nama tidak beririsan)', $berkas['name'], "  ! {$schoolName} / {$student->full_name}: berkas \"{$berkas['name']}\" namanya tidak beririsan — dilewati. Periksa manual, atau pakai --paksa.", 'warn');
+                $this->catat($schoolName, $student->full_name, 'Berkas dilewati (nama tidak beririsan)', $berkas['name'], "  ! {$schoolName} / {$student->full_name}: berkas \"{$berkas['name']}\" namanya tidak beririsan - dilewati. Periksa manual, atau pakai --paksa.", 'warn');
 
                 continue;
             }
 
             // Nama sasarannya sudah dipakai berkas lain di folder ini, dan
-            // keduanya keluaran berjenis sama — berarti yang ini versi lama yang
+            // keduanya keluaran berjenis sama - berarti yang ini versi lama yang
             // sudah tergantikan. Dulu ia dibiarkan bernama lama, dan itulah yang
             // membuat folder tetap berisi 6 berkas setelah nama siswa
             // dibetulkan. Dibuang ke SAMPAH, bukan dihapus: Drive menyimpannya
@@ -358,7 +358,7 @@ class MergeStudentDriveFoldersCommand extends Command
     }
 
     /**
-     * Aturan penamaan hidup di `App\Support\StudentDriveNaming` — jalur unggah
+     * Aturan penamaan hidup di `App\Support\StudentDriveNaming` - jalur unggah
      * dan job sinkronisasi memakainya juga, dan mereka tidak boleh memanggil
      * kelas Command untuk itu. Yang di bawah ini penerus tipis supaya
      * pemanggil lama dan seluruh tes yang sudah ada tetap berlaku.
@@ -396,7 +396,7 @@ class MergeStudentDriveFoldersCommand extends Command
      * Yang ditunjuk `students.drive_folder_id` menang: di sanalah aplikasi
      * mencari dan hasil generate berikutnya mendarat. Kalau penunjuknya kosong
      * atau menunjuk folder yang tidak ada di antara kandidat, yang isinya paling
-     * banyak yang dipakai — memindahkan sedikit berkas lebih murah, dan lebih
+     * banyak yang dipakai - memindahkan sedikit berkas lebih murah, dan lebih
      * kecil kemungkinannya merusak sesuatu, daripada memindahkan banyak.
      *
      * @param  array<int, array{id: string, name: string}>  $folders

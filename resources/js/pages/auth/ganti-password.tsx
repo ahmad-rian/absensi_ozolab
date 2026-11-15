@@ -12,7 +12,7 @@ import { update } from '@/routes/password/required';
     `syarat` dan `catatan` datang dari server (App\Support\AturanSandi) karena
     ambangnya berbeda per peran: orang tua delapan karakter tanpa aturan
     komposisi, peran lain dua belas plus simbol plus pemeriksaan kebocoran.
-    Halaman ini tidak boleh menebaknya sendiri — sebelum props ini ada, ia
+    Halaman ini tidak boleh menebaknya sendiri - sebelum props ini ada, ia
     memajang "minimal 8 karakter" kepada admin yang sebenarnya dituntut 12,
     dan sandi sembilan karakter ditolak tanpa alasan yang masuk akal.
 */
@@ -42,7 +42,7 @@ export default function GantiPassword({
                             {orangTua && (
                                 <p className="rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:bg-amber-950 dark:text-amber-200">
                                     Kata sandi <strong>baru</strong> yang Anda
-                                    tentukan sendiri untuk masuk ke portal ini —{' '}
+                                    tentukan sendiri untuk masuk ke portal ini -{' '}
                                     <strong>bukan sandi email Anda</strong>.
                                 </p>
                             )}

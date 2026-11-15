@@ -13,7 +13,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
  *
  * Halaman publik seperti /daftar menampilkan banyak sekolah sekaligus sehingga
  * tidak bisa dijaga middleware `feature:` (yang butuh satu sekolah). Menyaring
- * daftar di UI saja tidak cukup — `school_id` masih bisa dikirim langsung.
+ * daftar di UI saja tidak cukup - `school_id` masih bisa dikirim langsung.
  */
 class SchoolFeatureEnabled implements ValidationRule
 {

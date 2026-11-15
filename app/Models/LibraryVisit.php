@@ -35,7 +35,7 @@ class LibraryVisit extends Model
     }
 
     /**
-     * Kunjungan yang belum ditutup — siswa masih di dalam, atau lupa scan keluar.
+     * Kunjungan yang belum ditutup - siswa masih di dalam, atau lupa scan keluar.
      *
      * @param  Builder<static>  $query
      * @return Builder<static>
@@ -46,7 +46,7 @@ class LibraryVisit extends Model
     }
 
     /**
-     * Lama kunjungan dalam menit. Null selama belum discan keluar — sengaja bukan
+     * Lama kunjungan dalam menit. Null selama belum discan keluar - sengaja bukan
      * nol, supaya laporan bisa membedakan "sebentar sekali" dari "belum keluar".
      */
     public function durationMinutes(): ?int

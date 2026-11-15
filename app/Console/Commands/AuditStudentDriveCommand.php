@@ -27,7 +27,7 @@ use Throwable;
  *   2. foldernya memang tidak ada di Drive        → butuh tangan manusia
  *   3. folder ada tapi tidak ada foto di dalamnya → butuh tangan manusia
  *
- * Tanpa `--fix` perintah ini tidak menulis apa pun — aman dijalankan kapan saja,
+ * Tanpa `--fix` perintah ini tidak menulis apa pun - aman dijalankan kapan saja,
  * termasuk saat operator sedang bekerja.
  */
 class AuditStudentDriveCommand extends Command
@@ -93,7 +93,7 @@ class AuditStudentDriveCommand extends Command
                 // setiap folder kelas dicari dua kali.
                 $drive = $locator->driveFor($config);
             } catch (Throwable $e) {
-                $this->error("{$school->name}: gagal menyiapkan klien Drive — {$e->getMessage()}");
+                $this->error("{$school->name}: gagal menyiapkan klien Drive - {$e->getMessage()}");
                 $tally['error']++;
 
                 continue;
@@ -106,7 +106,7 @@ class AuditStudentDriveCommand extends Command
             $total = (clone $query)->count();
 
             // Bar bertotal 0 tidak bisa menghitung sisa waktu dan melempar
-            // LogicException — dulu menghentikan seluruh audit di sekolah kosong.
+            // LogicException - dulu menghentikan seluruh audit di sekolah kosong.
             if ($total === 0) {
                 $this->line(" {$school->name}: tidak ada siswa, dilewati.");
 
@@ -179,7 +179,7 @@ class AuditStudentDriveCommand extends Command
         $this->newLine();
 
         if ($seen === 0) {
-            $this->warn('Tidak ada siswa yang diperiksa — semua sekolah dilewati.');
+            $this->warn('Tidak ada siswa yang diperiksa - semua sekolah dilewati.');
 
             return self::SUCCESS;
         }
@@ -227,7 +227,7 @@ class AuditStudentDriveCommand extends Command
             // Memotong diam-diam membuat laporan terbaca seolah sudah lengkap.
             if (count($rows) > count($shown)) {
                 $this->line(sprintf(
-                    '… %d temuan lain tidak dicetak di sini — semuanya ada di laporan lengkap di bawah.',
+                    '… %d temuan lain tidak dicetak di sini - semuanya ada di laporan lengkap di bawah.',
                     count($rows) - count($shown),
                 ));
             }
@@ -296,7 +296,7 @@ class AuditStudentDriveCommand extends Command
 
             // --fix harus menembak Drive. locate() membaca lewat cache 6 jam yang
             // ikut menyimpan hasil "tidak ketemu", jadi satu kunjungan operator ke
-            // halaman siswa ini sebelumnya akan membuatnya dilewati diam-diam —
+            // halaman siswa ini sebelumnya akan membuatnya dilewati diam-diam -
             // dan --fix yang dijalankan dua kali menjawab berbeda tanpa sebab.
             if ($fix) {
                 $locator->forget($student);
@@ -315,7 +315,7 @@ class AuditStudentDriveCommand extends Command
 
             return $fix
                 ? ['kind' => 'ok']
-                : ['kind' => 'backfill', 'text' => 'tautannya masih ditebak dari nama folder — belum ada id tersimpan'];
+                : ['kind' => 'backfill', 'text' => 'tautannya masih ditebak dari nama folder - belum ada id tersimpan'];
         } catch (Throwable $e) {
             return ['kind' => 'error', 'text' => 'gagal diperiksa: '.$e->getMessage()];
         }

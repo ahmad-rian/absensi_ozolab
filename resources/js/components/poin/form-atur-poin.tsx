@@ -22,7 +22,7 @@ export type SetupPoin = {
 const LEVEL = ['kuning', 'orange', 'merah'] as const;
 
 /**
- * Setup poin milik sekolah ini — angka otomatis, daftar pilihan cepat
+ * Setup poin milik sekolah ini - angka otomatis, daftar pilihan cepat
  * pelanggaran, ambang level, awal semester. Dipakai halaman Atur Poin dan tab
  * Poin Pelanggaran di Pengaturan.
  */
@@ -64,7 +64,7 @@ export function FormAturPoin({
                     </h1>
                     <p className="text-sm text-muted-foreground">
                         Berlaku untuk sekolah ini saja. Perubahan angka hanya
-                        memengaruhi catatan berikutnya — poin yang sudah
+                        memengaruhi catatan berikutnya - poin yang sudah
                         tercatat tidak dihitung ulang.
                     </p>
                 </div>
@@ -243,7 +243,7 @@ export function FormAturPoin({
                     <h2 className="font-semibold">Periode</h2>
                     <p className="text-sm text-muted-foreground">
                         Total dan level dihitung sejak tanggal ini. Ganti tiap
-                        awal semester — riwayat lama tetap tersimpan.
+                        awal semester - riwayat lama tetap tersimpan.
                     </p>
                 </div>
                 <div className="grid max-w-xs gap-1.5">

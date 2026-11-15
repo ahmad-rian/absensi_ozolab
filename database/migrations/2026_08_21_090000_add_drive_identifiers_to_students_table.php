@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * Sampai sekarang tidak ada satu pun kolom Drive di tabel ini. Letak foto seorang
  * siswa diturunkan kembali setiap kali dibutuhkan dari jalur folder
- * `{Sekolah}/{Kelas}/{NIS - Nama}` — semuanya nilai yang bisa berubah. Naik kelas,
+ * `{Sekolah}/{Kelas}/{NIS - Nama}` - semuanya nilai yang bisa berubah. Naik kelas,
  * pindah rombel, NIS diperbaiki, atau nama diseragamkan huruf besar (commit
  * 874f1dd melakukan itu ke seluruh tabel) memindahkan sasaran pencarian ke folder
  * lain, dan operator melihatnya sebagai "foto anaknya hilang" atau "URL-nya

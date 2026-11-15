@@ -41,7 +41,7 @@
             --mm: 9.5px;
             --card-w: calc(var(--card-w-mm) * var(--mm));
             --card-h: calc(var(--card-h-mm) * var(--mm));
-            /* Dynamic typography — controlled by Tipografi panel */
+            /* Dynamic typography - controlled by Tipografi panel */
             --font-family-card: 'Manrope', sans-serif;
             --font-school: 16px;
             /* line-big (nama sekolah) */
@@ -110,7 +110,7 @@
             box-shadow: 0 4px 8px rgba(15, 15, 30, .06), 0 24px 60px -10px rgba(15, 15, 30, .22), 0 0 0 1px rgba(0, 0, 0, .04);
         }
 
-        /* Perpus background — warm wood tone */
+        /* Perpus background - warm wood tone */
         .bg-perpus {
             background:
                 radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, .4) 0%, transparent 50%),
@@ -146,7 +146,7 @@
             display: none !important;
         }
 
-        /* Custom bg layer — sits behind everything but above card-frame default bg */
+        /* Custom bg layer - sits behind everything but above card-frame default bg */
         .custom-bg-layer {
             position: absolute;
             inset: 0;
@@ -157,7 +157,7 @@
             pointer-events: none;
         }
 
-        /* OSIS background — sky blue */
+        /* OSIS background - sky blue */
         .bg-osis {
             background:
                 radial-gradient(ellipse at 70% 30%, rgba(255, 255, 255, .5) 0%, transparent 60%),
@@ -948,7 +948,7 @@
             <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
         <div class="flex-1 leading-snug">
-            <span class="font-bold text-amber-900">file:// protocol terdeteksi —</span>
+            <span class="font-bold text-amber-900">file:// protocol terdeteksi -</span>
             <span class="text-amber-800">API mungkin diblokir CORS, fitur folder output tidak akan jalan. </span>
             <a href="#" id="showInstructionsBtn" class="text-amber-900 font-bold underline">Cara fix (30 detik) →</a>
         </div>
@@ -1129,7 +1129,7 @@ php -S localhost:8000</pre>
                         <label
                             class="text-[10.5px] font-bold text-ink-600 uppercase tracking-wide mb-1 block">Sekolah</label>
                         <select id="schoolSelect" class="input-field">
-                            <option value="">— Memuat sekolah… —</option>
+                            <option value="">- Memuat sekolah… -</option>
                         </select>
                     </div>
 
@@ -1422,15 +1422,15 @@ php -S localhost:8000</pre>
                         <!-- Body Fields -->
                         <div class="body-area">
                             <div class="field-row"><span class="field-label">NAMA</span><span
-                                    class="field-sep">:</span><span class="field-value" id="fNama">—</span></div>
+                                    class="field-sep">:</span><span class="field-value" id="fNama">-</span></div>
                             <div class="field-row"><span class="field-label">ALAMAT</span><span
-                                    class="field-sep">:</span><span class="field-value" id="fAlamat">—</span></div>
+                                    class="field-sep">:</span><span class="field-value" id="fAlamat">-</span></div>
                             <div class="field-row"><span class="field-label">TEMPAT TGL.LAHIR</span><span
-                                    class="field-sep">:</span><span class="field-value" id="fTtl">—</span></div>
+                                    class="field-sep">:</span><span class="field-value" id="fTtl">-</span></div>
                             <div class="field-row"><span class="field-label">AGAMA</span><span
-                                    class="field-sep">:</span><span class="field-value" id="fAgama">—</span></div>
+                                    class="field-sep">:</span><span class="field-value" id="fAgama">-</span></div>
                             <div class="field-row"><span class="field-label">NO.INDUK</span><span
-                                    class="field-sep">:</span><span class="field-value" id="fNis">—</span></div>
+                                    class="field-sep">:</span><span class="field-value" id="fNis">-</span></div>
                         </div>
 
                         <!-- OSIS validity text -->
@@ -1523,7 +1523,7 @@ php -S localhost:8000</pre>
             osisEmblem: null,
             perpusBg: null,
             signature: null,
-            fields: { nama: '—', alamat: '—', ttl: '—', agama: '—', nis: '—', kelas: '—' },
+            fields: { nama: '-', alamat: '-', ttl: '-', agama: '-', nis: '-', kelas: '-' },
             qrSvg: null,
             loading: false,
             outputDirHandle: null, // FileSystemDirectoryHandle for direct-to-folder export
@@ -1594,7 +1594,7 @@ php -S localhost:8000</pre>
             console.log('[API →]', url);
             try {
                 const res = await fetch(url);
-                if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
                 const json = await res.json();
                 console.log('[API ←]', url, json);
                 return json;
@@ -1619,7 +1619,7 @@ php -S localhost:8000</pre>
             state.schools = extractArray(data, 'schools');
             console.log(`[Schools loaded] ${state.schools.length} items`);
             const sel = $('#schoolSelect');
-            sel.innerHTML = '<option value="">— Pilih sekolah —</option>';
+            sel.innerHTML = '<option value="">- Pilih sekolah -</option>';
             state.schools.forEach(s => {
                 const opt = document.createElement('option');
                 opt.value = s.id;
@@ -1636,7 +1636,7 @@ php -S localhost:8000</pre>
             let data = await fetchJson(`${API_BASE}/schools/${schoolId}/students`);
             // Fallback: try query-param endpoint if first returned nothing
             if (data && extractArray(data, 'students').length === 0) {
-                console.warn('[Students] First endpoint returned empty — trying fallback');
+                console.warn('[Students] First endpoint returned empty - trying fallback');
                 const alt = await fetchJson(`${API_BASE}/students?school_id=${schoolId}&per_page=500`);
                 if (alt && extractArray(alt, 'students').length) data = alt;
             }
@@ -1645,7 +1645,7 @@ php -S localhost:8000</pre>
             state.students = extractArray(data, 'students');
             console.log(`[Students loaded] ${state.students.length} items for school ${schoolId}`);
             renderStudentList();
-            if (!state.students.length) toast('Tidak ada siswa di sekolah ini (atau response shape tidak dikenali — cek console)', 'error');
+            if (!state.students.length) toast('Tidak ada siswa di sekolah ini (atau response shape tidak dikenali - cek console)', 'error');
             updateStatus();
         }
 
@@ -1662,13 +1662,13 @@ php -S localhost:8000</pre>
         function applyStudentData(d) {
             state.selectedStudent = d;
             state.fields = {
-                nama: d.full_name || d.name || '—',
-                alamat: d.address || '—',
-                ttl: ((d.birth_place || '') + (d.birth_date ? ', ' + formatDate(d.birth_date) : '')) || '—',
-                agama: d.religion_label || d.religion || '—',
-                nis: d.nis || '—',
-                nisn: d.nisn || '—',
-                kelas: (d.classroom && d.classroom.name) || '—',
+                nama: d.full_name || d.name || '-',
+                alamat: d.address || '-',
+                ttl: ((d.birth_place || '') + (d.birth_date ? ', ' + formatDate(d.birth_date) : '')) || '-',
+                agama: d.religion_label || d.religion || '-',
+                nis: d.nis || '-',
+                nisn: d.nisn || '-',
+                kelas: (d.classroom && d.classroom.name) || '-',
             };
             state.qrSvg = d.qr_svg || null;
             // Header auto-fill from school
@@ -1698,11 +1698,11 @@ php -S localhost:8000</pre>
 
         // ====== RENDER ======
         function renderFields() {
-            $('#fNama').textContent = (state.fields.nama || '—').toUpperCase();
-            $('#fAlamat').textContent = state.fields.alamat || '—';
-            $('#fTtl').textContent = state.fields.ttl || '—';
-            $('#fAgama').textContent = state.fields.agama || '—';
-            $('#fNis').textContent = state.fields.nis || '—';
+            $('#fNama').textContent = (state.fields.nama || '-').toUpperCase();
+            $('#fAlamat').textContent = state.fields.alamat || '-';
+            $('#fTtl').textContent = state.fields.ttl || '-';
+            $('#fAgama').textContent = state.fields.agama || '-';
+            $('#fNis').textContent = state.fields.nis || '-';
         }
 
         function renderQR() {
@@ -1795,8 +1795,8 @@ php -S localhost:8000</pre>
             list.style.display = 'block';
             list.innerHTML = filtered.map(s => `
     <div class="item ${state.selectedStudent && state.selectedStudent.id === s.id ? 'active' : ''}" data-id="${s.id}">
-      <div class="name">${s.full_name || s.name || '—'}</div>
-      <div class="meta">${(s.classroom && s.classroom.name) || s.classroom_name || '—'} · NIS ${s.nis || '—'}</div>
+      <div class="name">${s.full_name || s.name || '-'}</div>
+      <div class="meta">${(s.classroom && s.classroom.name) || s.classroom_name || '-'} · NIS ${s.nis || '-'}</div>
     </div>
   `).join('');
         }
@@ -1837,7 +1837,7 @@ php -S localhost:8000</pre>
                 state.photo.baseScale = baseScale;
                 renderPhoto();
                 updateStatus();
-                toast('Foto dimuat — drag untuk reposisi', 'success');
+                toast('Foto dimuat - drag untuk reposisi', 'success');
             };
             img.src = url;
         }
@@ -2061,7 +2061,7 @@ php -S localhost:8000</pre>
             state.photo = { url: null, scale: 1, offsetX: 0, offsetY: 0, naturalW: 0, naturalH: 0 };
             state.logoLeft = null; state.logoRight = null; state.signature = null; state.osisEmblem = null; state.perpusBg = null;
             state.selectedStudent = null; state.qrSvg = null;
-            state.fields = { nama: '—', alamat: '—', ttl: '—', agama: '—', nis: '—' };
+            state.fields = { nama: '-', alamat: '-', ttl: '-', agama: '-', nis: '-' };
             $('#photoSlot').classList.remove('filled');
             const photoImg = $('#photoSlot').querySelector('img'); if (photoImg) photoImg.remove();
             ['logoLeft', 'logoRight'].forEach(k => {
@@ -2130,7 +2130,7 @@ php -S localhost:8000</pre>
 
         async function pickOutputDir() {
             if (!HAS_FS_API) {
-                toast('Browser tidak mendukung — fallback ke ZIP download', 'info');
+                toast('Browser tidak mendukung - fallback ke ZIP download', 'info');
                 return null;
             }
             try {
@@ -2171,7 +2171,7 @@ php -S localhost:8000</pre>
         // Show warning banner if FS API unavailable
         if (!HAS_FS_API) $('#fsApiWarn').classList.remove('hidden');
 
-        // ====== EXPORT — Direct-to-folder (FS API) with ZIP fallback ======
+        // ====== EXPORT - Direct-to-folder (FS API) with ZIP fallback ======
         async function waitFrame(ms = 80) {
             await new Promise(r => requestAnimationFrame(() => setTimeout(r, ms)));
         }
@@ -2257,7 +2257,7 @@ php -S localhost:8000</pre>
 
             if (HAS_FS_API) {
                 if (!state.outputDirHandle) {
-                    // First export — prompt folder
+                    // First export - prompt folder
                     const handle = await pickOutputDir();
                     if (!handle) { exportBtn.disabled = false; return; } // user cancelled
                 }
@@ -2294,7 +2294,7 @@ php -S localhost:8000</pre>
                 // 3. Restore card type
                 setCardType(originalType);
 
-                // 4. Save — branch on FS API vs ZIP
+                // 4. Save - branch on FS API vs ZIP
                 const kelas = sanitize(state.fields.kelas, 30) || 'tanpa-kelas';
                 const namaSiswa = sanitize(state.fields.nama, 50);
                 const nis = sanitize(state.fields.nis, 20);
@@ -2312,7 +2312,7 @@ php -S localhost:8000</pre>
                     hideExportLoader();
                     toast(`✓ Tersimpan ke ${targetDir.name}/kelas-${kelas}/`, 'success');
                 } else {
-                    // ZIP fallback — add to batch queue instead of immediate download.
+                    // ZIP fallback - add to batch queue instead of immediate download.
                     // User clicks "Unduh Batch" in top bar when done to get 1 big ZIP.
                     state.exportQueue.push({
                         kelas,
@@ -2442,7 +2442,7 @@ php -S localhost:8000</pre>
                 updateBatchUI();
                 await waitFrame(300);
                 hideExportLoader();
-                toast(`✓ ZIP batch diunduh (${total} siswa · ${total * 2} kartu) — extract sekali, folder kelas merge otomatis`, 'success');
+                toast(`✓ ZIP batch diunduh (${total} siswa · ${total * 2} kartu) - extract sekali, folder kelas merge otomatis`, 'success');
             } catch (err) {
                 console.error(err);
                 hideExportLoader();

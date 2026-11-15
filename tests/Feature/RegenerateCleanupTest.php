@@ -52,7 +52,7 @@ test('generate ulang foto membuang berkas lama, bukan menaruhnya di sebelahnya',
 
     Storage::disk('public')->assertExists($student->photo_path);
     // Inti perbaikannya: nama berkas memuat 16 karakter acak, jadi keluaran baru
-    // TIDAK PERNAH menimpa yang lama — ia harus dibuang eksplisit.
+    // TIDAK PERNAH menimpa yang lama - ia harus dibuang eksplisit.
     Storage::disk('public')->assertMissing($fotoLama);
 });
 

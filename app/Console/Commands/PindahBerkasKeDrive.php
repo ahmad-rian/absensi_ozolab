@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
  * berkas berukuran sama persis. Tanpa `--jalankan` hanya menghitung.
  *
  * Berkas yang ukurannya di Drive berbeda (misalnya Drive sudah ditimpa versi
- * yang lebih baru) DIBIARKAN — perintah ini tidak pernah menebak.
+ * yang lebih baru) DIBIARKAN - perintah ini tidak pernah menebak.
  */
 class PindahBerkasKeDrive extends Command
 {
@@ -91,7 +91,7 @@ class PindahBerkasKeDrive extends Command
      * Drive yang sama di tempat, jadi log lama menunjuk berkas Drive yang kini
      * berisi render lebih baru, dan log dari sebelum Agustus tidak punya
      * `drive_file_id` sama sekali. Selama versi TERBARU sudah ada di Drive,
-     * salinan lokal versi lama tidak lagi dibaca siapa pun — `/berkas/{log}`
+     * salinan lokal versi lama tidak lagi dibaca siapa pun - `/berkas/{log}`
      * mengambil dari Drive bila berkas lokalnya hilang.
      *
      * Versi terbaru sendiri tetap memakai aturan ukuran-sama-persis.
@@ -133,7 +133,7 @@ class PindahBerkasKeDrive extends Command
 
             foreach ($logs->slice(1) as $lama) {
                 // Nama berkas yang sama dengan versi terbaru ADALAH berkas versi
-                // terbaru — itu sudah diputuskan di atas, jangan disentuh lagi.
+                // terbaru - itu sudah diputuskan di atas, jangan disentuh lagi.
                 if (! $lama->file_path || $lama->file_path === $terbaru->file_path || ! $disk->exists($lama->file_path)) {
                     continue;
                 }

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignUlid('school_id')->constrained()->cascadeOnDelete();
             $table->string('template');
             $table->string('status')->default('processing');
-            // Komposisi cetak: [{student_id, name, quantity}]. Sengaja JSON —
+            // Komposisi cetak: [{student_id, name, quantity}]. Sengaja JSON -
             // ini jejak cetak sekali pakai, tidak pernah di-query per siswa.
             $table->json('items');
             $table->unsignedInteger('total_slots')->default(0);

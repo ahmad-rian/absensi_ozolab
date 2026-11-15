@@ -148,7 +148,7 @@ class AttendanceController extends Controller
      *
      * Hanya berkas lokal yang ikut: `GenerateDynamicCardJob` menyimpannya di
      * disk `public`, jadi tidak ada unduhan Drive yang bisa membuat permintaan
-     * ini kehabisan waktu. PNG disimpan tanpa kompresi ulang — sudah padat.
+     * ini kehabisan waktu. PNG disimpan tanpa kompresi ulang - sudah padat.
      */
     public function downloadCards(CardForm $cardForm, DynamicCardFiles $files): BinaryFileResponse|RedirectResponse
     {
@@ -239,7 +239,7 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Halaman scan ringan peserta di `/p/{kode}` — Blade polos yang sama
+     * Halaman scan ringan peserta di `/p/{kode}` - Blade polos yang sama
      * dengan gerbang sekolah, untuk box Android TV yang tidak sanggup React.
      * Satu link untuk datang dan pulang: layanan yang memutuskan modenya
      * (lihat CardAttendanceService::MODE_OTOMATIS).
@@ -255,7 +255,7 @@ class AttendanceController extends Controller
             'pesanMati' => 'Layout ini sedang dinonaktifkan.',
             'featureEnabled' => true,
             'logoUrl' => null,
-            'petunjuk' => 'Tempelkan kartu atau tembak QR Code peserta — boleh scan berkali-kali: scan pertama masuk, scan terakhir pulang',
+            'petunjuk' => 'Tempelkan kartu atau tembak QR Code peserta - boleh scan berkali-kali: scan pertama masuk, scan terakhir pulang',
             'scanUrl' => route('public.card-scanner.short.scan', $kode),
             'riwayatUrl' => route('public.card-scanner.short.riwayat', $kode),
             'kameraUrl' => route('public.card-scanner.short.kamera', $kode),
@@ -312,7 +312,7 @@ class AttendanceController extends Controller
     private function pesanScan(array $result, string $label, string $jam): string
     {
         return match (true) {
-            $result['duplicate'] => 'Baru saja tercatat — tunggu sebentar sebelum scan lagi.',
+            $result['duplicate'] => 'Baru saja tercatat - tunggu sebentar sebelum scan lagi.',
             $result['jenis'] === CardScan::JENIS_MASUK => "Masuk tercatat {$jam}.",
             $result['jenis'] === CardScan::JENIS_PULANG && $result['urutan'] > 2 => "Pulang diperbarui {$jam} · scan ke-{$result['urutan']} hari ini.",
             $result['jenis'] === CardScan::JENIS_PULANG => "Pulang tercatat {$jam}.",
@@ -426,7 +426,7 @@ class AttendanceController extends Controller
 
     /**
      * Peserta (dalam cakupan layout) yang kecamatannya cocok, dicocokkan
-     * setelah dinormalkan — isian bebas lama ikut tertangkap.
+     * setelah dinormalkan - isian bebas lama ikut tertangkap.
      *
      * @return array<int, string>
      */

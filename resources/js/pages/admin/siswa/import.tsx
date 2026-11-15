@@ -340,7 +340,7 @@ export default function SiswaImport({
                             <p className="text-xs text-muted-foreground">
                                 Unduh datanya, isi kolom yang masih kosong
                                 (misalnya Nama Orang Tua dan No HP), lalu unggah
-                                lagi di atas. Jangan ubah kolom ID Sistem —
+                                lagi di atas. Jangan ubah kolom ID Sistem -
                                 kolom itu yang memastikan data masuk ke siswa
                                 yang sama, bukan membuat siswa baru.
                             </p>
@@ -380,7 +380,7 @@ export default function SiswaImport({
                                 Pratinjau: {preview.filename}
                             </CardTitle>
                             <CardDescription>
-                                {preview.summary.total} baris terbaca —{' '}
+                                {preview.summary.total} baris terbaca -{' '}
                                 {preview.summary.create} dibuat,{' '}
                                 {preview.summary.update} diperbarui,{' '}
                                 {preview.summary.unchanged} tidak berubah,{' '}

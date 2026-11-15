@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
  *
  * Kelas tahun ajaran berjalan: siswa yang `classroom_id`-nya menunjuk ke sana.
  * Kelas tahun ajaran LAMA: siswanya sudah naik kelas, jadi penunjuk itu sudah
- * pindah — anggotanya dibaca dari riwayat kelas. Tanpa pembedaan ini rekap dan
+ * pindah - anggotanya dibaca dari riwayat kelas. Tanpa pembedaan ini rekap dan
  * absen kelas tahun lalu kosong begitu kenaikan kelas diterapkan.
  */
 class AnggotaKelas
@@ -37,7 +37,7 @@ class AnggotaKelas
     /**
      * Query siswa anggota kelas.
      *
-     * Untuk kelas lama, siswa yang sudah lulus (nonaktif) tetap ikut — mereka
+     * Untuk kelas lama, siswa yang sudah lulus (nonaktif) tetap ikut - mereka
      * memang anggota kelas itu pada tahunnya. Siswa yang penunjuknya masih ke
      * kelas lama (belum dinaikkan) juga ikut supaya tidak ada yang hilang.
      *

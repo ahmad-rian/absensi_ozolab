@@ -72,7 +72,7 @@ test('haji lama: scan dobel dalam 60 detik diabaikan tanpa menulis apa pun', fun
     berulangScanHaji($form, $qr, '08:00:00')->assertOk()->assertJsonPath('duplikat', false);
     berulangScanHaji($form, $qr, '08:00:40')->assertOk()
         ->assertJsonPath('duplikat', true)
-        ->assertJsonPath('message', 'Baru saja tercatat — tunggu sebentar sebelum scan lagi.');
+        ->assertJsonPath('message', 'Baru saja tercatat - tunggu sebentar sebelum scan lagi.');
 
     expect(CardScan::count())->toBe(1);
 });

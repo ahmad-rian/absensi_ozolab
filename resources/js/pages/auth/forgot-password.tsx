@@ -14,7 +14,7 @@ import { email } from '@/routes/password';
 /**
  * Lupa sandi. Orang tua langsung mengganti sandi di sini (email + nomor WA
  * terdaftar + hitungan), tanpa membuka email. Admin dan guru tetap lewat
- * link email — akun mereka membuka data seluruh siswa.
+ * link email - akun mereka membuka data seluruh siswa.
  */
 export default function ForgotPassword({
     status,

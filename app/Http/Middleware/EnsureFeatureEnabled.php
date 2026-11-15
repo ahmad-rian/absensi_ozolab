@@ -12,13 +12,13 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Tolak rute yang fiturnya dimatikan sekolah aktif.
  *
- * Berbeda dari `permission:` — ini bukan keputusan otorisasi, melainkan status
+ * Berbeda dari `permission:` - ini bukan keputusan otorisasi, melainkan status
  * langganan tenant. Karena itu `Gate::before` milik SUPER_ADMIN sengaja TIDAK
  * berlaku di sini: super admin yang sedang membuka Sekolah X harus melihat
  * Sekolah X persis seperti penggunanya, kalau tidak setiap laporan "menu saya
  * hilang tapi punya Anda ada" jadi mustahil direproduksi.
  *
- * Beberapa nama fitur berarti OR — cukup satu aktif untuk lolos.
+ * Beberapa nama fitur berarti OR - cukup satu aktif untuk lolos.
  */
 class EnsureFeatureEnabled
 {
@@ -27,7 +27,7 @@ class EnsureFeatureEnabled
         $school = $this->resolveSchool($request);
 
         // Tanpa konteks sekolah (super admin belum memilih tenant) tidak ada
-        // yang bisa dinilai — biarkan lewat, global scope yang menjaga data.
+        // yang bisa dinilai - biarkan lewat, global scope yang menjaga data.
         if (! $school) {
             return $next($request);
         }
@@ -59,7 +59,7 @@ class EnsureFeatureEnabled
     private function resolveSchool(Request $request): ?School
     {
         // Sekolah pengguna didahulukan. Memakai binding rute lebih dulu membuat
-        // `/api/schools/{lain}/students` dinilai atas fitur milik tenant LAIN —
+        // `/api/schools/{lain}/students` dinilai atas fitur milik tenant LAIN -
         // selisih 403/404-nya jadi oracle yang membocorkan status fitur mereka,
         // dan pesan galatnya pun menyesatkan.
         if (app()->bound('currentSchool')) {

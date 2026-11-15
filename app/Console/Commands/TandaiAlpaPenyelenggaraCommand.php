@@ -64,7 +64,7 @@ class TandaiAlpaPenyelenggaraCommand extends Command
         $query = CardFormSubmission::acrossPenyelenggara()
             ->where('program_id', $program->id)
             ->whereNull('archived_at')
-            // withoutGlobalScope: console tanpa konteks — scope fail-closed di dalam
+            // withoutGlobalScope: console tanpa konteks - scope fail-closed di dalam
             // whereDoesntHave membuat SEMUA peserta terpilih.
             ->whereDoesntHave('kehadirans', fn ($q) => $q->withoutGlobalScope('penyelenggara')->where('sesi_id', $sesi->id));
 

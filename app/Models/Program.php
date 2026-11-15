@@ -69,7 +69,7 @@ class Program extends Model
     }
 
     /**
-     * Salin struktur grup ke program baru — tanpa peserta dan kehadiran (FR-007).
+     * Salin struktur grup ke program baru - tanpa peserta dan kehadiran (FR-007).
      */
     public function salinKe(string $name, string $startsOn, string $endsOn): self
     {

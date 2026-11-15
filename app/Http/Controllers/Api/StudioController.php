@@ -14,8 +14,8 @@ use Illuminate\Http\Request;
 /**
  * Endpoint baca untuk Tyas Studio.
  *
- * Operator memilih siswa dengan tiga cara — tembak kartu, cari nama/NIS, atau
- * telusur sekolah → kelas → siswa — dan ketiganya berakhir di sini.
+ * Operator memilih siswa dengan tiga cara - tembak kartu, cari nama/NIS, atau
+ * telusur sekolah → kelas → siswa - dan ketiganya berakhir di sini.
  *
  * `qr_token` TIDAK PERNAH ikut dalam respons mana pun. Ia kredensial: siapa pun
  * yang memegangnya bisa mengabsenkan anak itu, dan Studio tidak membutuhkannya
@@ -83,7 +83,7 @@ class StudioController extends Controller
      *
      * Dua endpoint lain tidak cukup untuk itu: `students?search=` dibatasi 50
      * baris dan mengandaikan ada kata kunci, sementara
-     * `classrooms/{id}/students` MELEWATKAN siswa yang belum punya kelas —
+     * `classrooms/{id}/students` MELEWATKAN siswa yang belum punya kelas -
      * dan siswa baru sering berada di keadaan itu berhari-hari.
      *
      * `updated_at` ikut supaya penyalinan berikutnya bisa inkremental.
@@ -192,8 +192,8 @@ class StudioController extends Controller
     /**
      * GET /api/studio/students/by-qr/{token}
      *
-     * Untuk barcode gun. Toleransi bacaan kotor ikut dipakai — pembaca di
-     * lapangan terbukti menyisipkan karakter sampah di ujung — tapi
+     * Untuk barcode gun. Toleransi bacaan kotor ikut dipakai - pembaca di
+     * lapangan terbukti menyisipkan karakter sampah di ujung - tapi
      * pencocokannya tetap PERSIS: bacaan separuh ditolak.
      */
     public function byQr(Request $request, string $token): JsonResponse

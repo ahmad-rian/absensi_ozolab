@@ -74,7 +74,7 @@ const waktu = (iso: string | null) =>
               dateStyle: 'medium',
               timeStyle: 'short',
           }).format(new Date(iso))
-        : '—';
+        : '-';
 
 /** Data Perizinan: tinjau pengajuan izin/sakit dari orang tua. */
 export default function Perizinan({
@@ -238,8 +238,8 @@ export default function Perizinan({
                                                 )}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                                Kelas {i.siswa.kelas ?? '—'} ·
-                                                NIS {i.siswa.nis ?? '—'}
+                                                Kelas {i.siswa.kelas ?? '-'} ·
+                                                NIS {i.siswa.nis ?? '-'}
                                             </p>
                                         </div>
                                     </div>
@@ -285,7 +285,7 @@ export default function Perizinan({
                                             {i.status === 'disetujui'
                                                 ? 'Disetujui'
                                                 : 'Ditolak'}{' '}
-                                            oleh {i.reviewer ?? '—'}{' '}
+                                            oleh {i.reviewer ?? '-'}{' '}
                                             {waktu(i.reviewed_at)}
                                             {i.status === 'disetujui' &&
                                                 i.hari_dicatat !== null &&
@@ -438,7 +438,7 @@ export default function Perizinan({
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>
-                            Bukti — {lihatBukti?.siswa.nama}
+                            Bukti - {lihatBukti?.siswa.nama}
                         </DialogTitle>
                     </DialogHeader>
                     {lihatBukti && (

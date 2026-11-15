@@ -21,7 +21,7 @@ use Inertia\Inertia;
  * dari peran staf (template) ditambah centang langsung per akun.
  *
  * Akun staf tidak punya sekolah maupun penyelenggara. Modul Staf & Peran Staf
- * hanya bisa diberikan super admin — staf tidak bisa menaikkan hak siapa pun —
+ * hanya bisa diberikan super admin - staf tidak bisa menaikkan hak siapa pun -
  * dan staf tidak pernah bisa mengubah akunnya sendiri.
  */
 class StafController extends Controller
@@ -184,7 +184,7 @@ class StafController extends Controller
 
     /**
      * Modul khusus super admin (Staf & Peran Staf) hanya bisa diberikan atau
-     * dicabut oleh super admin — staf tidak bisa menaikkan hak siapa pun.
+     * dicabut oleh super admin - staf tidak bisa menaikkan hak siapa pun.
      *
      * @param  array<int, string>  $diminta
      * @return array<int, string>

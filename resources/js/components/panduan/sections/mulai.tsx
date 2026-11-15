@@ -34,19 +34,19 @@ export function ApaIni() {
 
             <Bullets>
                 <li>
-                    <b>Super Admin</b> — pemilik platform. Membuat sekolah, mengatur role, dan mengisi
+                    <b>Super Admin</b> - pemilik platform. Membuat sekolah, mengatur role, dan mengisi
                     kredensial notifikasi. Bisa berpindah antar sekolah.
                 </li>
                 <li>
-                    <b>Admin Sekolah</b> — mengelola seluruh data sekolahnya sendiri: siswa, kelas,
+                    <b>Admin Sekolah</b> - mengelola seluruh data sekolahnya sendiri: siswa, kelas,
                     absensi, kartu, laporan, dan pengaturan.
                 </li>
                 <li>
-                    <b>Guru</b> — melihat siswa, mencatat absensi, membuka laporan dan notifikasi.
+                    <b>Guru</b> - melihat siswa, mencatat absensi, membuka laporan dan notifikasi.
                     Tidak bisa mengubah kelas, pengguna, atau pengaturan.
                 </li>
                 <li>
-                    <b>Orang Tua</b> — tidak masuk ke aplikasi. Mereka menerima notifikasi dan memakai
+                    <b>Orang Tua</b> - tidak masuk ke aplikasi. Mereka menerima notifikasi dan memakai
                     halaman publik untuk mendaftar atau menghubungkan Telegram.
                 </li>
             </Bullets>
@@ -82,7 +82,7 @@ export function LangkahPertama() {
             </Steps>
 
             <Para>
-                Setelah itu masukkan siswa — satu per satu lewat <Menu>Siswa → Tambah</Menu>, atau
+                Setelah itu masukkan siswa - satu per satu lewat <Menu>Siswa → Tambah</Menu>, atau
                 sekaligus lewat <Menu>Impor Siswa</Menu>.
             </Para>
 

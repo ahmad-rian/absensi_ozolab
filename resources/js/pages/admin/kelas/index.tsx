@@ -60,7 +60,7 @@ type KelompokTahun = { id: string; nama: string; aktif: boolean; terbuka: boolea
  * Kelas dikelompokkan per tahun ajaran: nama kelas ("7A") berulang tiap tahun,
  * jadi tanpa pengelompokan kartu kembar tidak terbedakan. Urutan mengikuti
  * `academic_years` dari server (aktif dulu, lalu terbaru). Tahun lama dilipat
- * tetapi tetap bisa dibuka — rekap absensinya masih ada di "Buka Kelas".
+ * tetapi tetap bisa dibuka - rekap absensinya masih ada di "Buka Kelas".
  */
 function kelompokkanPerTahun(classrooms: Classroom[], tahun: PageProps['academic_years']): KelompokTahun[] {
     const adaAktif = tahun.some((t) => t.is_active);
@@ -314,7 +314,7 @@ return;
                 )}
             </div>
 
-            {/* Create Dialog — Bulk */}
+            {/* Create Dialog - Bulk */}
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                 <DialogContent>
                     <DialogHeader>

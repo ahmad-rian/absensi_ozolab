@@ -1,6 +1,6 @@
 # Feature Specification: RFID Peserta
 
-**Feature Branch**: `008-rfid-peserta` (langsung di `main`) · **Created**: 2026-10-14 · **Status**: Draft — implementasi setelah spec 001–005, bergantung perangkat
+**Feature Branch**: `008-rfid-peserta` (langsung di `main`) · **Created**: 2026-10-14 · **Status**: Draft - implementasi setelah spec 001–005, bergantung perangkat
 
 **Input**: User description: "Daftar kartu RFID ke peserta, absen lewat reader RFID (HID) mengikuti rencana RFID sekolah."
 

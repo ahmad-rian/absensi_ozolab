@@ -49,7 +49,7 @@ class CardForm extends Model
     }
 
     /**
-     * Link form pendaftaran publik — dibangun dari rute, jadi ikut domain dan
+     * Link form pendaftaran publik - dibangun dari rute, jadi ikut domain dan
      * token saat ini.
      */
     public function publicUrl(): string
@@ -58,7 +58,7 @@ class CardForm extends Model
     }
 
     /**
-     * Boleh diisi publik? Form Haji/Kartu Bebas (tanpa program) cukup aktif —
+     * Boleh diisi publik? Form Haji/Kartu Bebas (tanpa program) cukup aktif -
      * link-nya sudah beredar. Form program wajib dinyalakan eksplisit dan
      * programnya masih berjalan di penyelenggara yang aktif.
      */

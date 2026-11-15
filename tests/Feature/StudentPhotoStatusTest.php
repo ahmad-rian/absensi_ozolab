@@ -6,7 +6,7 @@ use App\Models\Student;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 
-// Laporan XLSX perintah drive:* ditulis ke disk local — jangan sampai ke storage sungguhan.
+// Laporan XLSX perintah drive:* ditulis ke disk local - jangan sampai ke storage sungguhan.
 beforeEach(fn () => Storage::fake('local'));
 
 /**
@@ -14,7 +14,7 @@ beforeEach(fn () => Storage::fake('local'));
  * Foto" tidak meninggalkan jejak sampai seseorang membuka foldernya di Drive.
  *
  * Lebih buruk lagi, unggahan yang gagal dulu tetap dicatat `completed` dengan
- * `drive_file_id` kosong — jadi penanda yang cuma membaca status akan menyebut
+ * `drive_file_id` kosong - jadi penanda yang cuma membaca status akan menyebut
  * berhasil sesuatu yang tidak pernah sampai ke Drive.
  */
 beforeEach(function () {
@@ -126,7 +126,7 @@ test('riwayat foto siswa lain tidak ikut terbaca', function () {
  * Drive-nya sengaja dimatikan akan melihat peringatan seumur hidup.
  *
  * Cabang `failed`-nya sendiri butuh folder Drive yang nyata plus unggahan yang
- * gagal, jadi belum tertutup di sini — jalur unggah Drive memang belum bisa
+ * gagal, jadi belum tertutup di sini - jalur unggah Drive memang belum bisa
  * dipalsukan tanpa memalsukan seluruh klien Google.
  */
 test('sekolah tanpa Drive tetap dicatat selesai, bukan gagal', function () {

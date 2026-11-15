@@ -63,7 +63,7 @@ final class AturanSandi
      * Daftar syarat untuk dipajang di halaman, seragam dengan aturan di atas.
      *
      * `kunci` dibaca komponen SyaratSandi untuk memeriksa sandi yang sedang
-     * diketik. `catatan` memuat syarat yang tidak bisa diperiksa di peramban —
+     * diketik. `catatan` memuat syarat yang tidak bisa diperiksa di peramban -
      * daftar-tolak dan pemeriksaan kebocoran hanya ada di server.
      *
      * @return array{syarat: list<array{kunci: string, label: string, nilai?: int, daftar?: list<string>}>, catatan: ?string}
@@ -82,8 +82,8 @@ final class AturanSandi
             $syarat[] = ['kunci' => 'simbol', 'label' => 'Ada simbol, misal ! @ #'];
         } else {
             // Daftar-tolaknya ikut dikirim supaya centangnya bisa hidup di
-            // peramban. Isinya memang bukan rahasia — ini sandi yang ada di
-            // puncak setiap daftar bocoran — dan servernya tetap penentu.
+            // peramban. Isinya memang bukan rahasia - ini sandi yang ada di
+            // puncak setiap daftar bocoran - dan servernya tetap penentu.
             $syarat[] = ['kunci' => 'umum', 'label' => 'Bukan sandi pasaran (12345678, password)', 'daftar' => SandiUmum::DAFTAR_TOLAK];
         }
 

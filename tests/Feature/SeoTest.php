@@ -22,7 +22,7 @@ test('beranda menyebut alamat kanonik, bukan host yang menyajikannya', function 
 
 /**
  * Inti perbaikannya. Kalau canonical ikut host permintaan, host yang salah
- * menerbitkan canonical yang salah juga — indeks yang keliru justru dikuatkan.
+ * menerbitkan canonical yang salah juga - indeks yang keliru justru dikuatkan.
  */
 test('canonical tidak ikut berubah walau diakses dari host lain', function () {
     $this->get('http://jadikayagroup.site/')
@@ -34,7 +34,7 @@ test('canonical tidak ikut berubah walau diakses dari host lain', function () {
 test('beranda punya judul, deskripsi, dan izin indeks', function () {
     $respons = $this->get('/')->assertOk();
 
-    $respons->assertSee('<title>Tyas Photo — Absensi Sekolah Digital dengan QR &amp; RFID</title>', false);
+    $respons->assertSee('<title>Tyas Photo - Absensi Sekolah Digital dengan QR &amp; RFID</title>', false);
     $respons->assertSee('name="description"', false);
     $respons->assertSee('index, follow', false);
 });

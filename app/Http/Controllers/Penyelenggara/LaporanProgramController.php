@@ -52,12 +52,12 @@ class LaporanProgramController extends Controller
                 'ends_on' => $program->ends_on->toDateString(),
             ],
             'grups' => Grup::where('program_id', $program->id)->orderBy('urutan')->orderBy('name')->get(['id', 'name']),
-            // Sesi di hari libur tidak dilaporkan — sama dengan dasbor.
+            // Sesi di hari libur tidak dilaporkan - sama dengan dasbor.
             'sesis' => Sesi::where('program_id', $program->id)->when($libur, fn ($q) => $q->whereNotIn('tanggal', $libur))
                 ->orderByDesc('tanggal')->orderBy('datang_mulai')->limit(200)->get(['id', 'name', 'tanggal']),
-            // Hanya nama — kolom `data` lengkap tidak perlu dikirim untuk dropdown.
+            // Hanya nama - kolom `data` lengkap tidak perlu dikirim untuk dropdown.
             'peserta' => $this->peserta->batasi(CardFormSubmission::where('program_id', $program->id)->whereNull('archived_at'), $request->user(), $program)
-                ->get(['id', 'data->nama as nama'])->map(fn ($p) => ['id' => $p->id, 'nama' => $p->nama ?: '—'])->sortBy('nama')->values(),
+                ->get(['id', 'data->nama as nama'])->map(fn ($p) => ['id' => $p->id, 'nama' => $p->nama ?: '-'])->sortBy('nama')->values(),
             'kecamatan' => $this->opsiKecamatan($request, $program),
             'periode' => ['dari' => $dari, 'sampai' => $sampai],
             'ringkasanKecamatan' => Inertia::defer(fn () => $this->rekapKecamatan($program, $dari, $sampai, $request->user())),
@@ -101,7 +101,7 @@ class LaporanProgramController extends Controller
         $label = fn (Sesi $s) => CarbonImmutable::parse($s->tanggal)->format('d/m').' '.$s->name;
         $cache = [];
 
-        // Ringkasan dihitung dari matriks yang sama — tanpa query per sesi.
+        // Ringkasan dihitung dari matriks yang sama - tanpa query per sesi.
         $ringkasanRows = $m['sesis']->map(function (Sesi $s) use ($m, $program, &$cache) {
             $hitung = array_fill_keys(RingkasanKehadiran::STATUS, 0);
             $target = 0;
@@ -131,7 +131,7 @@ class LaporanProgramController extends Controller
             $sheets[$sheet] = [
                 'header' => ['Nama', ...array_column($kolom, 'label'), ...$m['sesis']->map($label)->all()],
                 'rows' => collect($ps)->map(fn ($p) => [
-                    $p->data['nama'] ?? '—',
+                    $p->data['nama'] ?? '-',
                     ...array_map(fn ($k) => (string) ($p->data[$k['key']] ?? ''), $kolom),
                     ...$m['sesis']->map(fn (Sesi $s) => $this->ringkasan->termasukTarget($program, $s, $p, $cache)
                         ? (($m['status'][$s->id][$p->id] ?? null)?->status ?? 'BELUM')
@@ -158,7 +158,7 @@ class LaporanProgramController extends Controller
             $k = $hadir->get($p->id);
 
             return [
-                $p->data['nama'] ?? '—',
+                $p->data['nama'] ?? '-',
                 $p->grups->pluck('name')->implode(', '),
                 $k->status ?? 'BELUM',
                 $k?->datang_at?->format('H:i') ?? '',
@@ -214,7 +214,7 @@ class LaporanProgramController extends Controller
     }
 
     /**
-     * Peserta dikelompokkan per id grup (bukan nama — dua "Regu 1" di rombongan
+     * Peserta dikelompokkan per id grup (bukan nama - dua "Regu 1" di rombongan
      * berbeda tetap terpisah) dengan label jalur "Induk › Anak". Peserta di
      * beberapa grup muncul di tiap grupnya.
      *
@@ -313,7 +313,7 @@ class LaporanProgramController extends Controller
         }
 
         return [
-            'nama' => $p->data['nama'] ?? '—',
+            'nama' => $p->data['nama'] ?? '-',
             'identitas' => array_map(fn ($k) => (string) ($p->data[$k['key']] ?? ''), $kolom),
             'hitung' => $hitung,
         ];

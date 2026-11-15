@@ -81,7 +81,7 @@ function boxPx(el: AnyElement): { w: number; h: number } {
     return { w: mm(el.w ?? el.size), h: mm(el.h ?? el.size) };
 }
 
-// Smallest an element may be dragged down to — below this the resize handles
+// Smallest an element may be dragged down to - below this the resize handles
 // overlap and the element becomes impossible to grab again.
 const MIN_MM = 4;
 
@@ -205,7 +205,7 @@ function CardPreview({
     // Marquee (rubber-band) selection rect in canvas px.
     const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
     const marqueeStart = useRef<{ x: number; y: number } | null>(null);
-    // DOM nodes per element — used to translate the whole selection live during a group drag.
+    // DOM nodes per element - used to translate the whole selection live during a group drag.
     const elNodeRefs = useRef<Record<string, HTMLElement | null>>({});
 
     const isMulti = selectedIds.length > 1;
@@ -307,7 +307,7 @@ function CardPreview({
                         onSelect(id, true); // toggle in/out of the selection
                         return;
                     }
-                    // Don't collapse an existing multi-selection on plain mousedown —
+                    // Don't collapse an existing multi-selection on plain mousedown -
                     // keep it so dragging this element moves the whole group.
                     if (!selected) {
                         onSelect(id);
@@ -351,7 +351,7 @@ function CardPreview({
                 };
                 const dragStop = (d: { x: number; y: number }) => {
                     setGuides({ v: [], h: [] });
-                    // Treat a barely-moved drag as a click — don't snap/jump the element.
+                    // Treat a barely-moved drag as a click - don't snap/jump the element.
                     if (Math.abs(d.x - mm(el.x)) < 1.5 && Math.abs(d.y - mm(el.y)) < 1.5) {
                         clearGroupTransforms();
                         return;
@@ -718,7 +718,7 @@ export default function CardLayoutEditor({ layout, defaultElements, frames }: Pr
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between gap-2">
                             <CardTitle className="flex items-center gap-2 text-base">
-                                <Eye className="size-4" /> Preview Kartu <span className="text-muted-foreground text-xs font-normal">— seret elemen untuk mengatur posisi</span>
+                                <Eye className="size-4" /> Preview Kartu <span className="text-muted-foreground text-xs font-normal">- seret elemen untuk mengatur posisi</span>
                             </CardTitle>
                             <Button type="button" variant="outline" size="sm" onClick={alignColons} className="gap-1.5">
                                 <AlignVerticalJustifyCenter className="size-3.5" /> Rapikan Titik Dua
@@ -885,7 +885,7 @@ export default function CardLayoutEditor({ layout, defaultElements, frames }: Pr
                                             </Button>
                                             {isQrStretched(selected) && (
                                                 <p className="col-span-2 text-[11px] text-amber-600 dark:text-amber-500">
-                                                    QR tidak persegi — berisiko gagal dipindai. Samakan lebar dan tingginya bila kartu akan dipakai untuk absensi.
+                                                    QR tidak persegi - berisiko gagal dipindai. Samakan lebar dan tingginya bila kartu akan dipakai untuk absensi.
                                                 </p>
                                             )}
                                         </>
@@ -897,7 +897,7 @@ export default function CardLayoutEditor({ layout, defaultElements, frames }: Pr
                         {selectedIds.length > 1 && (
                             <Card>
                                 <CardContent className="text-muted-foreground py-3 text-xs">
-                                    <span className="text-foreground font-semibold">{selectedIds.length} elemen</span> terpilih — seret salah satunya untuk memindahkan semua sekaligus. Shift/⌘+klik untuk tambah/kurang, atau seret di area kosong untuk memilih.
+                                    <span className="text-foreground font-semibold">{selectedIds.length} elemen</span> terpilih - seret salah satunya untuk memindahkan semua sekaligus. Shift/⌘+klik untuk tambah/kurang, atau seret di area kosong untuk memilih.
                                 </CardContent>
                             </Card>
                         )}
@@ -908,7 +908,7 @@ export default function CardLayoutEditor({ layout, defaultElements, frames }: Pr
     );
 }
 
-/** Perbandingan pas foto baku 3:4 — tinggi = lebar × 4/3. */
+/** Perbandingan pas foto baku 3:4 - tinggi = lebar × 4/3. */
 const PHOTO_RATIO = 4 / 3;
 
 function roundMm(value: number): number {
@@ -918,7 +918,7 @@ function roundMm(value: number): number {
 function ShiftHint() {
     return (
         <p className="text-muted-foreground col-span-2 text-[11px]">
-            Tarik dari sudutnya — proporsi terjaga sendiri. Tahan{' '}
+            Tarik dari sudutnya - proporsi terjaga sendiri. Tahan{' '}
             <kbd className="bg-muted rounded border px-1 font-sans text-[10px]">Shift</kbd> hanya bila memang ingin mengubah perbandingannya.
         </p>
     );

@@ -12,7 +12,7 @@
     $hasFrame = !empty($frameUrl);
     $isPortrait = ($orientation ?? 'landscape') === 'portrait';
 
-    // Physical card dimensions (mm) — swapped for portrait.
+    // Physical card dimensions (mm) - swapped for portrait.
     $cardW = $isPortrait ? 54 : 85.6;
     $cardH = $isPortrait ? 85.6 : 54;
 
@@ -29,15 +29,15 @@
     $resolveValue = function (string $source) use ($student) {
         return match ($source) {
             'full_name'    => strtoupper($student->full_name),
-            'address'      => $student->address ?? '—',
-            'ttl'          => trim(($student->birth_place ?? '').($student->birth_date ? ', '.$student->birth_date->translatedFormat('d F Y') : ''), ', ') ?: '—',
-            'religion'     => $student->religion?->label() ?? '—',
-            'nis'          => $student->nis ?? '—',
-            'nisn'         => $student->nisn ?? '—',
-            'classroom'    => $student->classroom?->name ?? '—',
-            'gender'       => $student->gender?->label() ?? '—',
-            'parent_phone' => $student->parent_phone ?? '—',
-            default        => '—',
+            'address'      => $student->address ?? '-',
+            'ttl'          => trim(($student->birth_place ?? '').($student->birth_date ? ', '.$student->birth_date->translatedFormat('d F Y') : ''), ', ') ?: '-',
+            'religion'     => $student->religion?->label() ?? '-',
+            'nis'          => $student->nis ?? '-',
+            'nisn'         => $student->nisn ?? '-',
+            'classroom'    => $student->classroom?->name ?? '-',
+            'gender'       => $student->gender?->label() ?? '-',
+            'parent_phone' => $student->parent_phone ?? '-',
+            default        => '-',
         };
     };
 @endphp

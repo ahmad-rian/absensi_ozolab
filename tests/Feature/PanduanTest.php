@@ -8,7 +8,7 @@ test('guests are sent to login', function () {
 });
 
 test('every logged-in role can open the guide', function () {
-    // Panduan sengaja tanpa permission modul — guru yang hanya punya lima modul
+    // Panduan sengaja tanpa permission modul - guru yang hanya punya lima modul
     // tetap berhak tahu cara memakai kelima modul itu.
     $admin = createAdminUser();
 

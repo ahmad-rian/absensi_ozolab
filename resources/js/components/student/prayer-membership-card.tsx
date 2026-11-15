@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { PrayerStats } from '@/types/student-stats';
 
 /**
- * Kepesertaan berlaku untuk SEMUA jenis sholat sekaligus — kolom
+ * Kepesertaan berlaku untuk SEMUA jenis sholat sekaligus - kolom
  * `students.prayer_opt_in` sengaja tidak dipecah per jenis, karena siswa
  * non-Muslim yang di-opt-in sekolah hampir pasti ikut keduanya.
  */

@@ -17,7 +17,7 @@
     // Resolve a field element's display value from the dynamic submission map.
     $resolveValue = function (string $source) use ($values) {
         $v = $values[$source] ?? null;
-        return ($v === null || $v === '') ? '—' : (string) $v;
+        return ($v === null || $v === '') ? '-' : (string) $v;
     };
 @endphp
 

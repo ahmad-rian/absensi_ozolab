@@ -1,4 +1,4 @@
-// Text-to-Speech scan feedback — speaks attendance status aloud.
+// Text-to-Speech scan feedback - speaks attendance status aloud.
 // Uses Web Speech Synthesis API (built-in, no external files).
 // Falls back to tone beeps if speech is unavailable.
 
@@ -57,7 +57,7 @@ function speak(text: string, rate = 1.1) {
 
         window.speechSynthesis.speak(utterance);
     } catch {
-        // Silent fail — speech not critical
+        // Silent fail - speech not critical
     }
 }
 
@@ -72,17 +72,17 @@ if (typeof window !== 'undefined' && window.speechSynthesis) {
 /**
  * Buka kunci audio pada sentuhan pertama.
  *
- * Safari — di Mac maupun iPhone — melahirkan AudioContext dalam keadaan
+ * Safari - di Mac maupun iPhone - melahirkan AudioContext dalam keadaan
  * `suspended` kalau ia dibuat di luar gestur pengguna, dan menolak `resume()`
  * yang juga di luar gestur. Akibatnya di gerbang: setiap kartu tercatat benar
- * di server, tapi tidak ada bunyi dan tidak ada suara nama — operator mengira
+ * di server, tapi tidak ada bunyi dan tidak ada suara nama - operator mengira
  * scan-nya gagal lalu menempelkan kartu yang sama berkali-kali.
  *
  * `speechSynthesis` punya aturan yang sama, dan ucapan kosong di sini yang
  * membukanya.
  *
  * Sekali saja, lalu pendengarnya dilepas. Dipasang pada `pointerdown` supaya
- * ia ikut terpicu oleh ketukan di layar sentuh maupun klik tetikus — termasuk
+ * ia ikut terpicu oleh ketukan di layar sentuh maupun klik tetikus - termasuk
  * ketukan pada dialog izin kamera yang memang selalu terjadi lebih dulu.
  */
 if (typeof window !== 'undefined') {

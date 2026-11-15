@@ -46,7 +46,7 @@ final class JamDinding
     }
 
     /**
-     * Rata-rata menit tanpa pembulatan — dipakai untuk mengurutkan, supaya
+     * Rata-rata menit tanpa pembulatan - dipakai untuk mengurutkan, supaya
      * urutan dan angka yang tampil berasal dari nilai yang sama.
      *
      * @param  iterable<DateTimeInterface|string|null>  $waktu

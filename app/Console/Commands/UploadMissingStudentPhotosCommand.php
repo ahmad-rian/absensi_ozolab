@@ -19,7 +19,7 @@ use Throwable;
  *
  * Temuan `drive:audit-berkas-siswa` yang paling banyak adalah "foto kurang":
  * berkasnya utuh di disk, hanya unggahannya yang tidak pernah terjadi. Perintah
- * ini mengantrekan `SyncStudentPhotoToDriveJob` untuk mereka — jalur yang sama
+ * ini mengantrekan `SyncStudentPhotoToDriveJob` untuk mereka - jalur yang sama
  * dengan tombol ganti foto, jadi tidak ada cara unggah kedua yang bisa
  * menyimpang.
  *
@@ -60,7 +60,7 @@ class UploadMissingStudentPhotosCommand extends Command
         $perSekolah = [];
 
         // Semua sekolah berbagi satu akun OAuth: sapuan berkasnya account-wide
-        // dan cukup sekali — pelajaran dari `drive:bersihkan-duplikat`.
+        // dan cukup sekali - pelajaran dari `drive:bersihkan-duplikat`.
         $sapuanBersama = null;
 
         foreach ($schools as $school) {
@@ -89,7 +89,7 @@ class UploadMissingStudentPhotosCommand extends Command
                     }
                 }
             } catch (Throwable $e) {
-                $this->error("{$school->name}: gagal menyiapkan klien Drive — {$e->getMessage()}");
+                $this->error("{$school->name}: gagal menyiapkan klien Drive - {$e->getMessage()}");
 
                 continue;
             }
@@ -172,11 +172,11 @@ class UploadMissingStudentPhotosCommand extends Command
     /**
      * Apa yang harus dilakukan untuk satu siswa yang punya `photo_path`.
      *
-     * Public dan statis supaya keputusannya bisa diuji tanpa Drive — pola yang
+     * Public dan statis supaya keputusannya bisa diuji tanpa Drive - pola yang
      * sama dengan `AuditStudentDriveFilesCommand::periksa()`.
      *
      * Siswa tanpa folder sengaja DILEWATI: membuatkan folder adalah tugas
-     * generate kartu, dan folder yang lahir di sini hanya berisi foto — persis
+     * generate kartu, dan folder yang lahir di sini hanya berisi foto - persis
      * gejala "folder isinya cuma foto" yang baru saja dibereskan.
      *
      * @param  array<int, array<string, mixed>>  $isiFolder
@@ -218,7 +218,7 @@ class UploadMissingStudentPhotosCommand extends Command
 
     private function label(Student $student): string
     {
-        return ($student->classroom?->name ?? '-').' · '.($student->nis ?: '—').' '.$student->full_name;
+        return ($student->classroom?->name ?? '-').' · '.($student->nis ?: '-').' '.$student->full_name;
     }
 
     /**
@@ -246,7 +246,7 @@ class UploadMissingStudentPhotosCommand extends Command
         $total = array_sum(array_column($perSekolah, 1));
 
         if ($simulasi) {
-            $this->warn("SIMULASI — {$total} foto akan diunggah. Jalankan ulang dengan --jalankan untuk benar-benar mengunggah.");
+            $this->warn("SIMULASI - {$total} foto akan diunggah. Jalankan ulang dengan --jalankan untuk benar-benar mengunggah.");
 
             return;
         }

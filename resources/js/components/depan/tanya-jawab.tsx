@@ -6,7 +6,7 @@ type Tanya = { question: string; answer: string };
 
 /**
  * Isinya dari config/seo.php: teks yang sama dipakai skema FAQPage untuk
- * mesin pencari. Memakai <details> bawaan browser — terbuka tanpa JS dan
+ * mesin pencari. Memakai <details> bawaan browser - terbuka tanpa JS dan
  * terbaca pembaca layar apa adanya.
  */
 export function TanyaJawab() {

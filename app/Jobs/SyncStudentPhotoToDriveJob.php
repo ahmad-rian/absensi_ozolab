@@ -19,7 +19,7 @@ use Throwable;
 /**
  * Ganti pas foto siswa di Google Drive setelah admin mengunggah yang baru.
  *
- * HANYA foto. Kartu digital dan lembar cetak sengaja tidak ikut dibuat ulang —
+ * HANYA foto. Kartu digital dan lembar cetak sengaja tidak ikut dibuat ulang -
  * merender kartu memanggil headless Chrome, dan klien meminta itu tetap di
  * balik tombol supaya mengganti foto tidak menyeret pekerjaan berat.
  *
@@ -45,7 +45,7 @@ class SyncStudentPhotoToDriveJob implements ShouldQueue
 
     public function handle(): void
     {
-        // Global scope `school` mati di konteks queue — tidak ada user login —
+        // Global scope `school` mati di konteks queue - tidak ada user login -
         // jadi penyaringan sekolahnya harus lewat baris siswanya sendiri.
         $student = Student::withoutGlobalScope('school')->find($this->studentId);
         $log = CardGenerationLog::withoutGlobalScope('school')->find($this->logId);
@@ -85,7 +85,7 @@ class SyncStudentPhotoToDriveJob implements ShouldQueue
             }
 
             // `replaceStudentOutput` mengganti ISI berkas yang sudah ada
-            // (`uploadType: media`), jadi id dan tautan Drive-nya bertahan —
+            // (`uploadType: media`), jadi id dan tautan Drive-nya bertahan -
             // tautan yang sudah terlanjur dibagikan tidak mati. Memakai
             // `uploadFile` di sini akan menumpuk berkas kedua di folder yang
             // sama begitu namanya tidak cocok persis.
@@ -123,7 +123,7 @@ class SyncStudentPhotoToDriveJob implements ShouldQueue
      * Ditandai gagal, bukan dibiarkan `processing`.
      *
      * Halaman siswa memutar lencana selama statusnya `processing` dan berhenti
-     * menyegarkan hanya kalau statusnya berubah — baris yang menggantung akan
+     * menyegarkan hanya kalau statusnya berubah - baris yang menggantung akan
      * membuat spinner berputar selamanya tanpa pernah memberi tahu apa yang
      * salah.
      */

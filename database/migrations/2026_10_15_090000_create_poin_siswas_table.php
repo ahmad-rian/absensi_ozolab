@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Catatan poin pelanggaran siswa. Tabel baru — absensi tidak disentuh.
+ * Catatan poin pelanggaran siswa. Tabel baru - absensi tidak disentuh.
  *
  * `kunci_otomatis` berisi 'auto' untuk poin dari sapuan (TERLAMBAT/ALPA) dan
  * NULL untuk catatan guru BK. Unique key-nya mencegah sapuan mencatat dua kali,

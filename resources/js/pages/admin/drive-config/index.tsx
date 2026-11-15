@@ -168,7 +168,7 @@ export default function DriveConfigIndex({ driveConfig, hasGlobalCredentials, is
                             </CardTitle>
                             <CardDescription>
                                 Subfolder dibuat otomatis di dalam folder sekolah ini. Isi manual hanya jika ingin mengarahkan ke folder
-                                lain — paste link Google Drive atau Folder ID.
+                                lain - paste link Google Drive atau Folder ID.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -177,7 +177,7 @@ export default function DriveConfigIndex({ driveConfig, hasGlobalCredentials, is
                                     <div className="mb-3">
                                         <Label className="text-sm font-semibold">Root Folder Platform</Label>
                                         <p className="text-muted-foreground text-xs">
-                                            Folder induk di Drive Ozolab. Berlaku untuk <b>semua sekolah</b> — tiap sekolah otomatis dapat
+                                            Folder induk di Drive Ozolab. Berlaku untuk <b>semua sekolah</b> - tiap sekolah otomatis dapat
                                             subfoldernya sendiri di dalam sini. Hanya Super Admin yang bisa mengubah.
                                         </p>
                                     </div>
@@ -212,7 +212,7 @@ export default function DriveConfigIndex({ driveConfig, hasGlobalCredentials, is
                             ))}
 
                             <p className="text-muted-foreground text-xs">
-                                Tip: paste langsung link folder (contoh: <code>https://drive.google.com/drive/folders/abc123xyz</code>) — ID otomatis terdeteksi.
+                                Tip: paste langsung link folder (contoh: <code>https://drive.google.com/drive/folders/abc123xyz</code>) - ID otomatis terdeteksi.
                             </p>
 
                             <div className="flex items-center gap-3">
@@ -249,12 +249,12 @@ export default function DriveConfigIndex({ driveConfig, hasGlobalCredentials, is
                     <CardContent>
                         <ol className="text-muted-foreground list-inside list-decimal space-y-2 text-sm">
                             <li>Centang <b>Aktifkan Google Drive untuk sekolah ini</b> lalu klik <b>Simpan</b></li>
-                            <li>Klik <b>Test Koneksi</b> — folder sekolah beserta subfolder Kartu Siswa, Album Foto, Orang Tua, dan Pas Foto dibuat otomatis</li>
+                            <li>Klik <b>Test Koneksi</b> - folder sekolah beserta subfolder Kartu Siswa, Album Foto, Orang Tua, dan Pas Foto dibuat otomatis</li>
                             <li>Kotak status di atas berubah hijau kalau folder sudah siap</li>
                             <li>Isi Folder ID manual hanya kalau ingin mengarahkan hasil generate ke folder Drive lain</li>
                             {isSuperAdmin && (
                                 <li>
-                                    <b>Super Admin:</b> Root Folder Platform hanya diisi sekali dan dipakai semua sekolah — jangan ganti kalau
+                                    <b>Super Admin:</b> Root Folder Platform hanya diisi sekali dan dipakai semua sekolah - jangan ganti kalau
                                     sudah ada file di dalamnya
                                 </li>
                             )}

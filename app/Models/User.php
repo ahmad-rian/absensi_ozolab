@@ -57,7 +57,7 @@ class User extends Authenticatable implements PasskeyUser
     /**
      * Akun penyelenggara tidak pernah sekaligus akun sekolah. Dijaga di model
      * supaya jalur pembuatan user mana pun tidak bisa melahirkan akun ganda
-     * tenant — `school_id` yang ikut terisi akan membuat global scope sekolah
+     * tenant - `school_id` yang ikut terisi akan membuat global scope sekolah
      * menganggapnya warga sekolah itu.
      */
     protected static function booted(): void
@@ -89,7 +89,7 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * Akun staf Tyas di workspace General — tanpa sekolah dan tanpa
+     * Akun staf Tyas di workspace General - tanpa sekolah dan tanpa
      * penyelenggara; modulnya permission langsung per akun.
      */
     public function isStafGeneral(): bool
@@ -118,7 +118,7 @@ class User extends Authenticatable implements PasskeyUser
     /**
      * Izin `penyelenggara-*` yang diwakilkan modul General: Masuk Area
      * Penyelenggara = admin penuh; Kategori / Program hanya beranda plus
-     * menunya sendiri — tidak tim, kelola peserta, atau kartu.
+     * menunya sendiri - tidak tim, kelola peserta, atau kartu.
      */
     public function aksesPenyelenggaraLewatGeneral(string $ability): bool
     {

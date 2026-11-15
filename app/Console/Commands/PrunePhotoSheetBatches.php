@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * PDF lembar pas foto adalah berkas cetak sekali pakai, bukan arsip — salinan
+ * PDF lembar pas foto adalah berkas cetak sekali pakai, bukan arsip - salinan
  * permanennya tidak pernah dibuat. Tanpa pembersihan ini, satu studio yang
  * mencetak ribuan siswa akan memenuhi disk dengan PDF yang tidak pernah dibuka
  * lagi.

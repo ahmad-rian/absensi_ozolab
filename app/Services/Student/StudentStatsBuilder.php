@@ -107,7 +107,7 @@ class StudentStatsBuilder
                 'effective_days' => $effectiveDays,
                 'recorded_days' => $recorded,
                 'rate' => $denominator > 0 ? round($present / $denominator * 100, 1) : 0.0,
-                // Kehadiran tanpa keterlambatan — "hadir" saja bisa menutupi
+                // Kehadiran tanpa keterlambatan - "hadir" saja bisa menutupi
                 // siswa yang selalu masuk tapi selalu telat.
                 'punctual_rate' => $denominator > 0 ? round($hadir / $denominator * 100, 1) : 0.0,
             ],
@@ -161,7 +161,7 @@ class StudentStatsBuilder
         // Tanpa satu pun jenis aktif tidak ada yang bisa dilaporkan. Dulu di
         // sini `when($types !== [], ...)` MELEWATI filter jenis sepenuhnya,
         // sehingga laporan berjudul "Dhuha" untuk sekolah yang Dhuha-nya mati
-        // justru menampilkan angka Dzuhur — dengan tabel rincian kosong dan
+        // justru menampilkan angka Dzuhur - dengan tabel rincian kosong dan
         // persentase yang bisa melebihi 100%.
         if ($types === []) {
             return $this->emptyPrayerPayload($student, $schedule, $start, $end);
@@ -252,7 +252,7 @@ class StudentStatsBuilder
                 $rows->map(fn (PrayerAttendance $row) => $row->prayer_date->toDateString())->unique()->values()->all(),
             ),
             // Diurutkan lewat `sort_key` (Y-m-d H:i), BUKAN `date` yang sudah
-            // diformat 'd M Y' — perbandingan string atas format itu menaruh
+            // diformat 'd M Y' - perbandingan string atas format itu menaruh
             // "30 Jun" di atas "05 Jul" dan ikut merusak potongan 30 teratas.
             'recent' => collect($perType)
                 ->flatMap(fn (array $type) => $type['recent'])
@@ -266,7 +266,7 @@ class StudentStatsBuilder
     }
 
     /**
-     * Payload sholat saat tidak ada satu pun jenis yang bisa dilaporkan —
+     * Payload sholat saat tidak ada satu pun jenis yang bisa dilaporkan -
      * sekolah belum mengaktifkan sholat, atau jenis yang diminta lewat
      * `?jenis=` sedang dimatikan.
      *
@@ -315,7 +315,7 @@ class StudentStatsBuilder
     private function attendanceRows(Student $student, string $start, string $end): Collection
     {
         // Global scope `school` mati di konteks console/queue, jadi school_id
-        // difilter eksplisit — kalau tidak, angka laporan bisa berbeda antara
+        // difilter eksplisit - kalau tidak, angka laporan bisa berbeda antara
         // permintaan web dan command terjadwal.
         return Attendance::query()
             ->withoutGlobalScope('school')
@@ -330,7 +330,7 @@ class StudentStatsBuilder
     }
 
     /**
-     * Daftar tanggal efektif — bukan cuma jumlahnya — karena hitungan runtun,
+     * Daftar tanggal efektif - bukan cuma jumlahnya - karena hitungan runtun,
      * bucket hari, dan heatmap semuanya butuh tanggalnya.
      *
      * @return array<int, string> 'Y-m-d', menaik
@@ -433,7 +433,7 @@ class StudentStatsBuilder
      */
     private function timeStats(Collection $times): array
     {
-        // recorded_at menyimpan jam dinding Jakarta di kolom UTC — dibaca apa
+        // recorded_at menyimpan jam dinding Jakarta di kolom UTC - dibaca apa
         // adanya lewat JamDinding. Satu SchoolTime::toLocal() yang tidak
         // sengaja tertambah akan menggeser seluruh statistik jam sebanyak 7 jam.
         $minutes = $times->map(fn (?CarbonInterface $time) => JamDinding::menit($time))->filter(fn (?int $menit) => $menit !== null)->values();
@@ -476,7 +476,7 @@ class StudentStatsBuilder
 
             // Tiap status punya ember sendiri. Dulu hanya TERLAMBAT yang
             // dipisah, sehingga hari IZIN/SAKIT/ALPA ikut dihitung sebagai
-            // hadir — chart bisa menampilkan Senin 100% hadir sementara kartu
+            // hadir - chart bisa menampilkan Senin 100% hadir sementara kartu
             // ringkasan di layar yang sama menyebut alpa 4.
             $bucket = match ($row->status ?? null) {
                 AttendanceStatus::Terlambat => 'terlambat',
@@ -621,7 +621,7 @@ class StudentStatsBuilder
     }
 
     /**
-     * Perbandingan siswa vs rata-rata kelas — SATU query agregat, bukan satu
+     * Perbandingan siswa vs rata-rata kelas - SATU query agregat, bukan satu
      * query per teman sekelas.
      *
      * @return array<string, mixed>
@@ -685,7 +685,7 @@ class StudentStatsBuilder
 
             // Tiap status punya serinya sendiri. Dulu hari yang hanya punya
             // baris IZIN/SAKIT/ALPA menghasilkan ketiga seri nol alias batang
-            // kosong — ketidakhadiran yang dicatat eksplisit justru hilang,
+            // kosong - ketidakhadiran yang dicatat eksplisit justru hilang,
             // sementara hari tanpa catatan sama sekali tetap tampil.
             $result[] = [
                 'date' => Carbon::parse($date)->translatedFormat('d M'),

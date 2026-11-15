@@ -148,7 +148,7 @@ export default function PanduanIndex() {
                         Panduan Absensi Ozolab
                     </h1>
                     <p className="text-muted-foreground leading-relaxed">
-                        Pelajari setiap fitur dan alur kerja aplikasi secara berurutan — dari menyiapkan
+                        Pelajari setiap fitur dan alur kerja aplikasi secara berurutan - dari menyiapkan
                         sekolah, mencatat kehadiran harian, sampai membaca laporan. Isinya menyesuaikan hak
                         akses dan fitur yang aktif di sekolah Anda.
                     </p>

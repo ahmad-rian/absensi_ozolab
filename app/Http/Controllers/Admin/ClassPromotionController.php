@@ -176,7 +176,7 @@ class ClassPromotionController extends Controller
     }
 
     /**
-     * Unduh baris bermasalah supaya bisa diperbaiki lalu diunggah lagi —
+     * Unduh baris bermasalah supaya bisa diperbaiki lalu diunggah lagi -
      * judul kolomnya sama dengan template.
      */
     public function unduh(string $key, string $jenis): BinaryFileResponse
@@ -309,7 +309,7 @@ class ClassPromotionController extends Controller
      *
      * Satu transaksi PER SISWA, bukan satu transaksi untuk seluruh berkas:
      * kalau siswa ke-300 gagal, 299 siswa sebelumnya tetap naik dan admin cukup
-     * mengunggah ulang berkas yang sama — riwayatnya idempoten, jadi pengulangan
+     * mengunggah ulang berkas yang sama - riwayatnya idempoten, jadi pengulangan
      * itu tidak menggandakan apa pun.
      *
      * @param  array{student_id: ?string, classroom_id: ?string}  $row
@@ -386,7 +386,7 @@ class ClassPromotionController extends Controller
     /**
      * Kelas tujuan yang belum punya jadwal sendiri mewarisi jadwal khusus dari
      * kelas bernama sama di tahun sebelumnya. Gagal menyalin tidak membatalkan
-     * kenaikan kelas — siswanya tetap terlayani jadwal umum.
+     * kenaikan kelas - siswanya tetap terlayani jadwal umum.
      *
      * @param  list<string>  $classroomIds
      */

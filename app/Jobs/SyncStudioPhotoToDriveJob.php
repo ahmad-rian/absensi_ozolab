@@ -24,7 +24,7 @@ use Throwable;
  * siswa; pas foto kartu (`{awalan}foto.png`) tidak disentuh sama sekali.
  *
  * Foto ulang siswa yang sama menimpa ISI kedua berkas itu lewat
- * `replaceStudentOutput` — id dan tautan Drive-nya bertahan, jadi tautan yang
+ * `replaceStudentOutput` - id dan tautan Drive-nya bertahan, jadi tautan yang
  * sudah terlanjur dibagikan tidak mati, dan foldernya tidak menumpuk.
  *
  * Kembaran `SyncStudentPhotoToDriveJob`, termasuk semua penjaganya. Yang beda
@@ -49,7 +49,7 @@ class SyncStudioPhotoToDriveJob implements ShouldQueue
 
     public function handle(): void
     {
-        // Global scope `school` mati di konteks queue — tidak ada user login —
+        // Global scope `school` mati di konteks queue - tidak ada user login -
         // jadi penyaringan sekolahnya lewat baris siswanya sendiri.
         $student = Student::withoutGlobalScope('school')->find($this->studentId);
         $log = CardGenerationLog::withoutGlobalScope('school')->find($this->logId);
@@ -97,7 +97,7 @@ class SyncStudioPhotoToDriveJob implements ShouldQueue
             // `knownFileId` null: nama kedua berkas deterministik, jadi langkah
             // "nama persis sama" di pickReplaceable sudah menemukannya. Kalau
             // nama siswa baru saja dibetulkan dan job penyelaras belum jalan,
-            // langkah "jenis sama + namaMirip" yang menangkapnya — itulah
+            // langkah "jenis sama + namaMirip" yang menangkapnya - itulah
             // gunanya `ori` dan `studio` masuk daftar jenis yang dikenal.
             $service->replaceStudentOutput(
                 $disk->path($this->jalurOri),

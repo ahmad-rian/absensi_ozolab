@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { PeerComparison } from '@/types/student-stats';
 
 /**
- * Dua nilai berdampingan — meter datar terbaca lebih cepat daripada chart, dan
+ * Dua nilai berdampingan - meter datar terbaca lebih cepat daripada chart, dan
  * bahasanya sejalan dengan dashboard/class-comparison-bar.
  */
 export function PeerComparisonCard({

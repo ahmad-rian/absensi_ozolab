@@ -53,7 +53,7 @@ import type { SchoolFeatureKey, SchoolFeatureMap } from '@/types';
 
 /**
  * Menu dipetakan ke permission modul `<modul>.access`, sumber yang sama dengan
- * middleware di routes/web.php — sidebar tidak akan lagi menampilkan menu yang
+ * middleware di routes/web.php - sidebar tidak akan lagi menampilkan menu yang
  * berujung 403.
  *
  * `feature` adalah lapis kedua: fitur yang dimatikan sekolah menghilangkan
@@ -67,7 +67,7 @@ type GuardedNavItem = BadgedNavItem & {
      *
      * Dibutuhkan karena ada menu yang permission-nya dipegang admin sekolah
      * juga (`generate-kartu.access`) sementara rutenya memasang `super-admin`
-     * — tanpa penanda ini, admin sekolah melihat menunya lalu ditolak 403.
+     * - tanpa penanda ini, admin sekolah melihat menunya lalu ditolak 403.
      */
     superAdmin?: boolean;
     /** Generate massal; hilang saat saklar global `generateMassal` mati. */
@@ -80,7 +80,7 @@ type NavSection = { label: string; items: GuardedNavItem[] };
  * Penanda href yang diganti alamat Tyas Studio saat render.
  *
  * `sections` adalah konstanta modul, sedangkan alamat Studio datang dari shared
- * prop — menuliskan domainnya di sini berarti satu salinan lagi yang harus ikut
+ * prop - menuliskan domainnya di sini berarti satu salinan lagi yang harus ikut
  * diubah kalau subdomainnya pindah.
  */
 const STUDIO_PLACEHOLDER = 'studio:url';
@@ -125,7 +125,7 @@ export const sections: NavSection[] = [
 
         Frame & Bingkai akhirnya punya tempat yang jujur: kategorinya
         `osis|perpustakaan|album|kartu_bebas`, jadi ia memang melayani kartu
-        DAN album — menempelkannya ke salah satu saja selalu salah setengah.
+        DAN album - menempelkannya ke salah satu saja selalu salah setengah.
 
         Catatan: `NavCollapsibleGroup` menyimpan keadaan buka/tutup per label
         (`sidebar-group:{label}`), jadi label yang berganti membuat ketiganya
@@ -181,7 +181,7 @@ export const sections: NavSection[] = [
             // pengaturan general. Rutenya `super-admin`, jadi ikut superAdmin.
             { title: 'Absensi General', href: '/general', icon: Shapes, newTab: true, permission: 'penyelenggara.access', superAdmin: true },
             // Aplikasi lain di subdomain lain. Alamatnya datang dari server
-            // (shared prop `studioUrl`), jadi href-nya baru diisi saat render —
+            // (shared prop `studioUrl`), jadi href-nya baru diisi saat render -
             // lihat STUDIO_PLACEHOLDER.
             { title: 'Tyas Studio', href: STUDIO_PLACEHOLDER, icon: Camera, newTab: true, permission: 'sekolah.access' },
         ],
@@ -223,7 +223,7 @@ export function AppSidebar() {
 
     const visible = useMemo(() => {
         // Prop `features` selalu utuh dari server. Kalau benar-benar absen,
-        // anggap semua nyala — server tetap yang menolak, jadi sidebar tidak
+        // anggap semua nyala - server tetap yang menolak, jadi sidebar tidak
         // perlu ikut fail-closed dan mengosongkan dirinya sendiri.
         const featureOn = (key?: SchoolFeatureKey) =>
             key === undefined || features === undefined || features[key] !== false;
@@ -231,12 +231,12 @@ export function AppSidebar() {
         return (items: GuardedNavItem[]) =>
             items
                 // `isSuperAdmin` hanya melompati cek permission, BUKAN cek
-                // fitur — sama persis dengan aturan di middleware `feature:`.
+                // fitur - sama persis dengan aturan di middleware `feature:`.
                 .filter((item) => (item.permission === '' || isSuperAdmin || granted.includes(item.permission)) && featureOn(item.feature))
                 // Menu yang rutenya memasang middleware `super-admin`.
                 .filter((item) => ! item.superAdmin || isSuperAdmin)
                 .filter((item) => ! item.massal || generateMassal === true)
-                // Tanpa alamat dari server, tautan Studio disembunyikan saja —
+                // Tanpa alamat dari server, tautan Studio disembunyikan saja -
                 // href kosong yang bisa diklik lebih membingungkan daripada
                 // menu yang tidak ada.
                 .filter((item) => item.href !== STUDIO_PLACEHOLDER || Boolean(studioUrl))

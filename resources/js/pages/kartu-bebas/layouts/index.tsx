@@ -76,7 +76,7 @@ export default function KartuBebasLayoutsIndex({ forms }: Props) {
                                             {!form.is_active && <Badge variant="secondary">Nonaktif</Badge>}
                                         </div>
                                     </div>
-                                    <p className="text-muted-foreground mb-1 text-xs">Format: {form.dataset_name ?? '—'}</p>
+                                    <p className="text-muted-foreground mb-1 text-xs">Format: {form.dataset_name ?? '-'}</p>
                                     <div className="text-muted-foreground mb-4 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                                         <span>{form.fields_count} field</span>
                                         <span>·</span>

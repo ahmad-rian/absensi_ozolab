@@ -5,12 +5,12 @@ use App\Models\Student;
 use App\Services\Attendance\StudentLookup;
 
 /**
- * Pembaca kartu di lapangan terbukti menyisipkan karakter sampah — insiden RFID
+ * Pembaca kartu di lapangan terbukti menyisipkan karakter sampah - insiden RFID
  * di deployment ini menghasilkan UID berakhiran `T` dan `P` yang tidak pernah
  * dikirim kartunya, dan belasan kartu gagal berhari-hari karenanya.
  *
  * Jalur RFID kebal karena normalizeRfidUid() membuang semua non-alfanumerik.
- * Jalur QR tidak boleh memakai normalisasi itu — ia akan menghapus titik
+ * Jalur QR tidak boleh memakai normalisasi itu - ia akan menghapus titik
  * pemisah dan merusak tokennya. Yang dipakai di sini: menarik token BERBENTUK
  * SAH dari bacaan berisik, lalu tetap mencocokkannya PERSIS.
  */
@@ -37,7 +37,7 @@ test('huruf sampah di ujung tidak lagi menggagalkan kartu yang sah', function ()
 
 /**
  * Inti penjaganya. Kalau bacaan separuh ikut diterima, satu kartu bisa membuka
- * absensi anak lain — dan itu jauh lebih buruk daripada satu scan yang gagal.
+ * absensi anak lain - dan itu jauh lebih buruk daripada satu scan yang gagal.
  */
 test('bacaan separuh tetap ditolak', function () use ($TOKEN) {
     expect($this->lookup->findByQrToken(substr($TOKEN, 0, 20), $this->school->id))->toBeNull()

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Scan yang ditolak dulu tidak meninggalkan jejak apa pun. Setiap laporan
  * "kartu tidak dikenali padahal datanya ada" jadi kerja menebak dari bentuk
- * data — tiga kali berturut-turut.
+ * data - tiga kali berturut-turut.
  *
  * Pesan di layar gerbang sengaja tetap sama untuk semua sebab; bedanya ditulis
  * ke log, yang hanya bisa dibaca dari server.
@@ -107,7 +107,7 @@ test('siswa yang dihapus punya sebabnya sendiri', function () {
 
 /**
  * Penjaga disk. Gun yang macet menembak terus-menerus tidak boleh menulis
- * ribuan baris — disk penuh sudah pernah menjatuhkan server ini, dan
+ * ribuan baris - disk penuh sudah pernah menjatuhkan server ini, dan
  * pemulihannya jauh lebih mahal daripada satu laporan yang hilang.
  */
 test('pencatatan dibatasi 30 baris per menit per sekolah', function () {
@@ -126,7 +126,7 @@ test('kartu yang dikenali tidak mencatat apa pun', function () {
     $siswa = Student::factory()->create(['school_id' => $school->id, 'qr_token' => 'token-sah-sekali']);
     $tercatat = tangkapLog();
 
-    // Tanpa jadwal absensi perekamannya tetap gagal, tapi siswanya KETEMU —
+    // Tanpa jadwal absensi perekamannya tetap gagal, tapi siswanya KETEMU -
     // dan itu yang menentukan. Pencatat ini hanya bicara soal kartu yang tidak
     // dikenali, bukan soal absensi yang ditolak jadwal.
     tembakGerbang($school, $siswa->qr_token);

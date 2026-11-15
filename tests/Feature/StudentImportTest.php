@@ -130,7 +130,7 @@ test('berkas dengan header tak dikenali ditolak dengan pesan', function () {
 });
 
 /**
- * Tulis ulang baris hasil unduhan menjadi berkas xlsx untuk diunggah lagi —
+ * Tulis ulang baris hasil unduhan menjadi berkas xlsx untuk diunggah lagi -
  * meniru operator yang melengkapi datanya di Excel.
  *
  * @param  array<int, array<int, string>>  $rows

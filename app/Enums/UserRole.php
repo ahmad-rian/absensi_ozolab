@@ -39,7 +39,7 @@ enum UserRole: string
     }
 
     /**
-     * Peran milik tenant penyelenggara — bukan sekolah.
+     * Peran milik tenant penyelenggara - bukan sekolah.
      *
      * @return array<int, self>
      */

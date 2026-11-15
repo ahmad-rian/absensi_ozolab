@@ -11,16 +11,16 @@ use Illuminate\Contracts\Validation\ValidationRule;
  * Akun orang tua sengaja TIDAK dibebani aturan komposisi (huruf besar, angka,
  * simbol): yang mengisinya orang tua yang banyak di antaranya gagap teknologi,
  * dan aturan komposisi pada kelompok itu menghasilkan sandi yang ditulis di
- * kertas atau dibuat seragam sekeluarga — lebih buruk daripada delapan huruf
+ * kertas atau dibuat seragam sekeluarga - lebih buruk daripada delapan huruf
  * yang benar-benar diingat. Ini juga sikap NIST SP 800-63B: panjang minimum
  * plus daftar-tolak, bukan aturan komposisi.
  *
  * Yang menggantikan aturan komposisi itu ada dua, dan keduanya tidak menambah
  * beban satu ketukan pun bagi pengisinya:
  *
- * 1. Daftar-tolak di bawah — menutup tebakan pertama penyerang, yang memang
+ * 1. Daftar-tolak di bawah - menutup tebakan pertama penyerang, yang memang
  *    dari sanalah hampir semua pembobolan sandi lemah berhasil.
- * 2. `$tambahan` — sandi tidak boleh sama dengan data yang tertulis di formulir
+ * 2. `$tambahan` - sandi tidak boleh sama dengan data yang tertulis di formulir
  *    yang sama (nomor WhatsApp, bagian depan email). Nomor itu diketik dua
  *    kolom di atas kolom sandi, jadi orang yang memegang formulirnya sudah
  *    memegang tebakan terbaiknya.

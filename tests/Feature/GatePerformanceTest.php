@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 /*
  | Yang membuat gerbang tetap kencang di box Android TV.
  |
- | Halaman scan ringan sudah ramping sejak awal — 17 KB, satu berkas, nol
+ | Halaman scan ringan sudah ramping sejak awal - 17 KB, satu berkas, nol
  | request eksternal. Yang tidak ramping adalah apa yang menyusul SESUDAH kartu
  | ditempel: pas foto PNG 1600 px berukuran megabita, diunduh utuh lalu
  | digambar di kotak 240×320 dan dibuang 2,5 detik kemudian.
@@ -31,7 +31,7 @@ beforeEach(function () {
 /**
  * PNG BERDERAU, bukan blok warna rata.
  *
- * Foto sungguhan penuh derau, dan PNG memampatkannya dengan buruk — itulah
+ * Foto sungguhan penuh derau, dan PNG memampatkannya dengan buruk - itulah
  * sebabnya thumbnail JPEG bisa puluhan kali lebih kecil. Blok warna rata
  * justru kasus terbaik bagi PNG (4 KB untuk 800×1050), sehingga menguji
  * penyusutan dengan gambar seperti itu menguji hal yang salah.
@@ -210,7 +210,7 @@ test('rute gerbang tidak menerbitkan cookie session', function () {
         ))->toBeFalse();
 });
 
-test('rute publik lain TETAP bersession — pengecualiannya tidak boleh melebar', function () {
+test('rute publik lain TETAP bersession - pengecualiannya tidak boleh melebar', function () {
     $school = School::factory()->create();
     $nama = config('session.cookie');
 
@@ -231,7 +231,7 @@ test('kuota scan dihitung per sekolah, bukan per alamat IP', function () {
 
     // Semua gerbang satu sekolah keluar lewat satu IP publik. Sebelum ini,
     // sekolah yang ramai menghabiskan kuota sekolah lain yang kebetulan
-    // berbagi jaringan — dan 429 di layar gerbang terlihat persis seperti
+    // berbagi jaringan - dan 429 di layar gerbang terlihat persis seperti
     // "kadang berhenti merespons".
     $this->postJson("/scan/{$sekolahA->scanner_token}", ['token' => $siswaA->qr_token])->assertOk();
 
@@ -241,7 +241,7 @@ test('kuota scan dihitung per sekolah, bukan per alamat IP', function () {
     $batasB = $this->postJson("/scan/{$sekolahB->scanner_token}", ['token' => $siswaB->qr_token])
         ->headers->get('X-RateLimit-Remaining');
 
-    // Sekolah B baru memakai satu jatah, sekolah A sudah dua — kalau kuncinya
+    // Sekolah B baru memakai satu jatah, sekolah A sudah dua - kalau kuncinya
     // masih IP, keduanya akan menunjuk penghitung yang sama.
     expect((int) $batasB)->toBeGreaterThan((int) $batasA);
 });
@@ -290,7 +290,7 @@ test('satu scan sukses menjalankan jumlah query yang tetap', function () {
         duplikat, simpan kehadiran.
 
         Enam belas sisanya milik dua pendengar `StudentCheckedIn` yang berjalan
-        SINKRON di dalam request — keduanya memuat ulang siswa, sekolah, profil
+        SINKRON di dalam request - keduanya memuat ulang siswa, sekolah, profil
         orang tua, dan saluran notifikasi sebelum respons dikirim ke gerbang.
         Itu latensi nyata pada tiap kartu yang ditempel, tapi membuatnya
         antre menyentuh kebijakan kuota WhatsApp; dicatat, bukan diubah diam-diam.

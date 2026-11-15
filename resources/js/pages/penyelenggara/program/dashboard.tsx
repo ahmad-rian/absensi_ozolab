@@ -70,7 +70,7 @@ export default function ProgramDashboard({
 
     return (
         <>
-            <Head title={`Dashboard — ${program.name}`} />
+            <Head title={`Dashboard - ${program.name}`} />
             <div className="flex flex-col gap-6 p-4 md:p-6">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                     <div>

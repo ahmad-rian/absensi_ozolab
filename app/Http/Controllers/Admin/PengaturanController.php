@@ -34,7 +34,7 @@ class PengaturanController extends Controller
     private const SECTION_RULES = [
         'umum' => [
             'school_name' => ['nullable', 'string', 'max:255'],
-            // Jam masuk/pulang tidak diatur di sini — sumber kebenarannya
+            // Jam masuk/pulang tidak diatur di sini - sumber kebenarannya
             // adalah menu Jadwal Absensi (tabel attendance_schedules).
             'timezone' => ['nullable', 'string', 'in:Asia/Jakarta,Asia/Makassar,Asia/Jayapura'],
             // Rule `exists` yang terkunci ke sekolah ditambahkan di update():
@@ -61,7 +61,7 @@ class PengaturanController extends Controller
             'wa_alert_terlambat' => ['required', 'boolean'],
             'wa_alert_alpa' => ['required', 'boolean'],
             // Skenario alpa sholat memakai key fitur yang sudah ada, bukan key
-            // kembar — lihat SchoolFeature::settingKey().
+            // kembar - lihat SchoolFeature::settingKey().
             'feature_notif_alpa_sholat' => ['required', 'boolean'],
             'wa_verified' => ['required', 'boolean'],
             // Batas atas 1000 supaya salah ketik satu digit tidak diam-diam
@@ -108,7 +108,7 @@ class PengaturanController extends Controller
      *
      * `School::getSetting()` memakai `??`, sehingga `null` tersimpan tidak
      * terbedakan dari "belum pernah diatur" dan diam-diam kembali ke default
-     * `true` di DispatchAttendanceNotifications — notifikasi menyala sendiri.
+     * `true` di DispatchAttendanceNotifications - notifikasi menyala sendiri.
      *
      * @var array<int, string>
      */
@@ -147,7 +147,7 @@ class PengaturanController extends Controller
 
         // Saklar WAJIB dihidrasi sebagai boolean bertipe. Dulu ia ikut jalur
         // di atas dan menghasilkan `''` untuk key yang belum ada, sehingga
-        // checkbox tampil tidak tercentang padahal fiturnya aktif — lalu
+        // checkbox tampil tidak tercentang padahal fiturnya aktif - lalu
         // menekan Simpan menuliskan `false` dan mematikan notifikasi kehadiran
         // ke seluruh orang tua.
         $features = SchoolFeatures::for($school);
@@ -195,8 +195,8 @@ class PengaturanController extends Controller
         $logoPath = $school?->getSetting('app_logo') ?: Setting::getValue('app_logo', '');
         $faviconPath = $school?->getSetting('app_favicon') ?: Setting::getValue('app_favicon', '');
 
-        // Tahun ajaran BUKAN bagian dari schools.settings — ia hidup di kolom
-        // `is_active` tabel academic_years — jadi dikirim sebagai prop sendiri.
+        // Tahun ajaran BUKAN bagian dari schools.settings - ia hidup di kolom
+        // `is_active` tabel academic_years - jadi dikirim sebagai prop sendiri.
         $academicYears = AcademicYear::forSchool()
             ->orderByDesc('start_date')
             ->get(['id', 'name', 'is_active']);
@@ -251,7 +251,7 @@ class PengaturanController extends Controller
         unset($validated['section']);
 
         // Tahun ajaran aktif ditulis ke tabelnya sendiri, bukan ke
-        // schools.settings — kalau ia ikut ter-merge, akan ada dua sumber
+        // schools.settings - kalau ia ikut ter-merge, akan ada dua sumber
         // kebenaran dan salinan di settings pasti basi begitu tahun ajaran
         // diaktifkan dari menu Kelas.
         $academicYearId = $validated['academic_year_id'] ?? null;
@@ -410,7 +410,7 @@ class PengaturanController extends Controller
 
     /**
      * Simpan branding di sekolah yang sedang aktif, bukan di tabel `settings`
-     * global — kalau global, admin satu sekolah mengubah tampilan keenam tenant
+     * global - kalau global, admin satu sekolah mengubah tampilan keenam tenant
      * sekaligus dan menghapus berkas milik sekolah lain.
      */
     private function storeBranding(string $key, string $path): void

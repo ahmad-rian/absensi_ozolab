@@ -8,7 +8,7 @@ use App\Models\Program;
  * Alamat pendek halaman scan ringan program penyelenggara: `/h/{kode}`.
  *
  * Pola sama dengan {@see PesertaShortLink} (Kartu Bebas), tetapi atas
- * `programs.scanner_token` — kedua ruang kode tidak pernah bercampur.
+ * `programs.scanner_token` - kedua ruang kode tidak pernah bercampur.
  */
 class ProgramShortLink
 {

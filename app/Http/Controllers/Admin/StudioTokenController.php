@@ -43,7 +43,7 @@ class StudioTokenController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            // Null berarti lintas sekolah — dipakai operator studio yang
+            // Null berarti lintas sekolah - dipakai operator studio yang
             // memotret beberapa sekolah dalam satu hari.
             'school_id' => ['nullable', 'exists:schools,id'],
         ], [], ['name' => 'nama', 'school_id' => 'sekolah']);
@@ -54,7 +54,7 @@ class StudioTokenController extends Controller
             $request->user()->id,
         );
 
-        // SATU-SATUNYA kali nilai ini terlihat. Lewat flash Inertia — sekali
+        // SATU-SATUNYA kali nilai ini terlihat. Lewat flash Inertia - sekali
         // pakai, tidak tersimpan di mana pun, dan tidak boleh ikut masuk log.
         Inertia::flash('studioTokenBaru', $mentah);
 

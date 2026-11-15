@@ -75,7 +75,7 @@ class StudentRegistrationController extends Controller
     public function index(): Response
     {
         // Kolom `settings` ikut ditarik hanya untuk menilai fitur, lalu dibuang
-        // sebelum dikirim ke halaman publik — isinya memuat template notifikasi
+        // sebelum dikirim ke halaman publik - isinya memuat template notifikasi
         // dan kredensial yang tidak boleh bocor.
         $schools = School::where('is_active', true)
             ->orderBy('name')
@@ -106,7 +106,7 @@ class StudentRegistrationController extends Controller
     }
 
     /**
-     * Form pendaftaran pendek — nama, NIS/NISN, nomor foto, kelas, nomor absen.
+     * Form pendaftaran pendek - nama, NIS/NISN, nomor foto, kelas, nomor absen.
      *
      * Dipakai saat sesi foto sekolah, ketika yang tersedia cuma daftar hadir dan
      * nomor foto: menagih tempat & tanggal lahir, alamat, dan data orang tua di
@@ -144,12 +144,12 @@ class StudentRegistrationController extends Controller
      * Simpan pendaftaran pendek.
      *
      * Isian wajibnya tiga: nama, kelas, nomor absen. NIS dan nomor foto boleh
-     * dilewati — NIS diisi supaya barcode siswa bisa langsung dicetak, nomor
+     * dilewati - NIS diisi supaya barcode siswa bisa langsung dicetak, nomor
      * foto diisi kalau siswanya sudah difoto. Tidak ada token QR yang
      * diterbitkan di sini dan tidak ada kartu yang dirender.
      *
-     * Aturan validasinya terpisah dari `store()` — bukan `store()` yang
-     * dilonggarkan — supaya form panjang tetap menagih semua yang selama ini
+     * Aturan validasinya terpisah dari `store()` - bukan `store()` yang
+     * dilonggarkan - supaya form panjang tetap menagih semua yang selama ini
      * ditagihnya, berikut QR dan kartunya.
      */
     public function storeQuick(Request $request): JsonResponse
@@ -196,7 +196,7 @@ class StudentRegistrationController extends Controller
             : null;
 
         // Hanya fotonya. `generateCards: false` menghentikan job sebelum kartu,
-        // lembar pas foto, dan unggahan Drive — pendaftaran cepat tidak
+        // lembar pas foto, dan unggahan Drive - pendaftaran cepat tidak
         // menghasilkan berkas apa pun, cuma menambatkan foto ke siswanya.
         // Tanpa nomor foto tidak ada yang perlu ditambatkan.
         if ($nomorFoto !== null) {
@@ -232,7 +232,7 @@ class StudentRegistrationController extends Controller
     }
 
     /**
-     * Token sesi pendaftaran — dipakai endpoint pratinjau foto.
+     * Token sesi pendaftaran - dipakai endpoint pratinjau foto.
      */
     private function issueRegistrationToken(): string
     {
@@ -315,7 +315,7 @@ class StudentRegistrationController extends Controller
         /*
             Kolom sandi di form ini bermakna ganda: pendaftar baru MEMBUAT sandi,
             sedangkan orang tua yang sudah punya akun (mendaftarkan anak kedua)
-            MENCOCOKKAN sandi lamanya — lihat Hash::check di
+            MENCOCOKKAN sandi lamanya - lihat Hash::check di
             ParentProfileService::findOrCreateFromRegistration().
 
             Karena itu aturan kekuatan hanya boleh mengikat kasus pertama. Kalau
@@ -341,9 +341,9 @@ class StudentRegistrationController extends Controller
             // Dibatasi ke sekolah yang dituju dan mengabaikan baris yang sudah
             // dihapus, mengikuti indeks `students_school_nis_unique`. Aturan
             // global yang dipakai sebelumnya menolak NISN yang ternyata dipegang
-            // siswa sekolah LAIN — operator lalu mencari di sekolahnya sendiri
+            // siswa sekolah LAIN - operator lalu mencari di sekolahnya sendiri
             // dan tidak menemukan apa pun, jadi pesannya mustahil ditindaklanjuti.
-            // Huruf saja, angka saja, atau campuran — plus titik dan tanda
+            // Huruf saja, angka saja, atau campuran - plus titik dan tanda
             // hubung yang lazim di NIS. Tetap tanpa spasi/simbol lain karena
             // ikut masuk export CSV dan header HTTP.
             'nis' => ['nullable', 'string', 'max:50', 'regex:'.self::POLA_NOMOR, $this->uniquePerSchool('nis', $request->school_id)],
@@ -360,7 +360,7 @@ class StudentRegistrationController extends Controller
             'parent_email' => ['required', 'string', 'email', 'max:255', 'regex:/^[^\\r\\n]*$/'],
             // Delapan karakter, tanpa aturan komposisi. Yang mengisi form ini
             // orang tua, dan menuntut huruf besar/angka/simbol dari mereka
-            // menghasilkan sandi yang ditulis di kertas — bukan akun yang lebih
+            // menghasilkan sandi yang ditulis di kertas - bukan akun yang lebih
             // aman. Penggantinya ada di SandiUmum: daftar-tolak, plus larangan
             // memakai nomor WhatsApp atau email yang diketik di formulir yang
             // sama. Lihat kelas itu untuk alasan lengkapnya.
@@ -451,7 +451,7 @@ class StudentRegistrationController extends Controller
         });
 
         /*
-            Fotonya saja — TIDAK ada kartu yang dirender dari sini.
+            Fotonya saja - TIDAK ada kartu yang dirender dari sini.
 
             Langkah Foto dihidupkan lagi sebagai langkah opsional, jadi
             unduhan Drive-nya ikut kembali. Yang tidak dikembalikan adalah
@@ -545,7 +545,7 @@ class StudentRegistrationController extends Controller
             //
             // Pendaftaran tidak lagi mengantrekan apa pun, jadi `status()`
             // mengembalikan daftar kosong selamanya dan `done` tidak pernah
-            // menyala — halaman akan memutar empat ubin kerangka sampai
+            // menyala - halaman akan memutar empat ubin kerangka sampai
             // ditutup. Siswa yang mendaftar sebelum perubahan ini tetap punya
             // riwayatnya, dan bagi mereka halaman ini masih bekerja seperti
             // dulu.
@@ -605,7 +605,7 @@ class StudentRegistrationController extends Controller
      * unik per sekolah, dan baris yang sudah dihapus tidak ikut menahan nomornya.
      *
      * `$schoolId` datang dari input, tapi aturan `school_id` di ruleset yang sama
-     * sudah mengharuskannya ada di tabel schools — dan pola ini persis yang dipakai
+     * sudah mengharuskannya ada di tabel schools - dan pola ini persis yang dipakai
      * aturan `classroom_id` di bawahnya.
      */
     private function uniquePerSchool(string $column, mixed $schoolId): Unique
@@ -667,7 +667,7 @@ class StudentRegistrationController extends Controller
             return response()->json([
                 'found' => true,
                 'preview_url' => $preview['url'],
-                // Kunci, bukan path — path dari klien tidak pernah dipercaya.
+                // Kunci, bukan path - path dari klien tidak pernah dipercaya.
                 'photo_key' => $preview['key'],
                 'crop' => (new PhotoCropService)->autoCropRect($preview['path']),
             ]);

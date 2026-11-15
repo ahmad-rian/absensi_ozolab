@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Jenis kelamin boleh kosong.
  *
- * `/daftar-cepat` hanya menanyakan empat hal — nama, nomor foto, kelas, nomor
- * absen — karena ia dipakai di depan antrean sesi foto, tempat satu-satunya yang
+ * `/daftar-cepat` hanya menanyakan empat hal - nama, nomor foto, kelas, nomor
+ * absen - karena ia dipakai di depan antrean sesi foto, tempat satu-satunya yang
  * ada cuma daftar hadir. Kolomnya NOT NULL sejak tabel ini dibuat, jadi tanpa
  * migrasi ini pendaftaran cepat mustahil disimpan.
  *
  * Semua pembaca yang menurunkan nilainya (`$student->gender->value`) sudah
- * diberi penjagaan lebih dulu — lihat StudentApiController. Jalur admin dan
+ * diberi penjagaan lebih dulu - lihat StudentApiController. Jalur admin dan
  * impor tetap mewajibkannya: yang berubah adalah batas bawah basis data, bukan
  * aturan pengisian di form yang memang punya datanya.
  */

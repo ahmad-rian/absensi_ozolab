@@ -24,7 +24,7 @@ use Carbon\Carbon;
  * ## Kenapa jam saja tidak cukup
  *
  * `AttendanceRecorder::resolveType()` menghitung scan sebagai MASUK sejak
- * `check_in_start` sampai `check_out_start` — dengan jadwal bawaan itu 06:00
+ * `check_in_start` sampai `check_out_start` - dengan jadwal bawaan itu 06:00
  * sampai 13:00. Kedua jendela sholat berada seluruhnya di dalam rentang itu:
  *
  *     06:00 ─────────────────────────────────── 13:00 ────── 18:00
@@ -48,7 +48,7 @@ use Carbon\Carbon;
  * Datang menang atas sholat dengan sengaja: siswa yang baru tiba pukul 07:45
  * harus tercatat MASUK lebih dulu, kalau tidak ia dihitung alpa seharian dan
  * orang tuanya menerima peringatan. Sholat baru masuk hitungan sesudah
- * kehadirannya terekam — dan itu juga yang menjaga datanya jujur: tidak ada
+ * kehadirannya terekam - dan itu juga yang menjaga datanya jujur: tidak ada
  * catatan sholat untuk anak yang belum sampai di sekolah.
  *
  * Kalau fitur sholat mati, langkah sholat dilewati dan perilakunya persis
@@ -102,7 +102,7 @@ class GerbangRecorder
         }
 
         if (! $this->sholatBerlaku($sekolahSiswa, $student, $waktu)) {
-            // Sholat tidak bisa jadi jawaban untuk scan ini — entah fiturnya
+            // Sholat tidak bisa jadi jawaban untuk scan ini - entah fiturnya
             // mati, di luar jendela, atau siswanya memang tidak ikut. Pesan
             // absensi sekolah yang ditampilkan, bukan pesan sholat yang akan
             // membingungkan ("hanya untuk siswa beragama Islam" pada anak yang
@@ -188,7 +188,7 @@ class GerbangRecorder
 
         if ($tercatat->isEmpty()) {
             // Tidak ada yang tercatat sama sekali, jadi keduanya gagal karena
-            // sebab lain — jendela, jadwal, atau kepesertaan. Pesan sholat yang
+            // sebab lain - jendela, jadwal, atau kepesertaan. Pesan sholat yang
             // lebih spesifik untuk saat ini.
             return $pesanSholat;
         }

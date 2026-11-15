@@ -22,7 +22,7 @@ use Illuminate\Validation\ValidationException;
  *
  * Keputusan pemilik (pengguna awam teknologi). Batasnya:
  * - HANYA akun orang tua murni. Admin, super admin, guru, staf General, dan
- *   akun penyelenggara tetap lewat link email / direset admin — mengambil alih
+ *   akun penyelenggara tetap lewat link email / direset admin - mengambil alih
  *   salah satunya membuka data seluruh siswa.
  * - Nomor WhatsApp harus cocok dengan profil orang tua akun itu, jadi tahu
  *   email saja tidak cukup.

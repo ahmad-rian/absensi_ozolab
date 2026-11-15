@@ -24,12 +24,12 @@ use Inertia\Response;
  *
  * Seluruh menu lain terkunci ke satu sekolah lewat global scope `school`, dan itu
  * yang menjaga data antar tenant tidak bocor. Modul ini menembusnya dengan
- * `acrossSchools()` — jadi ia tidak menyediakan satu pun aksi ubah atau hapus.
+ * `acrossSchools()` - jadi ia tidak menyediakan satu pun aksi ubah atau hapus.
  * Menaruh tombol ubah di sini berarti satu salah klik bisa mengenai sekolah yang
  * bahkan tidak sedang dibuka operator, tanpa jejak tenant di sesinya.
  *
  * Satu pengecualian: tombol buka cepat di tab siswa (`admin.siswa.buka`). Ia
- * navigasi, bukan mutasi — dan justru menutup celah yang dikhawatirkan di atas,
+ * navigasi, bukan mutasi - dan justru menutup celah yang dikhawatirkan di atas,
  * karena ia MEMINDAHKAN konteks sekolah di sesi secara terang-terangan sebelum
  * membuka halaman siswanya, alih-alih membiarkan operator bekerja di sekolah
  * yang tidak sedang dibukanya. Route-nya sendiri hidup di luar modul ini.
@@ -57,7 +57,7 @@ class SemuaSekolahController extends Controller
             ],
             'schools' => School::orderBy('name')->get(['id', 'name'])->all(),
             // Daftar kelas hanya diisi setelah satu sekolah dipilih. Nama kelas
-            // berulang di setiap sekolah — "7A" ada di dua puluh tempat — jadi
+            // berulang di setiap sekolah - "7A" ada di dua puluh tempat - jadi
             // daftar gabungannya justru tidak bisa dipakai memilih apa pun.
             'classrooms' => $schoolId ? $this->classroomOptions($schoolId) : [],
             'totals' => $this->totals(),
@@ -155,7 +155,7 @@ class SemuaSekolahController extends Controller
             })
             ->when($request->query('school_id'), fn ($query, $schoolId) => $query->where('school_id', $schoolId))
             // Kelas hanya menyaring bersama sekolahnya. Id kelas memang unik, tapi
-            // pilihannya baru dikirim setelah sekolah dipilih — menerimanya sendirian
+            // pilihannya baru dikirim setelah sekolah dipilih - menerimanya sendirian
             // berarti tautan tempelan bisa menampilkan satu kelas milik sekolah lain
             // di tengah daftar yang katanya tidak difilter.
             ->when(
@@ -185,7 +185,7 @@ class SemuaSekolahController extends Controller
      * Tidak ada tombol ubah maupun hapus di sini, dan itu disengaja lebih keras
      * daripada di tab lain: `ParentProfile` tidak memakai SoftDeletes dan
      * `students.parent_profile_id` ber-cascadeOnDelete, jadi menghapus satu baris
-     * di sini akan melenyapkan seluruh anaknya secara PERMANEN — di sekolah yang
+     * di sini akan melenyapkan seluruh anaknya secara PERMANEN - di sekolah yang
      * bahkan tidak sedang dibuka operator.
      *
      * @return LengthAwarePaginator<int, array<string, mixed>>
@@ -203,7 +203,7 @@ class SemuaSekolahController extends Controller
             })
             ->when($request->query('school_id'), fn ($query, $schoolId) => $query->where('school_id', $schoolId))
             // Namanya ada di tabel `users`, jadi urutannya lewat subquery. Tanpa
-            // urutan yang pasti, halaman 2 bisa mengulang baris dari halaman 1 —
+            // urutan yang pasti, halaman 2 bisa mengulang baris dari halaman 1 -
             // MySQL tidak menjamin urutan apa pun tanpa ORDER BY.
             ->orderBy(User::select('name')->whereColumn('users.id', 'parent_profiles.user_id'))
             ->paginate(25)
@@ -215,7 +215,7 @@ class SemuaSekolahController extends Controller
                 'whatsapp_number' => $parent->whatsapp_number,
                 'relation' => $parent->relation?->label(),
                 // Alamat `@internal.app` dibuat sistem dan tidak pernah sampai ke
-                // siapa pun — menampilkannya sebagai email hanya menyesatkan.
+                // siapa pun - menampilkannya sebagai email hanya menyesatkan.
                 'email' => $parent->email && ! str_contains($parent->email, '@internal.app') ? $parent->email : null,
                 'students_count' => $parent->students_count,
             ]);

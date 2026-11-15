@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
  |
  | Klien meminta kotak croping DAN pemotongan otomatisnya dibuang: pendaftar
  | mengetik nama berkas, melihat fotonya, selesai. Yang dijaga di sini adalah
- | batas perubahannya — jalur kartu bebas (Public\CardFormController) masih
+ | batas perubahannya - jalur kartu bebas (Public\CardFormController) masih
  | memotong ke rasio pas foto, dan tidak boleh ikut mati.
  */
 
@@ -50,7 +50,7 @@ test('the registration job itself stores the photo uncropped', function () {
     /*
      | Mutasi yang harus memerahkan ini: kembalikan `crop: false` di
      | RegisterStudentCardsJob menjadi crop bawaan. Test servis di atas hanya
-     | membuktikan flag-nya bekerja — ini yang membuktikan jalur pendaftaran
+     | membuktikan flag-nya bekerja - ini yang membuktikan jalur pendaftaran
      | benar-benar memakainya.
      */
     Storage::fake('local');

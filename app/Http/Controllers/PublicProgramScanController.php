@@ -57,7 +57,7 @@ class PublicProgramScanController extends Controller
             'pesanMati' => 'Program ini sudah diarsip.',
             'featureEnabled' => true,
             'logoUrl' => null,
-            'petunjuk' => 'Tempelkan kartu atau tembak QR peserta — jam datang/pulang mengikuti jadwal sesi',
+            'petunjuk' => 'Tempelkan kartu atau tembak QR peserta - jam datang/pulang mengikuti jadwal sesi',
             'scanUrl' => route('public.program-scan.ringan.scan', $kode),
             'riwayatUrl' => route('public.program-scan.ringan.riwayat', $kode),
             'kameraUrl' => route('public.program-scan.ringan.kamera', $kode),

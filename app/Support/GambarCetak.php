@@ -7,7 +7,7 @@ use Spatie\Browsershot\Browsershot;
 /**
  * Berkas siap cetak: JPEG berkualitas tinggi yang MENYEBUT resolusinya.
  *
- * Tangkapan layar Chrome tidak menyimpan DPI — berkasnya terbaca 72 DPI.
+ * Tangkapan layar Chrome tidak menyimpan DPI - berkasnya terbaca 72 DPI.
  * Kartu 1349 px pada "72 DPI" dianggap selebar 47 cm, sehingga aplikasi
  * cetak mengecilkannya ulang (resample) dan teks jadi lembek. Dengan DPI 400
  * tertulis di berkas, ukuran cetaknya langsung 85,6 × 54 mm tanpa resample.
@@ -39,7 +39,7 @@ class GambarCetak
     }
 
     /**
-     * Ubah PNG menjadi JPEG cetak. Area transparan diratakan ke putih —
+     * Ubah PNG menjadi JPEG cetak. Area transparan diratakan ke putih -
      * JPEG tidak punya alpha, dan GD akan mengubahnya menjadi hitam.
      */
     public static function dariPng(string $png, string $tujuan): void
@@ -59,7 +59,7 @@ class GambarCetak
         return in_array(strtolower(pathinfo($path, PATHINFO_EXTENSION)), ['jpg', 'jpeg'], true) ? self::MIME : 'image/png';
     }
 
-    /** Imagick bisa menyimpan warna 4:4:4 — teks berwarna tetap tajam di tepinya. */
+    /** Imagick bisa menyimpan warna 4:4:4 - teks berwarna tetap tajam di tepinya. */
     public static function denganImagick(string $png, string $tujuan): void
     {
         $gambar = new \Imagick($png);

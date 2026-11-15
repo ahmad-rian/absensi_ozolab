@@ -24,7 +24,7 @@ type PageProps = {
 export default function PrayerScanPage({ school, scanToken, prayerSchedule }: PageProps) {
     const active = prayerSchedule.enabled_windows;
 
-    // Satu tautan melayani Dhuha maupun Dzuhur — jenisnya ditentukan server
+    // Satu tautan melayani Dhuha maupun Dzuhur - jenisnya ditentukan server
     // dari jam scan, jadi petugas mushola tidak perlu memilih mode apa pun.
     const tagline = active.length === 1 ? active[0].type_label : 'Absen Sholat';
 
@@ -34,7 +34,7 @@ export default function PrayerScanPage({ school, scanToken, prayerSchedule }: Pa
 
     return (
         <>
-            <Head title={`Absen Sholat — ${school.name}`} />
+            <Head title={`Absen Sholat - ${school.name}`} />
             <PublicScanConsole
                 school={school}
                 scanUrl={`/scan/${scanToken}/sholat`}

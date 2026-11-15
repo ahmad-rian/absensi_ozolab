@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
  *    persis perilaku sebelum modul ini ada. Akun penyelenggara tidak pernah
  *    mencapai keadaan ini karena terkunci di areanya sendiri.
  *
- * Bukan fail-closed penuh — dibenarkan di specs/002/plan.md (Complexity
+ * Bukan fail-closed penuh - dibenarkan di specs/002/plan.md (Complexity
  * Tracking): fail-closed mematikan job kartu dan scan haji yang berjalan.
  */
 trait CardTenancy

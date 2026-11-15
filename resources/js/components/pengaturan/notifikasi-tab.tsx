@@ -74,7 +74,7 @@ export function NotifikasiTab({
 
     // Diturunkan dari state form, bukan dari prop `features`: saklarnya ada di
     // kartu di atas, dan pembaca dari prop baru berubah setelah halaman
-    // dimuat ulang — deskripsinya akan berbohong sepanjang sesi penyuntingan.
+    // dimuat ulang - deskripsinya akan berbohong sepanjang sesi penyuntingan.
     const absenceOn = data.feature_notif_alpa_sholat;
     const quotaLeft = Math.max(0, data.wa_daily_limit - waSentToday);
 

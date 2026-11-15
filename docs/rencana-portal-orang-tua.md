@@ -4,7 +4,7 @@ Repositori: **`absensi_ozolab`** (tyasphoto.ozolab.id).
 
 > **Dokumen kerja.** Rencana implementasi untuk sembilan permintaan yang diajukan 22 September 2026. Belum ada satu baris kode pun yang ditulis untuk ini.
 >
-> **Cara memakainya.** Bagian **Urutan kerja** mengikat — beberapa langkah merusak kalau dibalik, alasannya ditulis di tempatnya. Bagian **Peta kode acuan** di akhir berisi path:line hasil penelusuran; pakai itu sebagai titik masuk daripada memetakan ulang kode dari nol, tapi **verifikasi nomor barisnya** sebelum diandalkan — repositori ini aktif dan nomor baris bergeser.
+> **Cara memakainya.** Bagian **Urutan kerja** mengikat - beberapa langkah merusak kalau dibalik, alasannya ditulis di tempatnya. Bagian **Peta kode acuan** di akhir berisi path:line hasil penelusuran; pakai itu sebagai titik masuk daripada memetakan ulang kode dari nol, tapi **verifikasi nomor barisnya** sebelum diandalkan - repositori ini aktif dan nomor baris bergeser.
 >
 > **Keputusan yang sudah diambil pemilik produk**, jangan ditawar ulang: orang tua login dengan **email saja** (bukan nomor WhatsApp); password default `password` hanya untuk role **ORANG_TUA**; nama permission diterjemahkan ke bahasa Indonesia dengan akhiran `.access` **dipertahankan**.
 >
@@ -16,7 +16,7 @@ Sembilan permintaan yang saling terkait. Intinya satu: **aplikasi ini sudah puny
 
 Role `ORANG_TUA` sudah ada dan sudah terpasang di 200 akun. Tapi `AppModule::defaultsFor()` memberinya **array kosong** (`app/Enums/AppModule.php:131`), dan Fortify mengarahkan semua orang ke `/admin/dashboard` (`config/fortify.php:76`) yang dijaga `permission:dashboard.access`. Jadi seorang orang tua yang berhasil login akan langsung menabrak 403. Tidak ada halaman untuk mereka, tidak ada rute, tidak ada menu.
 
-Temuan lain yang mengubah bentuk pekerjaan — banyak hal sudah ada dan tinggal dipakai ulang:
+Temuan lain yang mengubah bentuk pekerjaan - banyak hal sudah ada dan tinggal dipakai ulang:
 
 | Yang sudah ada | Di mana | Artinya |
 |---|---|---|
@@ -31,7 +31,7 @@ Dan satu hambatan yang menentukan urutan kerja:
 
 **Mayoritas akun orang tua tidak punya email yang bisa dipakai login.** `ParentProfileService:40` membuat user dengan `parent-{ulid}@internal.app` dan password `Str::random(16)` yang tidak pernah diberitahukan ke siapa pun. Itu jalur yang dipakai setiap pendaftaran siswa lewat `/daftar`. Di basis data lokal, **0 dari 201** profil orang tua punya email asli.
 
-Anda memilih login **dengan email saja**. Konsekuensinya jujur: fiturnya bisa selesai seluruhnya, tapi orang tua baru benar-benar bisa masuk setelah sekolah mengisi email mereka. Karena itu rencana ini memasukkan tiga jalur pengisian email — satuan, massal lewat impor siswa, dan penanda siapa yang belum bisa login — sebagai bagian dari pekerjaan, bukan sebagai catatan kaki.
+Anda memilih login **dengan email saja**. Konsekuensinya jujur: fiturnya bisa selesai seluruhnya, tapi orang tua baru benar-benar bisa masuk setelah sekolah mengisi email mereka. Karena itu rencana ini memasukkan tiga jalur pengisian email - satuan, massal lewat impor siswa, dan penanda siapa yang belum bisa login - sebagai bagian dari pekerjaan, bukan sebagai catatan kaki.
 
 ---
 
@@ -59,37 +59,37 @@ Slug diterjemahkan, akhiran `.access` dipertahankan.
 | `notification-gateways.access` | `gateway-notifikasi.access` |
 | `card-forms.access` | `form-kartu.access` |
 | `impersonate.access` | `masuk-sebagai.access` |
-| — baru — | `portal-orang-tua.access` |
+| - baru - | `portal-orang-tua.access` |
 
 Tidak berubah: `siswa`, `orang-tua`, `kelas`, `jadwal-absensi`, `absensi`, `kunjungan-perpus`, `laporan`, `notifikasi`, `pengaturan`, `kartu-bebas`, `semua-sekolah`.
 
-**URL admin tidak ikut berubah.** `/admin/card-generation` dan kawan-kawan tetap seperti sekarang — menerjemahkan URL berarti mematahkan setiap tautan yang sudah beredar, dan itu bukan yang diminta.
+**URL admin tidak ikut berubah.** `/admin/card-generation` dan kawan-kawan tetap seperti sekarang - menerjemahkan URL berarti mematahkan setiap tautan yang sudah beredar, dan itu bukan yang diminta.
 
-**Migrasi harus mendahului seeder, dan ini bukan detail kecil.** `RolePermissionSeeder:30` menjalankan `Permission::whereNotIn('name', $permissions)->delete()`. Kalau `AppModule` diubah lalu seeder jalan duluan, ke-12 permission lama **terhapus** dan seluruh baris `role_has_permissions` serta `model_has_permissions` yang menunjuk ke sana ikut hilang — role custom dan hak tambahan per pengguna lenyap diam-diam.
+**Migrasi harus mendahului seeder, dan ini bukan detail kecil.** `RolePermissionSeeder:30` menjalankan `Permission::whereNotIn('name', $permissions)->delete()`. Kalau `AppModule` diubah lalu seeder jalan duluan, ke-12 permission lama **terhapus** dan seluruh baris `role_has_permissions` serta `model_has_permissions` yang menunjuk ke sana ikut hilang - role custom dan hak tambahan per pengguna lenyap diam-diam.
 
 Karena itu: satu migration yang melakukan `UPDATE permissions SET name = ?` per pasangan. Id baris tidak berubah, jadi semua relasi utuh. Migration ini harus idempoten (lewati kalau nama baru sudah ada).
 
 Yang ikut diperbarui: 33 string `permission:` di `routes/web.php`, `routes/api.php:27`, field `permission` di `resources/js/components/app-sidebar.tsx:82-190`, `resources/js/pages/admin/siswa/show.tsx:280`, `resources/js/components/panduan/guide-registry.ts`, dan `tests/Feature/PermissionGateTest.php`.
 
-`app/Enums/SchoolFeature.php` memakai enum case, bukan string — tidak perlu disentuh.
+`app/Enums/SchoolFeature.php` memakai enum case, bukan string - tidak perlu disentuh.
 
 ---
 
 ## 2 · Orang tua bisa login (#1)
 
-**Role `ORANG_TUA` diberi satu permission:** `portal-orang-tua.access`, lewat modul baru `AppModule::PortalOrangTua`. Tidak ada satu pun permission admin yang diberikan — portal berdiri di atas rutenya sendiri.
+**Role `ORANG_TUA` diberi satu permission:** `portal-orang-tua.access`, lewat modul baru `AppModule::PortalOrangTua`. Tidak ada satu pun permission admin yang diberikan - portal berdiri di atas rutenya sendiri.
 
 **Redirect setelah login.** Sekarang tidak ada sama sekali; semua orang dilempar ke `/admin/dashboard`. Ditambahkan binding `LoginResponse` di `FortifyServiceProvider`: role `ORANG_TUA` → `/orangtua`, selain itu → `/admin/dashboard`. Rute `/` dan `dashboard` mengikuti aturan yang sama.
 
-**Password default.** Perintah artisan `php artisan ortu:setel-password` yang menyetel setiap user ber-role `ORANG_TUA` ke `password` dan menyalakan penanda wajib ganti. Hanya role itu — akun admin, guru, dan superadmin tidak disentuh, sesuai pilihan Anda.
+**Password default.** Perintah artisan `php artisan ortu:setel-password` yang menyetel setiap user ber-role `ORANG_TUA` ke `password` dan menyalakan penanda wajib ganti. Hanya role itu - akun admin, guru, dan superadmin tidak disentuh, sesuai pilihan Anda.
 
-> **Peringatan keamanan, dan saya menyebutkannya sekali lalu mengerjakan sesuai keputusan Anda.** Setelah perintah ini dijalankan di produksi, setiap akun orang tua yang emailnya diketahui orang lain bisa dimasuki dengan menebak satu kata. Selama jendela itu, orang asing bisa membaca nama, kelas, foto, dan riwayat kehadiran harian seorang anak. Yang menutup jendela itu adalah wajib-ganti-password di bagian #4 — jadi keduanya harus tayang bersamaan, tidak boleh terpisah. Saran tambahan: jalankan perintahnya per sekolah (`--sekolah=`), bersamaan dengan sekolah itu membagikan akun, bukan sekaligus untuk semua.
+> **Peringatan keamanan, dan saya menyebutkannya sekali lalu mengerjakan sesuai keputusan Anda.** Setelah perintah ini dijalankan di produksi, setiap akun orang tua yang emailnya diketahui orang lain bisa dimasuki dengan menebak satu kata. Selama jendela itu, orang asing bisa membaca nama, kelas, foto, dan riwayat kehadiran harian seorang anak. Yang menutup jendela itu adalah wajib-ganti-password di bagian #4 - jadi keduanya harus tayang bersamaan, tidak boleh terpisah. Saran tambahan: jalankan perintahnya per sekolah (`--sekolah=`), bersamaan dengan sekolah itu membagikan akun, bukan sekaligus untuk semua.
 
 **Mengisi email login.** Tiga jalur, karena satu jalur saja tidak akan menyelesaikan 201 baris:
 
-1. **Satuan** — sudah ada di `/admin/orang-tua/{id}/edit` (field `email`). Tidak ada pekerjaan.
-2. **Massal lewat impor siswa** — `StudentImportParser::FIELD_SYNONYMS` (`app/Services/Import/StudentImportParser.php:42-55`) mendapat kolom baru `parent_email` dengan sinonim `emailortu`, `emailorangtua`, `emailwali`. `StudentImportApplier` meneruskannya ke `ParentProfileService`.
-3. **Penanda** — daftar `/admin/orang-tua` menampilkan lencana **"Belum bisa login"** untuk user yang emailnya berakhiran `@internal.app`, dengan penyaring untuk melihat hanya mereka. Tanpa ini sekolah tidak punya cara tahu siapa yang tertinggal.
+1. **Satuan** - sudah ada di `/admin/orang-tua/{id}/edit` (field `email`). Tidak ada pekerjaan.
+2. **Massal lewat impor siswa** - `StudentImportParser::FIELD_SYNONYMS` (`app/Services/Import/StudentImportParser.php:42-55`) mendapat kolom baru `parent_email` dengan sinonim `emailortu`, `emailorangtua`, `emailwali`. `StudentImportApplier` meneruskannya ke `ParentProfileService`.
+3. **Penanda** - daftar `/admin/orang-tua` menampilkan lencana **"Belum bisa login"** untuk user yang emailnya berakhiran `@internal.app`, dengan penyaring untuk melihat hanya mereka. Tanpa ini sekolah tidak punya cara tahu siapa yang tertinggal.
 
 `ParentProfileService::findOrCreateFromRegistration` diubah: kalau email asli diberikan dan belum dipakai user lain, itu yang jadi `users.email`; kalau tidak, tetap placeholder seperti sekarang.
 
@@ -110,41 +110,41 @@ Route::middleware(['auth', 'permission:portal-orang-tua.access', 'password.ganti
 | Halaman | Isi |
 |---|---|
 | `/orangtua` | Kartu per anak: foto, nama, kelas, kehadiran hari ini, persentase 30 hari terakhir untuk absensi/Dhuha/Dzuhur |
-| `/orangtua/anak/{siswa}` | Rincian satu anak. Tiga panel — Absensi Sekolah, Dhuha, Dzuhur — dengan penyaring periode. Panel sholat hanya tampil bila fiturnya aktif di sekolah itu |
+| `/orangtua/anak/{siswa}` | Rincian satu anak. Tiga panel - Absensi Sekolah, Dhuha, Dzuhur - dengan penyaring periode. Panel sholat hanya tampil bila fiturnya aktif di sekolah itu |
 | `/orangtua/anak/{siswa}/laporan` | Pilih jenis (absensi / Dhuha / Dzuhur / semuanya) + periode → unduh PDF |
 | `/orangtua/anak/{siswa}/galeri` | Pas foto dan kartu OSIS depan-belakang, bisa dilihat dan diunduh |
 
-**Kepemilikan ditegakkan di satu tempat.** Middleware `EnsureAnakSendiri` (atau method guard bersama) yang menuntut `siswa.parent_profile_id === auth()->user()->parentProfile->id`, dipasang di keempat rute. Bukan diperiksa ulang di tiap controller — satu tempat, satu tes.
+**Kepemilikan ditegakkan di satu tempat.** Middleware `EnsureAnakSendiri` (atau method guard bersama) yang menuntut `siswa.parent_profile_id === auth()->user()->parentProfile->id`, dipasang di keempat rute. Bukan diperiksa ulang di tiap controller - satu tempat, satu tes.
 
 Sumber data:
 - Angka: `StudentStatsBuilder` yang sudah ada, tanpa kueri baru.
-- Foto: `StudentPhotoStorage::displayUrl()` — thumbnail, bukan PNG megabita.
+- Foto: `StudentPhotoStorage::displayUrl()` - thumbnail, bukan PNG megabita.
 - Kartu: `CardGenerationLog` terbaru berstatus sukses per layout; `file_path` di disk `public`.
 
 Fitur sholat menghormati flag sekolah: `SchoolFeatures::for($school)->enabled(SchoolFeature::SholatDhuha)` dan `SholatDzuhur`.
 
-**PDF gabungan.** `StudentReportController` sekarang punya empat aksi terpisah. Ditambah satu template `pdf/student-combined.blade.php` untuk mode "semuanya" — satu berkas, tiga bagian, satu halaman sampul identitas. Logikanya diekstrak ke `App\Services\Student\StudentReportBuilder` supaya admin dan portal orang tua memanggil kode yang sama, bukan dua salinan yang lama-lama berbeda isi.
+**PDF gabungan.** `StudentReportController` sekarang punya empat aksi terpisah. Ditambah satu template `pdf/student-combined.blade.php` untuk mode "semuanya" - satu berkas, tiga bagian, satu halaman sampul identitas. Logikanya diekstrak ke `App\Services\Student\StudentReportBuilder` supaya admin dan portal orang tua memanggil kode yang sama, bukan dua salinan yang lama-lama berbeda isi.
 
-**Desain PDF dirapikan** (#7, bagian PDF). Yang sekarang (`resources/views/pdf/student-attendance.blade.php`) bergaris `#999` di mana-mana dan berkepala rata tengah — terbaca seperti keluaran mesin, bukan surat dari sekolah. Yang dituju:
+**Desain PDF dirapikan** (#7, bagian PDF). Yang sekarang (`resources/views/pdf/student-attendance.blade.php`) bergaris `#999` di mana-mana dan berkepala rata tengah - terbaca seperti keluaran mesin, bukan surat dari sekolah. Yang dituju:
 
 - Kop kiri-rata: nama sekolah besar, jenis laporan sebagai eyebrow kecil huruf besar berspasi, periode di bawahnya. Garis tebal tunggal sebagai pemisah, bukan kotak.
 - Identitas siswa dalam dua kolom, bukan tabel bergaris.
-- Ringkasan sebagai deret angka besar berlabel kecil — bukan tabel bersel. Angka yang dicari orang tua (persen kehadiran) paling besar.
+- Ringkasan sebagai deret angka besar berlabel kecil - bukan tabel bersel. Angka yang dicari orang tua (persen kehadiran) paling besar.
 - Tabel rincian tanpa garis vertikal, hanya garis tipis antarbaris dan baris genap berlatar sangat muda. Kolom status memakai penanda bentuk, bukan hanya kata, supaya terbaca saat dicetak hitam-putih.
 - Kaki halaman: tanggal cetak + nomor halaman.
 - Palet: teks `#111827`, redup `#6b7280`, garis `#e5e7eb`, aksen tunggal `#1d4ed8`. Tanpa warna latar blok.
 
-dompdf tidak mendukung webfont eksternal dengan andal, jadi tipografi tetap keluarga bawaan — yang diperbaiki hierarki dan ruangnya, bukan fontnya.
+dompdf tidak mendukung webfont eksternal dengan andal, jadi tipografi tetap keluarga bawaan - yang diperbaiki hierarki dan ruangnya, bukan fontnya.
 
 ---
 
 ## 4 · Wajib ganti password saat login pertama (#5)
 
-Belum ada apa pun untuk ini — tidak ada kolom, middleware, maupun halaman.
+Belum ada apa pun untuk ini - tidak ada kolom, middleware, maupun halaman.
 
 - Migration: `users.must_change_password` boolean default `false`.
 - Middleware `EnsurePasswordChanged` (alias `password.ganti`) → redirect ke `/ganti-password` selama penandanya menyala. Dipasang di grup admin **dan** grup orang tua; dikecualikan untuk halaman ganti password itu sendiri dan logout.
-- Halaman React `resources/js/pages/auth/ganti-password.tsx`, layout auth, tanpa navigasi keluar — satu form, satu tujuan.
+- Halaman React `resources/js/pages/auth/ganti-password.tsx`, layout auth, tanpa navigasi keluar - satu form, satu tujuan.
 - Aturan password memakai `Password::defaults()` yang sudah dikonfigurasi (`app/Providers/AppServiceProvider.php:115-121`): di produksi minimal 12 karakter, huruf besar-kecil, angka, simbol. Password baru tidak boleh sama dengan `password`.
 - Setelah tersimpan, penanda dimatikan dan pengguna diarahkan ke beranda sesuai rolenya.
 
@@ -160,12 +160,12 @@ Setelah perubahan:
 
 | Halaman | Yang tinggal / yang datang |
 |---|---|
-| `/admin/pengaturan?tab=sholat` | `prayer_dhuha_enabled`, `prayer_enabled`, `prayer_all_religions` — aktif/tidak dan siapa yang ikut |
+| `/admin/pengaturan?tab=sholat` | `prayer_dhuha_enabled`, `prayer_enabled`, `prayer_all_religions` - aktif/tidak dan siapa yang ikut |
 | `/admin/jadwal-absensi` | Kartu baru **"Jadwal Sholat"** berisi `prayer_dhuha_start/end` dan `prayer_start/end`. Muncul hanya bila salah satu fiturnya aktif |
 
-**Penyimpanan tidak berubah.** Jam sholat tetap di kolom JSON `schools.settings` lewat key yang sudah ada. Memindahkannya ke tabel `attendance_schedules` berarti migrasi data, perubahan `PrayerSchedule`/`PrayerSettings`/`PrayerAttendanceRecorder`, dan kemampuan per-hari/per-kelas yang tidak Anda minta. Yang diminta adalah pengaturannya ada di halaman itu — itu yang dikerjakan.
+**Penyimpanan tidak berubah.** Jam sholat tetap di kolom JSON `schools.settings` lewat key yang sudah ada. Memindahkannya ke tabel `attendance_schedules` berarti migrasi data, perubahan `PrayerSchedule`/`PrayerSettings`/`PrayerAttendanceRecorder`, dan kemampuan per-hari/per-kelas yang tidak Anda minta. Yang diminta adalah pengaturannya ada di halaman itu - itu yang dikerjakan.
 
-Aksi baru `AttendanceScheduleController::updatePrayer()`. Validasi overlap `assertPrayerWindowsDoNotOverlap` (`PengaturanController.php:318`) diangkat ke `App\Support\PrayerSchedule` supaya dipakai kedua pemanggil — satu jendela Dhuha yang bertabrakan dengan Dzuhur membuat penentuan jenis saat scan jadi ambigu, dan penjagaan itu tidak boleh hilang dalam perpindahan.
+Aksi baru `AttendanceScheduleController::updatePrayer()`. Validasi overlap `assertPrayerWindowsDoNotOverlap` (`PengaturanController.php:318`) diangkat ke `App\Support\PrayerSchedule` supaya dipakai kedua pemanggil - satu jendela Dhuha yang bertabrakan dengan Dzuhur membuat penentuan jenis saat scan jadi ambigu, dan penjagaan itu tidak boleh hilang dalam perpindahan.
 
 ---
 
@@ -173,7 +173,7 @@ Aksi baru `AttendanceScheduleController::updatePrayer()`. Validasi overlap `asse
 
 `/admin/laporan` sekarang hanya punya satu laporan: rekap kehadiran absensi sekolah. Sholat tidak ada sama sekali.
 
-**Penyaring baru:** jenis laporan — Absensi Sekolah / Dhuha / Dzuhur / Semuanya. Tampilan layar mengikuti pilihan itu.
+**Penyaring baru:** jenis laporan - Absensi Sekolah / Dhuha / Dzuhur / Semuanya. Tampilan layar mengikuti pilihan itu.
 
 **Excel satu berkas, banyak sheet.** `XlsxDownload::make()` sekarang single-sheet (`app/Support/XlsxDownload.php:28-54`). Ditambah `XlsxDownload::sheets()` yang menerima array bernama dan memakai `addNewSheetAndMakeItCurrent()` + `setName()` dari openspout:
 
@@ -184,7 +184,7 @@ Aksi baru `AttendanceScheduleController::updatePrayer()`. Validasi overlap `asse
 | **Dhuha** | Ikut, tidak ikut, hari efektif, % |
 | **Dzuhur** | Sama |
 
-Sheet sholat hanya dibuat bila fiturnya aktif di sekolah itu — berkas dengan sheet kosong lebih membingungkan daripada berkas tanpa sheet itu.
+Sheet sholat hanya dibuat bila fiturnya aktif di sekolah itu - berkas dengan sheet kosong lebih membingungkan daripada berkas tanpa sheet itu.
 
 Nama sheet dibatasi 31 karakter oleh format XLSX; pembangunnya memotong dan menolak karakter `[]:*?/\`.
 
@@ -194,12 +194,12 @@ Nama sheet dibatasi 31 karakter oleh format XLSX; pembangunnya memotong dan meno
 
 ## 7 · Generate kartu mengikuti sekolah di sidebar (#8)
 
-Halaman `/admin/generate-kartu` punya pemilih sekolah sendiri lewat `?school_id=`, terpisah total dari pemilih sekolah di sidebar. Dua pemilih untuk satu hal yang sama, dan yang satu tidak tahu yang lain — itu yang membuatnya membingungkan, dan itu juga yang dulu melahirkan 404 lintas sekolah pada tombol "Pasang foto".
+Halaman `/admin/generate-kartu` punya pemilih sekolah sendiri lewat `?school_id=`, terpisah total dari pemilih sekolah di sidebar. Dua pemilih untuk satu hal yang sama, dan yang satu tidak tahu yang lain - itu yang membuatnya membingungkan, dan itu juga yang dulu melahirkan 404 lintas sekolah pada tombol "Pasang foto".
 
 Sesudahnya: sekolah datang dari `app('currentSchool')` yang sudah disetel `SetCurrentSchool`. Dropdown sekolah di halaman ini **dihapus**; yang tersisa hanya pemilih kelas.
 
 - `GenerateKartuMassalController::index` membaca sekolah aktif, bukan query string. `?school_id=` yang masih menempel di bookmark lama diabaikan, tidak error.
-- `Student::acrossSchools()` dan `Classroom::withoutGlobalScope('school')` **tetap** — halaman ini superadmin-only dan pelepasan scope itu punya alasan yang tertulis panjang di `GenerateKartuMassalController.php:207-229`. Yang berubah cuma dari mana `school_id` didapat.
+- `Student::acrossSchools()` dan `Classroom::withoutGlobalScope('school')` **tetap** - halaman ini superadmin-only dan pelepasan scope itu punya alasan yang tertulis panjang di `GenerateKartuMassalController.php:207-229`. Yang berubah cuma dari mana `school_id` didapat.
 - `unggahFoto` tetap menerima `string $siswa` dengan pencocokan `school_id` manual. Pencocokannya kini terhadap sekolah aktif.
 - Konsekuensi yang perlu Anda tahu: untuk generate sekolah lain, superadmin harus mengganti sekolah di sidebar dulu. Itu memang yang diminta, dan konsisten dengan seluruh halaman admin lain.
 
@@ -207,14 +207,14 @@ Sesudahnya: sekolah datang dari `app('currentSchool')` yang sudah disetel `SetCu
 
 ## Urutan kerja
 
-Urutannya mengikat — beberapa langkah merusak kalau dibalik.
+Urutannya mengikat - beberapa langkah merusak kalau dibalik.
 
-1. **Rename permission** — migration UPDATE nama, `AppModule`, rute, sidebar, tes. Migration **harus** sebelum seeder jalan.
-2. **`must_change_password`** — migration, middleware, halaman. Harus siap sebelum langkah 4.
-3. **Modul + role portal orang tua** — `portal-orang-tua.access` ke role `ORANG_TUA`, `LoginResponse` per role.
-4. **Perintah setel password + jalur pengisian email** — baru boleh dijalankan di produksi setelah 2 dan 3 tayang.
-5. **Portal orang tua** — rute, layout, sidebar, empat halaman.
-6. **`StudentReportBuilder` + desain PDF baru** — dipakai admin dan portal.
+1. **Rename permission** - migration UPDATE nama, `AppModule`, rute, sidebar, tes. Migration **harus** sebelum seeder jalan.
+2. **`must_change_password`** - migration, middleware, halaman. Harus siap sebelum langkah 4.
+3. **Modul + role portal orang tua** - `portal-orang-tua.access` ke role `ORANG_TUA`, `LoginResponse` per role.
+4. **Perintah setel password + jalur pengisian email** - baru boleh dijalankan di produksi setelah 2 dan 3 tayang.
+5. **Portal orang tua** - rute, layout, sidebar, empat halaman.
+6. **`StudentReportBuilder` + desain PDF baru** - dipakai admin dan portal.
 7. **Jadwal sholat pindah.**
 8. **Laporan admin: jenis baru + Excel banyak sheet.**
 9. **Generate kartu ikut sidebar.**
@@ -258,16 +258,16 @@ Langkah 1–4 satu rangkaian dan sebaiknya satu deploy. 5–9 berdiri sendiri-se
 
 **Tes Pest baru:**
 
-1. **Rename permission** — migration dijalankan pada basis data yang berisi role custom + hak tambahan per pengguna; sesudahnya role custom itu **masih** memegang hak yang sama. Ini tes terpenting di seluruh rencana: kegagalannya senyap dan baru ketahuan saat ada admin kehilangan akses.
-2. **Penjaga sumber** — tidak ada string `.access` di `routes/web.php` yang tidak ada di `AppModule::permissions()`. Mencegah rute baru memakai nama yang tidak pernah di-seed.
+1. **Rename permission** - migration dijalankan pada basis data yang berisi role custom + hak tambahan per pengguna; sesudahnya role custom itu **masih** memegang hak yang sama. Ini tes terpenting di seluruh rencana: kegagalannya senyap dan baru ketahuan saat ada admin kehilangan akses.
+2. **Penjaga sumber** - tidak ada string `.access` di `routes/web.php` yang tidak ada di `AppModule::permissions()`. Mencegah rute baru memakai nama yang tidak pernah di-seed.
 3. **Orang tua login** → mendarat di `/orangtua`, bukan 403. Admin login → `/admin/dashboard`.
-4. **Wajib ganti password** — user bertanda dialihkan dari halaman mana pun; setelah ganti, penanda mati dan halaman semula bisa dibuka. Password baru `password` ditolak.
-5. **Kepemilikan anak** — orang tua A membuka anak orang tua B → 403, untuk keempat rute.
-6. **Perintah setel password** — hanya menyentuh role `ORANG_TUA`; hash admin/guru/superadmin tidak berubah (dibandingkan sebelum-sesudah). `--sekolah=` membatasi ke satu sekolah.
-7. **Portal menghormati flag sholat** — sekolah dengan Dhuha mati tidak menampilkan panel Dhuha dan menolak PDF Dhuha.
-8. **Excel banyak sheet** — berkas hasil dibuka kembali dengan pembaca openspout, nama dan jumlah sheet dicocokkan; sheet sholat tidak ada saat fiturnya mati.
-9. **Impor `parent_email`** — email masuk ke `users.email`, dan email yang sudah dipakai ditolak dengan pesan yang bisa dibaca, bukan galat unique.
-10. **Generate kartu** — halaman memakai sekolah aktif sidebar; `?school_id=` sekolah lain diabaikan, bukan 500.
+4. **Wajib ganti password** - user bertanda dialihkan dari halaman mana pun; setelah ganti, penanda mati dan halaman semula bisa dibuka. Password baru `password` ditolak.
+5. **Kepemilikan anak** - orang tua A membuka anak orang tua B → 403, untuk keempat rute.
+6. **Perintah setel password** - hanya menyentuh role `ORANG_TUA`; hash admin/guru/superadmin tidak berubah (dibandingkan sebelum-sesudah). `--sekolah=` membatasi ke satu sekolah.
+7. **Portal menghormati flag sholat** - sekolah dengan Dhuha mati tidak menampilkan panel Dhuha dan menolak PDF Dhuha.
+8. **Excel banyak sheet** - berkas hasil dibuka kembali dengan pembaca openspout, nama dan jumlah sheet dicocokkan; sheet sholat tidak ada saat fiturnya mati.
+9. **Impor `parent_email`** - email masuk ke `users.email`, dan email yang sudah dipakai ditolak dengan pesan yang bisa dibaca, bukan galat unique.
+10. **Generate kartu** - halaman memakai sekolah aktif sidebar; `?school_id=` sekolah lain diabaikan, bukan 500.
 
 **Tes lama yang harus hijau tanpa diubah isinya** (selain penyesuaian nama permission): `PermissionGateTest`, `SchoolIsolationTest`, `OrangTuaControllerTest`, `LaporanControllerTest`, `PengaturanControllerTest`, `PrayerDhuhaTest`, `PrayerScannerTest`, `BulkCardGenerationTest`, `BulkPhotoUploadTest`, `StudentImportTest`, `SecurityRegressionTest`.
 
@@ -281,9 +281,9 @@ php artisan tinker --execute 'echo App\Models\User::role("ORANG_TUA")->where("em
 php artisan ortu:setel-password --sekolah=<id> --dry-run
 ```
 
-Lalu: login sebagai satu orang tua sungguhan, pastikan layar ganti password muncul lebih dulu, dan unduh satu PDF gabungan untuk memeriksa tata letaknya pada data nyata — bukan data seeder.
+Lalu: login sebagai satu orang tua sungguhan, pastikan layar ganti password muncul lebih dulu, dan unduh satu PDF gabungan untuk memeriksa tata letaknya pada data nyata - bukan data seeder.
 
-**Yang tidak bisa saya nilai dari sini:** apakah sekolah punya email orang tua sama sekali. Kalau ternyata sebagian besar tidak punya, portal ini akan selesai dan benar tapi sepi penggunanya, dan jalan keluarnya adalah login lewat nomor WhatsApp yang sudah terisi 100%. Itu bisa ditambahkan belakangan tanpa membongkar apa pun di rencana ini — kolom login tinggal menerima dua bentuk.
+**Yang tidak bisa saya nilai dari sini:** apakah sekolah punya email orang tua sama sekali. Kalau ternyata sebagian besar tidak punya, portal ini akan selesai dan benar tapi sepi penggunanya, dan jalan keluarnya adalah login lewat nomor WhatsApp yang sudah terisi 100%. Itu bisa ditambahkan belakangan tanpa membongkar apa pun di rencana ini - kolom login tinggal menerima dua bentuk.
 
 ---
 
@@ -291,9 +291,9 @@ Lalu: login sebagai satu orang tua sungguhan, pastikan layar ganti password munc
 
 - **Jadwal sholat per hari atau per kelas.** Tetap satu jendela per sekolah, seperti sekarang. Yang diminta perpindahan tempat pengaturannya, bukan perubahan modelnya.
 - **URL admin tidak diterjemahkan.** Hanya nama permission.
-- **Orang tua tidak bisa mengubah data apa pun.** Portal ini hanya baca dan unduh — tidak ada izin, tidak ada pengajuan sakit, tidak ada koreksi absensi.
+- **Orang tua tidak bisa mengubah data apa pun.** Portal ini hanya baca dan unduh - tidak ada izin, tidak ada pengajuan sakit, tidak ada koreksi absensi.
 - **Satu akun untuk anak di dua sekolah.** Terhalang skema yang ada; dibatasi dengan pesan galat yang jelas, bukan diperbaiki.
-- **Notifikasi ke portal.** Kanal notifikasi (WhatsApp, Email, Telegram) tidak disentuh sama sekali — kebijakan kuota WhatsApp yang berlaku tetap berlaku.
+- **Notifikasi ke portal.** Kanal notifikasi (WhatsApp, Email, Telegram) tidak disentuh sama sekali - kebijakan kuota WhatsApp yang berlaku tetap berlaku.
 
 ---
 
@@ -311,11 +311,11 @@ Hasil penelusuran, disertakan supaya pembangunnya tidak perlu memetakan ulang. N
 | Seeder, **menghapus** permission di luar daftar | `database/seeders/RolePermissionSeeder.php:26,30,35-36` |
 | Alias middleware `permission`/`role`/`super-admin`/`feature` | `bootstrap/app.php:31-37` |
 | 33 pemasangan `permission:` | `routes/web.php:193,196,234,238,242,248,257,267,272,277,283,292,299,308,317,331,338,343,350,357,361,368,374,381,387,394,399,407,423`; `routes/api.php:27` |
-| `Gate::before` — superadmin lolos semua | `app/Providers/AppServiceProvider.php:93` |
+| `Gate::before` - superadmin lolos semua | `app/Providers/AppServiceProvider.php:93` |
 | Share `roles` + `permissions` ke Inertia | `app/Http/Middleware/HandleInertiaRequests.php:55-56` |
 | Filter menu sidebar | `resources/js/components/app-sidebar.tsx:55-66` (bentuk item), `:82-190` (daftar), `:217` (filter) |
 | Hak tambahan per pengguna | `app/Http/Controllers/Admin/UserManagementController.php:67-68,89,109` |
-| Policy yang **tidak pernah dipanggil** | `app/Policies/StudentPolicy.php`, `app/Policies/AttendancePolicy.php` — tidak ada `authorize()`/`can()` di seluruh aplikasi |
+| Policy yang **tidak pernah dipanggil** | `app/Policies/StudentPolicy.php`, `app/Policies/AttendancePolicy.php` - tidak ada `authorize()`/`can()` di seluruh aplikasi |
 
 ### Autentikasi
 
@@ -329,7 +329,7 @@ Hasil penelusuran, disertakan supaya pembangunnya tidak perlu memetakan ulang. N
 | Aturan kekuatan password | `app/Providers/AppServiceProvider.php:115-121` |
 | Halaman login React | `resources/js/pages/auth/login.tsx:29` |
 | Ganti password sukarela | `routes/settings.php:16-18` → `app/Http/Controllers/Settings/ProfileController.php` |
-| **Tidak ada** `LoginResponse`, `RouteServiceProvider`, `redirectTo`, `must_change_password` | — |
+| **Tidak ada** `LoginResponse`, `RouteServiceProvider`, `redirectTo`, `must_change_password` | - |
 
 ### Orang tua & siswa
 
@@ -341,7 +341,7 @@ Hasil penelusuran, disertakan supaya pembangunnya tidak perlu memetakan ulang. N
 | `User->parentProfile()` HasOne | `app/Models/User.php:58-61` |
 | User **keluar** dari global scope sekolah | `app/Models/User.php:48-51` |
 | Kolom denormalisasi di students | `students.parent_name`, `students.parent_phone` |
-| Sinonim kolom impor siswa | `app/Services/Import/StudentImportParser.php:42-55` (`parent_name`, `parent_phone` — belum ada email) |
+| Sinonim kolom impor siswa | `app/Services/Import/StudentImportParser.php:42-55` (`parent_name`, `parent_phone` - belum ada email) |
 | Skema: `parent_profiles.user_id` UNIQUE, `users.email` unique global | penyebab batasan satu-akun-satu-sekolah |
 
 ### Absensi, sholat, jadwal
@@ -357,7 +357,7 @@ Hasil penelusuran, disertakan supaya pembangunnya tidak perlu memetakan ulang. N
 | Tab sholat di Pengaturan | `resources/js/components/pengaturan/sholat-tab.tsx:11-20`; validasi `app/Http/Controllers/Admin/PengaturanController.php:44-52`; overlap `:318` |
 | Jam sholat disimpan di JSON `schools.settings` | key `prayer_*` / `prayer_dhuha_*`; pembaca `app/Support/PrayerSettings.php:30`, `app/Support/PrayerSchedule.php:26,69` |
 | Penentuan jenis sholat saat scan | `app/Services/Attendance/PrayerAttendanceRecorder.php:57,65,118,132` |
-| Flag fitur sholat memakai key lama | `app/Enums/SchoolFeature.php:69-70` — `prayer_enabled` / `prayer_dhuha_enabled` |
+| Flag fitur sholat memakai key lama | `app/Enums/SchoolFeature.php:69-70` - `prayer_enabled` / `prayer_dhuha_enabled` |
 | Value object fitur | `app/Support/SchoolFeatures.php:16,51` |
 
 ### Kartu, foto, generate massal
@@ -387,7 +387,7 @@ Hasil penelusuran, disertakan supaya pembangunnya tidak perlu memetakan ulang. N
 | Layout + tema warna sendiri | `resources/js/layouts/kartu-bebas-layout.tsx` |
 | Sidebar sendiri | `resources/js/components/kartu-bebas-sidebar.tsx` |
 | Cara halaman memilih layout | `resources/js/pages/kartu-bebas/dashboard.tsx:5,117` (`Page.layout`) |
-| Halaman publik tanpa layout admin | `resources/js/app.tsx:21-40` — ada tes yang menuntut setiap `pages/scan/*` terdaftar |
+| Halaman publik tanpa layout admin | `resources/js/app.tsx:21-40` - ada tes yang menuntut setiap `pages/scan/*` terdaftar |
 | Guard rute workspace | `routes/web.php:423` |
 
 ### Angka basis data lokal (seeder, bukan produksi)

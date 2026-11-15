@@ -36,7 +36,7 @@ class DispatchAttendanceNotifications
         // Kebijakan WhatsApp dibalik: kabar per scan diserahkan ke Email dan
         // Telegram, sementara WA hanya untuk terlambat / tidak hadir lewat
         // sapuan `attendance:notify-absence`. Termasuk untuk scan yang berstatus
-        // TERLAMBAT — kalau dikirim di sini juga, orang tua menerima dua pesan
+        // TERLAMBAT - kalau dikirim di sini juga, orang tua menerima dua pesan
         // WA untuk satu keterlambatan yang sama.
         $alertOnly = (bool) ($school?->getSetting('wa_alert_only') ?? false);
         $skipChannels = $alertOnly ? [NotificationChannel::Whatsapp] : [];

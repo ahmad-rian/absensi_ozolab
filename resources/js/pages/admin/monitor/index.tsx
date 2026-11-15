@@ -91,7 +91,7 @@ function hariLalu(tanggal: string | null, acuan: string): string {
 }
 
 /**
- * Monitor super admin: sekolah yang dicentang "Pantau" — tanpa absen paling
+ * Monitor super admin: sekolah yang dicentang "Pantau" - tanpa absen paling
  * atas, lalu dari % hadir hari itu paling kecil, libur paling bawah.
  * Sekolah yang belum dicentang ada di bawah, tanpa peringkat.
  */

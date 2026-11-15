@@ -94,7 +94,7 @@ class AlbumGenerationController extends Controller
             );
         }
 
-        // Multiple pages — create ZIP
+        // Multiple pages - create ZIP
         // Timestamp saja terlalu mudah ditebak untuk arsip berisi foto + NIS
         // satu kelas; tambahkan komponen acak.
         $zipName = sprintf('albums/%s/album-%s-%s.zip', $school->id, now()->format('Ymd-His'), Str::random(16));

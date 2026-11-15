@@ -110,11 +110,11 @@ export default function GeneralProgram({
                                                     {p.name}
                                                 </span>
                                                 <span className="block text-xs text-muted-foreground">
-                                                    {p.kategori ?? '—'}
+                                                    {p.kategori ?? '-'}
                                                 </span>
                                             </td>
                                             <td className="p-3 text-muted-foreground">
-                                                {p.penyelenggara.name ?? '—'}
+                                                {p.penyelenggara.name ?? '-'}
                                             </td>
                                             <td className="p-3 whitespace-nowrap">
                                                 {tgl(p.starts_on)} –{' '}

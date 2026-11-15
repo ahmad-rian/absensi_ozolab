@@ -41,7 +41,7 @@ class PesertaTanpaFotoController extends Controller
             ->withQueryString()
             ->through(fn (CardFormSubmission $p) => [
                 'id' => $p->id,
-                'full_name' => $p->data['nama'] ?? '—',
+                'full_name' => $p->data['nama'] ?? '-',
                 'nis' => null,
                 'classroom' => $p->grups->pluck('name')->implode(', ') ?: null,
             ]);

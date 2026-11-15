@@ -8,7 +8,7 @@ use App\Models\Student;
 /**
  * Isi QR yang dicetak di kartu siswa.
  *
- * Bawaannya `qr_token` — kredensial acak yang tidak bisa ditebak. Sekolah yang
+ * Bawaannya `qr_token` - kredensial acak yang tidak bisa ditebak. Sekolah yang
  * kartunya diminta berisi NISN polos (mis. supaya cocok dengan sistem lain)
  * menyalakan saklar `qr_isi_nisn`. NISN mudah ditebak, jadi saklar ini hanya
  * bisa diubah super admin dan bawaannya mati.

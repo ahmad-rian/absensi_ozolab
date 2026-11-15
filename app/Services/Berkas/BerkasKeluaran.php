@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  * Kartu dan lembar pas foto hasil generate: Google Drive tempat simpannya,
  * disk server hanya persinggahan sampai unggahan terbukti utuh.
  *
- * Semua tampilan dan unduhan lewat {@see self::url()} — satu jalur yang
+ * Semua tampilan dan unduhan lewat {@see self::url()} - satu jalur yang
  * membaca disk kalau berkasnya masih ada, dan Drive kalau sudah tidak.
  * Foto siswa TIDAK lewat sini: foto dibaca perender kartu dan layar gerbang,
  * jadi salinan lokalnya tetap wajib.

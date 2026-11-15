@@ -65,7 +65,7 @@ class CardAttendanceService
             // kartu lama (QR berisi No Porsi), asalkan pemiliknya tepat satu.
             if (! $kartuLama || ! $form->accept_legacy_qr) {
                 throw ValidationException::withMessages(['token' => $kartuLama
-                    ? 'Kartu lama milik '.$this->participantName($kartuLama).' — belum dicetak ulang. Ambil kartu baru dari panitia.'
+                    ? 'Kartu lama milik '.$this->participantName($kartuLama).' - belum dicetak ulang. Ambil kartu baru dari panitia.'
                     : 'QR di kartu ini berisi data peserta, bukan QR absensi. Generate ulang kartu dari menu Absensi peserta lalu cetak ulang.']);
             }
         }
@@ -126,7 +126,7 @@ class CardAttendanceService
      * Nama peserta yang kartu LAMA-nya baru saja di-scan, untuk daftar cetak ulang.
      *
      * Kartu sebelum Okt 2026 menaruh kolom data (No Porsi) di QR-nya. Kartu itu
-     * tetap tidak dicatat hadir — QR absensi harus bertanda tangan — tapi
+     * tetap tidak dicatat hadir - QR absensi harus bertanda tangan - tapi
      * operator perlu tahu kartu siapa yang masih lama.
      *
      * @return list<string>

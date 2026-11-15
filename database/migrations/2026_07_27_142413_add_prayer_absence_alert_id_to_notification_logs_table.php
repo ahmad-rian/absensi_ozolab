@@ -11,8 +11,8 @@ return new class extends Migration
      *
      * `NotificationDispatcher::deliver()` mencari log yang sudah ada lewat
      * `where('attendance_id', ...)`. Untuk notifikasi non-absensi nilainya null,
-     * dan `WHERE attendance_id = NULL` tidak pernah cocok dengan apa pun —
-     * termasuk baris NULL — sehingga tiap retry akan mengirim ulang pesannya.
+     * dan `WHERE attendance_id = NULL` tidak pernah cocok dengan apa pun -
+     * termasuk baris NULL - sehingga tiap retry akan mengirim ulang pesannya.
      * Menggantinya dengan `whereNull()` justru lebih parah: itu cocok dengan
      * SEMUA log alpa sholat, jadi satu baris terkirim mendiamkan seluruh
      * sekolah. Kolom ini yang membuat korelasinya kembali tepat satu baris.
