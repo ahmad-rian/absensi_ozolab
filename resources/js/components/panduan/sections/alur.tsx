@@ -6,27 +6,27 @@ export function SekolahBaru() {
             <Para>Urutan yang paling sedikit menimbulkan pekerjaan ulang.</Para>
             <Steps>
                 <li>
-                    <Menu>Pengaturan → Umum</Menu> — isi nama sekolah dan pilih tahun ajaran aktif.
+                    <Menu>Pengaturan → Umum</Menu> - isi nama sekolah dan pilih tahun ajaran aktif.
                 </li>
                 <li>
-                    <Menu>Kelas</Menu> — buat semua rombel per tingkat.
+                    <Menu>Kelas</Menu> - buat semua rombel per tingkat.
                 </li>
                 <li>
-                    <Menu>Jadwal Absensi</Menu> — tekan Buat Jadwal Default, lalu sesuaikan jam dan hari
+                    <Menu>Jadwal Absensi</Menu> - tekan Buat Jadwal Default, lalu sesuaikan jam dan hari
                     aktifnya. Sabtu mati secara default.
                 </li>
                 <li>
-                    <Menu>Impor Siswa</Menu> atau <Menu>Siswa → Tambah</Menu> — masukkan data siswa.
+                    <Menu>Impor Siswa</Menu> atau <Menu>Siswa → Tambah</Menu> - masukkan data siswa.
                 </li>
                 <li>
-                    <Menu>Orang Tua</Menu> — pastikan tiap siswa punya wali dengan minimal satu tujuan
+                    <Menu>Orang Tua</Menu> - pastikan tiap siswa punya wali dengan minimal satu tujuan
                     kirim: nomor WhatsApp, email, atau Telegram.
                 </li>
                 <li>
-                    <Menu>Sekolah</Menu> (super admin) — salin tautan scan, buka di tablet gerbang.
+                    <Menu>Sekolah</Menu> (super admin) - salin tautan scan, buka di tablet gerbang.
                 </li>
                 <li>
-                    <Menu>Layout Kartu</Menu> lalu <Menu>Generate Kartu</Menu> — cetak kartu ber-QR.
+                    <Menu>Layout Kartu</Menu> lalu <Menu>Generate Kartu</Menu> - cetak kartu ber-QR.
                 </li>
             </Steps>
             <Note>
@@ -40,19 +40,34 @@ export function SekolahBaru() {
 export function TahunAjaran() {
     return (
         <div className="space-y-4">
-            <Para>Dikerjakan sekali setiap pergantian tahun ajaran.</Para>
+            <Para>
+                Dikerjakan sekali setiap pergantian tahun ajaran. Urutannya penting: tambah, aktifkan, buat
+                kelas, baru naikkan siswa.
+            </Para>
             <Steps>
                 <li>
-                    <Menu>Pengaturan → Umum</Menu> — pindahkan tahun ajaran aktif ke yang baru.
+                    Buka <Menu>Pengaturan → Umum</Menu>, kartu <b>Tahun Ajaran Aktif</b>. Kalau tahun ajaran
+                    barunya belum ada di daftar, isi <b>Tahun mulai</b> (misalnya 2027) lalu tekan{' '}
+                    <Menu>Tambah 2027/2028</Menu>. Nama dan tanggalnya dibuat otomatis.
                 </li>
                 <li>
-                    <Menu>Kelas</Menu> — buat rombel untuk tahun ajaran baru. Kelas tahun lalu dibiarkan,
-                    jangan dihapus.
+                    Pilih tahun ajaran baru itu di daftar <b>Tahun Ajaran</b>, lalu tekan{' '}
+                    <Menu>Simpan Pengaturan Umum</Menu>. Menambah saja belum mengaktifkan.
                 </li>
                 <li>
-                    <Menu>Kenaikan Kelas</Menu> — unggah berkas berisi NISN dan kelas barunya.
+                    Buka <Menu>Kelas</Menu> dan buat kelas untuk tahun ajaran baru. Kelas tahun lalu
+                    dibiarkan, jangan dihapus.
+                </li>
+                <li>
+                    Buka <Menu>Kenaikan Kelas</Menu>, unduh templatenya, isi kolom <b>Kelas Baru</b>, unggah,
+                    periksa, lalu terapkan.
                 </li>
             </Steps>
+            <Note>
+                Hanya satu tahun ajaran yang aktif di satu sekolah. Mengaktifkan yang baru otomatis
+                menonaktifkan yang lama, dan pilihan kelas di seluruh aplikasi berganti ke kelas tahun
+                ajaran aktif.
+            </Note>
             <Pitfall>
                 Jangan menghapus kelas lama. Laporan absensi tahun lalu masih menunjuk ke kelas itu, dan
                 menghapusnya membuat rekap lama kehilangan nama kelasnya.
@@ -87,7 +102,7 @@ export function ImporSiswa() {
             </Steps>
 
             <Para>
-                <b>Melengkapi data siswa yang sudah ada</b> — misalnya nama orang tua, No HP, atau NISN yang
+                <b>Melengkapi data siswa yang sudah ada</b> - misalnya nama orang tua, No HP, atau NISN yang
                 dulu belum diisi.
             </Para>
             <Steps>
@@ -98,7 +113,7 @@ export function ImporSiswa() {
                 </li>
                 <li>
                     Buka di Excel dan isi kolom yang masih kosong. <b>Jangan ubah atau hapus kolom ID Sistem</b>{' '}
-                    — kolom itulah yang memastikan tiap baris kembali ke siswa yang benar.
+                    - kolom itulah yang memastikan tiap baris kembali ke siswa yang benar.
                 </li>
                 <li>Simpan, lalu unggah berkas yang sama.</li>
                 <li>
@@ -173,7 +188,7 @@ export function KenaikanKelas() {
             </Steps>
 
             <Note>
-                Siswa yang tidak ada di berkas <b>tidak diubah</b> — kelasnya tetap. Mereka tetap
+                Siswa yang tidak ada di berkas <b>tidak diubah</b> - kelasnya tetap. Mereka tetap
                 ditampilkan supaya kamu sadar ada yang belum terdaftar, misalnya siswa yang lulus atau
                 pindah.
             </Note>
@@ -185,7 +200,7 @@ export function KenaikanKelas() {
 
             <Pitfall>
                 Kelas tujuan harus sudah ada <b>dan</b> milik tahun ajaran aktif. Kalau belum, barisnya
-                ditolak — buat kelasnya dulu di menu Kelas, jangan mengandalkan sistem membuatnya sendiri.
+                ditolak - buat kelasnya dulu di menu Kelas, jangan mengandalkan sistem membuatnya sendiri.
                 Itu sengaja, supaya satu salah ketik tidak melahirkan kelas hantu seperti &quot;8 A&quot;
                 atau &quot;VIII-A&quot;.
             </Pitfall>
@@ -203,7 +218,7 @@ export function AbsensiHarian() {
             </Para>
             <Steps>
                 <li>
-                    <Menu>Jadwal Absensi</Menu> — sesuaikan hari aktif dan jamnya per hari.
+                    <Menu>Jadwal Absensi</Menu> - sesuaikan hari aktif dan jamnya per hari.
                 </li>
                 <li>Salin tautan scan sekolah dari menu Sekolah, buka di tablet atau laptop gerbang.</li>
                 <li>Buka mode layar penuh, arahkan kamera, siswa menempelkan QR-nya.</li>
@@ -211,7 +226,7 @@ export function AbsensiHarian() {
 
             <Note>
                 Masuk atau pulang <b>ditentukan server dari jam</b>, bukan dipilih petugas. Itu sebabnya
-                tidak ada lagi tombol Masuk/Pulang — dulu tombol itu bisa tertinggal di posisi kemarin
+                tidak ada lagi tombol Masuk/Pulang - dulu tombol itu bisa tertinggal di posisi kemarin
                 sore dan membuat scan pagi tercatat sebagai pulang.
             </Note>
 
@@ -228,15 +243,15 @@ export function AbsenSholat() {
         <div className="space-y-4">
             <Para>
                 Ada dua jenis: <b>Dhuha</b> (bawaan 07:30–09:00) dan <b>Dzuhur</b> (bawaan 11:00–13:00).
-                Keduanya memakai <b>satu tautan scan yang sama</b> — jenisnya ditentukan dari jam scan,
+                Keduanya memakai <b>satu tautan scan yang sama</b> - jenisnya ditentukan dari jam scan,
                 jadi petugas mushola tidak bisa salah mode.
             </Para>
             <Steps>
                 <li>
-                    <Menu>Pengaturan → Fitur</Menu> — nyalakan jenis sholat yang dipakai.
+                    <Menu>Pengaturan → Fitur</Menu> - nyalakan jenis sholat yang dipakai.
                 </li>
                 <li>
-                    <Menu>Pengaturan → Absen Sholat</Menu> — atur jamnya, dan tentukan apakah siswa
+                    <Menu>Pengaturan → Absen Sholat</Menu> - atur jamnya, dan tentukan apakah siswa
                     non-Islam ikut.
                 </li>
                 <li>Salin tautan scan sholat dari menu Sekolah, buka di perangkat mushola.</li>

@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\StudentQuickOpenController;
 use App\Http\Controllers\Admin\StudentRegenerateController;
 use App\Http\Controllers\Admin\StudentReportController;
 use App\Http\Controllers\Admin\StudioTokenController;
+use App\Http\Controllers\Admin\TahunAjaranController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\WaConfigController;
 use App\Http\Controllers\Auth\ChangeRequiredPasswordController;
@@ -113,12 +114,12 @@ Route::get('scan/{school:scanner_token}', [PublicScannerController::class, 'inde
  |
  | Yang membukanya box Android TV berspesifikasi rendah yang menyala sepanjang
  | hari. Dulu tiap buka halaman DAN tiap kartu ditempel menulis satu baris
- | session — dipicu semata oleh `csrf_token()` di dalam Blade-nya, karena
+ | session - dipicu semata oleh `csrf_token()` di dalam Blade-nya, karena
  | `StartSession` selalu menyimpan tanpa memeriksa apakah ada yang berubah.
  |
  | CSRF dilepas karena di sini ia tidak menjaga apa pun: ia melindungi sesi
  | login, sedangkan gerbang tidak punya sesi. Penjaga sebenarnya `scanner_token`
- | di URL plus `qr_token` kartu — dan penyerang yang memegang keduanya bisa
+ | di URL plus `qr_token` kartu - dan penyerang yang memegang keduanya bisa
  | memanggil endpoint ini lewat curl tanpa terhalang CSRF sama sekali.
  |
  | `HandleInertiaRequests` ikut dilepas karena ia membaca session (`flash`) dan
@@ -126,7 +127,7 @@ Route::get('scan/{school:scanner_token}', [PublicScannerController::class, 'inde
  | memecah cache di depan Cloudflare untuk halaman yang bukan Inertia.
  |
  | Sengaja HANYA empat rute ini. Scan React, sholat, dan perpustakaan tetap
- | bersession — masing-masing punya pertimbangan sendiri, dan ada tes yang
+ | bersession - masing-masing punya pertimbangan sendiri, dan ada tes yang
  | menjaga pengecualian ini tidak melebar diam-diam.
  */
 $tanpaSession = [
@@ -170,7 +171,7 @@ Route::post('g/{kode}', [PublicScannerController::class, 'shortScan'])
     ->withoutMiddleware($tanpaSession)
     ->name('public.scanner.short.scan');
 
-// Halaman scan ringan peserta (haji/umrah) — sama dengan /g/ tapi per layout.
+// Halaman scan ringan peserta (haji/umrah) - sama dengan /g/ tapi per layout.
 // Satu link: scan pertama hari itu masuk, scan berikutnya pulang.
 Route::get('p/{kode}/kamera', [CardAttendanceController::class, 'kameraRingan'])
     ->middleware('throttle:30,1')
@@ -191,7 +192,7 @@ Route::post('p/{kode}', [CardAttendanceController::class, 'scanRingan'])
     ->withoutMiddleware($tanpaSession)
     ->name('public.card-scanner.short.scan');
 
-// Scan program penyelenggara (spec 004) — terpisah total dari /p dan
+// Scan program penyelenggara (spec 004) - terpisah total dari /p dan
 // /scan-peserta milik Kartu Bebas/haji. Kamera bersession (halaman React);
 // endpoint JSON & halaman ringan tanpa session, sama dengan /p.
 Route::get('hadir/{kode}', [PublicProgramScanController::class, 'halaman'])
@@ -221,18 +222,18 @@ Route::post('h/{kode}', [PublicProgramScanController::class, 'scanRingan'])
     ->withoutMiddleware($tanpaSession)
     ->name('public.program-scan.ringan.scan');
 
-// Absen sholat — URL tersendiri untuk sekolah yang memisahkan perangkat mushola
+// Absen sholat - URL tersendiri untuk sekolah yang memisahkan perangkat mushola
 // dari gerbang. Sejak gerbang utama ikut mencatat sholat (GerbangRecorder), ini
 // bukan lagi satu-satunya jalan, tapi tautannya sudah tersebar dan tetap hidup.
 //
 // Batas lajunya disamakan dengan gerbang utama: `throttle:120,1` bawaan dihitung
-// per ALAMAT IP, dan satu gedung berbagi satu IP publik — saat jamaah bubar dan
+// per ALAMAT IP, dan satu gedung berbagi satu IP publik - saat jamaah bubar dan
 // puluhan kartu ditempel berbarengan, batas itu tersentuh dan scan ditolak karena
 // alasan yang tidak ada hubungannya dengan absensi.
 Route::get('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'index'])->name('public.prayer-scanner');
 Route::post('scan/{school:scanner_token}/sholat', [PrayerScannerController::class, 'scan'])->middleware('throttle:scan-gerbang')->name('public.prayer-scanner.scan');
 
-// Kunjungan perpustakaan — URL terpisah, alasan yang sama seperti sholat: tablet
+// Kunjungan perpustakaan - URL terpisah, alasan yang sama seperti sholat: tablet
 // di perpustakaan tidak boleh bisa salah mode.
 Route::get('scan/{school:scanner_token}/perpustakaan', [LibraryScannerController::class, 'index'])->name('public.library-scanner');
 Route::post('scan/{school:scanner_token}/perpustakaan', [LibraryScannerController::class, 'scan'])->middleware('throttle:scan-gerbang')->name('public.library-scanner.scan');
@@ -248,7 +249,7 @@ Route::get('daftar/status/{student}', [StudentRegistrationController::class, 'st
 Route::get('daftar/{student}/hasil', [StudentRegistrationController::class, 'result'])->name('student.register.result');
 
 // Form pendek untuk sesi foto sekolah: nama, kelas, nomor absen, nomor foto.
-// Rute terpisah, bukan mode di /daftar — operator membagikan tautannya apa adanya
+// Rute terpisah, bukan mode di /daftar - operator membagikan tautannya apa adanya
 // dan tidak boleh bisa salah membuka versi panjang.
 Route::get('quick-regis', [StudentRegistrationController::class, 'quick'])->name('student.register.quick');
 Route::post('quick-regis', [StudentRegistrationController::class, 'storeQuick'])->middleware('throttle:10,1')->name('student.register.quick.store');
@@ -264,7 +265,7 @@ Route::get('f/{token}', [CardFormController::class, 'show'])->name('public.card-
 Route::post('f/{token}', [CardFormController::class, 'submit'])->middleware('throttle:10,1')->name('public.card-forms.submit');
 Route::get('f/{token}/status/{submission}', [CardFormController::class, 'status'])->middleware('throttle:120,1')->name('public.card-forms.status');
 
-// Berpindah tenant hanya untuk SUPER_ADMIN — role lain terkunci di sekolahnya.
+// Berpindah tenant hanya untuk SUPER_ADMIN - role lain terkunci di sekolahnya.
 Route::middleware(['auth', 'bukan-penyelenggara'])->post('admin/switch-school', function (Request $request) {
     $request->validate(['school_id' => ['required', 'exists:schools,id']]);
 
@@ -282,19 +283,19 @@ Route::middleware(['auth', 'bukan-penyelenggara'])->post('admin/switch-school', 
 
 // Buka cepat siswa dari pandangan lintas sekolah: pindah tenant lalu langsung ke
 // halamannya. Di luar grup `permission:siswa.access` + `feature:master_siswa`
-// dengan sengaja — super admin harus tetap bisa membukanya walau modul siswa
+// dengan sengaja - super admin harus tetap bisa membukanya walau modul siswa
 // sedang dimatikan untuk sekolah itu. Juga di luar prefix `admin/semua-sekolah`,
 // supaya modul itu tetap benar-benar hanya-baca.
 Route::middleware(['auth', 'verified', 'super-admin'])
     ->post('admin/siswa/{siswa}/buka', StudentQuickOpenController::class)
     ->name('admin.siswa.buka');
 
-// Admin routes — akses ditentukan per modul lewat permission `<modul>.access`.
+// Admin routes - akses ditentukan per modul lewat permission `<modul>.access`.
 // SUPER_ADMIN lolos semua lewat Gate::before (AppServiceProvider).
 // `bukan-penyelenggara`: akun penyelenggara (school_id null) akan lolos scope
-// sekolah yang fail-open — ditolak di pintu grup ini (spec 001).
+// sekolah yang fail-open - ditolak di pintu grup ini (spec 001).
 Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')->group(function () {
-    // Panduan sengaja tanpa `permission:` — ia bukan modul, dan setiap pengguna
+    // Panduan sengaja tanpa `permission:` - ia bukan modul, dan setiap pengguna
     // yang bisa masuk berhak tahu cara memakai bagian yang boleh dia buka.
     // Penyaringan isinya terjadi di klien memakai permission dan fitur yang
     // sudah dibagikan lewat shared props.
@@ -321,7 +322,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
 
         // Penjelajah folder Drive: admin melihat isi foldernya lalu memilih
         // sendiri berkasnya, untuk kasus yang tidak tertangkap pencocokan
-        // otomatis. Ketiganya memeriksa `isInsideSchoolRoot()` — satu akun
+        // otomatis. Ketiganya memeriksa `isInsideSchoolRoot()` - satu akun
         // OAuth melayani semua sekolah, jadi id yang datang dari klien tidak
         // pernah dipercaya begitu saja.
         Route::get('siswa/{siswa}/drive/jelajah', [StudentDrivePickerController::class, 'browse'])->name('admin.siswa.drive.browse');
@@ -329,7 +330,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
         Route::post('siswa/{siswa}/foto/drive', [StudentDrivePickerController::class, 'use'])->name('admin.siswa.foto.drive');
 
         // Generate ulang per keluaran. Dipisah karena merender kartu memanggil
-        // headless Chrome dan mengambil foto memukul Drive — memperbaiki satu
+        // headless Chrome dan mengambil foto memukul Drive - memperbaiki satu
         // berkas tidak boleh menjalankan keempatnya.
         Route::post('siswa/{siswa}/regenerate/kartu', [StudentRegenerateController::class, 'cards'])->name('admin.siswa.regenerate.cards');
         Route::post('siswa/{siswa}/regenerate/pas-foto', [StudentRegenerateController::class, 'photoSheet'])->name('admin.siswa.regenerate.photo-sheet');
@@ -346,7 +347,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
         Route::post('siswa-tanpa-foto/{siswa}/foto', [SiswaTanpaFotoController::class, 'foto'])->name('admin.siswa-tanpa-foto.foto');
     });
 
-    // Modul grup Sistem: lintas tenant, jadi `super-admin` wajib ikut — permission
+    // Modul grup Sistem: lintas tenant, jadi `super-admin` wajib ikut - permission
     // saja tidak cukup karena global scope tidak menjaga apa pun di sini.
     // Monitor lintas sekolah: halaman pertama super admin setelah login.
     Route::middleware('super-admin')->group(function () {
@@ -466,7 +467,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
 
     // Generate massal per sekolah/kelas. `super-admin` wajib ikut: layar ini
     // memilih sekolahnya dari daftar dan query-nya memakai `acrossSchools()`,
-    // jadi global scope tenant tidak menjaga apa pun di sini — sama alasannya
+    // jadi global scope tenant tidak menjaga apa pun di sini - sama alasannya
     // dengan grup Sistem.
     Route::middleware(['permission:generate-kartu.access', 'feature:kartu_album', 'super-admin'])->group(function () {
         Route::get('generate-kartu', [GenerateKartuMassalController::class, 'index'])->middleware('generate-massal')->name('admin.generate-kartu');
@@ -507,6 +508,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
         Route::post('pengaturan/upload-logo', [PengaturanController::class, 'uploadLogo'])->name('admin.pengaturan.upload-logo');
         Route::post('pengaturan/upload-favicon', [PengaturanController::class, 'uploadFavicon'])->name('admin.pengaturan.upload-favicon');
         Route::post('pengaturan/branding-publik', [PengaturanController::class, 'publishBranding'])->name('admin.pengaturan.branding-publik');
+        Route::post('pengaturan/tahun-ajaran', [TahunAjaranController::class, 'store'])->name('admin.pengaturan.tahun-ajaran.store');
     });
 
     Route::middleware(['permission:pengguna.access', 'feature:manajemen_pengguna'])->group(function () {
@@ -523,7 +525,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
     Route::middleware(['permission:whatsapp.access', 'feature:integrasi_whatsapp'])
         ->get('wa-config', [WaConfigController::class, 'index'])->name('admin.wa-config');
 
-    // Sistem — modul yang menyentuh data lintas sekolah. Permission saja
+    // Sistem - modul yang menyentuh data lintas sekolah. Permission saja
     // tidak cukup di sini: School, Role, dan SchoolNotificationChannel tidak
     // ber-tenant, jadi global scope tidak melindungi apa pun.
     Route::middleware(['permission:masuk-sebagai.access', 'super-admin'])->group(function () {
@@ -558,7 +560,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
         Route::delete('roles/{role}', [RolePermissionController::class, 'destroy'])->name('admin.roles.destroy');
     });
 
-    // Kartu Bebas / Haji — dynamic card form builder
+    // Kartu Bebas / Haji - dynamic card form builder
     Route::middleware(['permission:form-kartu.access', 'super-admin', 'kartu-bebas-legacy'])->group(function () {
         Route::get('card-forms', [AdminCardFormController::class, 'index'])->name('admin.card-forms');
         Route::get('card-forms/create', [AdminCardFormController::class, 'create'])->name('admin.card-forms.create');
@@ -569,7 +571,7 @@ Route::middleware(['auth', 'verified', 'bukan-penyelenggara'])->prefix('admin')-
     });
 });
 
-// Keluar dari mode menyamar — hanya butuh login, karena user yang sedang
+// Keluar dari mode menyamar - hanya butuh login, karena user yang sedang
 // disamar tidak punya permission impersonate.
 Route::middleware('auth')
     ->post('admin/stop-impersonate', [ImpersonationController::class, 'destroy'])
@@ -651,7 +653,7 @@ Route::middleware('auth')->group(function () {
  |
  | Anaknya TIDAK lagi jadi segmen rute. Dulu setiap menu berada di bawah
  | `anak/{anak}/…`, jadi orang tua harus membuka anaknya dulu sebelum bisa
- | melihat apa pun — satu klik tambahan di setiap kunjungan, dan bagi mayoritas
+ | melihat apa pun - satu klik tambahan di setiap kunjungan, dan bagi mayoritas
  | yang hanya punya satu anak klik itu tidak memilih apa-apa.
  |
  | Sekarang anaknya adalah konteks (`?anak=`), dipilih di sidebar dan diingat
@@ -712,7 +714,7 @@ Route::middleware(['auth', 'verified', 'general'])
             Route::delete('peran-staf/{role}', [GeneralPeranStafController::class, 'destroy'])->name('peran-staf.destroy');
         });
 
-        // Masuk sebagai staf / akun penyelenggara — khusus super admin.
+        // Masuk sebagai staf / akun penyelenggara - khusus super admin.
         Route::post('pengguna/{user}/masuk-sebagai', [ImpersonationController::class, 'store'])->middleware('super-admin')->name('pengguna.masuk-sebagai');
 
         Route::get('pengaturan', [GeneralSettingsController::class, 'index'])->middleware('permission:general-pengaturan-umum.access|general-pengaturan-drive.access|general-pengaturan-whatsapp.access')->name('pengaturan');
@@ -727,7 +729,7 @@ Route::middleware(['auth', 'verified', 'general'])
         });
     });
 
-// Alamat lama kelola penyelenggara (sebelum spec 009) — bookmark tetap jalan.
+// Alamat lama kelola penyelenggara (sebelum spec 009) - bookmark tetap jalan.
 Route::middleware(['auth', 'super-admin'])->get('admin/penyelenggara/{rest?}', fn (?string $rest = null) => redirect('/general/penyelenggara'.($rest ? '/'.$rest : ''), 301))
     ->where('rest', '.*');
 
@@ -746,7 +748,7 @@ Route::prefix('izin')->name('izin.')->group(function () {
     Route::get('terkirim', [PublicIzinController::class, 'terkirim'])->middleware('throttle:izin-publik')->name('terkirim');
 });
 
-// Terima undangan — publik; token SHA-256 di DB, throttle melawan tebakan.
+// Terima undangan - publik; token SHA-256 di DB, throttle melawan tebakan.
 Route::get('undangan/{token}', [UndanganController::class, 'show'])->middleware('throttle:30,1')->name('undangan.show');
 Route::post('undangan/{token}', [UndanganController::class, 'accept'])->middleware('throttle:10,1')->name('undangan.accept');
 
@@ -808,7 +810,7 @@ Route::middleware(['auth', 'verified', 'penyelenggara', 'konteks-penyelenggara']
             Route::get('program/{program}/laporan/unduh', [PenyelenggaraLaporanController::class, 'export'])->middleware('throttle:20,1')->name('laporan.export');
         });
 
-        // Tambah/impor/arsip/kartu: Admin Penyelenggara saja — pendamping hanya
+        // Tambah/impor/arsip/kartu: Admin Penyelenggara saja - pendamping hanya
         // melihat dan mencatat kehadiran (audit 2026-10-14).
         Route::middleware('permission:penyelenggara-peserta-kelola.access')->group(function () {
             Route::get('program/{program}/peserta/create', [PenyelenggaraPesertaController::class, 'create'])->name('peserta.create');
