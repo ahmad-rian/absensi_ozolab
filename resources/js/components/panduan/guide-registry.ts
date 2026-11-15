@@ -80,8 +80,8 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
             {
                 id: 'impor-siswa',
                 title: 'Impor siswa dari Excel',
-                summary: 'Siapkan berkas, unggah, baca review, terapkan.',
-                keywords: ['impor', 'import', 'excel', 'xlsx', 'csv', 'massal'],
+                summary: 'Tambah siswa baru, atau unduh data lalu lengkapi dan unggah ulang.',
+                keywords: ['impor', 'import', 'excel', 'xlsx', 'csv', 'massal', 'lengkapi', 'unggah ulang', 'id sistem', 'nama orang tua', 'ganda'],
                 permission: 'siswa.access',
                 feature: 'master_siswa',
             },

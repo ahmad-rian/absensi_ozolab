@@ -15,6 +15,8 @@ import {
 import type { ChangeEvent, FormEvent, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
+import { GuideDialog } from '@/components/panduan/guide-dialog';
+import { ImporSiswa } from '@/components/panduan/sections/alur';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -256,9 +258,18 @@ export default function SiswaImport({
             <Head title="Impor Siswa" />
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        Impor Siswa
-                    </h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Impor Siswa
+                        </h1>
+                        <GuideDialog
+                            title="Cara pakai Impor Siswa"
+                            description="Menambah siswa baru, atau melengkapi data siswa yang sudah ada tanpa membuat data ganda."
+                            topik="impor-siswa"
+                        >
+                            <ImporSiswa />
+                        </GuideDialog>
+                    </div>
                     <p className="text-sm text-muted-foreground">
                         Unggah berkas Excel/CSV untuk menambah dan memperbarui
                         data siswa sekaligus.

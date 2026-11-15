@@ -68,32 +68,78 @@ export function ImporSiswa() {
                 Menerima <b>.xlsx</b> dan <b>.csv</b>. Prosesnya selalu tiga tahap: unggah, periksa hasil,
                 baru terapkan. Tidak ada data yang berubah sebelum kamu menekan Terapkan.
             </Para>
+
+            <Para>
+                <b>Menambah siswa baru</b>
+            </Para>
             <Steps>
                 <li>
-                    Buka <Menu>Impor Siswa</Menu> lalu unduh template. Isi mengikuti kolomnya.
+                    Buka <Menu>Impor Siswa</Menu> lalu tekan <Menu>Unduh Template Excel</Menu>. Isi mengikuti
+                    kolomnya.
                 </li>
                 <li>Unggah berkas. Sistem membacanya dan menampilkan hasil pemeriksaan.</li>
                 <li>
-                    Baca halaman review. Ada tiga kelompok: <b>akan dibuat</b>, <b>akan diperbarui</b>,
-                    dan <b>ditolak</b> beserta alasan dan nomor barisnya.
+                    Baca halaman review. Ada empat kelompok: <b>akan dibuat</b>, <b>akan diperbarui</b>,{' '}
+                    <b>tidak berubah</b>, dan <b>ditolak</b> beserta alasan dan nomor barisnya.
                 </li>
                 <li>Perbaiki baris yang ditolak di berkasmu, unggah ulang bila perlu.</li>
                 <li>Tekan Terapkan. Prosesnya berjalan di latar belakang dan statusnya diperbarui sendiri.</li>
             </Steps>
 
+            <Para>
+                <b>Melengkapi data siswa yang sudah ada</b> — misalnya nama orang tua, No HP, atau NISN yang
+                dulu belum diisi.
+            </Para>
+            <Steps>
+                <li>
+                    Di <Menu>Impor Siswa</Menu>, pilih kelasnya (atau semua kelas) lalu tekan{' '}
+                    <Menu>Unduh Data Siswa (untuk dilengkapi)</Menu>. Berkasnya sudah berisi data siswa
+                    sekarang.
+                </li>
+                <li>
+                    Buka di Excel dan isi kolom yang masih kosong. <b>Jangan ubah atau hapus kolom ID Sistem</b>{' '}
+                    — kolom itulah yang memastikan tiap baris kembali ke siswa yang benar.
+                </li>
+                <li>Simpan, lalu unggah berkas yang sama.</li>
+                <li>
+                    Di review, tiap siswa menampilkan apa yang berubah, misalnya{' '}
+                    <i>Nama Orang Tua: (kosong) → Budi Santoso</i>. Siswa yang tidak kamu ubah masuk kelompok{' '}
+                    <b>tidak berubah</b> dan tidak disentuh.
+                </li>
+                <li>Tekan Terapkan.</li>
+            </Steps>
+
+            <Note>
+                Mengunggah ulang <b>tidak menghapus data lama</b>. Kolom yang terisi menggantikan nilai lama;
+                kolom yang kamu biarkan kosong dibiarkan apa adanya. Siswa yang sudah ada juga tidak terbuat
+                ganda.
+            </Note>
+
             <Para>Bagaimana sistem tahu ini siswa baru atau siswa lama:</Para>
             <Bullets>
-                <li>NISN cocok dengan satu siswa → datanya diperbarui.</li>
+                <li>ID Sistem terisi → langsung ke siswa itu. NISN dan NIS di baris menjadi nilai barunya.</li>
+                <li>ID Sistem kosong, NISN cocok dengan satu siswa → datanya diperbarui.</li>
                 <li>NISN kosong tapi NIS cocok → datanya diperbarui.</li>
-                <li>Keduanya tidak cocok → dibuat sebagai siswa baru.</li>
+                <li>Tidak ada yang cocok → dibuat sebagai siswa baru.</li>
                 <li>Nama sama tapi NISN berbeda → dianggap dua orang berbeda.</li>
             </Bullets>
 
             <Pitfall>
                 Nama tidak pernah dipakai untuk mencocokkan. Dua siswa bernama sama di satu sekolah itu
-                wajar, jadi pencocokan hanya memakai NISN atau NIS. Kalau kedua kolom itu kosong, barisnya
-                ditolak.
+                wajar, jadi pencocokan hanya memakai ID Sistem, NISN, atau NIS. ID Sistem yang diketik
+                sendiri, disalin dari sekolah lain, atau muncul dua kali di berkas akan ditolak.
             </Pitfall>
+
+            <Note>
+                Akun portal orang tua baru dibuat atau ditautkan kalau <b>Nama Orang Tua dan No HP</b>{' '}
+                dua-duanya terisi. Kalau hanya nama, nama itu tersimpan di data siswa saja. Nama pada akun
+                login orang tua yang sudah ada tidak ikut berubah.
+            </Note>
+
+            <Tip>
+                Siswa yang mendaftar tanpa NIS atau NISN asli paling aman dilengkapi lewat cara kedua: di
+                berkas unduhan kolom NIS mereka kosong, tinggal isi nomor aslinya.
+            </Tip>
 
             <Tip>
                 Coba dengan 2–3 baris dulu sebelum satu angkatan. Lihat apakah halaman review sesuai
@@ -107,8 +153,8 @@ export function KenaikanKelas() {
     return (
         <div className="space-y-4">
             <Para>
-                Berkasnya cukup dua kolom: <b>NISN</b> dan <b>kelas baru</b>. Data siswa yang lain tidak
-                disentuh sama sekali.
+                Yang dibaca hanya nomor siswa (<b>NISN</b>, atau <b>NIS</b> bila NISN-nya kosong) dan kolom{' '}
+                <b>Kelas Baru</b>. Data siswa yang lain tidak disentuh sama sekali.
             </Para>
             <Steps>
                 <li>Pastikan tahun ajaran baru sudah aktif dan kelas tujuannya sudah dibuat.</li>
@@ -120,7 +166,10 @@ export function KenaikanKelas() {
                 <li>
                     Periksa review: <b>naik kelas</b>, <b>lulus</b>, <b>tidak ada di berkas</b>, dan <b>ditolak</b>.
                 </li>
-                <li>Tekan Terapkan.</li>
+                <li>
+                    Tekan Terapkan. Halaman hasil menampilkan jumlah yang naik dan lulus; daftar yang ditolak
+                    atau tidak ada di berkas bisa diunduh untuk diperbaiki.
+                </li>
             </Steps>
 
             <Note>

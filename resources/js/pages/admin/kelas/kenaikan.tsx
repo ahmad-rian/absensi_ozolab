@@ -13,6 +13,8 @@ import {
 import { useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
+import { GuideDialog } from '@/components/panduan/guide-dialog';
+import { KenaikanKelas as PanduanKenaikanKelas } from '@/components/panduan/sections/alur';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -149,9 +151,18 @@ export default function KenaikanKelas({
             <Head title="Kenaikan Kelas" />
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        Kenaikan Kelas
-                    </h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Kenaikan Kelas
+                        </h1>
+                        <GuideDialog
+                            title="Cara pakai Kenaikan Kelas"
+                            description="Memindahkan siswa ke kelas tahun ajaran baru dan meluluskan kelas akhir."
+                            topik="kenaikan-kelas"
+                        >
+                            <PanduanKenaikanKelas />
+                        </GuideDialog>
+                    </div>
                     <p className="text-sm text-muted-foreground">
                         Unduh template, isi kolom Kelas Baru, unggah, periksa
                         hasilnya, lalu terapkan.
