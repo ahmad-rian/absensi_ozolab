@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     AlertTriangle,
     ArrowUpRight,
@@ -30,6 +30,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { dashboard } from '@/routes';
+import { pengaturan } from '@/routes/admin';
 
 type PromotionRow = {
     row_number: number;
@@ -174,8 +175,26 @@ export default function KenaikanKelas({
                         <AlertTriangle className="size-4" />
                         <AlertTitle>Belum ada tahun ajaran aktif</AlertTitle>
                         <AlertDescription>
-                            Aktifkan dulu tahun ajaran berjalan di Pengaturan →
-                            tab Umum sebelum menaikkan kelas siswa.
+                            <p>
+                                Aktifkan dulu tahun ajaran berjalan di
+                                Pengaturan → tab Umum sebelum menaikkan kelas
+                                siswa.
+                            </p>
+                            <Button
+                                asChild
+                                size="sm"
+                                variant="outline"
+                                className="mt-2 text-foreground"
+                            >
+                                <Link
+                                    href={pengaturan({
+                                        query: { tab: 'umum' },
+                                    })}
+                                >
+                                    <ArrowUpRight className="size-4" /> Buka
+                                    Pengaturan → Umum
+                                </Link>
+                            </Button>
                         </AlertDescription>
                     </Alert>
                 )}
