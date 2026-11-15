@@ -88,8 +88,8 @@ export function LangkahPertama() {
 
             <Pitfall>
                 Urutannya tidak bisa dibalik. Siswa wajib punya kelas, dan kelas wajib punya tahun ajaran.
-                Kalau kelas dibuat sebelum tahun ajaran diaktifkan, kelas itu akan menempel ke tahun
-                ajaran yang salah dan tidak akan muncul saat kenaikan kelas.
+                Saat membuat kelas, pilih tahun ajaran yang aktif. Kelas yang dibuat di tahun ajaran
+                lain tidak muncul di pilihan kelas dan tidak bisa menjadi tujuan kenaikan kelas.
             </Pitfall>
         </div>
     );

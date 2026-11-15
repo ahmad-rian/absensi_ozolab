@@ -69,9 +69,15 @@ export function TahunAjaran() {
                 ajaran aktif.
             </Note>
             <Pitfall>
-                Jangan menghapus kelas lama. Laporan absensi tahun lalu masih menunjuk ke kelas itu, dan
-                menghapusnya membuat rekap lama kehilangan nama kelasnya.
+                Kerjakan keempat langkah berurutan di hari yang sama, sebaiknya di luar jam sekolah.
+                Setelah tahun ajaran baru aktif tetapi siswa belum dinaikkan, pilihan kelas hanya berisi
+                kelas baru yang masih kosong, dan impor siswa menolak nama kelas yang belum dibuat.
+                Absensi scan tetap berjalan seperti biasa.
             </Pitfall>
+            <Note>
+                Kelas lama tidak perlu dihapus. Laporan absensi tahun lalu masih memakainya, dan sistem
+                menolak menghapus kelas yang masih dipakai riwayat siswa.
+            </Note>
         </div>
     );
 }

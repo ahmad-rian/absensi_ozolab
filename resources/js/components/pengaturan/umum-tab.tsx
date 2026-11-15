@@ -36,7 +36,7 @@ export function UmumTab({
     activeAcademicYearId: string | null;
     onDirtyChange: (dirty: boolean) => void;
 }) {
-    const { data, setData, put, processing, errors, isDirty } = useForm<UmumData>({
+    const { data, setData, put, transform, processing, errors, isDirty } = useForm<UmumData>({
         // `section` ikut di dalam payload supaya controller tahu ruleset mana
         // yang dipakai; ia di-unset sebelum merge ke schools.settings.
         section: 'umum',
@@ -51,6 +51,14 @@ export function UmumTab({
         e.preventDefault();
         // preserveState menjaga komponen tetap hidup melewati redirect, jadi
         // tab aktif tidak melompat balik ke tab pertama.
+        // Tahun ajaran hanya dikirim kalau memang diganti di form ini. Kalau
+        // selalu dikirim, halaman yang terbuka lama akan mengaktifkan kembali
+        // tahun ajaran lama saat admin hanya mengubah nama atau zona waktu.
+        transform(({ academic_year_id, ...lainnya }) =>
+            academic_year_id && academic_year_id !== (activeAcademicYearId ?? '')
+                ? { ...lainnya, academic_year_id }
+                : lainnya,
+        );
         put('/admin/pengaturan', { preserveScroll: true, preserveState: true });
     }
 

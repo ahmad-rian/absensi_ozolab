@@ -55,3 +55,26 @@ test('pengguna tanpa izin pengaturan tidak bisa menambah tahun ajaran', function
         ->post(route('admin.pengaturan.tahun-ajaran.store'), ['tahun_mulai' => 2027])
         ->assertForbidden();
 });
+
+test('menyimpan pengaturan umum tanpa memilih tahun ajaran tidak mengubah tahun aktif', function () {
+    $admin = createAdminUser();
+    $aktif = AcademicYear::factory()->active()->create(['school_id' => $admin->school_id, 'name' => '2027/2028']);
+    AcademicYear::factory()->create(['school_id' => $admin->school_id, 'name' => '2026/2027']);
+
+    $this->actingAs($admin)
+        ->put(route('admin.pengaturan.update'), ['section' => 'umum', 'school_name' => 'SMP Uji', 'timezone' => 'Asia/Jakarta'])
+        ->assertSessionHasNoErrors();
+
+    expect($aktif->fresh()->is_active)->toBeTrue();
+});
+
+test('daftar tahun ajaran di pengaturan diurutkan dari yang paling awal', function () {
+    $admin = createAdminUser();
+    AcademicYear::withoutGlobalScopes()->where('school_id', $admin->school_id)->delete();
+    foreach ([2030, 2026, 2028] as $mulai) {
+        AcademicYear::factory()->create(['school_id' => $admin->school_id, 'name' => $mulai.'/'.($mulai + 1), 'start_date' => $mulai.'-07-15', 'end_date' => ($mulai + 1).'-06-30']);
+    }
+
+    $this->withoutVite()->actingAs($admin)->get(route('admin.pengaturan'))
+        ->assertInertia(fn ($page) => $page->where('academicYears', fn ($t) => collect($t)->pluck('name')->all() === ['2026/2027', '2028/2029', '2030/2031']));
+});

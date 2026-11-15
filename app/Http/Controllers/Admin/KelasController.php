@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
 use App\Models\Classroom;
+use App\Models\StudentClassHistory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -98,6 +100,29 @@ class KelasController extends Controller
 
         $validated['capacity'] = $validated['capacity'] ?? 36;
 
+        $pindahTahun = $validated['academic_year_id'] !== $classroom->academic_year_id;
+
+        // Memindah kelas berisi siswa ke tahun ajaran lain menulis ulang riwayat:
+        // siswanya ikut pindah tanpa riwayat kelas lama. Jalur yang benar adalah
+        // Kenaikan Kelas.
+        if ($pindahTahun && $this->punyaSiswaAtauRiwayat($classroom)) {
+            throw ValidationException::withMessages([
+                'academic_year_id' => 'Kelas ini sudah berisi siswa atau punya riwayat, jadi tahun ajarannya tidak bisa diganti. Buat kelas baru di tahun ajaran tujuan lalu pakai menu Kenaikan Kelas.',
+            ]);
+        }
+
+        $kembar = Classroom::forSchool()
+            ->whereKeyNot($classroom->getKey())
+            ->where('name', $validated['name'])
+            ->where('academic_year_id', $validated['academic_year_id'])
+            ->exists();
+
+        if ($kembar) {
+            throw ValidationException::withMessages([
+                'name' => "Kelas {$validated['name']} sudah ada di tahun ajaran itu. Pakai nama lain.",
+            ]);
+        }
+
         $classroom->update($validated);
 
         return back()->with('success', 'Kelas berhasil diperbarui.');
@@ -109,9 +134,21 @@ class KelasController extends Controller
             return back()->with('error', 'Kelas tidak dapat dihapus karena masih memiliki siswa.');
         }
 
+        // Kelas lama yang siswanya sudah naik tetap dirujuk riwayat kelas;
+        // menghapusnya membuat rekap dan laporan tahun lalu kehilangan anggota.
+        if (StudentClassHistory::forSchool()->where('classroom_id', $classroom->getKey())->exists()) {
+            return back()->with('error', 'Kelas tidak dapat dihapus karena masih dipakai riwayat kelas siswa. Laporan tahun lalu membutuhkannya.');
+        }
+
         $classroom->delete();
 
         return back()->with('success', 'Kelas berhasil dihapus.');
+    }
+
+    private function punyaSiswaAtauRiwayat(Classroom $classroom): bool
+    {
+        return $classroom->students()->exists()
+            || StudentClassHistory::forSchool()->where('classroom_id', $classroom->getKey())->exists();
     }
 
     /**

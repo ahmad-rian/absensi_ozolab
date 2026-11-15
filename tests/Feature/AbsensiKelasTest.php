@@ -295,3 +295,17 @@ test('jadwal khusus kelas tahun lalu tidak ikut hitungan ketidakhadiran', functi
 
     expect($ids)->toContain($jadwalBaru->id)->toContain($umum->id)->not->toContain($jadwalLama->id);
 });
+
+test('jadwal kelas tahun lalu tetap dihitung selama siswanya belum dinaikkan', function () {
+    // Tahun ajaran baru sudah aktif, tetapi kenaikan kelas belum dijalankan:
+    // siswa masih di kelas lama dan masih memakai jadwal kelas itu.
+    [, $kelasLama] = akNaikKelas();
+    $school = School::find($kelasLama->school_id);
+    Student::withoutGlobalScopes()->where('school_id', $school->id)->delete();
+    Student::factory()->create(['school_id' => $school->id, 'classroom_id' => $kelasLama->id, 'is_active' => true]);
+    $jadwalLama = AttendanceSchedule::factory()->create(['school_id' => $school->id, 'classroom_id' => $kelasLama->id, 'day_of_week' => 4]);
+
+    $ids = app(DaftarKetidakhadiran::class)->jadwal($school, SchoolTime::today())->pluck('id');
+
+    expect($ids)->toContain($jadwalLama->id);
+});

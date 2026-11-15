@@ -31,9 +31,12 @@ class DaftarKetidakhadiran
      */
     public function jadwal(School $school, Carbon $date): Collection
     {
-        // Jadwal khusus kelas tahun ajaran LAMA tidak ikut: siswanya sudah naik
-        // kelas, dan jam jadwal itu masih bisa menggeser kapan jendela dianggap
-        // tutup. Sekolah tanpa tahun ajaran aktif tidak punya kelas lama.
+        // Jadwal khusus kelas tahun ajaran LAMA tidak ikut setelah siswanya naik
+        // kelas: jam jadwal itu masih bisa menggeser kapan jendela dianggap
+        // tutup. Selama kenaikan kelas belum dijalankan, siswa masih di kelas
+        // lama dan scan mereka masih memakai jadwal itu, jadi kelas yang masih
+        // berisi siswa aktif tetap dihitung. Sekolah tanpa tahun ajaran aktif
+        // tidak punya kelas lama.
         $tahunAktif = AcademicYear::withoutGlobalScope('school')
             ->where('school_id', $school->id)
             ->where('is_active', true)
@@ -48,7 +51,12 @@ class DaftarKetidakhadiran
                 ->orWhereIn('classroom_id', Classroom::withoutGlobalScope('school')
                     ->where('school_id', $school->id)
                     ->whereIn('academic_year_id', $tahunAktif)
-                    ->select('id'))))
+                    ->select('id'))
+                ->orWhereIn('classroom_id', Student::withoutGlobalScope('school')
+                    ->where('school_id', $school->id)
+                    ->where('is_active', true)
+                    ->whereNotNull('classroom_id')
+                    ->select('classroom_id'))))
             ->get();
     }
 

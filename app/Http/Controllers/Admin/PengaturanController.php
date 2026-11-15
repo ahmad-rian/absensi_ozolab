@@ -197,8 +197,11 @@ class PengaturanController extends Controller
 
         // Tahun ajaran BUKAN bagian dari schools.settings - ia hidup di kolom
         // `is_active` tabel academic_years - jadi dikirim sebagai prop sendiri.
+        // Dari yang paling awal: menu Kelas menyiapkan tahun ajaran sampai
+        // belasan tahun ke depan, dan urutan menurun menaruh tahun terjauh di
+        // puncak daftar sehingga mudah salah pilih.
         $academicYears = AcademicYear::forSchool()
-            ->orderByDesc('start_date')
+            ->orderBy('start_date')
             ->get(['id', 'name', 'is_active']);
 
         return Inertia::render('admin/pengaturan/index', [
@@ -258,7 +261,11 @@ class PengaturanController extends Controller
         unset($validated['academic_year_id']);
 
         if ($academicYearId) {
-            AcademicYear::forSchool()->findOrFail($academicYearId)->activate();
+            $tahun = AcademicYear::forSchool()->findOrFail($academicYearId);
+
+            if (! $tahun->is_active) {
+                $tahun->activate();
+            }
         }
 
         // Nama sholat dirapikan; kosong disimpan sebagai '' supaya kembali
