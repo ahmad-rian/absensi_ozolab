@@ -18,6 +18,10 @@ use App\Support\ScanRejectionLog;
  * Satu pengecualian sadar: sekolah yang menyalakan saklar `qr_isi_nisn`
  * (lihat IsiQrSiswa, hanya super admin) memang mencetak NISN polos di QR
  * kartunya, jadi NISN 10 digit diterima SETELAH pencocokan token gagal.
+ *
+ * Token milik data siswa yang sudah dihapus juga diterima bila siswanya dibuat
+ * ulang (lihat cocokkanTokenLama): kartu yang sudah dicetak tidak boleh mati
+ * hanya karena datanya dihapus lalu didaftarkan lagi.
  */
 class StudentLookup
 {
@@ -119,7 +123,48 @@ class StudentLookup
             ->where('school_id', $schoolId)
             ->where('is_active', true)
             ->with('classroom')
-            ->first();
+            ->first()
+            ?? $this->cocokkanTokenLama($token, $schoolId);
+    }
+
+    /**
+     * Token kartu dari data siswa yang sudah dihapus lalu dibuat ulang.
+     *
+     * Baris pengganti mendapat token baru, sedangkan kartu fisik masih memuat
+     * token baris lama. Token itu tetap sah dan tidak bisa ditebak (bertanda
+     * tangan HMAC), jadi ia diarahkan ke siswa pengganti - tetapi hanya bila
+     * penggantinya pasti: tepat satu siswa aktif di sekolah yang sama dengan
+     * NISN yang sama persis, atau NIS yang sama bila baris lama tanpa NISN.
+     * Nama tidak pernah dipakai, dan pengganti yang ganda ditolak.
+     *
+     * Hanya dijalankan setelah pencocokan biasa gagal, jadi scan normal tidak
+     * menanggung query tambahan.
+     */
+    private function cocokkanTokenLama(string $token, string $schoolId): ?Student
+    {
+        $lama = Student::onlyTrashed()
+            ->where('qr_token', $token)
+            ->where('school_id', $schoolId)
+            ->first(['id', 'nisn', 'nis']);
+
+        if (! $lama) {
+            return null;
+        }
+
+        [$kolom, $nilai] = filled($lama->nisn) ? ['nisn', $lama->nisn] : ['nis', $lama->nis];
+
+        if (blank($nilai)) {
+            return null;
+        }
+
+        $pengganti = Student::where($kolom, $nilai)
+            ->where('school_id', $schoolId)
+            ->where('is_active', true)
+            ->with('classroom')
+            ->limit(2)
+            ->get();
+
+        return $pengganti->count() === 1 ? $pengganti->first() : null;
     }
 
     /**
